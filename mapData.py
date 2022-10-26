@@ -8,7 +8,7 @@ import projection
 from singleton_store import Store
 
 class mapData(object):
-    """klasa przechowuje dane z pliku *.mp, czyli punkty, polylinie i polygony"""
+    """class stores all data from map ie polylines, polygones, pois, map header, map weird sections"""
 
     def __init__(self, filename):
         # inicjujemy zmienne początkowe
@@ -120,7 +120,7 @@ class mapData(object):
 
 
 class Point(object):
-
+    """Class used for stroing coordinates of given map object point"""
     def __init__(self, latitude, longitude):
         # self.acuracy = 10000
         self.longitude = longitude
@@ -136,14 +136,14 @@ class Point(object):
         return coords
 
 class mapObject(object):
-    """The class stores informations about the map object ie. POI, POLYLINE, POLYGON. All properties of this objects
-    residue chere"""
+    """The class stores information about the map object ie. POI, POLYLINE, POLYGON.
+    All properties of this objects residue here"""
 
-    def __init__(self, data,objectId):
+    def __init__(self, data, objectId):
         self.MAP_OBJECT_TYPES = ('[POI]', '[POLYGON]', '[POLYLINE]')
         self.MAP_OBJECT_END = '[END]'
         self.comment = []
-        self.object_type = '' # possible 3 values, [POI], [POLYLINE], [POLYGONE]
+        self.object_type = ''  # possible 3 values, [POI], [POLYLINE], [POLYGONE]
         self.Type = None  # Type value
         self.EndLevel = None  # Endlevel
         self.Label = None
