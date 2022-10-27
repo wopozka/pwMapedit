@@ -14,10 +14,10 @@ class mode(object):
         self.decorated_objects = []
         self.object_nodes = []
     
-    def apply_bindings():
+    def apply_bindings(self):
         pass
         
-    def remove_bindings():
+    def remove_bindings(self):
         pass
     
     def refresh_decorating_squares(self):
@@ -33,20 +33,20 @@ class mode(object):
         properties = self.mapCanvas.itemconfig(objectid)
         fillcolour = properties['fill'][-1]
         dash = properties['dash'][-1]
-        self.object_orig_properties[objectid]={'fill':fillcolour, 'dash':dash}
+        self.object_orig_properties[objectid] = {'fill': fillcolour, 'dash': dash}
         return
 
     def apply_orig_properties(self, objectid):
         colour = self.object_orig_properties[objectid]['fill']
         dash = self.object_orig_properties[objectid]['dash']
-        print('kolor %s'%colour)
+        print('kolor %s' % colour)
         del(self.object_orig_properties[objectid])
-        self.mapCanvas.itemconfig(objectid, fill=colour,dash=dash)
+        self.mapCanvas.itemconfig(objectid, fill=colour, dash=dash)
 
     def decorate_object(self, objectid):
         self.save_object_nodes(objectid)
         self.save_orig_properties(objectid)
-        self.mapCanvas.itemconfig(objectid, fill='blue',dash=(5,5))
+        self.mapCanvas.itemconfig(objectid, fill='blue', dash=(5, 5))
 
     def undecorate_object(self, objectid):
         self.apply_orig_properties(objectid)
@@ -56,7 +56,7 @@ class mode(object):
 
     def save_object_nodes(self, obj):
         coords = self.mapCanvas.coords(obj)
-        pairs = zip(coords[::2],coords[1::2])
+        pairs = zip(coords[::2], coords[1::2])
         del(self.object_nodes[:])
         for a in list(pairs):
             self.object_nodes.append(a)
@@ -79,7 +79,7 @@ class selectMode(mode):
         self.apply_bindings()
 
     def apply_bindings(self):
-        self.mapCanvas.bind("<Button-1>",self.mouse_1_pressed)
+        self.mapCanvas.bind("<Button-1>", self.mouse_1_pressed)
         self.mapCanvas.bind("<Control-Button-1>", lambda e: self.mouse_1_pressed(e, mod=['control']))
         self.mapCanvas.bind("<ButtonRelease-1>", self.mouse_1_released)
         self.mapCanvas.bind("<B1-Motion>", self.mouse_1_motion)
@@ -179,7 +179,8 @@ class editNodeMode(mode):
             y1 = a[1] - decorator_size
             x2 = a[0] + decorator_size
             y2 = a[1] + decorator_size
-            self.decorating_squares_ids.append(self.mapCanvas.create_rectangle(x1, y1, x2, y2, fill = 'black',tags=('decorator',)))
+            self.decorating_squares_ids.append(self.mapCanvas.create_rectangle(x1, y1, x2, y2, fill='black',
+                                                                               tags=('decorator',)))
 
     def refresh_decorating_squares(self):
         print('redraw decorating squares')
@@ -193,7 +194,7 @@ class editNodeMode(mode):
 
     def mouse_1_pressed(self, event):
          # we have to register the object the mouse pointer is over. For further actions
-        a=self.mapCanvas.find_withtag('current')
+        a = self.mapCanvas.find_withtag('current')
         print(a)
         if a: # if mouse is over any object
             if self.decorated_objects: # first. There might be at least one object already selected cover it:

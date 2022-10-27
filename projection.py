@@ -42,11 +42,11 @@ class Mercator(Projection):
     def geo_to_canvas(self, latitude, longitude):
         x = float(longitude)
         y = 180.0 / math.pi * math.log(math.tan(math.pi / 4.0 + float(latitude) * (math.pi / 180.0) / 2.0))
-        return [self.mapDataOfset * x,-y * self.mapDataOfset]
+        return [self.mapDataOfset * x, -y * self.mapDataOfset]
 
     def canvas_to_geo(self, x, y):
         longitude = x
-        latitude = 180.0 / math.pi * (2.0  *math.atan(math.exp(-y * math.pi / 180.0)) - math.pi/2.0)
+        latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp(-y * math.pi / 180.0)) - math.pi/2.0)
         return [latitude, longitude]
 
 class UTM(Projection):
@@ -86,7 +86,7 @@ class UTM(Projection):
                 self.mapDataOfset = 0
             else:
                 print('liczymy przesuniecie')
-                a = self.mapBoundingBox['W']%6
+                a = self.mapBoundingBox['W'] % 6
                 self.mapDataOfset = int(a)
         return 0
 

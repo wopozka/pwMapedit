@@ -29,65 +29,80 @@ class mapCanvas(QGraphicsScene):
         """
         #print(mapobject.object_type)
         if mapobject.object_type == '[POI]':
-            pass
+            self.draw_poi_on_canvas(mapobject)
         elif mapobject.object_type == '[POLYLINE]':
-            coordslist = []
-            if mapobject.Type in self.mOP.polylinePropertiesColour:
-                colour = self.mOP.polylinePropertiesColour[mapobject.Type]
-            else:
-                colour = 'black'
-
-            if mapobject.Type in self.mOP.polylinePropertiesWidth:
-                width = self.mOP.polylinePropertiesWidth[mapobject.Type]
-            else:
-                width = 1
-
-            if mapobject.Type in self.mOP.polylinePropertiesDash:
-                dash = self.mOP.polylinePropertiesDash[mapobject.Type]
-            else:
-                dash = None
-
-            for key in mapobject.Points.keys(): # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-                for points in mapobject.Points[key]:
-                    coordslist += points.return_canvas_coords()
-                self.create_line(coordslist,tag=(str(mapobject.objectId), 'POLYLINE', 'Type='+mapobject.Type, 'SCALABLE'),fill=colour, width=width, dash=dash, activefill='dark violet')
-                # in case polyline has a label, place it on the map
-                if mapobject.Label:
-                    if len(coordslist) == 4:
-                        label_pos = [coordslist[0], coordslist[1]]
-                        if (coordslist[3] - coordslist[1]) == 0:
-                            label_angle = 90
-                        else:
-                            label_angle = math.atan((coordslist[2]-coordslist[1])/(coordslist[3]-coordslist[1]))
-
-                        # print(label_angle)
-                        # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
-                    else:
-                        pass
-                        # calculate label position, lets say it will be in the meadle of the polyline
-                        # label_pos = coordslist[len(coordslist) // 2]
-                        # label_angle =
-                del(coordslist[:])
-
-
-
+            self.draw_polyline_on_canvas(mapobject)
         elif mapobject.object_type == '[POLYGON]':
-            coordslist = []
-            if mapobject.Type in self.mOP.polygonePropertiesFillColour:
-                fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
-            else:
-                fill_colour = 'grey'
-            if self.polygonFill == 'transparent':
-                fill_colour = ''
-            for key in mapobject.Points.keys(): # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-                for points in mapobject.Points[key]:
-                    coordslist += points.return_canvas_coords()
-                self.create_polygon(coordslist, tag=(str(mapobject.objectId), 'POLYGON', 'Type='+mapobject.Type, 'SCALABLE'),fill=fill_colour,outline=fill_colour)
-                self.tag_lower(str(mapobject.objectId))
+            self.draw_polygone_on_canvase(mapobject)
+        else:
+            print('Very weird object')
+            print(mapobject)
 
-        return None
+    def draw_poi_on_canvas(self, mmapobject):
+        return
 
-    def draw_all_objects_on_map(self):
+    def draw_polyline_on_canvas(self, mapobject):
+        coordslist = []
+        if mapobject.Type in self.mOP.polylinePropertiesColour:
+            colour = self.mOP.polylinePropertiesColour[mapobject.Type]
+        else:
+            colour = 'black'
+
+        if mapobject.Type in self.mOP.polylinePropertiesWidth:
+            width = self.mOP.polylinePropertiesWidth[mapobject.Type]
+        else:
+            width = 1
+
+        if mapobject.Type in self.mOP.polylinePropertiesDash:
+            dash = self.mOP.polylinePropertiesDash[mapobject.Type]
+        else:
+            dash = None
+
+        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+            for points in mapobject.Points[key]:
+                coordslist += points.return_canvas_coords()
+
+            # polyline = addPath()
+            self.create_line(coordslist,
+                             tag=(str(mapobject.objectId), 'POLYLINE', 'Type=' + mapobject.Type, 'SCALABLE'),
+                             fill=colour, width=width, dash=dash, activefill='dark violet')
+            # in case polyline has a label, place it on the map
+            if mapobject.Label:
+                if len(coordslist) == 4:
+                    label_pos = [coordslist[0], coordslist[1]]
+                    if (coordslist[3] - coordslist[1]) == 0:
+                        label_angle = 90
+                    else:
+                        label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
+
+                    # print(label_angle)
+                    # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
+                else:
+                    pass
+                    # calculate label position, lets say it will be in the meadle of the polyline
+                    # label_pos = coordslist[len(coordslist) // 2]
+                    # label_angle =
+            del (coordslist[:])
+        return
+
+    def draw_polygone_on_canvase(self, mapobject):
+        coordslist = []
+        if mapobject.Type in self.mOP.polygonePropertiesFillColour:
+            fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
+        else:
+            fill_colour = 'grey'
+        if self.polygonFill == 'transparent':
+            fill_colour = ''
+        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+            for points in mapobject.Points[key]:
+                coordslist += points.return_canvas_coords()
+            self.create_polygon(coordslist,
+                                tag=(str(mapobject.objectId), 'POLYGON', 'Type=' + mapobject.Type, 'SCALABLE'),
+                                fill=fill_colour, outline=fill_colour)
+            self.tag_lower(str(mapobject.objectId))
+        return
+
+def draw_all_objects_on_map(self):
         """this functions prints all objects on map
         :return None
         """
