@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
@@ -23,6 +24,7 @@ class pwMapeditPy(QMainWindow):
         self.file_actions = list()
         self.edit_actions = list()
         self.select_actions = list()
+        self.map_canvas = None
         self.setWindowTitle("pwMapeEdit")
         self.initialize()
 
@@ -32,7 +34,10 @@ class pwMapeditPy(QMainWindow):
         toolbar = QToolBar("My main toolbar")
         self.addToolBar(toolbar)
         self.setStatusBar(QStatusBar(self))
-        self.generate_menu()
+        self.generate_menus()
+        self.map_canvas = QGraphicsScene(0, 0, 200, 50)
+        view = QGraphicsView(self.map_canvas)
+        self.setCentralWidget(view)
 
         # ramkaglowna = tkinter.Frame(self)
         # ramkaglowna.pack(expand=1, fill='both')
@@ -57,7 +62,7 @@ class pwMapeditPy(QMainWindow):
         #     self.mapa.draw_all_objects_on_map()
         # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
-    def generate_menu(self):
+    def generate_menus(self):
         menu = self.menuBar()
 
         # File menu

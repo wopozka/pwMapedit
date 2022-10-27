@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import tkinter
-import tkinter.ttk
-import tkinter.filedialog
-import string
-import sys
-import tkinter.scrolledtext
-import tkinter.messagebox
+from PyQt5.QtWidgets import QGraphicsScene
 import platform
 import modes
 import math
 import projection
 from singleton_store import Store
 
-class mapCanvas(tkinter.Canvas):
+class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
     def __init__(self, master, **options):
         self.master = master
         self.MapData = None
-        tkinter.Canvas.__init__(self, master, **options)
+        super(mapCanvas, self).__init__()
         self.mapScale = 1
         self.mOP=mapObjectsProperties()
         self.apply_bindings()
