@@ -29,7 +29,7 @@ class mapCanvas(tkinter.Canvas):
         self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
-    def draw_object_on_map(self,mapobject):
+    def draw_object_on_map(self, mapobject):
         """ This function draws map object on the canvas
         :return: None
         """
@@ -46,12 +46,12 @@ class mapCanvas(tkinter.Canvas):
             if mapobject.Type in self.mOP.polylinePropertiesWidth:
                 width = self.mOP.polylinePropertiesWidth[mapobject.Type]
             else:
-                width=1
+                width = 1
 
             if mapobject.Type in self.mOP.polylinePropertiesDash:
                 dash = self.mOP.polylinePropertiesDash[mapobject.Type]
             else:
-                dash=None
+                dash = None
 
             for key in mapobject.Points.keys(): # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
                 for points in mapobject.Points[key]:
@@ -97,8 +97,9 @@ class mapCanvas(tkinter.Canvas):
         """this functions prints all objects on map
         :return None
         """
-        print('rysuje wszystkie %s obiekty'%len(self.MapData.mapObjectsList_Polygones + self.MapData.mapObjectsList_Polylines))
-        [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList ]
+        print('rysuje wszystkie %s obiekty' % len(self.MapData.mapObjectsList_Polygones +
+                                                  self.MapData.mapObjectsList_Polylines))
+        [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList]
         # for aaa in (self.MapData.mapObjectsList):
         #    self.draw_object_on_map(aaa)
         self.config(scrollregion=self.bbox('all'))
@@ -231,19 +232,19 @@ class mapCanvas(tkinter.Canvas):
         elif self.operatingSystem == 'Windows':
             self.xview_scroll(int(-1*(event.delta/120)), "units")
 
-    def switch_plygon_render_kit(self,event):
+    def switch_plygon_render_kit(self, event):
         if self.polygonFill == 'solid':
-            self.itemconfig('POLYGON',fill='')
+            self.itemconfig('POLYGON', fill='')
             self.polygonFill = 'transparent'
         else:
             self.polygonFill = 'solid'
             for a in self.find_withtag('POLYGON'):
                 for b in [c for c in self.gettags(a) if c.startswith('Type=')]:
                     d = b.split('=')[-1]
-                    if d in  self.mOP.polygonePropertiesFillColour:
-                        self.itemconfig(a,fill=self.mOP.polygonePropertiesFillColour[d])
+                    if d in self.mOP.polygonePropertiesFillColour:
+                        self.itemconfig(a, fill=self.mOP.polygonePropertiesFillColour[d])
                     else:
-                        self.itemconfig(a,fill='grey')
+                        self.itemconfig(a, fill='grey')
 
 class mapObjectsProperties(object):
     """here this class contains definitions of all map objects: the points, polylines and polygones"""

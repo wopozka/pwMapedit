@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
@@ -20,6 +20,9 @@ class pwMapeditPy(QMainWindow):
         super(pwMapeditPy, self).__init__()
         self.parent = parent
         self.filename = filename
+        self.file_actions = list()
+        self.edit_actions = list()
+        self.select_actions = list()
         self.setWindowTitle("pwMapeEdit")
         self.initialize()
 
@@ -59,72 +62,96 @@ class pwMapeditPy(QMainWindow):
 
         # File menu
         file_menu = menu.addMenu("&File")
-        # file_menu.add_command(label='Open...', command=self.open_file)
-        # file_menu.add_command(label='Add...')
-        # file_menu.add_command(label='Close')
-        # file_menu.add_separator()
-        # file_menu.add_command(label='Save map')
-        # file_menu.add_command(label='Save map as...')
-        # file_menu.add_separator()
-        # file_menu.add_command(label='Import')
-        # file_menu.add_command(label='Export')
-        # file_menu.add_separator()
-        # file_menu.add_command(label='Exit',command=self.destroy)
-        # file_menu.add('radiobutton',label='Cos')
-        # menubar.add_cascade(label=u'File',menu=file_menu)
+        for action in self._create_file_actions():
+            if action is not None:
+                file_menu.addAction(action)
+            else:
+                file_menu.addSeparator()
 
         # Edit menu
         edit_menu = menu.addMenu("&Edit")
-        # edit_menu.add_command(label='Undo')
-        # edit_menu.add_command(label='Redp')
-        # edit_menu.add_separator()
-        # edit_menu.add_command(label='Cut')
-        # edit_menu.add_command(label='Copy')
-        # edit_menu.add_command(label='Paste')
-        # edit_menu.add_command(label='Paste here')
-        # edit_menu.add_command(label='Delete')
-        # edit_menu.add_separator()
+        for action in self._create_edit_actions():
+            if action is not None:
+                edit_menu.addAction(action)
+            else:
+                edit_menu.addSeparator()
+        select_menu = edit_menu.addMenu('&Select')
+        edit_menu.addAction(QAction('&Unselect', self))
+        edit_menu.addAction(QAction('&Find', self))
+        edit_menu.addAction(QAction('&Delete', self))
 
-        # select submenu
-        select_menu = menu.addMenu("&Select")
-        # menuSelect.add_command(label='All objects')
-        # menuSelect.add_command(label='All points')
-        # menuSelect.add_command(label='All polylines')
-        # menuSelect.add_command(label='All polygones')
-        # menuSelect.add_command(label='All roads')
-        # menuSelect.add_separator()
-        # menuSelect.add_command(label='All bookmarks')
-        # menuSelect.add_command(label='All note drivings')
-        # menuSelect.add_separator()
-        # menuSelect.add_command(label='All tracks')
-        # menuSelect.add_command(label='All waypoints')
-        # menuSelect.add_command(label='All routes')
-        # menuSelect.add_command(label='All raster images')
-        # menuSelect.add_command(label='All attached files')
-        # menuSelect.add_separator()
-        # menuSelect.add_command(label='By type')
-        # menuSelect.add_command(label='By label')
+        # Select submenu
+        for action in self._create_select_actions():
+            if action is not None:
+                select_menu.addAction(action)
+            else:
+                select_menu.addSeparator()
 
-        # edit_menu.add_cascade(label='Select',menu=menuSelect)
-        # edit_menu.add_command(label='Unselect')
-        # edit_menu.add_command(label='Find')
-        # menubar.add_cascade(label=u'Edit',menu=edit_menu)
+
 
         # View menu
         view_menu = menu.addMenu("&View")
-        # view_menu.add_command(label='Zoom in', accelerator='(=)', command=self.menu_scaleup_command)
-        # view_menu.add_command(label='Zoom out',accelerator='(-)', command=self.menu_scaledown_command)
-        # menubar.add_cascade(label='View',menu=view_menu)
+        view_menu.addAction(QAction('&Zoom in', self))
+        view_menu.addAction(QAction('&Zoom out', self))
 
         # projection submenu
         # self.menuProjectionVar = tkinter.StringVar()
         # self.menuProjectionVar.set('Mercator')
         projection_menu = menu.addMenu("&Projection")
-        # projection_menu.add('radiobutton', label='Mercator', command=self.menu_change_projection, variable=self.menuProjectionVar)
-        # projection_menu.add('radiobutton', label='UTM', command = self.menu_change_projection, variable=self.menuProjectionVar)
-        # view_menu.add_cascade(label='Projection',menu=projection_menu)
-        #
-        # self.config(menu=menubar)
+        mercator_action = QAction('&Mercator', self)
+        mercator_action.setCheckable(True)
+        utm_action = QAction('&UTM', self)
+        utm_action.setCheckable(True)
+        utm_action.setChecked(True)
+        projection_menu.addAction(mercator_action)
+        projection_menu.addAction(utm_action)
+        projection_action_group = QActionGroup(self)
+        projection_action_group.addAction(mercator_action)
+        projection_action_group.addAction(utm_action)
+
+    def _create_file_actions(self):
+        self.file_actions.append(QAction('&Open', self))
+        self.file_actions.append(QAction('&Add', self))
+        self.file_actions.append(QAction('&Close', self))
+        self.file_actions.append(None)
+        self.file_actions.append(QAction('&Save map', self))
+        self.file_actions.append(QAction('&Save map as', self))
+        self.file_actions.append(None)
+        self.file_actions.append(QAction('&Import', self))
+        self.file_actions.append(QAction('&Export', self))
+        return self.file_actions
+
+    def _create_edit_actions(self):
+        self.edit_actions.append(QAction('&Undo', self))
+        self.edit_actions.append(QAction('&Redo', self))
+        self.edit_actions.append(None)
+        self.edit_actions.append(QAction('&Cut', self))
+        self.edit_actions.append(QAction('&Copy', self))
+        self.edit_actions.append(QAction('&Paste', self))
+        self.edit_actions.append(QAction('&Paste here', self))
+        self.edit_actions.append(QAction('&Delete', self))
+        self.edit_actions.append(None)
+        return self.edit_actions
+
+    def _create_select_actions(self):
+        self.select_actions.append(QAction('&All objects', self))
+        self.select_actions.append(QAction('&All points', self))
+        self.select_actions.append(QAction('&All polylines', self))
+        self.select_actions.append(QAction('&All polygones', self))
+        self.select_actions.append(QAction('&All roads', self))
+        self.edit_actions.append(None)
+        self.select_actions.append(QAction('&All bookmarks', self))
+        self.select_actions.append(QAction('&All note drivings', self))
+        self.edit_actions.append(None)
+        self.select_actions.append(QAction('&All tracks', self))
+        self.select_actions.append(QAction('&All waypoints', self))
+        self.select_actions.append(QAction('&All routes', self))
+        self.select_actions.append(QAction('&All raster images', self))
+        self.select_actions.append(QAction('&All attached files', self))
+        self.edit_actions.append(None)
+        self.select_actions.append(QAction('&By type', self))
+        self.select_actions.append(QAction('&By labels', self))
+        return self.select_actions
 
 
     def open_file(self):
