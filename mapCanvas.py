@@ -102,7 +102,7 @@ class mapCanvas(QGraphicsScene):
             self.tag_lower(str(mapobject.objectId))
         return
 
-def draw_all_objects_on_map(self):
+    def draw_all_objects_on_map(self):
         """this functions prints all objects on map
         :return None
         """
