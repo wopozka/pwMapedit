@@ -35,7 +35,7 @@ class pwMapeditPy(QMainWindow):
         self.addToolBar(toolbar)
         self.setStatusBar(QStatusBar(self))
         self.generate_menus()
-        self.map_canvas = QGraphicsScene(0, 0, 200, 50)
+        self.mapa = mapCanvas.mapCanvas(self, 0, 0, 200, 50)
         view = QGraphicsView(self.map_canvas)
         self.setCentralWidget(view)
 
@@ -170,7 +170,7 @@ class pwMapeditPy(QMainWindow):
             map_objects.wczytaj_rekordy()
             self.mapa.MapData = map_objects
             self.mapa.draw_all_objects_on_map()
-            self.mapa.config(scrollregion=self.mapa.bbox('all'))
+            # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):
         self.mapa.scaleup()

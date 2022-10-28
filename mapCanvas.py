@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem
 from PyQt5.QtGui import QPainterPath, QPolygonF
+from PyQt5.QtCore import QPointF
 import platform
 import modes
 import math
@@ -11,17 +12,17 @@ from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, **options):
+    def __init__(self, master, *options):
         self.master = master
         self.MapData = None
-        super(mapCanvas, self).__init__()
+        super(mapCanvas, self).__init__(*options)
         self.mapScale = 1
         self.mOP = mapObjectsProperties()
-        self.apply_bindings()
+        # self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
         self.object_clicked = []
-        self.mode = modes.selectMode(self)
+        # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
     def draw_object_on_map(self, mapobject):
@@ -34,7 +35,7 @@ class mapCanvas(QGraphicsScene):
         elif mapobject.object_type == '[POLYLINE]':
             self.draw_polyline_on_canvas(mapobject)
         elif mapobject.object_type == '[POLYGON]':
-            self.draw_polygone_on_canvase(mapobject)
+            self.draw_polygone_on_canvas(mapobject)
         else:
             print('Very weird object')
             print(mapobject)
@@ -61,6 +62,7 @@ class mapCanvas(QGraphicsScene):
 
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             polyline = QPainterPath()
+            graphics_path_item = QGraphicsPathItem()
             for num, points in enumerate(mapobject.Points[key]):
                 coordslist += points.return_canvas_coords()
                 coord_x, coord_y = points.return_canvas_coords()
@@ -68,11 +70,8 @@ class mapCanvas(QGraphicsScene):
                     polyline.moveTo(coord_x, coord_y)
                 else:
                     polyline.lineTo(coord_x, coord_y)
-            self.setPath(polyline)
-            # polyline = addPath()
-            self.create_line(coordslist,
-                             tag=(str(mapobject.objectId), 'POLYLINE', 'Type=' + mapobject.Type, 'SCALABLE'),
-                             fill=colour, width=width, dash=dash, activefill='dark violet')
+            graphics_path_item.setPath(polyline)
+            self.addPath(polyline)
             # in case polyline has a label, place it on the map
             if mapobject.Label:
                 if len(coordslist) == 4:
@@ -92,7 +91,7 @@ class mapCanvas(QGraphicsScene):
             del (coordslist[:])
         return
 
-    def draw_polygone_on_canvase(self, mapobject):
+    def draw_polygone_on_canvas(self, mapobject):
         coordslist = []
         if mapobject.Type in self.mOP.polygonePropertiesFillColour:
             fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
@@ -102,10 +101,13 @@ class mapCanvas(QGraphicsScene):
             fill_colour = ''
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             for points in mapobject.Points[key]:
-                coordslist += points.return_canvas_coords()
-            q_polygon = QPolygonF([QPolygonF(p[0], p[1]) for p in coordslist])
-            q_patinter_path = QPainterPath(q_polygon)
-            self.addPolygon(q_patinter_path)
+                x, y = points.return_canvas_coords()
+                coordslist.append(QPointF(x, y))
+            # print(coordslist)
+            q_polygon = QPolygonF(coordslist)
+            # q_patinter_path = QPainterPath()
+            # q_patinter_path.addPolygon(q_polygon)
+            self.addPolygon(q_polygon)
         return
 
     def draw_all_objects_on_map(self):
@@ -117,7 +119,7 @@ class mapCanvas(QGraphicsScene):
         [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList]
         # for aaa in (self.MapData.mapObjectsList):
         #    self.draw_object_on_map(aaa)
-        self.config(scrollregion=self.bbox('all'))
+        # self.config(scrollregion=self.bbox('all'))
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
