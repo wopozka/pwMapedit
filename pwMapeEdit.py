@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
@@ -116,6 +116,7 @@ class pwMapeditPy(QMainWindow):
 
     def _create_file_actions(self):
         self.file_actions.append(QAction('&Open', self))
+        self.file_actions[-1].triggered.connect(self.open_file)
         self.file_actions.append(QAction('&Add', self))
         self.file_actions.append(QAction('&Close', self))
         self.file_actions.append(None)
@@ -160,10 +161,11 @@ class pwMapeditPy(QMainWindow):
 
 
     def open_file(self):
-        aaa=tkinter.filedialog.askopenfilename(title=u'File to open')
-        print('Plik do otwarcia %s'%aaa)
-        if aaa:
-            self.filename = aaa
+        aaa = QFileDialog.getOpenFileName(self, 'File to open')
+        print(aaa[0])
+        print('Plik do otwarcia %s' % aaa[0])
+        if aaa[0]:
+            self.filename = aaa[0]
             map_objects=mapData.mapData(self.filename)
             map_objects.wczytaj_rekordy()
             self.mapa.MapData = map_objects

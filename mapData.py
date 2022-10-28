@@ -154,14 +154,14 @@ class mapObject(object):
         # maximal longitudes and latitudes. At the begining it is empty dictionary, because it makes
         # thinks to start easier
         self.objBoundingBox = {}
-        self.objectId=objectId
+        self.objectId = objectId
         self.projection = Store.projection
 
         self.extract_data(data)
 
 
     def extract_data(self, data):
-        Data0_val = Data1_val = Data2_val = Data2_val = Data3_val = Data4_val = 0
+        Data0_val = Data1_val = Data2_val = Data3_val = Data4_val = 0
         for aaa in data[:]:
             aaa=aaa.strip()
             if aaa.startswith(';'):

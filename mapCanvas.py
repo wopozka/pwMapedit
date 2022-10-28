@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtGui import QPainterPath, QPolygonF
 import platform
 import modes
 import math
@@ -15,7 +16,7 @@ class mapCanvas(QGraphicsScene):
         self.MapData = None
         super(mapCanvas, self).__init__()
         self.mapScale = 1
-        self.mOP=mapObjectsProperties()
+        self.mOP = mapObjectsProperties()
         self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
@@ -59,9 +60,15 @@ class mapCanvas(QGraphicsScene):
             dash = None
 
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-            for points in mapobject.Points[key]:
+            polyline = QPainterPath()
+            for num, points in enumerate(mapobject.Points[key]):
                 coordslist += points.return_canvas_coords()
-
+                coord_x, coord_y = points.return_canvas_coords()
+                if num == 0:
+                    polyline.moveTo(coord_x, coord_y)
+                else:
+                    polyline.lineTo(coord_x, coord_y)
+            self.setPath(polyline)
             # polyline = addPath()
             self.create_line(coordslist,
                              tag=(str(mapobject.objectId), 'POLYLINE', 'Type=' + mapobject.Type, 'SCALABLE'),
@@ -96,10 +103,9 @@ class mapCanvas(QGraphicsScene):
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             for points in mapobject.Points[key]:
                 coordslist += points.return_canvas_coords()
-            self.create_polygon(coordslist,
-                                tag=(str(mapobject.objectId), 'POLYGON', 'Type=' + mapobject.Type, 'SCALABLE'),
-                                fill=fill_colour, outline=fill_colour)
-            self.tag_lower(str(mapobject.objectId))
+            q_polygon = QPolygonF([QPolygonF(p[0], p[1]) for p in coordslist])
+            q_patinter_path = QPainterPath(q_polygon)
+            self.addPolygon(q_patinter_path)
         return
 
     def draw_all_objects_on_map(self):
