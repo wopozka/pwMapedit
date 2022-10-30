@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem
 from PyQt5.QtGui import QPainterPath, QPolygonF
 from PyQt5.QtCore import QPointF
 import platform
@@ -104,10 +104,10 @@ class mapCanvas(QGraphicsScene):
                 x, y = points.return_canvas_coords()
                 coordslist.append(QPointF(x, y))
             # print(coordslist)
-            q_polygon = QPolygonF(coordslist)
+            q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
             # q_patinter_path = QPainterPath()
             # q_patinter_path.addPolygon(q_polygon)
-            self.addPolygon(q_polygon)
+            self.addItem(q_polygon)
         return
 
     def draw_all_objects_on_map(self):
