@@ -114,8 +114,7 @@ class mapCanvas(QGraphicsScene):
         """this functions prints all objects on map
         :return None
         """
-        print('rysuje wszystkie %s obiekty' % len(self.MapData.mapObjectsList_Polygones +
-                                                  self.MapData.mapObjectsList_Polylines))
+        print('rysuje wszystkie %s obiekty' % len(self.MapData.mapObjectsList))
         [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList]
         # for aaa in (self.MapData.mapObjectsList):
         #    self.draw_object_on_map(aaa)

@@ -83,7 +83,7 @@ class mapData(object):
                 break
 
         print('zakonczylen obrabianie naglowka. Wartosc b: %s'%b)
-        print(self.mapBoundingBox)
+        print('bonding box', self.mapBoundingBox)
         while b < zawartosc_pliku_mp_len:
             # print(b)
             mp_record = []
@@ -103,7 +103,7 @@ class mapData(object):
         Store.projection.mapBoundingBox = self.mapBoundingBox
         Store.projection.calculate_data_ofset()
 
-        print(Store.projection.mapDataOfset)
+        print('map data ofset', Store.projection.mapDataOfset)
 
     def set_map_bounding_box(self, bBox):
         if not self.mapBoundingBox:
