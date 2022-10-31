@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem
-from PyQt5.QtGui import QPainterPath, QPolygonF
-from PyQt5.QtCore import QPointF
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen
+from PyQt5.QtCore import QPointF, Qt
 import platform
 import modes
 import math
@@ -15,6 +15,7 @@ class mapCanvas(QGraphicsScene):
     def __init__(self, master, *options):
         self.master = master
         self.MapData = None
+        print(*options)
         super(mapCanvas, self).__init__(*options)
         self.mapScale = 1
         self.mOP = mapObjectsProperties()
@@ -44,6 +45,7 @@ class mapCanvas(QGraphicsScene):
         return
 
     def draw_polyline_on_canvas(self, mapobject):
+        return
         coordslist = []
         if mapobject.Type in self.mOP.polylinePropertiesColour:
             colour = self.mOP.polylinePropertiesColour[mapobject.Type]
@@ -92,6 +94,16 @@ class mapCanvas(QGraphicsScene):
         return
 
     def draw_polygone_on_canvas(self, mapobject):
+        # rect = QGraphicsRectItem(0, 0, 200, 50)
+        # # Set the origin (position) of the rectangle in the scene.
+        # rect.setPos(50, 20)
+        # brush = QBrush(Qt.red)
+        # rect.setBrush(brush)
+        # pen = QPen(Qt.cyan)
+        # pen.setWidth(10)
+        # rect.setPen(pen)
+        # self.addItem(rect)
+        # return
         coordslist = []
         if mapobject.Type in self.mOP.polygonePropertiesFillColour:
             fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
@@ -102,9 +114,10 @@ class mapCanvas(QGraphicsScene):
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             for points in mapobject.Points[key]:
                 x, y = points.return_canvas_coords()
+                print('x: %s, y: %s' %(x, y))
                 coordslist.append(QPointF(x, y))
-            # print(coordslist)
             q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
+            q_polygon.setPos(50, 50)
             # q_patinter_path = QPainterPath()
             # q_patinter_path.addPolygon(q_polygon)
             self.addItem(q_polygon)

@@ -35,9 +35,9 @@ class pwMapeditPy(QMainWindow):
         self.addToolBar(toolbar)
         self.setStatusBar(QStatusBar(self))
         self.generate_menus()
-        self.mapa = mapCanvas.mapCanvas(self, 0, 0, 200, 50)
-        view = QGraphicsView(self.map_canvas)
-        self.setCentralWidget(view)
+        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
+        self.view = QGraphicsView(self.map_canvas)
+        self.setCentralWidget(self.view)
 
         # ramkaglowna = tkinter.Frame(self)
         # ramkaglowna.pack(expand=1, fill='both')
@@ -166,10 +166,10 @@ class pwMapeditPy(QMainWindow):
         print('Plik do otwarcia %s' % aaa[0])
         if aaa[0]:
             self.filename = aaa[0]
-            map_objects=mapData.mapData(self.filename)
+            map_objects = mapData.mapData(self.filename)
             map_objects.wczytaj_rekordy()
-            self.mapa.MapData = map_objects
-            self.mapa.draw_all_objects_on_map()
+            self.map_canvas.MapData = map_objects
+            self.map_canvas.draw_all_objects_on_map()
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):
