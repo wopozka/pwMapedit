@@ -111,16 +111,22 @@ class mapCanvas(QGraphicsScene):
             fill_colour = 'grey'
         if self.polygonFill == 'transparent':
             fill_colour = ''
-        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-            for points in mapobject.Points[key]:
-                x, y = points.return_canvas_coords()
-                print('x: %s, y: %s' %(x, y))
-                coordslist.append(QPointF(x, y))
-            q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
-            q_polygon.setPos(50, 50)
-            # q_patinter_path = QPainterPath()
-            # q_patinter_path.addPolygon(q_polygon)
-            self.addItem(q_polygon)
+        coordslist = [QPointF(1.0, 1.0), QPointF(100.0, 200.0), QPointF(200.0, 100.0), QPointF(200.0, 200.0)]
+        # for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+        #     for points in mapobject.Points[key]:
+        #         x, y = points.return_canvas_coords()
+        #         print('x: %s, y: %s' %(x, y))
+        #         coordslist.append(QPointF(x, y))
+        q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
+        # q_polygon.setPos(1, 1)
+        # brush = QBrush(Qt.red)
+        # q_polygon.setBrush(brush)
+        # pen = QPen(Qt.cyan)
+        # pen.setWidth(10)
+        # q_polygon.setPen(pen)
+        # q_patinter_path = QPainterPath()
+        # q_patinter_path.addPolygon(q_polygon)
+        self.addItem(q_polygon)
         return
 
     def draw_all_objects_on_map(self):
