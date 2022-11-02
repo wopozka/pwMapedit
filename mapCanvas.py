@@ -217,15 +217,18 @@ class mapCanvas(QGraphicsScene):
         else:
             pass
 
-    def scaledown(self, event):
+    def scaledown(self):
+        print('zmnijeszam')
+        return
         x = self.canvasx(event.x)
         y = self.canvasy(event.y)
         self.scale('SCALABLE', x, y, 2, 2)
         self.config(scrollregion=self.bbox('all'))
         self.mode.refresh_decorating_squares()
 
-    def scaleup(self, event):
+    def scaleup(self):
         print('zwiekszam')
+        return
         x = self.canvasx(event.x)
         y = self.canvasy(event.y)
         self.scale('SCALABLE', x, y, 0.5, 0.5)

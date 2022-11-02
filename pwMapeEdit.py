@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
@@ -37,6 +38,7 @@ class pwMapeditPy(QMainWindow):
         self.setStatusBar(QStatusBar(self))
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
+        self.generate_shortcuts()
         self.view = QGraphicsView(self.map_canvas)
         self.setCentralWidget(self.view)
 
@@ -160,6 +162,12 @@ class pwMapeditPy(QMainWindow):
         self.select_actions.append(QAction('&By labels', self))
         return self.select_actions
 
+    def generate_shortcuts(self):
+        scale_down = QShortcut(QKeySequence('-'), self)
+        scale_down.activated.connect(self.map_canvas.scaledown)
+        scale_up = QShortcut(QKeySequence('+'), self)
+        scale_up.activated.connect(self.map_canvas.scaleup)
+
 
     def open_file(self):
         aaa = QFileDialog.getOpenFileName(self, 'File to open')
@@ -171,7 +179,7 @@ class pwMapeditPy(QMainWindow):
             map_objects.wczytaj_rekordy()
             self.map_canvas.MapData = map_objects
             self.map_canvas.draw_all_objects_on_map()
-            # self.view.fitInView(self.map_canvas.sceneRect(), Qt.IgnoreAspectRatio)
+            # self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio)
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):
