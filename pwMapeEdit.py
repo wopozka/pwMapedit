@@ -5,16 +5,11 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatu
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
-import tkinter
-import tkinter.ttk
-import tkinter.filedialog
-import string
 import sys
-import tkinter.scrolledtext
-import tkinter.messagebox
 import mapData
 import mapCanvas
-
+import mapRender
+from singleton_store import Store
 
 class pwMapeditPy(QMainWindow):
     """main application window"""
@@ -28,6 +23,8 @@ class pwMapeditPy(QMainWindow):
         self.select_actions = list()
         self.map_canvas = None
         self.setWindowTitle("pwMapeEdit")
+        self.status_bar = QStatusBar(self)
+        Store.status_bar = self.status_bar
         self.initialize()
 
     def initialize(self):
@@ -35,11 +32,11 @@ class pwMapeditPy(QMainWindow):
         # lets add toolbar
         toolbar = QToolBar("My main toolbar")
         self.addToolBar(toolbar)
-        self.setStatusBar(QStatusBar(self))
+        self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
         self.generate_shortcuts()
-        self.view = QGraphicsView(self.map_canvas)
+        self.view = mapRender.mapRender(self.map_canvas)
         self.view.setMouseTracking(True)
         self.setCentralWidget(self.view)
 
