@@ -164,7 +164,7 @@ class pwMapeditPy(QMainWindow):
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
-        scale_down.activated.connect(lambda: self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio))
+        scale_down.activated.connect(self.menu_scaledown_command)
         scale_up = QShortcut(QKeySequence('+'), self)
         scale_up.activated.connect(self.map_canvas.scaleup)
 
@@ -180,15 +180,19 @@ class pwMapeditPy(QMainWindow):
             self.map_canvas.MapData = map_objects
             print(self.map_canvas.sceneRect())
             self.map_canvas.draw_all_objects_on_map()
-            print(self.map_canvas.sceneRect())
-            # self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio)
+            # print(self.map_canvas.sceneRect())
+            # print(self.map_canvas.itemsBoundingRect())
+            # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)
+            # self.view.ensureVisible(self.map_canvas.itemsBoundingRect())
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):
         self.mapa.scaleup()
 
     def menu_scaledown_command(self):
-        self.mapa.scaledown()
+        # self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio)
+        self.view.centerOn(0, 0)
+        # self.mapa.scaledown()
 
     def menu_change_projection(self):
         projection = self.menuProjectionVar.get()
