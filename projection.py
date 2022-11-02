@@ -16,10 +16,10 @@ class Projection(object):
         return 0
 
     def geo_to_canvas(self, latitude, longitude):
-        pass
+        return 0, 0
 
     def canvas_to_geo(self, latitude, longitude):
-        pass
+        return 0, 0
 
 class Direct(Projection):
     """Simple, stupid projection, that uses geo coords for the plane. Used mainly for testing"""

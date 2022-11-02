@@ -11,4 +11,6 @@ class mapRender(QGraphicsView):
 
     # new events definitions:
     def mouseMoveEvent(self, event):
-        Store.status_bar.showMessage('(%s,%s)' % (event.pos().x(), event.pos().y()))
+        map_coords = self.mapToScene(event.pos())
+        lon, lat = Store.projection.canvas_to_geo(map_coords.x(), map_coords.y())
+        Store.status_bar.showMessage('(%s,%s)' % (lon, lat))

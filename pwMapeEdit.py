@@ -10,6 +10,7 @@ import mapData
 import mapCanvas
 import mapRender
 from singleton_store import Store
+import projection
 
 class pwMapeditPy(QMainWindow):
     """main application window"""
@@ -25,6 +26,7 @@ class pwMapeditPy(QMainWindow):
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
         Store.status_bar = self.status_bar
+        Store.projection = projection.Projection(None)
         self.initialize()
 
     def initialize(self):
