@@ -164,7 +164,7 @@ class pwMapeditPy(QMainWindow):
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
-        scale_down.activated.connect(self.map_canvas.scaledown)
+        scale_down.activated.connect(lambda: self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio))
         scale_up = QShortcut(QKeySequence('+'), self)
         scale_up.activated.connect(self.map_canvas.scaleup)
 
@@ -178,7 +178,9 @@ class pwMapeditPy(QMainWindow):
             map_objects = mapData.mapData(self.filename)
             map_objects.wczytaj_rekordy()
             self.map_canvas.MapData = map_objects
+            print(self.map_canvas.sceneRect())
             self.map_canvas.draw_all_objects_on_map()
+            print(self.map_canvas.sceneRect())
             # self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio)
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
