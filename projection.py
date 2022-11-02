@@ -24,6 +24,7 @@ class Projection(object):
 class Direct(Projection):
     """Simple, stupid projection, that uses geo coords for the plane. Used mainly for testing"""
     def __init__(self, mapBoundingBox):
+        super(Direct, self).__init__(mapBoundingBox)
         self.mapBoundingBox = mapBoundingBox
         self.projectionName = 'Direct'
 
@@ -36,7 +37,7 @@ class Direct(Projection):
 class Mercator(Projection):
 
     def __init__(self, mapBoundingBox):
-        Projection.__init__(self, mapBoundingBox)
+        super(Mercator, self).__init__(mapBoundingBox)
         self.projectionName = 'Mercator'
 
     def geo_to_canvas(self, latitude, longitude):
@@ -52,7 +53,7 @@ class Mercator(Projection):
 class UTM(Projection):
 
     def __init__(self, mBBox):
-        self.mapBoundingBox = mBBox
+        super(UTM, self).__init__(mBBox)
         self.UTMEasting = float
         self.UTMNorthing = float
         self.UTMZone = int

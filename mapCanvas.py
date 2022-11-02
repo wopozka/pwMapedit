@@ -26,6 +26,15 @@ class mapCanvas(QGraphicsScene):
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
+    def set_canvas_rectangle(self):
+        start_x, start_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['N'],
+                                                          self.MapData.map_bounding_box['W'])
+        end_x, end_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['S'],
+                                                      self.MapData.map_bounding_box['E'])
+        self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
+        print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
+        return
+
     def draw_object_on_map(self, mapobject):
         """ This function draws map object on the canvas
         :return: None
@@ -45,7 +54,7 @@ class mapCanvas(QGraphicsScene):
         return
 
     def draw_polyline_on_canvas(self, mapobject):
-        return
+        # return
         coordslist = []
         if mapobject.Type in self.mOP.polylinePropertiesColour:
             colour = self.mOP.polylinePropertiesColour[mapobject.Type]
@@ -94,16 +103,6 @@ class mapCanvas(QGraphicsScene):
         return
 
     def draw_polygone_on_canvas(self, mapobject):
-        # rect = QGraphicsRectItem(0, 0, 200, 50)
-        # # Set the origin (position) of the rectangle in the scene.
-        # rect.setPos(50, 20)
-        # brush = QBrush(Qt.red)
-        # rect.setBrush(brush)
-        # pen = QPen(Qt.cyan)
-        # pen.setWidth(10)
-        # rect.setPen(pen)
-        # self.addItem(rect)
-        # return
         coordslist = []
         if mapobject.Type in self.mOP.polygonePropertiesFillColour:
             fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
@@ -111,21 +110,12 @@ class mapCanvas(QGraphicsScene):
             fill_colour = 'grey'
         if self.polygonFill == 'transparent':
             fill_colour = ''
-        coordslist = [QPointF(1.0, 1.0), QPointF(100.0, 200.0), QPointF(200.0, 100.0), QPointF(200.0, 200.0)]
-        # for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-        #     for points in mapobject.Points[key]:
-        #         x, y = points.return_canvas_coords()
-        #         print('x: %s, y: %s' %(x, y))
-        #         coordslist.append(QPointF(x, y))
+        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+            for points in mapobject.Points[key]:
+                x, y = points.return_canvas_coords()
+                print('x: %s, y: %s' %(x, y))
+                coordslist.append(QPointF(x, y))
         q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
-        # q_polygon.setPos(1, 1)
-        # brush = QBrush(Qt.red)
-        # q_polygon.setBrush(brush)
-        # pen = QPen(Qt.cyan)
-        # pen.setWidth(10)
-        # q_polygon.setPen(pen)
-        # q_patinter_path = QPainterPath()
-        # q_patinter_path.addPolygon(q_polygon)
         self.addItem(q_polygon)
         return
 
@@ -135,6 +125,7 @@ class mapCanvas(QGraphicsScene):
         """
         print('rysuje wszystkie %s obiekty' % len(self.MapData.mapObjectsList))
         [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList]
+        self.set_canvas_rectangle()
         # for aaa in (self.MapData.mapObjectsList):
         #    self.draw_object_on_map(aaa)
         # self.config(scrollregion=self.bbox('all'))
