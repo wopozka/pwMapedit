@@ -26,6 +26,10 @@ class mapCanvas(QGraphicsScene):
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
+    # new events definitions:
+    def mouseMoveEvent(self, event):
+        print(event.pos())
+
     def set_canvas_rectangle(self):
         start_x, start_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['N'],
                                                           self.MapData.map_bounding_box['W'])
