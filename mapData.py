@@ -37,11 +37,11 @@ class mapData(object):
         # map bounding box, the maximal and minimal values of longitude and lattitude
         # presented as a python dictionary, with keys N, S, W, E
         # at the begining the dictionary is empty, that makes thinks a bit easier to start
-        self.mapBoundingBox = {}
+        self.map_bounding_box = {}
 
         # map projections
         # self.projection = None
-        Store.projection=projection.Mercator(self.mapBoundingBox)
+        Store.projection = projection.Mercator(self.map_bounding_box)
 
     def wczytaj_rekordy(self):
         print('wczytuje rekordy')
@@ -83,7 +83,6 @@ class mapData(object):
                 break
 
         print('zakonczylen obrabianie naglowka. Wartosc b: %s'%b)
-        print('bonding box', self.mapBoundingBox)
         while b < zawartosc_pliku_mp_len:
             # print(b)
             mp_record = []
@@ -97,26 +96,28 @@ class mapData(object):
             map_object = mapObject(mp_record, self.lastObjectId)
             self.lastObjectId += 1
             self.mapObjectsList.append(map_object)
-            self.set_map_bounding_box(map_object.objBoundingBox)
+            self.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
             b += 1
-        Store.projection.mapBoundingBox = self.mapBoundingBox
+        Store.projection.map_bounding_box = self.map_bounding_box
         Store.projection.calculate_data_ofset()
 
         print('map data ofset', Store.projection.mapDataOfset)
+        print('bonding box', self.map_bounding_box)
+
 
     def set_map_bounding_box(self, bBox):
-        if not self.mapBoundingBox:
-            self.mapBoundingBox = {k: v for k, v in bBox.items()}
+        if not self.map_bounding_box:
+            self.map_bounding_box = {k: v for k, v in bBox.items()}
         else:
-            if bBox['E'] > self.mapBoundingBox['E']:
-                self.mapBoundingBox['E'] = bBox['E']
-            if bBox['W'] < self.mapBoundingBox['W']:
-                self.mapBoundingBox['W'] = bBox['W']
-            if bBox['N'] > self.mapBoundingBox['N']:
-                self.mapBoundingBox['N'] = bBox['N']
-            if bBox['S'] < self.mapBoundingBox['S']:
-                self.mapBoundingBox['S'] = bBox['S']
+            if bBox['E'] > self.map_bounding_box['E']:
+                self.map_bounding_box['E'] = bBox['E']
+            if bBox['W'] < self.map_bounding_box['W']:
+                self.map_bounding_box['W'] = bBox['W']
+            if bBox['N'] > self.map_bounding_box['N']:
+                self.map_bounding_box['N'] = bBox['N']
+            if bBox['S'] < self.map_bounding_box['S']:
+                self.map_bounding_box['S'] = bBox['S']
 
 
 class Point(object):
@@ -153,7 +154,7 @@ class mapObject(object):
         # bounding box for the object. The dictionary with NSEW keys, and values of minimal and
         # maximal longitudes and latitudes. At the begining it is empty dictionary, because it makes
         # thinks to start easier
-        self.objBoundingBox = {}
+        self.obj_bounding_box = {}
         self.objectId = objectId
         self.projection = Store.projection
 
@@ -163,7 +164,7 @@ class mapObject(object):
     def extract_data(self, data):
         Data0_val = Data1_val = Data2_val = Data3_val = Data4_val = 0
         for aaa in data[:]:
-            aaa=aaa.strip()
+            aaa = aaa.strip()
             if aaa.startswith(';'):
                 self.comment.append(aaa)
 
@@ -213,18 +214,18 @@ class mapObject(object):
         return coord
 
     def set_obj_bounding_box(self, latitude, longitude):
-        if not self.objBoundingBox:
-            self.objBoundingBox['S'] = latitude
-            self.objBoundingBox['N'] = latitude
-            self.objBoundingBox['E'] = longitude
-            self.objBoundingBox['W'] = longitude
+        if not self.obj_bounding_box:
+            self.obj_bounding_box['S'] = latitude
+            self.obj_bounding_box['N'] = latitude
+            self.obj_bounding_box['E'] = longitude
+            self.obj_bounding_box['W'] = longitude
         else:
-            if latitude <= self.objBoundingBox['S']:
-                self.objBoundingBox['S'] = latitude
-            elif latitude >= self.objBoundingBox['N']:
-                self.objBoundingBox['N'] = latitude
-            if longitude <= self.objBoundingBox['W']:
-                self.objBoundingBox['W'] = longitude
-            elif longitude >= self.objBoundingBox['E']:
-                self.objBoundingBox['E'] = longitude
+            if latitude <= self.obj_bounding_box['S']:
+                self.obj_bounding_box['S'] = latitude
+            elif latitude >= self.obj_bounding_box['N']:
+                self.obj_bounding_box['N'] = latitude
+            if longitude <= self.obj_bounding_box['W']:
+                self.obj_bounding_box['W'] = longitude
+            elif longitude >= self.obj_bounding_box['E']:
+                self.obj_bounding_box['E'] = longitude
         return

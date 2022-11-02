@@ -148,7 +148,7 @@ class mapCanvas(QGraphicsScene):
     def change_projection(self, proj):
         old_proj = Store.projection
         if proj == 'UTM':
-            newProj = projection.UTM(self.MapData.mapBoundingBox)
+            newProj = projection.UTM(self.MapData.map_bounding_box)
             if not newProj.calculate_data_ofset():
                 Store.projection = newProj
                 print(Store.projection.projectionName)
@@ -158,7 +158,7 @@ class mapCanvas(QGraphicsScene):
             else:
                 return 1
         elif proj == 'Mercator':
-            Store.projection = projection.Mercator(self.MapData.mapBoundingBox)
+            Store.projection = projection.Mercator(self.MapData.map_bounding_box)
             print(Store.projection.projectionName)
             self.remove_all_objects_from_map()
             self.draw_all_objects_on_map()
