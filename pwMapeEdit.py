@@ -3,6 +3,7 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog
+from PyQt5.QtCore import Qt
 import tkinter
 import tkinter.ttk
 import tkinter.filedialog
@@ -170,6 +171,7 @@ class pwMapeditPy(QMainWindow):
             map_objects.wczytaj_rekordy()
             self.map_canvas.MapData = map_objects
             self.map_canvas.draw_all_objects_on_map()
+            # self.view.fitInView(self.map_canvas.sceneRect(), Qt.IgnoreAspectRatio)
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):

@@ -32,7 +32,7 @@ class mapCanvas(QGraphicsScene):
         end_x, end_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['S'],
                                                       self.MapData.map_bounding_box['E'])
         self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
-        print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
+        # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
 
     def draw_object_on_map(self, mapobject):
@@ -113,7 +113,7 @@ class mapCanvas(QGraphicsScene):
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             for points in mapobject.Points[key]:
                 x, y = points.return_canvas_coords()
-                print('x: %s, y: %s' %(x, y))
+                 # print('x: %s, y: %s' %(x, y))
                 coordslist.append(QPointF(x, y))
         q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
         self.addItem(q_polygon)
