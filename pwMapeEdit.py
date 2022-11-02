@@ -40,6 +40,7 @@ class pwMapeditPy(QMainWindow):
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
         self.generate_shortcuts()
         self.view = QGraphicsView(self.map_canvas)
+        self.view.setMouseTracking(True)
         self.setCentralWidget(self.view)
 
         # ramkaglowna = tkinter.Frame(self)
