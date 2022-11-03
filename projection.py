@@ -46,8 +46,8 @@ class Mercator(Projection):
         return [self.mapDataOfset * x, -y * self.mapDataOfset]
 
     def canvas_to_geo(self, x, y):
-        longitude = x
-        latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp(-y * math.pi / 180.0)) - math.pi/2.0)
+        longitude = x / self.mapDataOfset
+        latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp((-y / self.mapDataOfset) * (math.pi / 180.0))) - math.pi/2.0)
         return [latitude, longitude]
 
 class UTM(Projection):
