@@ -9,12 +9,18 @@ class mapRender(QGraphicsView):
     def __init__(self, master):
         super(mapRender, self).__init__(master)
         self.main_window_status_bar = None
+        self._curent_mouse_coords = None
 
     def set_main_window_status_bar(self, status_bar):
         self.main_window_status_bar = status_bar
 
+    def curent_mousepointer_coords(self):
+        return self._curent_mouse_coords
+
     # new events definitions:
     def mouseMoveEvent(self, event):
-        map_coords = self.mapToScene(event.pos())
-        lon, lat = Store.projection.canvas_to_geo(map_coords.x(), map_coords.y())
+        self._curent_mouse_coords = self.mapToScene(event.pos())
+        x = self._curent_mouse_coords.x()
+        y = self._curent_mouse_coords.y()
+        lon, lat = Store.projection.canvas_to_geo(x, y)
         self.main_window_status_bar.showMessage('(%.7f, %.7f)' % (lon, lat))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor
 from PyQt5.QtCore import QPointF, Qt
 import platform
@@ -84,6 +84,8 @@ class mapCanvas(QGraphicsScene):
             pen.setWidth(width)
             graphics_path_item.setPath(polyline)
             graphics_path_item.setPen(pen)
+            graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
+            graphics_path_item.setZValue(10)
             self.addItem(graphics_path_item)
             # in case polyline has a label, place it on the map
             if mapobject.Label:
@@ -119,6 +121,7 @@ class mapCanvas(QGraphicsScene):
         q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
         brush = QBrush(fill_colour)
         q_polygon.setBrush(brush)
+        q_polygon.setZValue(0)
         self.addItem(q_polygon)
         return
 
@@ -221,22 +224,10 @@ class mapCanvas(QGraphicsScene):
             pass
 
     def scaledown(self):
-        print('zmnijeszam')
         return
-        x = self.canvasx(event.x)
-        y = self.canvasy(event.y)
-        self.scale('SCALABLE', x, y, 2, 2)
-        self.config(scrollregion=self.bbox('all'))
-        self.mode.refresh_decorating_squares()
 
     def scaleup(self):
-        print('zwiekszam')
         return
-        x = self.canvasx(event.x)
-        y = self.canvasy(event.y)
-        self.scale('SCALABLE', x, y, 0.5, 0.5)
-        self.config(scrollregion=self.bbox('all'))
-        self.mode.refresh_decorating_squares()
 
     def windows_scale(self, event):
         print(event.delta)

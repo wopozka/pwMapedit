@@ -165,8 +165,8 @@ class pwMapeditPy(QMainWindow):
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
         scale_down.activated.connect(self.menu_scaledown_command)
-        scale_up = QShortcut(QKeySequence('+'), self)
-        scale_up.activated.connect(self.map_canvas.scaleup)
+        scale_up = QShortcut(QKeySequence('='), self)
+        scale_up.activated.connect(self.menu_scaleup_command)
 
 
     def open_file(self):
@@ -187,12 +187,16 @@ class pwMapeditPy(QMainWindow):
             # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_scaleup_command(self):
-        self.mapa.scaleup()
+        # https://stackoverflow.com/questions/19113532/qgraphicsview-zooming-in-and-out-under-mouse-position-using-mouse-wheel
+        # self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
+        # self.view.setResizeAnchor(QGraphicsView.NoAnchor)
+        self.view.centerOn(self.view.curent_mousepointer_coords())
+        self.view.scale(1.1, 1.1)
+
 
     def menu_scaledown_command(self):
-        # self.view.fitInView(self.map_canvas.sceneRect(), Qt.KeepAspectRatio)
-        self.view.centerOn(0, 0)
-        # self.mapa.scaledown()
+        self.view.centerOn(self.view.curent_mousepointer_coords())
+        self.view.scale(0.9, 0.9)
 
     def menu_change_projection(self):
         projection = self.menuProjectionVar.get()
