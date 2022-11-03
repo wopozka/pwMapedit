@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor
 from PyQt5.QtCore import QPointF, Qt
 import platform
 import modes
@@ -61,21 +61,15 @@ class mapCanvas(QGraphicsScene):
     def draw_polyline_on_canvas(self, mapobject):
         # return
         coordslist = []
+        colour = Qt.black
         if mapobject.Type in self.mOP.polylinePropertiesColour:
             colour = self.mOP.polylinePropertiesColour[mapobject.Type]
-        else:
-            colour = 'black'
-
+        width = 1
         if mapobject.Type in self.mOP.polylinePropertiesWidth:
             width = self.mOP.polylinePropertiesWidth[mapobject.Type]
-        else:
-            width = 1
-
+        dash = None
         if mapobject.Type in self.mOP.polylinePropertiesDash:
             dash = self.mOP.polylinePropertiesDash[mapobject.Type]
-        else:
-            dash = None
-
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             polyline = QPainterPath()
             graphics_path_item = QGraphicsPathItem()
@@ -86,8 +80,11 @@ class mapCanvas(QGraphicsScene):
                     polyline.moveTo(coord_x, coord_y)
                 else:
                     polyline.lineTo(coord_x, coord_y)
+            pen = QPen(colour)
+            pen.setWidth(width)
             graphics_path_item.setPath(polyline)
-            self.addPath(polyline)
+            graphics_path_item.setPen(pen)
+            self.addItem(graphics_path_item)
             # in case polyline has a label, place it on the map
             if mapobject.Label:
                 if len(coordslist) == 4:
@@ -109,10 +106,9 @@ class mapCanvas(QGraphicsScene):
 
     def draw_polygone_on_canvas(self, mapobject):
         coordslist = []
+        fill_colour = QColor('gainsboro')
         if mapobject.Type in self.mOP.polygonePropertiesFillColour:
             fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
-        else:
-            fill_colour = 'grey'
         if self.polygonFill == 'transparent':
             fill_colour = ''
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
@@ -121,6 +117,8 @@ class mapCanvas(QGraphicsScene):
                  # print('x: %s, y: %s' %(x, y))
                 coordslist.append(QPointF(x, y))
         q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
+        brush = QBrush(fill_colour)
+        q_polygon.setBrush(brush)
         self.addItem(q_polygon)
         return
 
@@ -290,19 +288,19 @@ class mapObjectsProperties(object):
 
         # polylines definitions
         #dictionary where key is Type
-        self.polylinePropertiesColour = {'0x0':'black',
-                                         '0x1':'blue',
-                                         '0x2':'orange red',
-                                         '0x3':'red',
-                                         '0x4':'orange',
-                                         '0x5':'yellow',
-                                         '0x6':'snow4',
-                                         '0x7':'snow3',
-                                         '0x8':'orange',
-                                         '0x9':'blue',
-                                         '0x14':'black',
-                                         '0x18':'blue',
-                                         '0x1f':'blue'}
+        self.polylinePropertiesColour = {'0x0': Qt.black,
+                                         '0x1': Qt.blue,
+                                         '0x2': QColor('darkorange'),
+                                         '0x3': Qt.red,
+                                         '0x4': QColor('orange'),
+                                         '0x5': Qt.yellow,
+                                         '0x6': QColor('gray'),
+                                         '0x7': QColor('lightgrey'),
+                                         '0x8': QColor('orange'),
+                                         '0x9': Qt.blue,
+                                         '0x14': Qt.black,
+                                         '0x18': Qt.blue,
+                                         '0x1f': Qt.blue}
 
         self.polylinePropertiesWidth = {'0x1': 3,
                                         '0x2': 3,
@@ -310,26 +308,26 @@ class mapObjectsProperties(object):
                                         '0x4': 2,
                                         '0x14': 3}
 
-        self.polylinePropertiesDash = {'0x14': (50,30),
-                                       '0x18': (50,30)
+        self.polylinePropertiesDash = {'0x14': (50, 30),
+                                       '0x18': (50, 30)
                                        }
 
         #polygone definitions
-        self.polygonePropertiesFillColour = {'0x28': 'blue',
-                                            '0x29': 'blue',
-                                            '0x32': 'blue',
-                                            '0x3b': 'blue',
-                                             '0x3c': 'blue',
-                                             '0x3d': 'blue',
-                                             '0x3e  ': 'blue',
-                                             '0x3f': 'blue',
-                                             '0x40': 'blue',
-                                             '0x41': 'blue',
-                                             '0x42': 'blue',
-                                             '0x43': 'blue',
-                                             '0x44': 'blue',
-                                             '0x45': 'blue',
-                                             '0x46': 'blue',
-                                             '0x47': 'blue',
-                                             '0x48': 'blue',
-                                             '0x49': 'blue'}
+        self.polygonePropertiesFillColour = {'0x28': Qt.blue,
+                                             '0x29': Qt.blue,
+                                             '0x32': Qt.blue,
+                                             '0x3b': Qt.blue,
+                                             '0x3c': Qt.blue,
+                                             '0x3d': Qt.blue,
+                                             '0x3e': Qt.blue,
+                                             '0x3f': Qt.blue,
+                                             '0x40': Qt.blue,
+                                             '0x41': Qt.blue,
+                                             '0x42': Qt.blue,
+                                             '0x43': Qt.blue,
+                                             '0x44': Qt.blue,
+                                             '0x45': Qt.blue,
+                                             '0x46': Qt.blue,
+                                             '0x47': Qt.blue,
+                                             '0x48': Qt.blue,
+                                             '0x49': Qt.blue}
