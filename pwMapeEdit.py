@@ -190,7 +190,11 @@ class pwMapeditPy(QMainWindow):
         # https://stackoverflow.com/questions/19113532/qgraphicsview-zooming-in-and-out-under-mouse-position-using-mouse-wheel
         # self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
         # self.view.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.view.centerOn(self.view.curent_mousepointer_coords())
+        current_mouse_position = self.view.curent_mousepointer_coords()
+        center_coords = (self.view.width() / 2, self.view.height() / 2)
+        print(center_coords)
+        print(self.view.curent_scene_mouse_coords())
+        self.view.centerOn(self.view.curent_scene_mouse_coords())
         self.view.scale(1.1, 1.1)
 
 

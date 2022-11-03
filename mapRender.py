@@ -9,17 +9,19 @@ class mapRender(QGraphicsView):
     def __init__(self, master):
         super(mapRender, self).__init__(master)
         self.main_window_status_bar = None
-        self._curent_mouse_coords = None
+        self._curent_scene_mouse_coords = None
+        self._curent_view_mouse_coords = None
 
     def set_main_window_status_bar(self, status_bar):
         self.main_window_status_bar = status_bar
 
-    def curent_mousepointer_coords(self):
-        return self._curent_mouse_coords
+    def curent_scene_mouse_coords(self):
+        return self._curent_scene_mouse_coords
 
     # new events definitions:
     def mouseMoveEvent(self, event):
-        self._curent_mouse_coords = self.mapToScene(event.pos())
+        self._curent_scene_mouse_coords = self.mapToScene(event.pos())
+        self._curent_view_mouse_coords = event.pos()
         x = self._curent_mouse_coords.x()
         y = self._curent_mouse_coords.y()
         lon, lat = Store.projection.canvas_to_geo(x, y)
