@@ -25,7 +25,6 @@ class pwMapeditPy(QMainWindow):
         self.map_canvas = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
-        Store.status_bar = self.status_bar
         Store.projection = projection.Projection(None)
         self.initialize()
 
@@ -40,6 +39,7 @@ class pwMapeditPy(QMainWindow):
         self.generate_shortcuts()
         self.view = mapRender.mapRender(self.map_canvas)
         self.view.setMouseTracking(True)
+        self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
 
         # ramkaglowna = tkinter.Frame(self)
