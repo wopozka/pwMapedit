@@ -11,6 +11,7 @@ import mapCanvas
 import mapRender
 from singleton_store import Store
 import projection
+import math
 
 class pwMapeditPy(QMainWindow):
     """main application window"""
@@ -190,16 +191,24 @@ class pwMapeditPy(QMainWindow):
         # https://stackoverflow.com/questions/19113532/qgraphicsview-zooming-in-and-out-under-mouse-position-using-mouse-wheel
         # self.view.setTransformationAnchor(QGraphicsView.NoAnchor)
         # self.view.setResizeAnchor(QGraphicsView.NoAnchor)
-        current_mouse_position = self.view.curent_mousepointer_coords()
-        center_coords = (self.view.width() / 2, self.view.height() / 2)
-        print(center_coords)
-        print(self.view.curent_scene_mouse_coords())
-        self.view.centerOn(self.view.curent_scene_mouse_coords())
+        center_coords = self.view.mapToScene(float(self.view.width()) / 2, float(self.view.height()) / 2)
+        curent_mouse_coords = self.view.curent_scene_mouse_coords()
+        mouse_center_vector = (center_coords.x() - curent_mouse_coords.x(), center_coords.y() - curent_mouse_coords.y())
+        mouse_center_vector_lenght = math.sqrt(mouse_center_vector[0]**2 + mouse_center_vector[1]**2)
         self.view.scale(1.1, 1.1)
+        center_coords1 = self.view.mapToScene(float(self.view.width()) / 2, float(self.view.height()) / 2)
+        curent_mouse_coords1 = self.view.mapToScene(self.view.curent_view_mouse_coords())
+        mouse_center_vector1 = (center_coords1.x() - curent_mouse_coords1.x(),
+                                center_coords1.y() - curent_mouse_coords1.y())
+        vector_lenght_factor = math.sqrt(mouse_center_vector1[0]**2 + mouse_center_vector1[1]**2) / \
+                               mouse_center_vector_lenght
+        new_position = ((curent_mouse_coords.x() + mouse_center_vector[0] * vector_lenght_factor),
+                        curent_mouse_coords.y() + mouse_center_vector[1] * vector_lenght_factor)
+        self.view.centerOn(*new_position)
 
 
     def menu_scaledown_command(self):
-        self.view.centerOn(self.view.curent_mousepointer_coords())
+        # self.view.centerOn(self.view.curent_scene_mouse_coords())
         self.view.scale(0.9, 0.9)
 
     def menu_change_projection(self):
