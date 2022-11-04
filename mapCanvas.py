@@ -282,9 +282,9 @@ class mapObjectsProperties(object):
         #dictionary where key is Type
         self.polylinePropertiesColour = {'0x0': Qt.black,
                                          '0x1': Qt.blue,
-                                         '0x2': QColor('darkorange'),
-                                         '0x3': Qt.red,
-                                         '0x4': QColor('orange'),
+                                         '0x2': QColor('darkmagenta'),
+                                         '0x3': QColor('firebrick'),
+                                         '0x4': QColor('darkorange'),
                                          '0x5': Qt.yellow,
                                          '0x6': QColor('gray'),
                                          '0x7': QColor('lightgrey'),
@@ -296,7 +296,8 @@ class mapObjectsProperties(object):
                                          '0x16': QColor('brown'),
                                          '0x18': Qt.blue,
                                          '0x1c': QColor('gray'),
-                                         '0x1f': Qt.blue
+                                         '0x1f': Qt.blue,
+                                         '0x4b': Qt.red
                                          }
 
         self.polylinePropertiesWidth = {'0x1': 5,
@@ -316,7 +317,8 @@ class mapObjectsProperties(object):
         self.polylinePropertiesDash = {'0xd': Qt.DotLine,
                                        '0x14': Qt.DashLine,
                                        '0x1c': Qt.DashDotLine,
-                                       '0x18': Qt.DashLine
+                                       '0x18': Qt.DashLine,
+                                       '0x4b': Qt.DashLine
                                        }
 
         #polygone definitions
@@ -343,4 +345,7 @@ class mapObjectsProperties(object):
                                              '0x46': Qt.blue,
                                              '0x47': Qt.blue,
                                              '0x48': Qt.blue,
-                                             '0x49': Qt.blue}
+                                             '0x49': Qt.blue,
+                                             '0x4e': QColor('limegreen'),
+                                             '0x4f': QColor('yellowgreen')
+                                             }
