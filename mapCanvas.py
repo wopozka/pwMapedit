@@ -289,22 +289,35 @@ class mapObjectsProperties(object):
                                          '0x7': QColor('lightgrey'),
                                          '0x8': QColor('orange'),
                                          '0x9': Qt.blue,
+                                         '0xd': QColor('brown'),
+                                         '0x1a': QColor('gray'),
                                          '0x14': Qt.black,
+                                         '0x16': QColor('brown'),
                                          '0x18': Qt.blue,
-                                         '0x1f': Qt.blue}
+                                         '0x1f': Qt.blue
+                                         }
 
-        self.polylinePropertiesWidth = {'0x1': 3,
+        self.polylinePropertiesWidth = {'0x1': 4,
                                         '0x2': 3,
                                         '0x3': 3,
                                         '0x4': 2,
-                                        '0x14': 3}
+                                        '0x9': 2,
+                                        '0x14': 3,
+                                        '0x1f': 3
+                                        }
 
         self.polylinePropertiesDash = {'0x14': (50, 30),
                                        '0x18': (50, 30)
                                        }
 
         #polygone definitions
-        self.polygonePropertiesFillColour = {'0x28': Qt.blue,
+        self.polygonePropertiesFillColour = {'0x4': QColor('olive'),
+                                             '0x5': QColor('silver'),
+                                             '0x13': QColor('brown'),
+                                             '0x14': Qt.green, '0x15': Qt.green, '0x16': Qt.green, '0x17': Qt.green,
+                                             '0x19': QColor('mistyrose'),
+                                             '0x1a': QColor('gray'),
+                                             '0x28': Qt.blue,
                                              '0x29': Qt.blue,
                                              '0x32': Qt.blue,
                                              '0x3b': Qt.blue,

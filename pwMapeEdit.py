@@ -24,6 +24,7 @@ class pwMapeditPy(QMainWindow):
         self.edit_actions = list()
         self.select_actions = list()
         self.map_canvas = None
+        self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
         Store.projection = projection.Projection(None)
