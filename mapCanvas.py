@@ -67,7 +67,7 @@ class mapCanvas(QGraphicsScene):
         width = 1
         if mapobject.Type in self.mOP.polylinePropertiesWidth:
             width = self.mOP.polylinePropertiesWidth[mapobject.Type]
-        dash = None
+        dash = Qt.SolidLine
         if mapobject.Type in self.mOP.polylinePropertiesDash:
             dash = self.mOP.polylinePropertiesDash[mapobject.Type]
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
@@ -82,6 +82,7 @@ class mapCanvas(QGraphicsScene):
                     polyline.lineTo(coord_x, coord_y)
             pen = QPen(colour)
             pen.setWidth(width)
+            pen.setStyle(dash)
             graphics_path_item.setPath(polyline)
             graphics_path_item.setPen(pen)
             graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
@@ -306,12 +307,14 @@ class mapObjectsProperties(object):
                                         '0x7': 3,
                                         '0x8': 2,
                                         '0x9': 2,
-                                        '0x14': 3,
+                                        '0xd': 2,
+                                        '0x14': 5,
                                         '0x1f': 3
                                         }
 
-        self.polylinePropertiesDash = {'0x14': (50, 30),
-                                       '0x18': (50, 30)
+        self.polylinePropertiesDash = {'0xd': Qt.DotLine,
+                                       '0x14': Qt.DashLine,
+                                       '0x18': Qt.DashLine
                                        }
 
         #polygone definitions
