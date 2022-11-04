@@ -298,7 +298,10 @@ class mapObjectsProperties(object):
                                          '0x18': Qt.blue,
                                          '0x1c': QColor('gray'),
                                          '0x1f': Qt.blue,
-                                         '0x4b': Qt.red
+                                         '0x4b': Qt.red,
+                                         '0x10e11': QColor('cyan'),
+                                         '0x10e12': QColor('cyan'),
+                                         '0x10e13': QColor('darkred')
                                          }
 
         self.polylinePropertiesWidth = {'0x1': 5,
@@ -313,14 +316,20 @@ class mapObjectsProperties(object):
                                         '0xc': 2,
                                         '0xd': 2,
                                         '0x14': 5,
-                                        '0x1f': 3
+                                        '0x1f': 3,
+                                        '0x10e11': 2,
+                                        '0x10e12': 3,
+                                        '0x10e13': 3
                                         }
 
         self.polylinePropertiesDash = {'0xd': Qt.DotLine,
                                        '0x14': Qt.DashLine,
                                        '0x1c': Qt.DashDotLine,
                                        '0x18': Qt.DashLine,
-                                       '0x4b': Qt.DashLine
+                                       '0x4b': Qt.DashLine,
+                                       '0x10e11': Qt.DashLine,
+                                       '0x10e12': Qt.DashLine,
+                                       '0x10e13': Qt.DashLine
                                        }
 
         #polygone definitions
