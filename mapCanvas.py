@@ -281,27 +281,30 @@ class mapObjectsProperties(object):
         # polylines definitions
         #dictionary where key is Type
         self.polylinePropertiesColour = {'0x0': Qt.black,
-                                         '0x1': Qt.blue,
-                                         '0x2': QColor('darkmagenta'),
-                                         '0x3': QColor('firebrick'),
-                                         '0x4': QColor('darkorange'),
-                                         '0x5': Qt.yellow,
+                                         '0x1': QColor('#0000ff'),
+                                         '0x2': QColor('#ff0000'),
+                                         '0x3': QColor('#bd3020'),
+                                         '0x4': QColor('#ff9500'),
+                                         '0x5': QColor('#ffff8b'),
                                          '0x6': QColor('gray'),
                                          '0x7': QColor('lightgrey'),
                                          '0x8': QColor('orange'),
                                          '0x9': Qt.blue,
+                                         '0xa': QColor('lightgrey'),
                                          '0xc': QColor('darkorange'),
                                          '0xd': QColor('brown'),
                                          '0x1a': QColor('gray'),
                                          '0x14': Qt.black,
-                                         '0x16': QColor('brown'),
+                                         '0x16': QColor('chocolate'),
                                          '0x18': Qt.blue,
                                          '0x1c': QColor('gray'),
                                          '0x1f': Qt.blue,
                                          '0x4b': Qt.red,
                                          '0x10e11': QColor('cyan'),
                                          '0x10e12': QColor('cyan'),
-                                         '0x10e13': QColor('darkred')
+                                         '0x10e13': QColor('darkred'),
+                                         '0x10e14': Qt.black,
+                                         '0x10e15': QColor('#a4a4a4')
                                          }
 
         self.polylinePropertiesWidth = {'0x1': 5,
@@ -313,23 +316,29 @@ class mapObjectsProperties(object):
                                         '0x7': 3,
                                         '0x8': 2,
                                         '0x9': 2,
+                                        '0xa': 2,
                                         '0xc': 2,
                                         '0xd': 2,
                                         '0x14': 5,
                                         '0x1f': 3,
                                         '0x10e11': 2,
                                         '0x10e12': 3,
-                                        '0x10e13': 3
+                                        '0x10e13': 3,
+                                        '0x10e14': 5,
+                                        '0x10e15': 5
                                         }
 
-        self.polylinePropertiesDash = {'0xd': Qt.DotLine,
+        self.polylinePropertiesDash = {'0xa': Qt.DotLine,
+                                       '0xd': Qt.DotLine,
                                        '0x14': Qt.DashLine,
                                        '0x1c': Qt.DashDotLine,
                                        '0x18': Qt.DashLine,
                                        '0x4b': Qt.DashLine,
                                        '0x10e11': Qt.DashLine,
                                        '0x10e12': Qt.DashLine,
-                                       '0x10e13': Qt.DashLine
+                                       '0x10e13': Qt.DashLine,
+                                       '0x10e14': Qt.DashLine,
+                                       '0x10e15': Qt.DashLine
                                        }
 
         #polygone definitions
