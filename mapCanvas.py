@@ -297,10 +297,14 @@ class mapObjectsProperties(object):
                                          '0x1f': Qt.blue
                                          }
 
-        self.polylinePropertiesWidth = {'0x1': 4,
-                                        '0x2': 3,
-                                        '0x3': 3,
-                                        '0x4': 2,
+        self.polylinePropertiesWidth = {'0x1': 5,
+                                        '0x2': 5,
+                                        '0x3': 4,
+                                        '0x4': 3,
+                                        '0x5': 3,
+                                        '0x6': 3,
+                                        '0x7': 3,
+                                        '0x8': 2,
                                         '0x9': 2,
                                         '0x14': 3,
                                         '0x1f': 3
