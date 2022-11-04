@@ -290,6 +290,7 @@ class mapObjectsProperties(object):
                                          '0x7': QColor('lightgrey'),
                                          '0x8': QColor('orange'),
                                          '0x9': Qt.blue,
+                                         '0xc': QColor('darkorange'),
                                          '0xd': QColor('brown'),
                                          '0x1a': QColor('gray'),
                                          '0x14': Qt.black,
@@ -309,6 +310,7 @@ class mapObjectsProperties(object):
                                         '0x7': 3,
                                         '0x8': 2,
                                         '0x9': 2,
+                                        '0xc': 2,
                                         '0xd': 2,
                                         '0x14': 5,
                                         '0x1f': 3
