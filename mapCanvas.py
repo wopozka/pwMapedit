@@ -214,7 +214,7 @@ class mapCanvas(QGraphicsScene):
         # if actual mode was selected, do nothing
         if mode == self.mode_name:
             return
-        print('zmieniam mode na %s'%mode)
+        print('zmieniam mode na %s' % mode)
         self.mode.unregister_mode()
         self.mode_name = mode
         if mode == 'edit':
@@ -295,6 +295,7 @@ class mapObjectsProperties(object):
                                          '0x14': Qt.black,
                                          '0x16': QColor('brown'),
                                          '0x18': Qt.blue,
+                                         '0x1c': QColor('gray'),
                                          '0x1f': Qt.blue
                                          }
 
@@ -314,6 +315,7 @@ class mapObjectsProperties(object):
 
         self.polylinePropertiesDash = {'0xd': Qt.DotLine,
                                        '0x14': Qt.DashLine,
+                                       '0x1c': Qt.DashDotLine,
                                        '0x18': Qt.DashLine
                                        }
 
