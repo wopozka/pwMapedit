@@ -39,7 +39,7 @@ class pwMapeditPy(QMainWindow):
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
         self.generate_shortcuts()
-        self.view = mapRender.mapRender(self.map_canvas)
+        self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)

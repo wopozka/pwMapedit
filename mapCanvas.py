@@ -224,38 +224,6 @@ class mapCanvas(QGraphicsScene):
         else:
             pass
 
-    def scaledown(self):
-        return
-
-    def scaleup(self):
-        return
-
-    def windows_scale(self, event):
-        print(event.delta)
-        if event.delta > 0:
-            self.scaleup(event)
-        else:
-            self.scaledown(event)
-        return None
-
-    def scroll_map_NS(self, event):
-        if self.operatingSystem == 'Linux':
-            if event.num == 4:
-                self.yview_scroll(int(-1), "units")
-            elif event.num == 5:
-                self.yview_scroll(int(1), "units")
-        elif self.operatingSystem == 'Windows':
-            self.yview_scroll(int(-1*(event.delta/120)), "units")
-
-    def scroll_map_EW(self, event):
-        if self.operatingSystem == 'Linux':
-            if event.num == 4:
-                self.xview_scroll(int(-1), "units")
-            elif event.num == 5:
-                self.xview_scroll(int(1), "units")
-        elif self.operatingSystem == 'Windows':
-            self.xview_scroll(int(-1*(event.delta/120)), "units")
-
     def switch_plygon_render_kit(self, event):
         if self.polygonFill == 'solid':
             self.itemconfig('POLYGON', fill='')
