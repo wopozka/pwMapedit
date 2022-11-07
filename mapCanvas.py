@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 from PyQt5.QtCore import QPointF, Qt
 import platform
 import modes
 import math
 import projection
+import misc_functions
+import os.path
 from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
@@ -243,8 +245,8 @@ class mapObjectsProperties(object):
     def __init__(self):
         # couple if definitions
         # points definitions
-        self.pointProperties = {}
-
+        self.poi_icons = {}
+        self.read_icons()
 
         # polylines definitions
         #dictionary where key is Type
@@ -337,4 +339,9 @@ class mapObjectsProperties(object):
                                              '0x4e': QColor('limegreen'),
                                              '0x4f': QColor('yellowgreen')
                                              }
-    def fill_poi_properties(self):
+
+    def read_icons(self):
+        filename = os.path.join('icons', 'skorka.txt')
+        for poi_type, icon in misc_functions.read_icons_from_skin_file(filename).items():
+            self.poi_icons[poi_type] = QPixmap(icon)
+

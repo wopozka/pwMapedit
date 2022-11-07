@@ -15,14 +15,14 @@ def read_icons_from_skin_file(skin_filename):
     icon_def = list()
     in_poi = False
     try:
-        with open(skin_filename, 'r') as skinfile:
+        with open(skin_filename, 'r', encoding='cp1250') as skinfile:
             for linia in skinfile.readlines():
                 if in_poi:
                     if '[end]' in linia:
                         in_poi = False
                         _type, _icon = return_icon_definition(icon_def)
                         poi_type_icon[_type] = _icon
-                        icon_def = ''
+                        icon_def.clear()
                     else:
                         icon_def.append(linia.strip())
                     continue
@@ -31,6 +31,7 @@ def read_icons_from_skin_file(skin_filename):
                     continue
         return poi_type_icon
     except (FileNotFoundError, PermissionError) as l_expection:
+        print(l_expection)
         return dict()
 
 
