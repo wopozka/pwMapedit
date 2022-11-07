@@ -23,24 +23,26 @@ def read_icons_from_skin_file(skin_filename):
 
 
 def return_icon_definition(icon_def):
-    type = ''
-    subtype = ''
-    icon = ''
+    l_type = ''
+    l_subtype = ''
+    l_icon = ''
     in_xpm_def = False
-    for linia in icon_def:
+    for l_line in icon_def:
         if in_xpm_def:
-            icon += linia.split('=', 1)[-1]
+            l_icon += l_line
+            l_icon += '\n'
             continue
-        elif linia.startswith('Type='):
-            type = linia.strip('=', 1)[-1].strip()
+        elif l_line.startswith('Type='):
+            l_type = l_line.split('=', 1)[-1].strip()
             continue
-        elif linia.startswith('SubType='):
-            subtype = linia.strip('=', 1)[-1].strip()
+        elif l_line.startswith('SubType='):
+            l_subtype = l_line.split('=', 1)[-1].strip()
             continue
-        elif 'xpm=' in linia:
-            icon += linia.split('=', 1)[-1]
+        elif 'xpm=' in l_line:
+            l_icon += l_line.split('xpm=', 1)[-1]
+            l_icon += '\n'
             in_xpm_def = True
             continue
-    return type + subtype.split('x')[-1].strip(), icon
+    return l_type + l_subtype.split('x')[-1].strip(), l_icon
 
 
