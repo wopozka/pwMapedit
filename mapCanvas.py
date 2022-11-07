@@ -337,3 +337,4 @@ class mapObjectsProperties(object):
                                              '0x4e': QColor('limegreen'),
                                              '0x4f': QColor('yellowgreen')
                                              }
+    def fill_poi_properties(self):
