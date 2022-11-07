@@ -9,6 +9,7 @@ import platform
 import modes
 import math
 import projection
+import tempfile
 import misc_functions
 import os.path
 from singleton_store import Store
@@ -64,11 +65,11 @@ class mapCanvas(QGraphicsScene):
                 x, y = coord_pair.return_canvas_coords()
         if mapobject.Type in self.mOP.poi_icons:
             poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
-            print(self.mOP.poi_icons[mapobject.Type].size().height(), self.mOP.poi_icons[mapobject.Type].size().width())
             poi.setPos(x, y)
             poi.setZValue(20)
-            self.addItem(QGraphicsPixmapItem(poi))
+            self.addItem(poi)
         else:
+            print(mapobject.Type)
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
@@ -358,5 +359,8 @@ class mapObjectsProperties(object):
     def read_icons(self):
         filename = os.path.join('icons', 'skorka.txt')
         for poi_type, icon in misc_functions.read_icons_from_skin_file(filename).items():
-            self.poi_icons[poi_type] = QPixmap(icon)
-
+            tmp_file = tempfile.NamedTemporaryFile(delete=False)
+            tmp_file.write(icon.encode())
+            tmp_file.close()
+            self.poi_icons[poi_type] = QPixmap(tmp_file.name)
+            os.remove(tmp_file.name)
