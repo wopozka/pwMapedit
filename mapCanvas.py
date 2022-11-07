@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 from PyQt5.QtCore import QPointF, Qt
 import platform
@@ -57,8 +58,22 @@ class mapCanvas(QGraphicsScene):
             print('Very weird object')
             print(mapobject)
 
-    def draw_poi_on_canvas(self, mmapobject):
-        return
+    def draw_poi_on_canvas(self, mapobject):
+        for key in mapobject.Points:
+            for coord_pair in mapobject.Points[key]:
+                x, y = coord_pair.return_canvas_coords()
+        if mapobject.Type in self.mOP.poi_icons:
+            poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            print(self.mOP.poi_icons[mapobject.Type].size().height(), self.mOP.poi_icons[mapobject.Type].size().width())
+            poi.setPos(x, y)
+            poi.setZValue(20)
+            self.addItem(QGraphicsPixmapItem(poi))
+        else:
+            poi = QGraphicsEllipseItem(x, y, 10, 10)
+            brush = QBrush(Qt.black)
+            poi.setBrush(brush)
+            poi.setZValue(20)
+            self.addItem(poi)
 
     def draw_polyline_on_canvas(self, mapobject):
         # return

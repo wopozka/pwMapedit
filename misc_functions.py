@@ -47,7 +47,7 @@ def return_icon_definition(icon_def):
     """
     l_type = ''
     l_subtype = ''
-    l_icon = ''
+    l_icon = '/* XPM */\n static const unsigned char * day_xpm[] = {\n'
     in_xpm_def = False
     for l_line in icon_def:
         if in_xpm_def:
