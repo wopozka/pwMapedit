@@ -6,6 +6,8 @@ import sys
 from collections import OrderedDict
 import projection
 from singleton_store import Store
+from PyQt5.QtSvg import QGraphicsSvgItem
+
 
 class mapData(object):
     """class stores all data from map ie polylines, polygones, pois, map header, map weird sections"""
@@ -229,3 +231,9 @@ class mapObject(object):
             elif longitude >= self.obj_bounding_box['E']:
                 self.obj_bounding_box['E'] = longitude
         return
+
+
+class POI(QGraphicsSvgItem):
+    def __init__(self):
+        super(POI, self).__init__()
+        pass
