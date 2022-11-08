@@ -3,6 +3,7 @@
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem
+from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 from PyQt5.QtCore import QPointF, Qt
 import platform
@@ -64,7 +65,8 @@ class mapCanvas(QGraphicsScene):
             for coord_pair in mapobject.Points[key]:
                 x, y = coord_pair.return_canvas_coords()
         if mapobject.Type in self.mOP.poi_icons:
-            poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            poi = QGraphicsSvgItem('icons/2a00.svg')
             poi.setPos(x, y)
             poi.setZValue(20)
             self.addItem(poi)
