@@ -143,8 +143,6 @@ class mapObject(object):
     All properties of this objects residue here"""
 
     def __init__(self, data, objectId):
-        self.MAP_OBJECT_TYPES = ('[POI]', '[POLYGON]', '[POLYLINE]')
-        self.MAP_OBJECT_END = '[END]'
         self.comment = []
         self.object_type = ''  # possible 3 values, [POI], [POLYLINE], [POLYGONE]
         self.Type = None  # Type value
@@ -160,44 +158,38 @@ class mapObject(object):
         self.objectId = objectId
         self.projection = Store.projection
 
-        self.extract_data(data)
+        self.extract_data(tuple(data))
 
 
     def extract_data(self, data):
-        Data0_val = Data1_val = Data2_val = Data3_val = Data4_val = 0
-        for aaa in data[:]:
+        map_object_types = ('[POI]', '[POLYGON]', '[POLYLINE]')
+        map_object_end = '[END]'
+        for no, aaa in enumerate(data):
             aaa = aaa.strip()
             if aaa.startswith(';'):
                 self.comment.append(aaa)
-
-            elif aaa in self.MAP_OBJECT_TYPES:  # we have found begining object type data, process it further
+            elif map_object_types:  # we have found begining object type data, process it further
                 self.object_type = aaa
-
             elif aaa.startswith('Data0'):
-                Data='Data0'+'_'+str(Data0_val)
-                Data0_val += 1
-                self.Points [Data] = self.extract_coords_from_data(aaa)
+                Data = 'Data0' + '_' + str(no)
+                self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data1'):
-                Data='Data1'+'_'+str(Data1_val)
-                Data1_val += 1
+                Data = 'Data1' + '_' + str(no)
                 self.Points [Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data2'):
-                Data='Data2'+'_'+str(Data2_val)
-                Data2_val += 1
-                self.Points [Data] = self.extract_coords_from_data(aaa)
+                Data = 'Data2' + '_' + str(no)
+                self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data3'):
-                Data='Data3'+'_'+str(Data3_val)
-                Data3_val += 1
-                self.Points [Data] = self.extract_coords_from_data(aaa)
+                Data = 'Data3' + '_' + str(no)
+                self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data4'):
-                Data='Data4'+'_'+str(Data4_val)
-                Data4_val += 1
-                self.Points [Data] = self.extract_coords_from_data(aaa)
+                Data = 'Data4' + '_' + str(no)
+                self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Label'):
                 self.Label = aaa.split('=')[-1]
             elif aaa.startswith('Type'):
                 self.Type = aaa.split('=')[-1]
-            elif aaa == self.MAP_OBJECT_END:  # if [END] was found it means there was no beginning, something wrong
+            elif aaa == map_object_end:  # if [END] was found it means there was no beginning, something wrong
                 # with datafile
                 pass
             elif not aaa:  # empy lines separate records, after strip() we receive empty string
@@ -234,6 +226,53 @@ class mapObject(object):
 
 
 class POI(QGraphicsSvgItem):
-    def __init__(self):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
+                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        self.obj_bounding_box = {}
         super(POI, self).__init__()
-        pass
+        self.set_data(obj_data)
+
+    def set_data(self, obj_data):
+        for key in obj_data:
+            if key == 'Comment':
+                self.obj_data[key] = [a for a in obj_data[key]]
+                continue
+            elif key in ('Type', 'Label', 'EndLevel', 'HouseNumber', 'StreetDesc', 'Phone', 'Highway'):
+                self.obj_data[key] = obj_data[key]
+                continue
+            elif key.startswith('Data0') or key.startswith('Data1') or key.startswith('Data2') \
+                    or key.startswith('Data3'):
+                self.obj_data['DataX'][key] = self.coord_from_data_to_point(obj_data[key])
+                continue
+            else:
+                self.obj_data['Other'][key] = obj_data[key]
+
+
+    def coords_from_data_to_points(self, Dataline):
+        coord = []
+        coordlist = Dataline.split('=')[-1]
+        coordlist = coordlist.strip().lstrip('(').rstrip(')')
+        for a in coordlist.split('),('):
+            latitude, longitude = a.split(',')
+            self.set_obj_bounding_box(float(latitude), float(longitude))
+            coord.append(Point(latitude, longitude))
+        return coord
+
+    def set_obj_bounding_box(self, latitude, longitude):
+        if not self.obj_bounding_box:
+            self.obj_bounding_box['S'] = latitude
+            self.obj_bounding_box['N'] = latitude
+            self.obj_bounding_box['E'] = longitude
+            self.obj_bounding_box['W'] = longitude
+        else:
+            if latitude <= self.obj_bounding_box['S']:
+                self.obj_bounding_box['S'] = latitude
+            elif latitude >= self.obj_bounding_box['N']:
+                self.obj_bounding_box['N'] = latitude
+            if longitude <= self.obj_bounding_box['W']:
+                self.obj_bounding_box['W'] = longitude
+            elif longitude >= self.obj_bounding_box['E']:
+                self.obj_bounding_box['E'] = longitude
+        return
