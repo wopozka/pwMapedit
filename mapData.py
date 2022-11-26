@@ -6,7 +6,7 @@ import sys
 from collections import OrderedDict
 import projection
 from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem
+from PyQt5.QtSvg import QGraphicsSvgItem, QGraphicsItemGroup
 
 
 class mapData(object):
@@ -225,14 +225,11 @@ class mapObject(object):
         return
 
 
-class POI(QGraphicsSvgItem):
-    def __init__(self, obj_data):
-        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
-                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
-        self.obj_data = OrderedDict(_obj_data)
+class BasicMapItem(QGraphicsItemGroup):
+    def __init__(self, *args, **kwargs):
+        self.obj_data = None
         self.obj_bounding_box = {}
-        super(POI, self).__init__()
-        self.set_data(obj_data)
+        super(BasicMapItem, self).__init__(*args, **kwargs)
 
     def set_data(self, obj_data):
         for key in obj_data:
@@ -248,7 +245,6 @@ class POI(QGraphicsSvgItem):
                 continue
             else:
                 self.obj_data['Other'][key] = obj_data[key]
-
 
     def coords_from_data_to_points(self, Dataline):
         coord = []
@@ -276,3 +272,17 @@ class POI(QGraphicsSvgItem):
             elif longitude >= self.obj_bounding_box['E']:
                 self.obj_bounding_box['E'] = longitude
         return
+
+class POI(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
+                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        self.obj_bounding_box = {}
+        super(POI, self).__init__()
+        self.set_data(obj_data)
+
+
+
+
+
