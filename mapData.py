@@ -278,11 +278,25 @@ class POI(BasicMapItem):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
                         'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
         self.obj_data = OrderedDict(_obj_data)
-        self.obj_bounding_box = {}
         super(POI, self).__init__()
         self.set_data(obj_data)
 
 
+class Polyline(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
+                     'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        super(Polyline, self).__init__()
+        self.set_data(obj_data)
 
+
+class Polygon(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
+                     'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        super(Polygon, self).__init__()
+        self.set_data(obj_data)
 
 
