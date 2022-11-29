@@ -273,6 +273,11 @@ class BasicMapItem(QGraphicsItemGroup):
                 self.obj_bounding_box['E'] = longitude
         return
 
+    def data_values(self):
+        tmp_data = OrderedDict({})
+        for key in self.obj_data['DataX']:
+            tmp_data[key].items()
+
 class POI(BasicMapItem):
     def __init__(self, obj_data):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
@@ -280,6 +285,24 @@ class POI(BasicMapItem):
         self.obj_data = OrderedDict(_obj_data)
         super(POI, self).__init__()
         self.set_data(obj_data)
+
+    def create_object(self):
+        for key, val in self.data_values():
+            for coord_pair in val:
+                x, y = coord_pair.return_canvas_coords()
+        if mapobject.Type in self.mOP.poi_icons:
+            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            poi = QGraphicsSvgItem('icons/2a00.svg')
+            poi.setPos(x, y)
+            poi.setZValue(20)
+            self.addItem(poi)
+        else:
+            print(mapobject.Type)
+            poi = QGraphicsEllipseItem(x, y, 10, 10)
+            brush = QBrush(Qt.black)
+            poi.setBrush(brush)
+            poi.setZValue(20)
+            self.addItem(poi)
 
 
 class Polyline(BasicMapItem):
