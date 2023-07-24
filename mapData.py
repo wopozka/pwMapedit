@@ -6,7 +6,8 @@ import sys
 from collections import OrderedDict
 import projection
 from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem, QGraphicsItemGroup
+from PyQt5.QtSvg import QGraphicsSvgItem
+from PyQt5.QtWidgets import QGraphicsItemGroup
 
 
 class mapData(object):
