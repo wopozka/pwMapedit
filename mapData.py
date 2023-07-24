@@ -166,16 +166,18 @@ class mapObject(object):
         map_object_end = '[END]'
         for no, aaa in enumerate(data):
             aaa = aaa.strip()
-            if aaa.startswith(';'):
+            if not aaa:
+                continue
+            elif aaa.startswith(';'):
                 self.comment.append(aaa)
-            elif map_object_types:  # we have found begining object type data, process it further
+            elif aaa in map_object_types:  # we have found begining object type data, process it further
                 self.object_type = aaa
             elif aaa.startswith('Data0'):
                 Data = 'Data0' + '_' + str(no)
                 self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data1'):
                 Data = 'Data1' + '_' + str(no)
-                self.Points [Data] = self.extract_coords_from_data(aaa)
+                self.Points[Data] = self.extract_coords_from_data(aaa)
             elif aaa.startswith('Data2'):
                 Data = 'Data2' + '_' + str(no)
                 self.Points[Data] = self.extract_coords_from_data(aaa)
