@@ -124,7 +124,7 @@ class mapData(object):
 
 
 class Point(object):
-    """Class used for stroing coordinates of given map object point"""
+    """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude, longitude):
         # self.acuracy = 10000
         self.longitude = longitude
@@ -230,7 +230,8 @@ class mapObject(object):
 
 class BasicMapItem(QGraphicsItemGroup):
     def __init__(self, *args, **kwargs):
-        self.obj_data = None
+        self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '',
+                                     'DataX': OrderedDict({})})
         self.obj_bounding_box = {}
         super(BasicMapItem, self).__init__(*args, **kwargs)
 
@@ -248,6 +249,18 @@ class BasicMapItem(QGraphicsItemGroup):
                 continue
             else:
                 self.obj_data['Other'][key] = obj_data[key]
+
+    def obj_type_get(self):
+        return self.obj_data['Type']
+
+    def obj_type_set(self, _type):
+        self.obj_data['Type'] = _type
+
+    def obj_label_get(self):
+        return self.obj_data['Label']
+
+    def obj_label_set(self, _label):
+        self.obj_data['Label'] = label
 
     def coords_from_data_to_points(self, Dataline):
         coord = []
@@ -284,7 +297,8 @@ class BasicMapItem(QGraphicsItemGroup):
 class POI(BasicMapItem):
     def __init__(self, obj_data):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
-                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
+                     'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'EntryPoint': OrderedDict(),
+                     'Other': OrderedDict({})}
         self.obj_data = OrderedDict(_obj_data)
         super(POI, self).__init__()
         self.set_data(obj_data)
@@ -294,7 +308,7 @@ class POI(BasicMapItem):
             for coord_pair in val:
                 x, y = coord_pair.return_canvas_coords()
         if mapobject.Type in self.mOP.poi_icons:
-            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.obj_type_get()])
             poi = QGraphicsSvgItem('icons/2a00.svg')
             poi.setPos(x, y)
             poi.setZValue(20)
