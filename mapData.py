@@ -6,7 +6,7 @@ import sys
 from collections import OrderedDict
 import projection
 from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem
+from PyQt5.QtSvg import QGraphicsSvgItem, QGraphicsItemGroup
 
 
 class mapData(object):
@@ -227,14 +227,11 @@ class mapObject(object):
         return
 
 
-class POI(QGraphicsSvgItem):
-    def __init__(self, obj_data):
-        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
-                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
-        self.obj_data = OrderedDict(_obj_data)
+class BasicMapItem(QGraphicsItemGroup):
+    def __init__(self, *args, **kwargs):
+        self.obj_data = None
         self.obj_bounding_box = {}
-        super(POI, self).__init__()
-        self.set_data(obj_data)
+        super(BasicMapItem, self).__init__(*args, **kwargs)
 
     def set_data(self, obj_data):
         for key in obj_data:
@@ -250,7 +247,6 @@ class POI(QGraphicsSvgItem):
                 continue
             else:
                 self.obj_data['Other'][key] = obj_data[key]
-
 
     def coords_from_data_to_points(self, Dataline):
         coord = []
@@ -278,3 +274,54 @@ class POI(QGraphicsSvgItem):
             elif longitude >= self.obj_bounding_box['E']:
                 self.obj_bounding_box['E'] = longitude
         return
+
+    def data_values(self):
+        tmp_data = OrderedDict({})
+        for key in self.obj_data['DataX']:
+            tmp_data[key].items()
+
+class POI(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'HouseNumber': '', 'StreetDesc': '',
+                        'Phone': '', 'DataX': OrderedDict({}), 'Highway': '', 'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        super(POI, self).__init__()
+        self.set_data(obj_data)
+
+    def create_object(self):
+        for key, val in self.data_values():
+            for coord_pair in val:
+                x, y = coord_pair.return_canvas_coords()
+        if mapobject.Type in self.mOP.poi_icons:
+            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
+            poi = QGraphicsSvgItem('icons/2a00.svg')
+            poi.setPos(x, y)
+            poi.setZValue(20)
+            self.addItem(poi)
+        else:
+            print(mapobject.Type)
+            poi = QGraphicsEllipseItem(x, y, 10, 10)
+            brush = QBrush(Qt.black)
+            poi.setBrush(brush)
+            poi.setZValue(20)
+            self.addItem(poi)
+
+
+class Polyline(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
+                     'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        super(Polyline, self).__init__()
+        self.set_data(obj_data)
+
+
+class Polygon(BasicMapItem):
+    def __init__(self, obj_data):
+        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
+                     'Other': OrderedDict({})}
+        self.obj_data = OrderedDict(_obj_data)
+        super(Polygon, self).__init__()
+        self.set_data(obj_data)
+
+
