@@ -311,7 +311,7 @@ class BasicMapItem(QGraphicsItemGroup):
     def obj_streetdesc_get(self):
         return self.obj_data['StreetDesc']
 
-    def obj_endlevel_set(self, _streetdesc):
+    def obj_treetdesc_set(self, _streetdesc):
         self.obj_data['StreetDesc'] = _streetdesc
 
     def obj_phone_get(self):
@@ -323,7 +323,7 @@ class BasicMapItem(QGraphicsItemGroup):
     def obj_highway_get(self):
         return self.obj_data['Highway']
 
-    def obj_phone_set(self, _highway):
+    def obj_highway_set(self, _highway):
         self.obj_data['Highway'] = _highway
 
     def obj_datax_get(self):
