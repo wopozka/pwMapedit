@@ -167,6 +167,11 @@ class POI(BasicMapItem):
 
 
 class Polyline(BasicMapItem):
+    # qpp = QPainterPath()
+    # qpp.addPolygon(your_polyline)
+    # item = QGraphicsPathItem(qpp)
+    # item.setPen(your_pen)
+    # self.your_scene.addItem(item)
     def __init__(self, obj_data):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
                      'Other': OrderedDict({})}
