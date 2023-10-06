@@ -4,6 +4,7 @@ from singleton_store import Store
 from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 
+# tutaj chyba lepiej byloby uzyc QPainterPath
 class BasicMapItem(QGraphicsItemGroup):
     def __init__(self, *args, **kwargs):
         self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
@@ -139,6 +140,7 @@ class BasicMapItem(QGraphicsItemGroup):
         tmp_data = OrderedDict({})
         for key in self.obj_data['DataX']:
             tmp_data[key].items()
+
 
 class POI(BasicMapItem):
     def __init__(self, obj_data):
