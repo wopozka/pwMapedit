@@ -28,18 +28,38 @@ class Node(object):
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 class BasicMapItem(QGraphicsItemGroup):
-    def __init__(self, map_object_properties, *args, obj_data=None, **kwargs):
+    def __init__(self, *args, map_elem_data=None, map_objects_properties = None, **kwargs):
+        """
+        basic map items properties, derived map items inherit from it
+        Parameters
+        ----------
+        args
+        map_elem_data: dict, key=tuple(elem_name, elem_position), value=value
+        map_objects_properties = class for map elems apperiance: icons, line types, area paterns and filling
+        kwargs
+        """
         self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
                                      'DisctrictName': '', 'Phone': '', 'Highway': '',  'DataX': OrderedDict(),
                                      'Others': OrderedDict()})
+        if map_objects_properties is not None:
+            self.map_objects_properties = map_objects_properties
         self.obj_bounding_box = {}
-        self.map_object_properties = map_object_properties
-        if obj_data is not None:
-            self.set_data(obj_data)
+        if map_elem_data is not None:
+            self.set_data(map_elem_data)
 
     def set_data(self, obj_data):
-        for key in obj_data:
+        """
+        Setting element properties when red from disk
+        Parameters
+        ----------
+        obj_data: dict() key: tuple(elem_name, elem_position), value: value
+        Returns
+        -------
+
+        """
+        for key_num in obj_data:
+            key, num = key_num
             if key == 'Comment':
                 self.obj_comment_set(obj_data[key])
             elif key == 'Type':
@@ -64,7 +84,7 @@ class BasicMapItem(QGraphicsItemGroup):
                     or key.startswith('Data3') or key.startswith('Data4'):
                 self.obj_datax_set(key, obj_data[key])
             else:
-                self.obj_data['Other'][key] = obj_data[key]
+                self.obj_data['Others'][key] = obj_data[key]
 
     def obj_comment_get(self):
         return self.obj_data['Comment']
@@ -138,8 +158,7 @@ class BasicMapItem(QGraphicsItemGroup):
 
     def coords_from_data_to_points(self, data_line):
         coords = []
-        coordlist = data_line.split('=')[-1]
-        coordlist = coordlist.strip().lstrip('(').rstrip(')')
+        coordlist = data_line.strip().lstrip('(').rstrip(')')
         for a in coordlist.split('),('):
             latitude, longitude = a.split(',')
             self.set_obj_bounding_box(float(latitude), float(longitude))
@@ -174,7 +193,7 @@ class POI(BasicMapItem):
         super(POI, self).__init__(*args, **kwargs)
 
     def create_object(self):
-        for key, val in self.data_values():
+        for val in self.obj_datax_get():
             for coord_pair in val:
                 x, y = coord_pair.return_canvas_coords()
         if self.obj_type_get() in self.map_object_properties.poi_icons:
@@ -198,20 +217,20 @@ class Polyline(BasicMapItem):
     # item = QGraphicsPathItem(qpp)
     # item.setPen(your_pen)
     # self.your_scene.addItem(item)
-    def __init__(self, obj_data):
+    def __init__(self, map_elem_data):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
                      'Other': OrderedDict({})}
         self.obj_data = OrderedDict(_obj_data)
         super(Polyline, self).__init__()
-        self.set_data(obj_data)
+        self.set_data(map_elem_data)
 
 
 class Polygon(BasicMapItem):
-    def __init__(self, obj_data):
+    def __init__(self, map_elem_data):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
                      'Other': OrderedDict({})}
         self.obj_data = OrderedDict(_obj_data)
         super(Polygon, self).__init__()
-        self.set_data(obj_data)
+        self.set_data(map_elem_data)
 
 

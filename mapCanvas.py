@@ -13,6 +13,7 @@ import projection
 import tempfile
 import misc_functions
 import os.path
+import map_object_properties
 from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
@@ -23,7 +24,7 @@ class mapCanvas(QGraphicsScene):
         print(*options)
         super(mapCanvas, self).__init__(*options)
         self.mapScale = 1
-        self.mOP = mapObjectsProperties()
+        self.map_objects_properties = map_object_properties.MapObjectsProperties()
         # self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
@@ -64,7 +65,7 @@ class mapCanvas(QGraphicsScene):
         for key in mapobject.Points:
             for coord_pair in mapobject.Points[key]:
                 x, y = coord_pair.return_canvas_coords()
-        if mapobject.Type in self.mOP.poi_icons:
+        if mapobject.Type in self.map_objects_properties.poi_icons:
             # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
             poi = QGraphicsSvgItem('icons/2a00.svg')
             poi.setPos(x, y)
@@ -82,14 +83,14 @@ class mapCanvas(QGraphicsScene):
         # return
         coordslist = []
         colour = Qt.black
-        if mapobject.Type in self.mOP.polylinePropertiesColour:
-            colour = self.mOP.polylinePropertiesColour[mapobject.Type]
+        if mapobject.Type in self.map_objects_properties.polylinePropertiesColour:
+            colour = self.map_objects_properties.polylinePropertiesColour[mapobject.Type]
         width = 1
-        if mapobject.Type in self.mOP.polylinePropertiesWidth:
-            width = self.mOP.polylinePropertiesWidth[mapobject.Type]
+        if mapobject.Type in self.map_objects_properties.polylinePropertiesWidth:
+            width = self.map_objects_properties.polylinePropertiesWidth[mapobject.Type]
         dash = Qt.SolidLine
-        if mapobject.Type in self.mOP.polylinePropertiesDash:
-            dash = self.mOP.polylinePropertiesDash[mapobject.Type]
+        if mapobject.Type in self.map_objects_properties.polylinePropertiesDash:
+            dash = self.map_objects_properties.polylinePropertiesDash[mapobject.Type]
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             polyline = QPainterPath()
             graphics_path_item = QGraphicsPathItem()
@@ -130,8 +131,8 @@ class mapCanvas(QGraphicsScene):
     def draw_polygone_on_canvas(self, mapobject):
         coordslist = []
         fill_colour = QColor('gainsboro')
-        if mapobject.Type in self.mOP.polygonePropertiesFillColour:
-            fill_colour = self.mOP.polygonePropertiesFillColour[mapobject.Type]
+        if mapobject.Type in self.map_objects_properties.polygonePropertiesFillColour:
+            fill_colour = self.map_objects_properties.polygonePropertiesFillColour[mapobject.Type]
         if self.polygonFill == 'transparent':
             fill_colour = ''
         for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
@@ -253,116 +254,8 @@ class mapCanvas(QGraphicsScene):
             for a in self.find_withtag('POLYGON'):
                 for b in [c for c in self.gettags(a) if c.startswith('Type=')]:
                     d = b.split('=')[-1]
-                    if d in self.mOP.polygonePropertiesFillColour:
-                        self.itemconfig(a, fill=self.mOP.polygonePropertiesFillColour[d])
+                    if d in self.map_objects_properties.polygonePropertiesFillColour:
+                        self.itemconfig(a, fill=self.map_objects_properties.polygonePropertiesFillColour[d])
                     else:
                         self.itemconfig(a, fill='grey')
 
-class mapObjectsProperties(object):
-    """here this class contains definitions of all map objects: the points, polylines and polygones"""
-    def __init__(self):
-        # couple if definitions
-        # points definitions
-        self.poi_icons = {}
-        self.read_icons()
-
-        # polylines definitions
-        #dictionary where key is Type
-        self.polylinePropertiesColour = {'0x0': Qt.black,
-                                         '0x1': QColor('#0000ff'),
-                                         '0x2': QColor('#ff0000'),
-                                         '0x3': QColor('#bd3020'),
-                                         '0x4': QColor('#ff9500'),
-                                         '0x5': QColor('#ffff8b'),
-                                         '0x6': QColor('gray'),
-                                         '0x7': QColor('lightgrey'),
-                                         '0x8': QColor('orange'),
-                                         '0x9': Qt.blue,
-                                         '0xa': QColor('lightgrey'),
-                                         '0xc': QColor('darkorange'),
-                                         '0xd': QColor('brown'),
-                                         '0x1a': QColor('gray'),
-                                         '0x14': Qt.black,
-                                         '0x16': QColor('chocolate'),
-                                         '0x18': Qt.blue,
-                                         '0x1c': QColor('gray'),
-                                         '0x1f': Qt.blue,
-                                         '0x4b': Qt.red,
-                                         '0x10e11': QColor('cyan'),
-                                         '0x10e12': QColor('cyan'),
-                                         '0x10e13': QColor('darkred'),
-                                         '0x10e14': Qt.black,
-                                         '0x10e15': QColor('#a4a4a4')
-                                         }
-
-        self.polylinePropertiesWidth = {'0x1': 5,
-                                        '0x2': 5,
-                                        '0x3': 4,
-                                        '0x4': 3,
-                                        '0x5': 3,
-                                        '0x6': 3,
-                                        '0x7': 3,
-                                        '0x8': 2,
-                                        '0x9': 2,
-                                        '0xa': 2,
-                                        '0xc': 2,
-                                        '0xd': 2,
-                                        '0x14': 5,
-                                        '0x1f': 3,
-                                        '0x10e11': 2,
-                                        '0x10e12': 3,
-                                        '0x10e13': 3,
-                                        '0x10e14': 5,
-                                        '0x10e15': 5
-                                        }
-
-        self.polylinePropertiesDash = {'0xa': Qt.DotLine,
-                                       '0xd': Qt.DotLine,
-                                       '0x14': Qt.DashLine,
-                                       '0x1c': Qt.DashDotLine,
-                                       '0x18': Qt.DashLine,
-                                       '0x4b': Qt.DashLine,
-                                       '0x10e11': Qt.DashLine,
-                                       '0x10e12': Qt.DashLine,
-                                       '0x10e13': Qt.DashLine,
-                                       '0x10e14': Qt.DashLine,
-                                       '0x10e15': Qt.DashLine
-                                       }
-
-        #polygone definitions
-        self.polygonePropertiesFillColour = {'0x4': QColor('olive'),
-                                             '0x5': QColor('silver'),
-                                             '0x13': QColor('brown'),
-                                             '0x14': Qt.green, '0x15': Qt.green, '0x16': Qt.green, '0x17': Qt.green,
-                                             '0x19': QColor('mistyrose'),
-                                             '0x1a': QColor('gray'),
-                                             '0x28': Qt.blue,
-                                             '0x29': Qt.blue,
-                                             '0x32': Qt.blue,
-                                             '0x3b': Qt.blue,
-                                             '0x3c': Qt.blue,
-                                             '0x3d': Qt.blue,
-                                             '0x3e': Qt.blue,
-                                             '0x3f': Qt.blue,
-                                             '0x40': Qt.blue,
-                                             '0x41': Qt.blue,
-                                             '0x42': Qt.blue,
-                                             '0x43': Qt.blue,
-                                             '0x44': Qt.blue,
-                                             '0x45': Qt.blue,
-                                             '0x46': Qt.blue,
-                                             '0x47': Qt.blue,
-                                             '0x48': Qt.blue,
-                                             '0x49': Qt.blue,
-                                             '0x4e': QColor('limegreen'),
-                                             '0x4f': QColor('yellowgreen')
-                                             }
-
-    def read_icons(self):
-        filename = os.path.join('icons', 'skorka.txt')
-        for poi_type, icon in misc_functions.read_icons_from_skin_file(filename).items():
-            tmp_file = tempfile.NamedTemporaryFile(delete=False)
-            tmp_file.write(icon.encode())
-            tmp_file.close()
-            self.poi_icons[poi_type] = QPixmap(tmp_file.name)
-            os.remove(tmp_file.name)
