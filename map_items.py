@@ -4,15 +4,39 @@ from singleton_store import Store
 from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 
+
+class Data_X(object):
+    """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
+    def __init__(self):
+        pass
+
+
+class Node(object):
+    """Class used for storing coordinates of given map object point"""
+    def __init__(self, latitude=None, longitude=None):
+        # self.acuracy = 10000
+        if latitude is not None and longitude is not None:
+            self.set_coordinates(self, latitude, longitude)
+
+    def set_coordinates(self, latitude, longitude):
+        self.longitude = longitude
+        self.latitude = latitude
+
+    def get_coordinates(self):
+        return self.latitude, self.longitude
+
+
 # tutaj chyba lepiej byloby uzyc QPainterPath
 class BasicMapItem(QGraphicsItemGroup):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, map_object_properties, *args, obj_data=None, **kwargs):
         self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
                                      'DisctrictName': '', 'Phone': '', 'Highway': '',  'DataX': OrderedDict(),
                                      'Others': OrderedDict()})
         self.obj_bounding_box = {}
-        super(BasicMapItem, self).__init__(*args, **kwargs)
+        self.map_object_properties = map_object_properties
+        if obj_data is not None:
+            self.set_data(obj_data)
 
     def set_data(self, obj_data):
         for key in obj_data:
@@ -104,7 +128,10 @@ class BasicMapItem(QGraphicsItemGroup):
         self.obj_data['Highway'] = _highway
 
     def obj_datax_get(self):
-        pass
+        # tymczasowo na potrzeby testow tylko jedno data
+        # zwracamy liste Nodow, jesli
+        for a in self.obj_data['DataX']:
+            return self.obj_data['DataX'][a]
 
     def obj_datax_set(self, key, _dataX):
         self.obj_data['DataX'][key] = self.coord_from_data_to_point(_dataX)
@@ -116,7 +143,7 @@ class BasicMapItem(QGraphicsItemGroup):
         for a in coordlist.split('),('):
             latitude, longitude = a.split(',')
             self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Point(latitude, longitude))
+            coords.append(Node(latitude=latitude, longitude=longitude))
         return coords
 
     def set_obj_bounding_box(self, latitude, longitude):
@@ -143,22 +170,21 @@ class BasicMapItem(QGraphicsItemGroup):
 
 
 class POI(BasicMapItem):
-    def __init__(self, obj_data):
-        super(POI, self).__init__()
-        self.set_data(obj_data)
+    def __init__(self, *args, **kwargs):
+        super(POI, self).__init__(*args, **kwargs)
 
     def create_object(self):
         for key, val in self.data_values():
             for coord_pair in val:
                 x, y = coord_pair.return_canvas_coords()
-        if mapobject.Type in self.mOP.poi_icons:
+        if self.obj_type_get() in self.map_object_properties.poi_icons:
             # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.obj_type_get()])
             poi = QGraphicsSvgItem('icons/2a00.svg')
             poi.setPos(x, y)
             poi.setZValue(20)
             self.addItem(poi)
         else:
-            print(mapobject.Type)
+            print(self.obj_type_get())
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
