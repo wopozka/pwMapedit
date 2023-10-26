@@ -8,7 +8,7 @@ class MapObjectsProperties(object):
     def __init__(self):
         # couple if definitions
         # points definitions
-        self.poi_icons = self.read_icons()
+        self.poi_pixmap_icons = self.read_icons()
 
         # polylines definitions
         #dictionary where key is Type
@@ -110,3 +110,9 @@ class MapObjectsProperties(object):
             icon_type, icon_file_name = icon_type_file_name.split('_', 1)
             icons_defs[icon_type] = QPixmap(icon_file_name)
         return icons_defs
+
+    def get_poi_pixmap(self, poi_type):
+        return self.poi_pixmap_icons[poi_type]
+
+    def poi_type_has_icon(self, poi_type):
+        return poi_type in self.poi_pixmap_icons

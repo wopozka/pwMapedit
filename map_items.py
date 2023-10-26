@@ -1,8 +1,10 @@
 from collections import OrderedDict
-import projection
-from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem
+# import projection
+# from singleton_store import Store
+# from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush
+QtCore import QPointF, Qt
 
 
 class Data_X(object):
@@ -27,8 +29,9 @@ class Node(object):
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
-class BasicMapItem(QGraphicsItemGroup):
-    def __init__(self, *args, map_elem_data=None, map_objects_properties = None, **kwargs):
+# class BasicMapItem(QGraphicsItemGroup):
+class BasicMapItem(object):
+    def __init__(self, *args, map_elem_data=None, map_objects_properties=None, **kwargs):
         """
         basic map items properties, derived map items inherit from it
         Parameters
@@ -42,6 +45,7 @@ class BasicMapItem(QGraphicsItemGroup):
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
                                      'DisctrictName': '', 'Phone': '', 'Highway': '',  'DataX': OrderedDict(),
                                      'Others': OrderedDict()})
+        self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
         self.obj_bounding_box = {}
@@ -188,30 +192,31 @@ class BasicMapItem(QGraphicsItemGroup):
             tmp_data[key].items()
 
 
-class POI(BasicMapItem):
+class POI(BasicMapItem, QGraphicsItemGroup):
     def __init__(self, *args, **kwargs):
         super(POI, self).__init__(*args, **kwargs)
+        self.create_object()
 
     def create_object(self):
         for val in self.obj_datax_get():
             for coord_pair in val:
                 x, y = coord_pair.return_canvas_coords()
-        if self.obj_type_get() in self.map_object_properties.poi_icons:
-            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.obj_type_get()])
-            poi = QGraphicsSvgItem('icons/2a00.svg')
+        if self.map_objects_properties is not None \
+                and self.map_objects_properties.poi_type_has_icon(self.obj_type_get()):
+            poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_type_get()))
             poi.setPos(x, y)
             poi.setZValue(20)
-            self.addItem(poi)
         else:
             print(self.obj_type_get())
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
             poi.setZValue(20)
-            self.addItem(poi)
+        poi.setParentItem(self)
 
 
-class Polyline(BasicMapItem):
+# tutaj chyba lepiej byloby uzyc QPainterPath
+class Polyline(BasicMapItem, QGraphicsItemGroup):
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
