@@ -12,7 +12,7 @@ class MapObjectsProperties(object):
 
         # polylines definitions
         #dictionary where key is Type
-        self.polylinePropertiesColour = {'0x0': Qt.black,
+        self.polyline_properties_colour = {'0x0': Qt.black,
                                          '0x1': QColor('#0000ff'),
                                          '0x2': QColor('#ff0000'),
                                          '0x3': QColor('#bd3020'),
@@ -39,7 +39,7 @@ class MapObjectsProperties(object):
                                          '0x10e15': QColor('#a4a4a4')
                                          }
 
-        self.polylinePropertiesWidth = {'0x1': 5,
+        self.polyline_properties_width = {'0x1': 5,
                                         '0x2': 5,
                                         '0x3': 4,
                                         '0x4': 3,
@@ -60,7 +60,7 @@ class MapObjectsProperties(object):
                                         '0x10e15': 5
                                         }
 
-        self.polylinePropertiesDash = {'0xa': Qt.DotLine,
+        self.polyline_properties_dash = {'0xa': Qt.DotLine,
                                        '0xd': Qt.DotLine,
                                        '0x14': Qt.DashLine,
                                        '0x1c': Qt.DashDotLine,
@@ -73,8 +73,8 @@ class MapObjectsProperties(object):
                                        '0x10e15': Qt.DashLine
                                        }
 
-        #polygone definitions
-        self.polygonePropertiesFillColour = {'0x4': QColor('olive'),
+        #polygon definitions
+        self.polygon_properties_fill_colour = {'0x4': QColor('olive'),
                                              '0x5': QColor('silver'),
                                              '0x13': QColor('brown'),
                                              '0x14': Qt.green, '0x15': Qt.green, '0x16': Qt.green, '0x17': Qt.green,
@@ -114,5 +114,26 @@ class MapObjectsProperties(object):
     def get_poi_pixmap(self, poi_type):
         return self.poi_pixmap_icons[poi_type]
 
+    def get_polyline_colour(self, poly_type):
+        if poly_type in self.polyline_properties_colour:
+            return self.polyline_properties_colour[poly_type]
+        return Qt.black
+
+    def get_polyline_width(self, poly_type):
+        if poly_type in self.polyline_properties_width:
+            return self.polyline_properties_width[poly_type]
+        return 1
+
+    def get_polyline_dash(self, poly_type):
+        if poly_type in self.polyline_properties_dash:
+            return self.polyline_properties_dash[poly_type]
+        return Qt.SolidLine
+
+    def get_polygon_fill_colour(self, poly_type):
+        if poly_type in self.polygon_properties_fill_colour:
+            return self.polygon_properties_fill_colour[poly_type]
+        return QColor('gainsboro')
+
     def poi_type_has_icon(self, poi_type):
         return poi_type in self.poi_pixmap_icons
+

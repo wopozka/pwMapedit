@@ -222,12 +222,57 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
     # item = QGraphicsPathItem(qpp)
     # item.setPen(your_pen)
     # self.your_scene.addItem(item)
-    def __init__(self, map_elem_data):
+    def __init__(self, *args, **kwargs):
         _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
                      'Other': OrderedDict({})}
         self.obj_data = OrderedDict(_obj_data)
-        super(Polyline, self).__init__()
-        self.set_data(map_elem_data)
+        super(Polyline, self).__init__(*args, **kwargs)
+        self.create_object()
+
+    def create_object(self):
+        f_coordslist = []
+        colour = Qt.black
+        width = 1
+        dash = Qt.SolidLine
+        if self.map_objects_properties is not None:
+            colour = self.map_objects_properties.get_polyline_colour(self.obj_type_get())
+            width = self.map_objects_properties.get_polyline_width(self.obj_type_get())
+            dash = self.map_objects_properties.get_polyline_dash(self.obj_type_get())
+        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+            polyline = QPainterPath()
+            graphics_path_item = QGraphicsPathItem()
+            for num, points in enumerate(mapobject.Points[key]):
+                coordslist += points.return_canvas_coords()
+                coord_x, coord_y = points.return_canvas_coords()
+                if num == 0:
+                    polyline.moveTo(coord_x, coord_y)
+                else:
+                    polyline.lineTo(coord_x, coord_y)
+            pen = QPen(colour)
+            pen.setWidth(width)
+            pen.setStyle(dash)
+            graphics_path_item.setPath(polyline)
+            graphics_path_item.setPen(pen)
+            graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
+            graphics_path_item.setZValue(10)
+            self.addItem(graphics_path_item)
+            # in case polyline has a label, place it on the map
+            if mapobject.Label:
+                if len(coordslist) == 4:
+                    label_pos = [coordslist[0], coordslist[1]]
+                    if (coordslist[3] - coordslist[1]) == 0:
+                        label_angle = 90
+                    else:
+                        label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
+
+                    # print(label_angle)
+                    # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
+                else:
+                    pass
+                    # calculate label position, lets say it will be in the meadle of the polyline
+                    # label_pos = coordslist[len(coordslist) // 2]
+                    # label_angle =
+            del (coordslist[:])
 
 
 class Polygon(BasicMapItem):
