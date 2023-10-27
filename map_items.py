@@ -3,7 +3,7 @@ from collections import OrderedDict
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush, QGraphicsPathItem
 from QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 
@@ -11,13 +11,19 @@ from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
     def __init__(self):
-        pass
+        self.nodes_list = []
+
 
 
 class Node(object):
     """Class used for storing coordinates of given map object point"""
-    def __init__(self, latitude=None, longitude=None):
+    def __init__(self, latitude=None, longitude=None, projection=None):
         # self.acuracy = 10000
+        self.projection = None
+        self.latitude = None
+        self.longitude = None
+        if projection is not None:
+            self.projection = projection
         if latitude is not None and longitude is not None:
             self.set_coordinates(self, latitude, longitude)
 
@@ -28,34 +34,45 @@ class Node(object):
     def get_coordinates(self):
         return self.latitude, self.longitude
 
+    def return_canvas_coords(self):
+        # print(Store.projection.projectionName)
+        return self.projection.geo_to_canvas(self.latitude, self.longitude)
+
+    def return_real_coords(self):
+        return self.projection.canvas_to_geo()
+
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
 class BasicMapItem(object):
-    def __init__(self, *args, map_elem_data=None, map_objects_properties=None, **kwargs):
+    def __init__(self, *args, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None,
+                 **kwargs):
         """
         basic map items properties, derived map items inherit from it
         Parameters
         ----------
         args
         map_elem_data: dict, key=tuple(elem_name, elem_position), value=value
-        map_objects_properties = class for map elems apperiance: icons, line types, area paterns and filling
+        map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
         kwargs
         """
-        self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
+        self.projection = None
+        if projection is not None:
+            self.projection = projection
+        self.obj_comment = list()
+        self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
                                      'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': OrderedDict(),
                                      'Data1': OrderedDict(), 'Data2': OrderedDict(), 'Data3': OrderedDict(),
-                                     'Data4': OrderedDict(),
-                                     'Others': OrderedDict()})
+                                     'Data4': OrderedDict(), 'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
         self.obj_bounding_box = {}
         if map_elem_data is not None:
-            self.set_data(map_elem_data)
+            self.set_data(map_comment_data, map_elem_data)
 
-    def set_data(self, obj_data):
+    def set_data(self, comment_data, obj_data):
         """
         Setting element properties when red from disk
         Parameters
@@ -65,6 +82,8 @@ class BasicMapItem(object):
         -------
 
         """
+        if comment_data is not None and comment_data:
+            self.obj_comment_set(comment_data)
         for key_num in obj_data:
             key, num = key_num
             if key == 'Comment':
@@ -75,14 +94,14 @@ class BasicMapItem(object):
             elif key in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.obj_datax_set(key, obj_data[key])
             else:
-                print('Unknown key value: %s.' %key)
+                print('Unknown key value: %s.' % key)
 
     def obj_comment_get(self):
-        return self.obj_data['Comment']
+        return self.obj_comment
 
     def obj_comment_set(self, _comments):
         for _comment in _comments:
-            self.obj_data['Comment'].append(_comment)
+            self.obj_comment.append(_comment)
 
     def obj_param_get(self, parameter):
         return self.obj_data[parameter]
@@ -97,7 +116,7 @@ class BasicMapItem(object):
             return self.obj_data[dataX][a]
 
     def obj_datax_set(self, dataX, key, dataX_val):
-        self.obj_data[dataX][key] = self.coord_from_data_to_point(dataX_val)
+        self.obj_data[dataX][key] = self.coord_from_data_to_points(dataX_val)
 
     def coords_from_data_to_points(self, data_line):
         coords = []
@@ -105,7 +124,7 @@ class BasicMapItem(object):
         for a in coordlist.split('),('):
             latitude, longitude = a.split(',')
             self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Node(latitude=latitude, longitude=longitude))
+            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
 
     def set_obj_bounding_box(self, latitude, longitude):
@@ -131,13 +150,13 @@ class BasicMapItem(object):
             tmp_data[key].items()
 
 
-class POI(BasicMapItem, QGraphicsItemGroup):
+class Poi(BasicMapItem, QGraphicsItemGroup):
     def __init__(self, *args, **kwargs):
-        super(POI, self).__init__(*args, **kwargs)
+        super(Poi, self).__init__(*args, **kwargs)
         self.create_object()
 
     def create_object(self):
-        for val in self.obj_datax_get():
+        for val in self.obj_datax_get('Data0'):
             for coord_pair in val:
                 x, y = coord_pair.return_canvas_coords()
         if self.map_objects_properties is not None \
@@ -166,7 +185,6 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
         self.create_object()
 
     def create_object(self):
-        f_coordslist = []
         colour = Qt.black
         width = 1
         dash = Qt.SolidLine
@@ -174,7 +192,7 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             colour = self.map_objects_properties.get_polyline_colour(self.obj_type_get())
             width = self.map_objects_properties.get_polyline_width(self.obj_type_get())
             dash = self.map_objects_properties.get_polyline_dash(self.obj_type_get())
-        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+        for key in self.obj_datax_get('Data0'):  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
             polyline = QPainterPath()
             graphics_path_item = QGraphicsPathItem()
             for num, points in enumerate(mapobject.Points[key]):
@@ -211,12 +229,28 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             del (coordslist[:])
 
 
-class Polygon(BasicMapItem):
-    def __init__(self, map_elem_data):
-        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
-                     'Other': OrderedDict({})}
-        self.obj_data = OrderedDict(_obj_data)
-        super(Polygon, self).__init__()
-        self.set_data(map_elem_data)
+class Polygon(BasicMapItem, QGraphicsItemGroup):
+    def __init__(self, *args, **kwargs):
+        super(Polygon, self).__init__(*args, **kwargs)
+        self.create_objects()
+
+    def create_objects(self):
+        coordslist = []
+        fill_colour = QColor('gainsboro')
+        if mapobject.Type in self.map_objects_properties.polygonePropertiesFillColour:
+            fill_colour = self.map_objects_properties.polygonePropertiesFillColour[mapobject.Type]
+        if self.polygonFill == 'transparent':
+            fill_colour = ''
+        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+            for points in mapobject.Points[key]:
+                x, y = points.return_canvas_coords()
+                # print('x: %s, y: %s' %(x, y))
+                coordslist.append(QPointF(x, y))
+        q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
+        brush = QBrush(fill_colour)
+        q_polygon.setBrush(brush)
+        q_polygon.setZValue(0)
+        self.addItem(q_polygon)
+        return
 
 

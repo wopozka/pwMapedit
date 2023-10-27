@@ -9,7 +9,7 @@ import sys
 import mapData
 import mapCanvas
 import mapRender
-from singleton_store import Store
+import map_object_properties
 import projection
 import math
 
@@ -27,8 +27,10 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
-        Store.projection = projection.Projection(None)
+        self.projection = None
         self.initialize()
+        self.map_objects = None
+        self.map_objects_properties = map_object_properties.MapObjectsProperties()
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -37,7 +39,7 @@ class pwMapeditPy(QMainWindow):
         self.addToolBar(toolbar)
         self.setStatusBar(self.status_bar)
         self.generate_menus()
-        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200)
+        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection)
         self.generate_shortcuts()
         self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command)
         self.view.setMouseTracking(True)
@@ -177,9 +179,9 @@ class pwMapeditPy(QMainWindow):
         print('Plik do otwarcia %s' % aaa[0])
         if aaa[0]:
             self.filename = aaa[0]
-            map_objects = mapData.mapData(self.filename)
-            map_objects.wczytaj_rekordy()
-            self.map_canvas.MapData = map_objects
+            self.map_objects = mapData.mapData(self.filename, map_object_properties=self.map_objects_properties,
+                                               projection=self.projection)
+            self.map_objects.wczytaj_rekordy()
             print(self.map_canvas.sceneRect())
             self.map_canvas.draw_all_objects_on_map()
             # print(self.map_canvas.sceneRect())
@@ -208,7 +210,8 @@ class pwMapeditPy(QMainWindow):
 
     def menu_change_projection(self):
         projection = self.menuProjectionVar.get()
-        if self.mapa.change_projection(projection):
+        if self.mapa.change_projection(projection, self.map_objects.get_map_bounding_box(),
+                                       self.map_objects.get_all_map_objects()):
             self.menuProjectionVar.set(projection)
 
 

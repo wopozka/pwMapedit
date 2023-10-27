@@ -18,12 +18,14 @@ from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, *options):
+    def __init__(self, master, projection=None, *options):
         self.master = master
-        self.MapData = None
         print(*options)
         super(mapCanvas, self).__init__(*options)
         self.mapScale = 1
+        self.projection = None
+        if projection is not None:
+            self.projection = projection
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
         # self.apply_bindings()
         self.operatingSystem = platform.system()
@@ -32,16 +34,15 @@ class mapCanvas(QGraphicsScene):
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
+
     # new events definitions:
     # def mouseMoveEvent(self, event):
     #     # Store.status_bar.showMessage('(%s,%s)' % (event.localPos().x(), event.localPos().y()))
     #     print(event.pos().x(), event.pos().y())
 
-    def set_canvas_rectangle(self):
-        start_x, start_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['N'],
-                                                          self.MapData.map_bounding_box['W'])
-        end_x, end_y = Store.projection.geo_to_canvas(self.MapData.map_bounding_box['S'],
-                                                      self.MapData.map_bounding_box['E'])
+    def set_canvas_rectangle(self, map_bounding_box):
+        start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
+        end_x, end_y = self.projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
         self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
@@ -62,6 +63,7 @@ class mapCanvas(QGraphicsScene):
             print(mapobject)
 
     def draw_poi_on_canvas(self, mapobject):
+        self.addItem(mapobject)
         for key in mapobject.Points:
             for coord_pair in mapobject.Points[key]:
                 x, y = coord_pair.return_canvas_coords()
@@ -80,83 +82,10 @@ class mapCanvas(QGraphicsScene):
             self.addItem(poi)
 
     def draw_polyline_on_canvas(self, mapobject):
-        # return
-        coordslist = []
-        colour = Qt.black
-        if mapobject.Type in self.map_objects_properties.polylinePropertiesColour:
-            colour = self.map_objects_properties.polylinePropertiesColour[mapobject.Type]
-        width = 1
-        if mapobject.Type in self.map_objects_properties.polylinePropertiesWidth:
-            width = self.map_objects_properties.polylinePropertiesWidth[mapobject.Type]
-        dash = Qt.SolidLine
-        if mapobject.Type in self.map_objects_properties.polylinePropertiesDash:
-            dash = self.map_objects_properties.polylinePropertiesDash[mapobject.Type]
-        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-            polyline = QPainterPath()
-            graphics_path_item = QGraphicsPathItem()
-            for num, points in enumerate(mapobject.Points[key]):
-                coordslist += points.return_canvas_coords()
-                coord_x, coord_y = points.return_canvas_coords()
-                if num == 0:
-                    polyline.moveTo(coord_x, coord_y)
-                else:
-                    polyline.lineTo(coord_x, coord_y)
-            pen = QPen(colour)
-            pen.setWidth(width)
-            pen.setStyle(dash)
-            graphics_path_item.setPath(polyline)
-            graphics_path_item.setPen(pen)
-            graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
-            graphics_path_item.setZValue(10)
-            self.addItem(graphics_path_item)
-            # in case polyline has a label, place it on the map
-            if mapobject.Label:
-                if len(coordslist) == 4:
-                    label_pos = [coordslist[0], coordslist[1]]
-                    if (coordslist[3] - coordslist[1]) == 0:
-                        label_angle = 90
-                    else:
-                        label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
-
-                    # print(label_angle)
-                    # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
-                else:
-                    pass
-                    # calculate label position, lets say it will be in the meadle of the polyline
-                    # label_pos = coordslist[len(coordslist) // 2]
-                    # label_angle =
-            del (coordslist[:])
-        return
+        self.addItem(mapobject)
 
     def draw_polygone_on_canvas(self, mapobject):
-        coordslist = []
-        fill_colour = QColor('gainsboro')
-        if mapobject.Type in self.map_objects_properties.polygonePropertiesFillColour:
-            fill_colour = self.map_objects_properties.polygonePropertiesFillColour[mapobject.Type]
-        if self.polygonFill == 'transparent':
-            fill_colour = ''
-        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-            for points in mapobject.Points[key]:
-                x, y = points.return_canvas_coords()
-                 # print('x: %s, y: %s' %(x, y))
-                coordslist.append(QPointF(x, y))
-        q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
-        brush = QBrush(fill_colour)
-        q_polygon.setBrush(brush)
-        q_polygon.setZValue(0)
-        self.addItem(q_polygon)
-        return
-
-    def draw_all_objects_on_map(self):
-        """this functions prints all objects on map
-        :return None
-        """
-        print('rysuje wszystkie %s obiekty' % len(self.MapData.mapObjectsList))
-        [self.draw_object_on_map(a) for a in self.MapData.mapObjectsList]
-        self.set_canvas_rectangle()
-        # for aaa in (self.MapData.mapObjectsList):
-        #    self.draw_object_on_map(aaa)
-        # self.config(scrollregion=self.bbox('all'))
+        self.addItem(mapobject)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
@@ -164,23 +93,23 @@ class mapCanvas(QGraphicsScene):
         self.update_idletasks()
         print('usuniete')
 
-    def change_projection(self, proj):
-        old_proj = Store.projection
+    def change_projection(self, proj, map_bounding_box, map_object_list):
+        old_proj = self.projection
         if proj == 'UTM':
-            newProj = projection.UTM(self.MapData.map_bounding_box)
+            newProj = projection.UTM(map_bounding_box)
             if not newProj.calculate_data_ofset():
-                Store.projection = newProj
-                print(Store.projection.projectionName)
+                self.projection = newProj
+                print(self.projection.projectionName)
                 self.remove_all_objects_from_map()
-                self.draw_all_objects_on_map()
+                self.draw_all_objects_on_map(map_object_list)
                 return 0
             else:
                 return 1
         elif proj == 'Mercator':
-            Store.projection = projection.Mercator(self.MapData.map_bounding_box)
-            print(Store.projection.projectionName)
+            self.projection = projection.Mercator(map_bounding_box)
+            print(self.projection.projectionName)
             self.remove_all_objects_from_map()
-            self.draw_all_objects_on_map()
+            self.draw_all_objects_on_map(map_object_list)
             return 0
         else:
             return 0

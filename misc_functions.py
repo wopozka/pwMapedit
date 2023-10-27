@@ -82,19 +82,19 @@ def map_strings_record_to_dict_record(map_strings_record):
     -------
     """
     record_dict = OrderedDict()
-    comment_dict = OrderedDict()
+    comment_list = list()
     inside_record = False
     for line_num, line_content in enumerate(map_strings_record):
         if line_content.startswith(';') and not inside_record:
-            comment_dict[line_num] = line_content[1:]
+            comment_list.append(line_content[1:])
         elif line_content in pwmapedit_constants.MAP_OBJECT_TYPES:
-            record_dict[(line_num, 'POI_POLY')] = line_content
+            poi_poly = line_content
             inside_record = True
         elif '=' in line_content:
             key, val = line_content.split('=', 1)
             record_dict[(line_num, key)] = val
         else:
             print('Unknown line, without =: %s' % line_content)
-    return comment_dict, record_dict
+    return poi_poly, comment_list, record_dict
 
 
