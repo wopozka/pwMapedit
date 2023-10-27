@@ -12,6 +12,21 @@ class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
     def __init__(self):
         self.nodes_list = []
+        self.outer_inner = []
+        self.last_outer_index = 0
+
+    def add_points(self, points_list):
+        self.nodes_list.append(points_list)
+        self.outer_inner.append('inner' if self.is_data_inner(points_list) else 'outer')
+
+    def get_nodes_and_inn_outer(self):
+        returned_data = list()
+        for num, data_list in enumerate(self.nodes_list):
+            returned_data.append(data_list, self.outer_inner[num])
+        return returned_data
+
+    def is_data_inner(self, points_list):
+        return False
 
 
 
@@ -62,9 +77,9 @@ class BasicMapItem(object):
         self.obj_comment = list()
         self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
-                                     'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': OrderedDict(),
-                                     'Data1': OrderedDict(), 'Data2': OrderedDict(), 'Data3': OrderedDict(),
-                                     'Data4': OrderedDict(), 'Others': OrderedDict()})
+                                     'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': Data_X(),
+                                     'Data1': Data_X(), 'Data2': Data_X(), 'Data3': Data_X(),
+                                     'Data4': Data_X(), 'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
@@ -112,11 +127,10 @@ class BasicMapItem(object):
     def obj_datax_get(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
-        for a in self.obj_data[dataX]:
-            return self.obj_data[dataX][a]
+        return self.obj_data[dataX].get_nodes_and_inn_outer()
 
     def obj_datax_set(self, dataX, key, dataX_val):
-        self.obj_data[dataX][key] = self.coord_from_data_to_points(dataX_val)
+        self.obj_data[dataX].add_points(self.coord_from_data_to_points(dataX_val))
 
     def coords_from_data_to_points(self, data_line):
         coords = []
