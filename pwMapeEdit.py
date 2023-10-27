@@ -27,7 +27,7 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
-        self.projection = None
+        self.projection = projection.Projection({})
         self.initialize()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
@@ -41,7 +41,8 @@ class pwMapeditPy(QMainWindow):
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection)
         self.generate_shortcuts()
-        self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command)
+        self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command,
+                                        projection=self.projection)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
@@ -179,7 +180,7 @@ class pwMapeditPy(QMainWindow):
         print('Plik do otwarcia %s' % aaa[0])
         if aaa[0]:
             self.filename = aaa[0]
-            self.map_objects = mapData.mapData(self.filename, map_object_properties=self.map_objects_properties,
+            self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
                                                projection=self.projection)
             self.map_objects.wczytaj_rekordy()
             print(self.map_canvas.sceneRect())

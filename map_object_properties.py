@@ -103,7 +103,7 @@ class MapObjectsProperties(object):
                                              }
 
     @staticmethod
-    def read_icons(self):
+    def read_icons():
         icons_defs = dict()
         icons_files = os.path.join('icons', '*.xpm')
         for icon_type_file_name in glob.glob(icons_files):

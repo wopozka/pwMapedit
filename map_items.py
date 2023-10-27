@@ -3,19 +3,19 @@ from collections import OrderedDict
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush, QGraphicsPathItem, QGraphicsItem, \
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem
-from QtCore import QPointF, Qt
+from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 
 
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
-    def __init__(self, polygon):
+    def __init__(self):
         self.nodes_list = []
         self.outer_inner = []
         self.last_outer_index = 0
-        self.polygon = polygon
+        self.polygon = False
 
     def add_points(self, points_list):
         self.nodes_list.append(points_list)
@@ -34,6 +34,8 @@ class Data_X(object):
             return False
         return False
 
+    def set_polygon(self):
+        self.polygon = True
 
 
 class Node(object):
@@ -170,7 +172,7 @@ class BasicMapItem(object):
             tmp_data[key].items()
 
 
-class Poi(BasicMapItem, QGraphicsItemGroup):
+class Poi(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Poi, self).__init__(*args, **kwargs)
         self.create_object()
@@ -179,12 +181,12 @@ class Poi(BasicMapItem, QGraphicsItemGroup):
         coord_pair, inner_outer = self.obj_datax_get('Data0')
         x, y = coord_pair.return_canvas_coords()
         if self.map_objects_properties is not None \
-                and self.map_objects_properties.poi_type_has_icon(self.obj_type_get()):
-            poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_type_get()))
+                and self.map_objects_properties.poi_type_has_icon(self.obj_param_get('Type')):
+            poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
             poi.setPos(x, y)
             poi.setZValue(20)
         else:
-            print(self.obj_type_get())
+            print(self.obj_param_get('Type'))
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
@@ -193,7 +195,7 @@ class Poi(BasicMapItem, QGraphicsItemGroup):
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
-class Polyline(BasicMapItem, QGraphicsItemGroup):
+class Polyline(QGraphicsItemGroup, BasicMapItem):
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
@@ -208,9 +210,9 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
         width = 1
         dash = Qt.SolidLine
         if self.map_objects_properties is not None:
-            colour = self.map_objects_properties.get_polyline_colour(self.obj_type_get())
-            width = self.map_objects_properties.get_polyline_width(self.obj_type_get())
-            dash = self.map_objects_properties.get_polyline_dash(self.obj_type_get())
+            colour = self.map_objects_properties.get_polyline_colour(self.obj_param_get('Type'))
+            width = self.map_objects_properties.get_polyline_width(self.obj_param_get('Type'))
+            dash = self.map_objects_properties.get_polyline_dash(self.obj_param_get('Type'))
         for nodes, inner_outer in self.obj_datax_get('Data0'):
             polyline = QPainterPath()
             graphics_path_item = QGraphicsPathItem()
@@ -230,7 +232,8 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             graphics_path_item.setPen(pen)
             graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
             graphics_path_item.setZValue(10)
-            self.addItem(graphics_path_item)
+            # self.addItem(graphics_path_item)
+            self.addToGroup(graphics_path_item)
             # in case polyline has a label, place it on the map
             # if mapobject.Label:
             #     if len(coordslist) == 4:
@@ -250,16 +253,19 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             # del (coordslist[:])
 
 
-class Polygon(BasicMapItem, QGraphicsItemGroup):
+class Polygon(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Polygon, self).__init__(*args, **kwargs)
+        self.polygon_transparent = False
+        for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
+            self.obj_data[_data].set_polygon()
         self.create_objects()
 
     def create_objects(self):
         polygon_nodes = []
         if self.map_objects_properties is not None:
-            fill_colour = self.map_objects_properties.get_polygon_fill_colour()
-        if self.polygonFill == 'transparent':
+            fill_colour = self.map_objects_properties.get_polygon_fill_colour(self.obj_param_get('Type'))
+        if self.polygon_transparent == 'transparent':
             fill_colour = ''
         for nodes, inner_outer in self.obj_datax_get('Data0'):
             for node in nodes:
@@ -270,7 +276,8 @@ class Polygon(BasicMapItem, QGraphicsItemGroup):
         brush = QBrush(fill_colour)
         q_polygon.setBrush(brush)
         q_polygon.setZValue(0)
-        self.addItem(q_polygon)
+        # self.addItem(q_polygon)
+        self.addToGroup(q_polygon)
         return
 
 

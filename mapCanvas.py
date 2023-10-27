@@ -18,10 +18,9 @@ from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, projection=None, *options):
+    def __init__(self, master, *args, projection=None, **kwargs):
         self.master = master
-        print(*options)
-        super(mapCanvas, self).__init__(*options)
+        super(mapCanvas, self).__init__(*args, **kwargs)
         self.mapScale = 1
         self.projection = None
         if projection is not None:

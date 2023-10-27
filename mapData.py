@@ -8,10 +8,11 @@ import misc_functions
 import pwmapedit_constants
 import map_items
 from collections import OrderedDict
-import projection
+import projection as coordinates_projection
 from singleton_store import Store
 from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
+
 
 
 
@@ -50,7 +51,8 @@ class mapData(object):
 
         # map projections
         # self.projection = None
-        self.projection = projection.Mercator(self.map_bounding_box)
+        self.projection = projection
+        self.projection = coordinates_projection.Mercator(self.map_bounding_box)
 
     def wczytaj_rekordy(self):
         print('wczytuje rekordy')
@@ -111,7 +113,7 @@ class mapData(object):
                 map_object = map_items.Polyline(map_comment_data=obj_comment, map_elem_data=obj_data,
                                            map_objects_properties=self.map_objects_properties)
             else:
-                map_object = map_items.Polylgone(map_comment_data=obj_comment, map_elem_data=obj_data,
+                map_object = map_items.Polygon(map_comment_data=obj_comment, map_elem_data=obj_data,
                                                 map_objects_properties=self.map_objects_properties)
 
             self.mapObjectsList.append(map_object)
