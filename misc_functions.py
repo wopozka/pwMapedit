@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from collections import OrderedDict
+import pwmapedit_constants
 
 def read_icons_from_skin_file(skin_filename):
     """
@@ -66,5 +68,33 @@ def return_icon_definition(icon_def):
             in_xpm_def = True
             continue
     return l_type + l_subtype.split('x')[-1].strip(), l_icon
+
+
+def map_strings_record_to_dict_record(map_strings_record):
+    """
+    converst map object record to dictionary record form. As some of keys can appear more than once, the dictionary
+    key is tuple: (line_num, key)
+    Parameters
+    ----------
+    map_strings_record: list of strings in a form ['POI_POLY=POI', 'Type=0x000'...]
+
+    Returns OrderedDict {line_num: commment1, line_num: comment2...,}, OrderedDict {(0, POI_POLY): POI: (1, Type): 0x000...}
+    -------
+    """
+    record_dict = OrderedDict()
+    comment_dict = OrderedDict()
+    inside_record = False
+    for line_num, line_content in enumerate(map_strings_record):
+        if line_content.startswith(';') and not inside_record:
+            comment_dict[line_num] = line_content[1:]
+        elif line_content in pwmapedit_constants.MAP_OBJECT_TYPES:
+            record_dict[(line_num, 'POI_POLY')] = line_content
+            inside_record = True
+        elif '=' in line_content:
+            key, val = line_content.split('=', 1)
+            record_dict[(line_num, key)] = val
+        else:
+            print('Unknown line, without =: %s' % line_content)
+    return comment_dict, record_dict
 
 

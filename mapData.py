@@ -3,6 +3,7 @@
 
 import string
 import sys
+import pwmapedit_constants
 from collections import OrderedDict
 import projection
 from singleton_store import Store
@@ -33,8 +34,6 @@ class mapData(object):
         self.lastObjectId_Polygon = 0
         self.lastObjectId_Polyline = 0
         self.lastObjectId = 0
-        self.MAP_OBJECT_TYPES = ('[POI]', '[POLYGON]', '[POLYLINE]')
-        self.MAP_OBJECT_END = '[END]'
         self.filename = filename
 
         # map bounding box, the maximal and minimal values of longitude and lattitude
@@ -72,7 +71,7 @@ class mapData(object):
         # first lets skip the file header
         while b < zawartosc_pliku_mp_len:
             # print(b)
-            if zawartosc_pliku_mp[b].strip() not in self.MAP_OBJECT_TYPES:
+            if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
                 b += 1
             else:
                 break
@@ -85,12 +84,12 @@ class mapData(object):
             else:
                 break
 
-        print('zakonczylen obrabianie naglowka. Wartosc b: %s'%b)
+        print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
         while b < zawartosc_pliku_mp_len:
             # print(b)
             mp_record = []
             mpfileline = zawartosc_pliku_mp[b].strip()
-            while not mpfileline.startswith(self.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
+            while not mpfileline.startswith(pwmapedit_constants.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
 
                 mp_record.append(mpfileline)
                 b += 1

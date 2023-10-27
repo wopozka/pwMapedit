@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtCore import Qt
 
 class MapObjectsProperties(object):
-    """here this class contains definitions of all map objects: the points, polylines and polygones"""
+    """here this class contains definitions of all map objects: the points, polylines and polygons"""
     def __init__(self):
         # couple if definitions
         # points definitions

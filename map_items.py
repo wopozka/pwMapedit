@@ -4,7 +4,8 @@ from collections import OrderedDict
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush
-QtCore import QPointF, Qt
+from QtCore import QPointF, Qt
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 
 
 class Data_X(object):
@@ -43,7 +44,9 @@ class BasicMapItem(object):
         """
         self.obj_data = OrderedDict({'Comment': list(), 'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
-                                     'DisctrictName': '', 'Phone': '', 'Highway': '',  'DataX': OrderedDict(),
+                                     'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': OrderedDict(),
+                                     'Data1': OrderedDict(), 'Data2': OrderedDict(), 'Data3': OrderedDict(),
+                                     'Data4': OrderedDict(),
                                      'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
@@ -66,29 +69,13 @@ class BasicMapItem(object):
             key, num = key_num
             if key == 'Comment':
                 self.obj_comment_set(obj_data[key])
-            elif key == 'Type':
-                self.obj_type_set(obj_data[key])
-            elif key == 'Label':
-                self.obj_label_set(obj_data[key])
-            elif key == 'Label2':
-                self.obj_label2_set(obj_data[key])
-            elif key == 'Label3':
-                self.obj_label3_set(obj_data[key])
-            elif key == 'DirIndicator':
-                self.obj_dirindicator_set(obj_data[key])
-            elif key == 'EndLevel':
-                self.obj_endlevel_set(obj_data[key])
-            elif key == 'StreetDesc':
-                self.obj_streetdesc_set(obj_data[key])
-            elif key == 'Phone':
-                self.obj_phone_set(obj_data[key])
-            elif key == 'Highway':
-                self.obj_highway_set(obj_data[key])
-            elif key.startswith('Data0') or key.startswith('Data1') or key.startswith('Data2') \
-                    or key.startswith('Data3') or key.startswith('Data4'):
+            elif key in ('Type', 'Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc', 'Phone',
+                         'Highway'):
+                self.obj_param_set(key, obj_data[key])
+            elif key in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.obj_datax_set(key, obj_data[key])
             else:
-                self.obj_data['Others'][key] = obj_data[key]
+                print('Unknown key value: %s.' %key)
 
     def obj_comment_get(self):
         return self.obj_data['Comment']
@@ -97,68 +84,20 @@ class BasicMapItem(object):
         for _comment in _comments:
             self.obj_data['Comment'].append(_comment)
 
-    def obj_type_get(self):
-        return self.obj_data['Type']
+    def obj_param_get(self, parameter):
+        return self.obj_data[parameter]
 
-    def obj_type_set(self, _type):
-        self.obj_data['Type'] = _type
+    def obj_param_set(self, parameter, value):
+        self.obj_data[parameter] = value
 
-    def obj_label_get(self):
-        return self.obj_data['Label']
-
-    def obj_label_set(self, _label):
-        self.obj_data['Label'] = _label
-
-    def obj_label2_get(self):
-        return self.obj_data['Label2']
-
-    def obj_label2_set(self, _label):
-        self.obj_data['Label2'] = _label
-
-    def obj_label3_get(self):
-        return self.obj_data['Label3']
-
-    def obj_label3_set(self, _label):
-        self.obj_data['Label3'] = _label
-
-    def obj_dirindicator_get(self):
-        return self.obj_data['DirIndicator']
-
-    def obj_dirindicator_set(self, _dir):
-        self.obj_data['DirIndicator'] = _dir
-
-    def obj_endlevel_get(self):
-        return self.obj_data['EndLevel']
-
-    def obj_endlevel_set(self, _endlevel):
-        self.obj_data['EndLevel'] = _endlevel
-
-    def obj_streetdesc_get(self):
-        return self.obj_data['StreetDesc']
-
-    def obj_treetdesc_set(self, _streetdesc):
-        self.obj_data['StreetDesc'] = _streetdesc
-
-    def obj_phone_get(self):
-        return self.obj_data['Phone']
-
-    def obj_phone_set(self, _phone):
-        self.obj_data['Phone'] = _phone
-
-    def obj_highway_get(self):
-        return self.obj_data['Highway']
-
-    def obj_highway_set(self, _highway):
-        self.obj_data['Highway'] = _highway
-
-    def obj_datax_get(self):
+    def obj_datax_get(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
-        for a in self.obj_data['DataX']:
-            return self.obj_data['DataX'][a]
+        for a in self.obj_data[dataX]:
+            return self.obj_data[dataX][a]
 
-    def obj_datax_set(self, key, _dataX):
-        self.obj_data['DataX'][key] = self.coord_from_data_to_point(_dataX)
+    def obj_datax_set(self, dataX, key, dataX_val):
+        self.obj_data[dataX][key] = self.coord_from_data_to_point(dataX_val)
 
     def coords_from_data_to_points(self, data_line):
         coords = []
@@ -223,9 +162,6 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
     # item.setPen(your_pen)
     # self.your_scene.addItem(item)
     def __init__(self, *args, **kwargs):
-        _obj_data = {'Comment': list(), 'Type': '', 'Label': '', 'EndLevel': '', 'DataX': OrderedDict({}),
-                     'Other': OrderedDict({})}
-        self.obj_data = OrderedDict(_obj_data)
         super(Polyline, self).__init__(*args, **kwargs)
         self.create_object()
 
