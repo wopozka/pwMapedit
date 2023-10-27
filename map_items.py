@@ -3,17 +3,19 @@ from collections import OrderedDict
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush, QGraphicsPathItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QBrush, QGraphicsPathItem, QGraphicsItem, \
+    QGraphicsPolygonItem
 from QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 
 
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
-    def __init__(self):
+    def __init__(self, polygon):
         self.nodes_list = []
         self.outer_inner = []
         self.last_outer_index = 0
+        self.polygon = polygon
 
     def add_points(self, points_list):
         self.nodes_list.append(points_list)
@@ -26,6 +28,10 @@ class Data_X(object):
         return returned_data
 
     def is_data_inner(self, points_list):
+        if self.polygon:
+            # for the present moment I treat all polygons as outer, here checking whether all points lay inside
+            # one polygon, then we can say it is inner or outer
+            return False
         return False
 
 
@@ -170,9 +176,8 @@ class Poi(BasicMapItem, QGraphicsItemGroup):
         self.create_object()
 
     def create_object(self):
-        for val in self.obj_datax_get('Data0'):
-            for coord_pair in val:
-                x, y = coord_pair.return_canvas_coords()
+        coord_pair, inner_outer = self.obj_datax_get('Data0')
+        x, y = coord_pair.return_canvas_coords()
         if self.map_objects_properties is not None \
                 and self.map_objects_properties.poi_type_has_icon(self.obj_type_get()):
             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_type_get()))
@@ -206,14 +211,16 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             colour = self.map_objects_properties.get_polyline_colour(self.obj_type_get())
             width = self.map_objects_properties.get_polyline_width(self.obj_type_get())
             dash = self.map_objects_properties.get_polyline_dash(self.obj_type_get())
-        for key in self.obj_datax_get('Data0'):  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
+        for nodes, inner_outer in self.obj_datax_get('Data0'):
             polyline = QPainterPath()
             graphics_path_item = QGraphicsPathItem()
-            for num, points in enumerate(mapobject.Points[key]):
-                coordslist += points.return_canvas_coords()
-                coord_x, coord_y = points.return_canvas_coords()
-                if num == 0:
+            the_first_node = True
+            for node in nodes:
+                # coordslist += points.return_canvas_coords()
+                coord_x, coord_y = node.return_canvas_coords()
+                if the_first_node:
                     polyline.moveTo(coord_x, coord_y)
+                    the_first_node = False
                 else:
                     polyline.lineTo(coord_x, coord_y)
             pen = QPen(colour)
@@ -225,22 +232,22 @@ class Polyline(BasicMapItem, QGraphicsItemGroup):
             graphics_path_item.setZValue(10)
             self.addItem(graphics_path_item)
             # in case polyline has a label, place it on the map
-            if mapobject.Label:
-                if len(coordslist) == 4:
-                    label_pos = [coordslist[0], coordslist[1]]
-                    if (coordslist[3] - coordslist[1]) == 0:
-                        label_angle = 90
-                    else:
-                        label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
-
-                    # print(label_angle)
-                    # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
-                else:
-                    pass
-                    # calculate label position, lets say it will be in the meadle of the polyline
-                    # label_pos = coordslist[len(coordslist) // 2]
-                    # label_angle =
-            del (coordslist[:])
+            # if mapobject.Label:
+            #     if len(coordslist) == 4:
+            #         label_pos = [coordslist[0], coordslist[1]]
+            #         if (coordslist[3] - coordslist[1]) == 0:
+            #             label_angle = 90
+            #         else:
+            #             label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
+            #
+            #         # print(label_angle)
+            #         # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
+            #     else:
+            #         pass
+            #         # calculate label position, lets say it will be in the meadle of the polyline
+            #         # label_pos = coordslist[len(coordslist) // 2]
+            #         # label_angle =
+            # del (coordslist[:])
 
 
 class Polygon(BasicMapItem, QGraphicsItemGroup):
@@ -249,18 +256,17 @@ class Polygon(BasicMapItem, QGraphicsItemGroup):
         self.create_objects()
 
     def create_objects(self):
-        coordslist = []
-        fill_colour = QColor('gainsboro')
-        if mapobject.Type in self.map_objects_properties.polygonePropertiesFillColour:
-            fill_colour = self.map_objects_properties.polygonePropertiesFillColour[mapobject.Type]
+        polygon_nodes = []
+        if self.map_objects_properties is not None:
+            fill_colour = self.map_objects_properties.get_polygon_fill_colour()
         if self.polygonFill == 'transparent':
             fill_colour = ''
-        for key in mapobject.Points.keys():  # because might be multiple Data (Data0_0, Data0_1, Data1_0 etc)
-            for points in mapobject.Points[key]:
-                x, y = points.return_canvas_coords()
+        for nodes, inner_outer in self.obj_datax_get('Data0'):
+            for node in nodes:
+                x, y = node.return_canvas_coords()
                 # print('x: %s, y: %s' %(x, y))
-                coordslist.append(QPointF(x, y))
-        q_polygon = QGraphicsPolygonItem(QPolygonF(coordslist))
+                polygon_nodes.append(QPointF(x, y))
+        q_polygon = QGraphicsPolygonItem(QPolygonF(polygon_nodes))
         brush = QBrush(fill_colour)
         q_polygon.setBrush(brush)
         q_polygon.setZValue(0)

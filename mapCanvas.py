@@ -64,22 +64,6 @@ class mapCanvas(QGraphicsScene):
 
     def draw_poi_on_canvas(self, mapobject):
         self.addItem(mapobject)
-        for key in mapobject.Points:
-            for coord_pair in mapobject.Points[key]:
-                x, y = coord_pair.return_canvas_coords()
-        if mapobject.Type in self.map_objects_properties.poi_icons:
-            # poi = QGraphicsPixmapItem(self.mOP.poi_icons[mapobject.Type])
-            poi = QGraphicsSvgItem('icons/2a00.svg')
-            poi.setPos(x, y)
-            poi.setZValue(20)
-            self.addItem(poi)
-        else:
-            print(mapobject.Type)
-            poi = QGraphicsEllipseItem(x, y, 10, 10)
-            brush = QBrush(Qt.black)
-            poi.setBrush(brush)
-            poi.setZValue(20)
-            self.addItem(poi)
 
     def draw_polyline_on_canvas(self, mapobject):
         self.addItem(mapobject)
