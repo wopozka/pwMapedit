@@ -120,10 +120,10 @@ class mapData(object):
             self.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
             b += 1
-        Store.projection.map_bounding_box = self.map_bounding_box
-        Store.projection.calculate_data_ofset()
+        self.projection.set_map_bounding_box(self.map_bounding_box)
+        self.projection.calculate_data_ofset()
 
-        print('map data ofset', Store.projection.mapDataOfset)
+        print('map data ofset', self.projection.mapDataOfset)
         print('bonding box', self.map_bounding_box)
 
 

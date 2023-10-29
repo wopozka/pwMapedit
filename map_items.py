@@ -175,6 +175,7 @@ class BasicMapItem(object):
 class Poi(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Poi, self).__init__(*args, **kwargs)
+        self.object_type = '[POI]'
         self.create_object()
 
     def create_object(self):
@@ -203,6 +204,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
     # self.your_scene.addItem(item)
     def __init__(self, *args, **kwargs):
         super(Polyline, self).__init__(*args, **kwargs)
+        self.object_type = '[POLYLINE]'
         self.create_object()
 
     def create_object(self):
@@ -256,6 +258,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
 class Polygon(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Polygon, self).__init__(*args, **kwargs)
+        self.object_type = '[POLYLGON]'
         self.polygon_transparent = False
         for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
             self.obj_data[_data].set_polygon()

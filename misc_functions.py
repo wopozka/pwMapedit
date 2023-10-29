@@ -81,10 +81,14 @@ def map_strings_record_to_dict_record(map_strings_record):
     Returns OrderedDict {line_num: commment1, line_num: comment2...,}, OrderedDict {(0, POI_POLY): POI: (1, Type): 0x000...}
     -------
     """
+    print(map_strings_record)
     record_dict = OrderedDict()
     comment_list = list()
     inside_record = False
     for line_num, line_content in enumerate(map_strings_record):
+        line_content = line_content.strip()
+        if not line_content:
+            continue
         if line_content.startswith(';') and not inside_record:
             comment_list.append(line_content[1:])
         elif line_content in pwmapedit_constants.MAP_OBJECT_TYPES:

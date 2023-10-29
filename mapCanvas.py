@@ -46,6 +46,10 @@ class mapCanvas(QGraphicsScene):
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
 
+    def draw_all_objects_on_map(self, obj_list):
+        for obj in obj_list:
+            self.draw_object_on_map(obj)
+
     def draw_object_on_map(self, mapobject):
         """ This function draws map object on the canvas
         :return: None

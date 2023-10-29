@@ -21,6 +21,10 @@ class Projection(object):
     def canvas_to_geo(self, latitude, longitude):
         return 0, 0
 
+    def set_map_bounding_box(self, bbox):
+        for key in bbox:
+            self.mapBoundingBox[key] = bbox[key]
+
 class Direct(Projection):
     """Simple, stupid projection, that uses geo coords for the plane. Used mainly for testing"""
     def __init__(self, mapBoundingBox):
