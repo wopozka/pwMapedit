@@ -24,7 +24,7 @@ class Data_X(object):
     def get_nodes_and_inn_outer(self):
         returned_data = list()
         for num, data_list in enumerate(self.nodes_list):
-            returned_data.append(data_list, self.outer_inner[num])
+            returned_data.append((data_list, self.outer_inner[num]))
         return returned_data
 
     def is_data_inner(self, points_list):
@@ -48,7 +48,7 @@ class Node(object):
         if projection is not None:
             self.projection = projection
         if latitude is not None and longitude is not None:
-            self.set_coordinates(self, latitude, longitude)
+            self.set_coordinates(latitude, longitude)
 
     def set_coordinates(self, latitude, longitude):
         self.longitude = longitude
@@ -100,24 +100,23 @@ class BasicMapItem(object):
         Setting element properties when red from disk
         Parameters
         ----------
-        obj_data: dict() key: tuple(elem_name, elem_position), value: value
+        obj_data: dict() key: tuple(elem_position, elem_name), value: value
         Returns
         -------
 
         """
+        print(obj_data)
         if comment_data is not None and comment_data:
             self.obj_comment_set(comment_data)
-        for key_num in obj_data:
-            key, num = key_num
-            if key == 'Comment':
-                self.obj_comment_set(obj_data[key])
-            elif key in ('Type', 'Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc', 'Phone',
-                         'Highway'):
-                self.obj_param_set(key, obj_data[key])
-            elif key in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-                self.obj_datax_set(key, obj_data[key])
+        for number_keyname in obj_data:
+            _, key = number_keyname
+            if number_keyname[1] in ('Type', 'Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
+                                     'Phone', 'Highway'):
+                self.obj_param_set(key, obj_data[number_keyname])
+            elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+                self.obj_datax_set(number_keyname[1], obj_data[number_keyname])
             else:
-                print('Unknown key value: %s.' % key)
+                print('Unknown key value: %s.' % number_keyname[1])
 
     def obj_comment_get(self):
         return self.obj_comment
@@ -137,10 +136,10 @@ class BasicMapItem(object):
         # zwracamy liste Nodow, jesli
         return self.obj_data[dataX].get_nodes_and_inn_outer()
 
-    def obj_datax_set(self, dataX, key, dataX_val):
-        self.obj_data[dataX].add_points(self.coord_from_data_to_points(dataX_val))
+    def obj_datax_set(self, data012345, data012345_val):
+        self.obj_data[data012345].add_points(self.coords_from_data_to_nodes(data012345_val))
 
-    def coords_from_data_to_points(self, data_line):
+    def coords_from_data_to_nodes(self, data_line):
         coords = []
         coordlist = data_line.strip().lstrip('(').rstrip(')')
         for a in coordlist.split('),('):
@@ -175,7 +174,7 @@ class BasicMapItem(object):
 class Poi(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Poi, self).__init__(*args, **kwargs)
-        self.object_type = '[POI]'
+        # self.object_type = '[POI]'
         self.create_object()
 
     def create_object(self):
@@ -204,7 +203,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
     # self.your_scene.addItem(item)
     def __init__(self, *args, **kwargs):
         super(Polyline, self).__init__(*args, **kwargs)
-        self.object_type = '[POLYLINE]'
+        # self.object_type = '[POLYLINE]'
         self.create_object()
 
     def create_object(self):
@@ -258,7 +257,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
 class Polygon(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Polygon, self).__init__(*args, **kwargs)
-        self.object_type = '[POLYLGON]'
+        # self.object_type = '[POLYLGON]'
         self.polygon_transparent = False
         for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
             self.obj_data[_data].set_polygon()

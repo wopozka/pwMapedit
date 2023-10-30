@@ -51,27 +51,6 @@ class mapCanvas(QGraphicsScene):
             self.draw_object_on_map(obj)
 
     def draw_object_on_map(self, mapobject):
-        """ This function draws map object on the canvas
-        :return: None
-        """
-        #print(mapobject.object_type)
-        if mapobject.object_type == '[POI]':
-            self.draw_poi_on_canvas(mapobject)
-        elif mapobject.object_type == '[POLYLINE]':
-            self.draw_polyline_on_canvas(mapobject)
-        elif mapobject.object_type == '[POLYGON]':
-            self.draw_polygone_on_canvas(mapobject)
-        else:
-            print('Very weird object')
-            print(mapobject)
-
-    def draw_poi_on_canvas(self, mapobject):
-        self.addItem(mapobject)
-
-    def draw_polyline_on_canvas(self, mapobject):
-        self.addItem(mapobject)
-
-    def draw_polygone_on_canvas(self, mapobject):
         self.addItem(mapobject)
 
     def remove_all_objects_from_map(self):

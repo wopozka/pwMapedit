@@ -14,8 +14,6 @@ from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 
 
-
-
 class mapData(object):
     """class stores all data from map ie polylines, polygones, pois, map header, map weird sections"""
 
@@ -108,13 +106,16 @@ class mapData(object):
             self.lastObjectId += 1
             if poi_poly == '[POI]':
                 map_object = map_items.Poi(map_comment_data=obj_comment, map_elem_data=obj_data,
-                                           map_objects_properties=self.map_objects_properties)
+                                           map_objects_properties=self.map_objects_properties,
+                                           projection=self.projection)
             elif poi_poly == '[POLYLINE]':
                 map_object = map_items.Polyline(map_comment_data=obj_comment, map_elem_data=obj_data,
-                                           map_objects_properties=self.map_objects_properties)
+                                                map_objects_properties=self.map_objects_properties,
+                                                projection=self.projection)
             else:
                 map_object = map_items.Polygon(map_comment_data=obj_comment, map_elem_data=obj_data,
-                                                map_objects_properties=self.map_objects_properties)
+                                               map_objects_properties=self.map_objects_properties,
+                                               projection=self.projection)
 
             self.mapObjectsList.append(map_object)
             self.set_map_bounding_box(map_object.obj_bounding_box)
