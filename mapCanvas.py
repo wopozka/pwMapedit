@@ -56,6 +56,9 @@ class mapCanvas(QGraphicsScene):
             if isinstance(mapobject, (map_items.Poi, map_items.Polyline, map_items.Polygon)):
                 # print('adding object to map', mapobject)
                 self.addItem(mapobject)
+                nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
+                x, y = nodes[0].return_canvas_coords()
+                self.addEllipse(x, y, 10, 10, brush=QBrush(Qt.black))
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
