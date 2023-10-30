@@ -68,7 +68,7 @@ class Node(object):
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
 class BasicMapItem(object):
-    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+    def __init__(self, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
         """
         basic map items properties, derived map items inherit from it
         Parameters
