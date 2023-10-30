@@ -83,6 +83,7 @@ class BasicMapItem(object):
         if projection is not None:
             self.projection = projection
         self.obj_comment = list()
+        self.map_levels = set()
         self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
                                      'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
                                      'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': Data_X(),
@@ -138,6 +139,7 @@ class BasicMapItem(object):
 
     def obj_datax_set(self, data012345, data012345_val):
         self.obj_data[data012345].add_points(self.coords_from_data_to_nodes(data012345_val))
+        self.map_levels.add(data012345)
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -170,6 +172,9 @@ class BasicMapItem(object):
         for key in self.obj_data['DataX']:
             tmp_data[key].items()
 
+    def get_obj_levels(self):
+        return self.map_levels
+
 
 class Poi(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, *args, **kwargs):
@@ -178,8 +183,8 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
         self.create_object()
 
     def create_object(self):
-        coord_pair, inner_outer = self.obj_datax_get('Data0')
-        x, y = coord_pair.return_canvas_coords()
+        nodes, inner_outer = self.obj_datax_get('Data0')[0]
+        x, y = nodes[0].return_canvas_coords()
         if self.map_objects_properties is not None \
                 and self.map_objects_properties.poi_type_has_icon(self.obj_param_get('Type')):
             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
@@ -283,3 +288,31 @@ class Polygon(QGraphicsItemGroup, BasicMapItem):
         return
 
 
+class BasicSignRestrict(object):
+    def __init__(self, map_comment_data=None, map_elem_data=None):
+        self.obj_comment = []
+        self.restr_sign_data = None
+        self.restr_sign_data_others = OrderedDict({})
+        if map_comment_data is not None:
+            for _comment in map_comment_data:
+                self.obj_comment.append(_comment)
+        self.set_data(map_elem_data)
+
+    def set_data(self, map_elem_data):
+        for number_keyname in map_elem_data:
+            _, key = number_keyname
+            if key in self.restr_data:
+                self.self.restr_sign_data[key].append(map_elem_data[number_keyname])
+            else:
+                self.restr_sign_data_others[number_keyname] = map_elem_data[number_keyname]
+
+
+class RoadSign(object):
+    def __init__(self, map_comment_data=None, map_elem_data=None):
+        self.restr_sign_data = OrderedDict({'SignPoints': [], 'SignRoads': [], 'SignParams': []})
+        super(RoadSign, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
+
+class Restriction(object):
+    def __init__(self, map_comment_data=None, map_elem_data=None):
+        self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
+        super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)

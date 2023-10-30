@@ -91,7 +91,7 @@ def map_strings_record_to_dict_record(map_strings_record):
             continue
         if line_content.startswith(';') and not inside_record:
             comment_list.append(line_content[1:])
-        elif line_content in pwmapedit_constants.MAP_OBJECT_TYPES:
+        elif line_content in pwmapedit_constants.MAP_ALL_OBJECTS:
             poi_poly = line_content
             inside_record = True
         elif '=' in line_content:

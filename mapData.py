@@ -104,18 +104,24 @@ class mapData(object):
 
             poi_poly, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
             self.lastObjectId += 1
-            if poi_poly == '[POI]':
+            if poi_poly == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.Poi(map_comment_data=obj_comment, map_elem_data=obj_data,
                                            map_objects_properties=self.map_objects_properties,
                                            projection=self.projection)
-            elif poi_poly == '[POLYLINE]':
+            elif poi_poly == pwmapedit_constants.MAP_OBJECT_POLYLINE:
                 map_object = map_items.Polyline(map_comment_data=obj_comment, map_elem_data=obj_data,
                                                 map_objects_properties=self.map_objects_properties,
                                                 projection=self.projection)
-            else:
+            elif poi_poly == pwmapedit_constants.MAP_OBJECT_POLYGON:
                 map_object = map_items.Polygon(map_comment_data=obj_comment, map_elem_data=obj_data,
                                                map_objects_properties=self.map_objects_properties,
                                                projection=self.projection)
+            elif poi_poly == pwmapedit_constants.MAP_OBJECT_RESTRICT:
+                pass
+            elif poi_poly == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
+                pass
+            else:
+                pass
 
             self.mapObjectsList.append(map_object)
             self.set_map_bounding_box(map_object.obj_bounding_box)

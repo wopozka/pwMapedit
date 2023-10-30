@@ -46,12 +46,14 @@ class mapCanvas(QGraphicsScene):
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
 
-    def draw_all_objects_on_map(self, obj_list):
+    def draw_all_objects_on_map(self, obj_list, maplevel):
         for obj in obj_list:
-            self.draw_object_on_map(obj)
+            self.draw_object_on_map(obj, maplevel)
 
-    def draw_object_on_map(self, mapobject):
-        self.addItem(mapobject)
+    def draw_object_on_map(self, mapobject, maplevel):
+        if maplevel in mapobject.get_obj_levels():
+            print(mapobject)
+            self.addItem(mapobject)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
