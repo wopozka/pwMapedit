@@ -67,9 +67,8 @@ class Node(object):
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
-class BasicMapItem(QGraphicsItemGroup):
-    def __init__(self, *args, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None,
-                 **kwargs):
+class BasicMapItem(object):
+    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
         """
         basic map items properties, derived map items inherit from it
         Parameters
@@ -79,7 +78,7 @@ class BasicMapItem(QGraphicsItemGroup):
         map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
         kwargs
         """
-        super(BasicMapItem, self).__init__()
+        # super(BasicMapItem, self).__init__()
         self.projection = None
         if projection is not None:
             self.projection = projection
@@ -204,9 +203,10 @@ class BasicMapItem(QGraphicsItemGroup):
         return self.map_levels
 
 
-class Poi(BasicMapItem):
-    def __init__(self, *args, **kwargs):
-        super(Poi, self).__init__(*args, **kwargs)
+class Poi(QGraphicsItemGroup, BasicMapItem):
+    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+        super(Poi, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+                                  map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POI]'
         self.create_object()
 
@@ -229,14 +229,15 @@ class Poi(BasicMapItem):
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
-class Polyline(BasicMapItem):
+class Polyline(QGraphicsItemGroup, BasicMapItem):
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
     # item.setPen(your_pen)
     # self.your_scene.addItem(item)
-    def __init__(self, *args, **kwargs):
-        super(Polyline, self).__init__(*args, **kwargs)
+    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+        super(Polyline, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+                                       map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POLYLINE]'
         self.create_object()
 
@@ -271,9 +272,10 @@ class Polyline(BasicMapItem):
             self.addToGroup(graphics_path_item)
 
 
-class Polygon(BasicMapItem):
-    def __init__(self, *args, **kwargs):
-        super(Polygon, self).__init__(*args, **kwargs)
+class Polygon(QGraphicsItemGroup, BasicMapItem):
+    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+        super(Polygon, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+                                      map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POLYLGON]'
         self.polygon_transparent = False
         for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
