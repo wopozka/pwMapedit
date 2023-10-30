@@ -17,7 +17,7 @@ class mapRender(QGraphicsView):
         self._curent_view_mouse_coords = None
         self.projection = None
         if projection is not None:
-            self.projection=projection
+            self.projection = projection
 
     def set_main_window_status_bar(self, status_bar):
         self.main_window_status_bar = status_bar

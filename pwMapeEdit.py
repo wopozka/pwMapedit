@@ -27,7 +27,7 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
-        self.projection = projection.Projection({})
+        self.projection = projection.Mercator({})
         self.initialize()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
@@ -189,7 +189,6 @@ class pwMapeditPy(QMainWindow):
             # print(self.map_canvas.itemsBoundingRect())
             # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)
             # self.view.ensureVisible(self.map_canvas.itemsBoundingRect())
-            # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def menu_zoom_in_command(self):
         center_coords = self.view.mapToScene(self.view.width() // 2, self.view.height() // 2)

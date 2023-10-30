@@ -107,8 +107,8 @@ class MapObjectsProperties(object):
         icons_defs = dict()
         icons_files = os.path.join('icons', '*.xpm')
         for icon_type_file_name in glob.glob(icons_files):
-            icon_type, icon_file_name = icon_type_file_name.split('_', 1)
-            icons_defs[icon_type] = QPixmap(icon_file_name)
+            icon_type, icon_file_name = os.path.basename(icon_type_file_name).split('_', 1)
+            icons_defs['0x' + icon_type] = QPixmap(icon_file_name)
         return icons_defs
 
     def get_poi_pixmap(self, poi_type):

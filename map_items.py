@@ -67,7 +67,7 @@ class Node(object):
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
-class BasicMapItem(object):
+class BasicMapItem(QGraphicsItemGroup):
     def __init__(self, *args, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None,
                  **kwargs):
         """
@@ -79,6 +79,7 @@ class BasicMapItem(object):
         map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
         kwargs
         """
+        super(BasicMapItem, self).__init__()
         self.projection = None
         if projection is not None:
             self.projection = projection
@@ -98,6 +99,12 @@ class BasicMapItem(object):
         self.obj_bounding_box = {}
         if map_elem_data is not None:
             self.set_data(map_comment_data, map_elem_data)
+
+    def __repr__(self):
+        return self.obj_data
+
+    def __str__(self):
+        return self.obj_data
 
     def set_data(self, comment_data, obj_data):
         """
@@ -197,7 +204,7 @@ class BasicMapItem(object):
         return self.map_levels
 
 
-class Poi(QGraphicsItemGroup, BasicMapItem):
+class Poi(BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Poi, self).__init__(*args, **kwargs)
         # self.object_type = '[POI]'
@@ -212,16 +219,17 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
             poi.setPos(x, y)
             poi.setZValue(20)
         else:
-            print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
+            # print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
             poi.setZValue(20)
-        poi.setParentItem(self)
+        # poi.setParentItem(self)
+        self.addToGroup(poi)
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
-class Polyline(QGraphicsItemGroup, BasicMapItem):
+class Polyline(BasicMapItem):
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
@@ -263,7 +271,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
             self.addToGroup(graphics_path_item)
 
 
-class Polygon(QGraphicsItemGroup, BasicMapItem):
+class Polygon(BasicMapItem):
     def __init__(self, *args, **kwargs):
         super(Polygon, self).__init__(*args, **kwargs)
         # self.object_type = '[POLYLGON]'

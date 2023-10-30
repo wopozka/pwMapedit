@@ -48,12 +48,13 @@ class mapCanvas(QGraphicsScene):
         return
 
     def draw_all_objects_on_map(self, obj_list, maplevel):
-        for obj in obj_list:
+        for num, obj in enumerate(obj_list):
             self.draw_object_on_map(obj, maplevel)
 
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
-            if isinstance(mapobject, (map_items.Poi, map_items.Polyline, map_items. Polygon)):
+            if isinstance(mapobject, (map_items.Poi, map_items.Polyline, map_items.Polygon)):
+                # print('adding object to map', mapobject)
                 self.addItem(mapobject)
 
     def remove_all_objects_from_map(self):
