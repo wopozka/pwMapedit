@@ -203,6 +203,12 @@ class BasicMapItem(object):
         return self.map_levels
 
 
+
+class Poi_Mod(QGraphicsPixmapItem):
+    def __init__(self):
+        super().__init__()
+
+
 class Poi(QGraphicsItemGroup, BasicMapItem):
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
         super(Poi, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
