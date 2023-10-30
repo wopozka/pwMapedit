@@ -13,6 +13,7 @@ import projection
 import tempfile
 import misc_functions
 import os.path
+import map_items
 import map_object_properties
 from singleton_store import Store
 
@@ -52,8 +53,8 @@ class mapCanvas(QGraphicsScene):
 
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
-            print(mapobject)
-            self.addItem(mapobject)
+            if isinstance(mapobject, (map_items.Poi, map_items.Polyline, map_items. Polygon)):
+                self.addItem(mapobject)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')

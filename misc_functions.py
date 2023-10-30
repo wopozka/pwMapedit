@@ -81,7 +81,6 @@ def map_strings_record_to_dict_record(map_strings_record):
     Returns OrderedDict {line_num: commment1, line_num: comment2...,}, OrderedDict {(0, POI_POLY): POI: (1, Type): 0x000...}
     -------
     """
-    print(map_strings_record)
     record_dict = OrderedDict()
     comment_list = list()
     inside_record = False

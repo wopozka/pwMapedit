@@ -85,10 +85,13 @@ class BasicMapItem(object):
         self.obj_comment = list()
         self.map_levels = set()
         self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
-                                     'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'CityIdx': '',
-                                     'DisctrictName': '', 'Phone': '', 'Highway': '',  'Data0': Data_X(),
+                                     'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'HouseNumber': '',
+                                     'Phone': '', 'CityIdx': '',
+                                     'DisctrictName': '', 'Highway': '',  'Data0': Data_X(),
                                      'Data1': Data_X(), 'Data2': Data_X(), 'Data3': Data_X(),
-                                     'Data4': Data_X(), 'Others': OrderedDict()})
+                                     'Data4': Data_X(), 'RouteParam': [], 'CityName': '', 'CountryName': '',
+                                     'RegionName': '', 'RoadID': 0,
+                                     'CountryCode': '', 'ZipCode': '', 'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
@@ -106,18 +109,33 @@ class BasicMapItem(object):
         -------
 
         """
-        print(obj_data)
         if comment_data is not None and comment_data:
             self.obj_comment_set(comment_data)
         for number_keyname in obj_data:
             _, key = number_keyname
             if number_keyname[1] in ('Type', 'Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
-                                     'Phone', 'Highway'):
+                                     'HouseNumber', 'Phone', 'Highway', 'CityName', 'CountryName', 'RegionName',
+                                     'CountryCode', 'ZipCode'):
                 self.obj_param_set(key, obj_data[number_keyname])
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.obj_datax_set(number_keyname[1], obj_data[number_keyname])
+            elif number_keyname[1] == 'RouteParam':
+                for single_param in obj_data[number_keyname].split(','):
+                    self.obj_data['RouteParam'].append(int(single_param))
+            elif number_keyname[1] == 'RoadID':
+                self.obj_data['RoadID'] = int(obj_data[number_keyname])
+            elif number_keyname[1].startswith('Nod'):
+                pass
+            elif number_keyname[1].startswith('Numbers'):
+                pass
+            elif number_keyname[1].startswith('HLevel'):
+                pass
+            elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
+                # temporary remove these from reporting
+                pass
             else:
-                print('Unknown key value: %s.' % number_keyname[1])
+                self.obj_others_set(number_keyname, obj_data[number_keyname])
+                # print('Unknown key value: %s.' % number_keyname[1])
 
     def obj_comment_get(self):
         return self.obj_comment
@@ -140,6 +158,9 @@ class BasicMapItem(object):
     def obj_datax_set(self, data012345, data012345_val):
         self.obj_data[data012345].add_points(self.coords_from_data_to_nodes(data012345_val))
         self.map_levels.add(data012345)
+
+    def obj_others_set(self, key, value):
+        self.obj_data['Others'][key] = value
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -191,7 +212,7 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
             poi.setPos(x, y)
             poi.setZValue(20)
         else:
-            print(self.obj_param_get('Type'))
+            print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
             poi = QGraphicsEllipseItem(x, y, 10, 10)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
@@ -240,23 +261,6 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
             graphics_path_item.setZValue(10)
             # self.addItem(graphics_path_item)
             self.addToGroup(graphics_path_item)
-            # in case polyline has a label, place it on the map
-            # if mapobject.Label:
-            #     if len(coordslist) == 4:
-            #         label_pos = [coordslist[0], coordslist[1]]
-            #         if (coordslist[3] - coordslist[1]) == 0:
-            #             label_angle = 90
-            #         else:
-            #             label_angle = math.atan((coordslist[2] - coordslist[1]) / (coordslist[3] - coordslist[1]))
-            #
-            #         # print(label_angle)
-            #         # self.create_text(label_pos, text = mapobject.Label, angle = label_angle)
-            #     else:
-            #         pass
-            #         # calculate label position, lets say it will be in the meadle of the polyline
-            #         # label_pos = coordslist[len(coordslist) // 2]
-            #         # label_angle =
-            # del (coordslist[:])
 
 
 class Polygon(QGraphicsItemGroup, BasicMapItem):
