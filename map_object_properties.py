@@ -1,6 +1,6 @@
 import os.path
 import glob
-from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtGui import QPixmap, QColor, QPen
 from PyQt5.QtCore import Qt
 
 class MapObjectsProperties(object):
@@ -107,12 +107,19 @@ class MapObjectsProperties(object):
         icons_defs = dict()
         icons_files = os.path.join('icons', '*.xpm')
         for icon_type_file_name in glob.glob(icons_files):
-            icon_type, icon_file_name = os.path.basename(icon_type_file_name).split('_', 1)
-            icons_defs['0x' + icon_type] = QPixmap(icon_file_name)
+            if 'question_mark' in icon_type_file_name:
+                icons_defs['question_mark'] = QPixmap(icon_type_file_name)
+            else:
+                icon_type, icon_file_name = os.path.basename(icon_type_file_name).split('_', 1)
+                icons_defs['0x' + icon_type] = QPixmap(icon_type_file_name)
+                if icons_defs['0x' + icon_type].isNull():
+                    print('Problem z odczytaniem pliku ikony: %s' % icon_type_file_name)
         return icons_defs
 
     def get_poi_pixmap(self, poi_type):
-        return self.poi_pixmap_icons[poi_type]
+        if self.poi_type_has_icon(poi_type):
+            return self.poi_pixmap_icons[poi_type]
+        return self.poi_pixmap_icons['question_mark']
 
     def get_polyline_colour(self, poly_type):
         if poly_type in self.polyline_properties_colour:
@@ -133,6 +140,13 @@ class MapObjectsProperties(object):
         if poly_type in self.polygon_properties_fill_colour:
             return self.polygon_properties_fill_colour[poly_type]
         return QColor('gainsboro')
+
+    def get_polyline_qpen(self, poly_type):
+        pen = QPen()
+        pen.setWidth(self.get_polyline_width(poly_type))
+        pen.setBrush(self.get_polyline_colour(poly_type))
+        pen.setStyle(self.get_polyline_dash(poly_type))
+        return pen
 
     def poi_type_has_icon(self, poi_type):
         return poi_type in self.poi_pixmap_icons

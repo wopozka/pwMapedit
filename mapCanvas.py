@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem
 from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 from PyQt5.QtCore import QPointF, Qt
@@ -53,16 +53,35 @@ class mapCanvas(QGraphicsScene):
 
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
-            if isinstance(mapobject, (map_items.Poi, map_items.Polyline, map_items.Polygon)):
-                # print('adding object to map', mapobject)
-                self.addItem(mapobject)
+            if isinstance(mapobject, map_items.Poi):
                 nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
                 x, y = nodes[0].return_canvas_coords()
-                elipsa = QGraphicsEllipseItem()
-                elipsa.setRect(x, y, 10, 10)
-                elipsa.setBrush(QBrush(Qt.black))
-                self.addItem(elipsa)
-                # self.addEllipse(x, y, 10, 10, brush=QBrush(Qt.black))
+                poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(mapobject.obj_param_get('Type')))
+                poi.setPos(x, y)
+                self.addItem(poi)
+                x0, y0, x1, y1 = poi.boundingRect().getRect()
+                if mapobject.obj_param_get('Label'):
+                    poi_label = QGraphicsSimpleTextItem(mapobject.obj_param_get('Label'))
+                    px0, py0, pheight, pwidth = poi_label.boundingRect().getRect()
+                    poi_label.setPos(x + x1/2 - pheight/2, y + y1)
+                    self.addItem(poi_label)
+            elif isinstance(mapobject, map_items.Polyline):
+                polyline = QPainterPath()
+                for obj_data in mapobject.obj_datax_get('Data0'):
+                    nodes, inner_outer = obj_data
+                    for node_num, node in enumerate(nodes):
+                        x, y = node.return_canvas_coords()
+                        if node_num == 0:
+                            polyline.moveTo(x, y)
+                        else:
+                            polyline.lineTo(x, y)
+                polyline_path_item = QGraphicsPathItem(polyline)
+                polyline_path_item.setPen(self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type')))
+                self.addItem(polyline_path_item)
+            elif isinstance(mapobject, map_items.Polygon):
+                pass
+            else:
+                pass
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')

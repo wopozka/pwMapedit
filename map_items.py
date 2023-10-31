@@ -103,7 +103,7 @@ class BasicMapItem(object):
         return self.obj_data
 
     def __str__(self):
-        return self.obj_data
+        return str(self.obj_data)
 
     def set_data(self, comment_data, obj_data):
         """
@@ -205,8 +205,8 @@ class BasicMapItem(object):
 
 
 class Poi_Mod(QGraphicsPixmapItem):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class Poi(QGraphicsItemGroup, BasicMapItem):
@@ -222,17 +222,17 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
         if self.map_objects_properties is not None \
                 and self.map_objects_properties.poi_type_has_icon(self.obj_param_get('Type')):
             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
-            poi.setPos(x, y)
-            poi.setZValue(20)
+            poi.setPos(0, 0)
         else:
             # print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
-            poi = QGraphicsEllipseItem(x, y, 10, 10)
+            poi = QGraphicsEllipseItem(0, 0, 20, 20)
             brush = QBrush(Qt.black)
             poi.setBrush(brush)
-            poi.setZValue(20)
+            poi.show()
         # poi.setParentItem(self)
+        self.setPos(x, y)
+        self.setZValue(20)
         self.addToGroup(poi)
-
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 class Polyline(QGraphicsItemGroup, BasicMapItem):
