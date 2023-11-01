@@ -220,7 +220,7 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
         nodes, inner_outer = self.obj_datax_get('Data0')[0]
         x, y = nodes[0].return_canvas_coords()
         if self.map_objects_properties is not None \
-                and self.map_objects_properties.poi_type_has_icon(self.obj_param_get('Type')):
+                and self.map_objects_properties.poi_type_has_pixmap_icon(self.obj_param_get('Type')):
             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
             poi.setPos(0, 0)
         else:

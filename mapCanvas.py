@@ -56,7 +56,7 @@ class mapCanvas(QGraphicsScene):
             if isinstance(mapobject, map_items.Poi):
                 nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
                 x, y = nodes[0].return_canvas_coords()
-                poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(mapobject.obj_param_get('Type')))
+                poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
                 poi.setPos(x, y)
                 self.addItem(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()

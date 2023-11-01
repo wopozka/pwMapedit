@@ -2,6 +2,7 @@ import os.path
 import glob
 from PyQt5.QtGui import QPixmap, QColor, QPen
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QGraphicsPixmapItem
 
 class MapObjectsProperties(object):
     """here this class contains definitions of all map objects: the points, polylines and polygons"""
@@ -9,6 +10,7 @@ class MapObjectsProperties(object):
         # couple if definitions
         # points definitions
         self.poi_pixmap_icons = self.read_icons()
+        self.non_pixmap_icons = self.create_nonpixmap_icons()
 
         # polylines definitions
         #dictionary where key is Type
@@ -116,8 +118,16 @@ class MapObjectsProperties(object):
                     print('Problem z odczytaniem pliku ikony: %s' % icon_type_file_name)
         return icons_defs
 
+    def get_poi_icon(self, poi_type):
+        if self.poi_type_has_pixmap_icon(poi_type):
+            return QGraphicsPixmapItem(self.poi_pixmap_icons[poi_type])
+        elif self.poi_type_has_nonpixmap_icon(poi_type):
+            return self.poi_nonpixmap_icons[poi_type]
+        else:
+            return QGraphicsPixmapItem(self.poi_pixmap_icons['question_mark'])
+
     def get_poi_pixmap(self, poi_type):
-        if self.poi_type_has_icon(poi_type):
+        if self.poi_type_has_pixmap_icon(poi_type):
             return self.poi_pixmap_icons[poi_type]
         return self.poi_pixmap_icons['question_mark']
 
@@ -148,6 +158,13 @@ class MapObjectsProperties(object):
         pen.setStyle(self.get_polyline_dash(poly_type))
         return pen
 
-    def poi_type_has_icon(self, poi_type):
+    def poi_type_has_pixmap_icon(self, poi_type):
         return poi_type in self.poi_pixmap_icons
+
+    def poi_type_has_nonpixmap_icon(self, poi_type):
+        return poi_type in self.non_pixmap_icons
+
+    def create_nonpixmap_icons(self):
+        return {}
+
 
