@@ -2,7 +2,7 @@ import os.path
 import glob
 from PyQt5.QtGui import QPixmap, QColor, QPen
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem
 
 class MapObjectsProperties(object):
     """here this class contains definitions of all map objects: the points, polylines and polygons"""
@@ -124,7 +124,7 @@ class MapObjectsProperties(object):
         elif self.poi_type_has_nonpixmap_icon(poi_type):
             return self.poi_nonpixmap_icons[poi_type]
         else:
-            return QGraphicsPixmapItem(self.poi_pixmap_icons['question_mark'])
+            return QGraphicsSimpleTextItem('?')
 
     def get_poi_pixmap(self, poi_type):
         if self.poi_type_has_pixmap_icon(poi_type):
