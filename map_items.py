@@ -57,12 +57,12 @@ class Node(object):
     def get_coordinates(self):
         return self.latitude, self.longitude
 
-    def return_canvas_coords(self):
+    def get_canvas_coords(self):
         # print(Store.projection.projectionName)
         return self.projection.geo_to_canvas(self.latitude, self.longitude)
 
     def get_canvas_coords_as_qpointf(self):
-        x, y = self.return_canvas_coords()
+        x, y = self.get_canvas_coords()
         return QPointF(x, y)
 
     def return_real_coords(self):
@@ -222,7 +222,7 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
 
     def create_object(self):
         nodes, inner_outer = self.obj_datax_get('Data0')[0]
-        x, y = nodes[0].return_canvas_coords()
+        x, y = nodes[0].get_canvas_coords()
         if self.map_objects_properties is not None \
                 and self.map_objects_properties.poi_type_has_pixmap_icon(self.obj_param_get('Type')):
             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
@@ -265,7 +265,7 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
             the_first_node = True
             for node in nodes:
                 # coordslist += points.return_canvas_coords()
-                coord_x, coord_y = node.return_canvas_coords()
+                coord_x, coord_y = node.get_canvas_coords()
                 if the_first_node:
                     polyline.moveTo(coord_x, coord_y)
                     the_first_node = False
@@ -300,7 +300,7 @@ class Polygon(QGraphicsItemGroup, BasicMapItem):
             fill_colour = ''
         for nodes, inner_outer in self.obj_datax_get('Data0'):
             for node in nodes:
-                x, y = node.return_canvas_coords()
+                x, y = node.get_canvas_coords()
                 # print('x: %s, y: %s' %(x, y))
                 polygon_nodes.append(QPointF(x, y))
         q_polygon = QGraphicsPolygonItem(QPolygonF(polygon_nodes))

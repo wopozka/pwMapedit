@@ -55,7 +55,7 @@ class mapCanvas(QGraphicsScene):
         if maplevel in mapobject.get_obj_levels():
             if isinstance(mapobject, map_items.Poi):
                 nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
-                x, y = nodes[0].return_canvas_coords()
+                x, y = nodes[0].get_canvas_coords()
                 poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
                 poi.setPos(x, y)
                 poi.setZValue(20)
@@ -72,7 +72,7 @@ class mapCanvas(QGraphicsScene):
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, inner_outer = obj_data
                     for node_num, node in enumerate(nodes):
-                        x, y = node.return_canvas_coords()
+                        x, y = node.get_canvas_coords()
                         if node_num == 0:
                             polyline.moveTo(x, y)
                         else:
