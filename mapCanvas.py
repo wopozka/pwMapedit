@@ -58,12 +58,14 @@ class mapCanvas(QGraphicsScene):
                 x, y = nodes[0].return_canvas_coords()
                 poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
                 poi.setPos(x, y)
+                poi.setZValue(20)
                 self.addItem(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
                     poi_label = QGraphicsSimpleTextItem(mapobject.obj_param_get('Label'))
                     px0, py0, pheight, pwidth = poi_label.boundingRect().getRect()
                     poi_label.setPos(x + x1/2 - pheight/2, y + y1)
+                    poi_label.setZValue(20)
                     self.addItem(poi_label)
             elif isinstance(mapobject, map_items.Polyline):
                 polyline = QPainterPath()
@@ -76,10 +78,31 @@ class mapCanvas(QGraphicsScene):
                         else:
                             polyline.lineTo(x, y)
                 polyline_path_item = QGraphicsPathItem(polyline)
-                polyline_path_item.setPen(self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type')))
+                pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
+                polyline_path_item.setPen(pen)
+                polyline_path_item.setZValue(20)
                 self.addItem(polyline_path_item)
             elif isinstance(mapobject, map_items.Polygon):
-                pass
+                outer_polygon = None
+                is_inner = False
+                for obj_data in mapobject.obj_datax_get('Data0'):
+                    nodes, outer = obj_data
+                    nodes_qpointfs = tuple(QPointF(b[0], b[1]) for b in tuple(a.return_canvas_coords() for a in nodes))
+                    if outer_polygon is not None:
+                        is_inner = all(outer_polygon.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs)
+                    if not is_inner:
+                        if outer_polygon is None:
+                            outer_polygon = QPolygonF(nodes_qpointfs)
+                        else:
+                            polygon = QGraphicsPolygonItem(outer_polygon)
+                            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
+                            brush = QBrush(color)
+                            polygon.setBrush(brush)
+                            self.addItem(polygon)
+                            outer_polygon = None
+                            is_inner = False
+                    else:
+                        outer_polygon.subtracted(QPolygonF(nodes_qpointfs))
             else:
                 pass
 
