@@ -47,12 +47,12 @@ class Mercator(Projection):
     def geo_to_canvas(self, latitude, longitude):
         x = float(longitude)
         y = 180.0 / math.pi * math.log(math.tan(math.pi / 4.0 + float(latitude) * (math.pi / 180.0) / 2.0))
-        return [self.mapDataOfset * x, -y * self.mapDataOfset]
+        return self.mapDataOfset * x, -y * self.mapDataOfset
 
     def canvas_to_geo(self, x, y):
         longitude = x / self.mapDataOfset
         latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp((-y / self.mapDataOfset) * (math.pi / 180.0))) - math.pi/2.0)
-        return [latitude, longitude]
+        return latitude, longitude
 
 class UTM(Projection):
 
@@ -98,7 +98,7 @@ class UTM(Projection):
     def geo_to_canvas(self, latitude, longitude):
         self.UTMEasting, self.UTMNorthing, self.UTMZone, a = \
                 utm.from_latlon(float(latitude), float(longitude)-self.mapDataOfset)
-        if a in('B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'):
+        if a in ('B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'):
             self.UTMNorthern = -1
         else:
             self.UTMNorthern = 1
@@ -109,7 +109,7 @@ class UTM(Projection):
         x = self.UTMEasting
         #print(x)
         # to calculate y you have to multiply the Northing by UTMNorther
-        # all latitudes north will be positive, all latituded south will be negative
+        # all latitudes north will be positive, all latitudes south will be negative
         y = self.UTMNorthern * self.UTMNorthing
 
         return [x, -y]

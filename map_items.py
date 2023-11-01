@@ -61,6 +61,10 @@ class Node(object):
         # print(Store.projection.projectionName)
         return self.projection.geo_to_canvas(self.latitude, self.longitude)
 
+    def get_canvas_coords_as_qpointf(self):
+        x, y = self.return_canvas_coords()
+        return QPointF(x, y)
+
     def return_real_coords(self):
         return self.projection.canvas_to_geo()
 

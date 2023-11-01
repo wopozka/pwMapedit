@@ -87,7 +87,7 @@ class mapCanvas(QGraphicsScene):
                 is_inner = False
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, outer = obj_data
-                    nodes_qpointfs = tuple(QPointF(b[0], b[1]) for b in tuple(a.return_canvas_coords() for a in nodes))
+                    nodes_qpointfs = tuple(a.get_canvas_coords_as_qpointf() for a in nodes)
                     if outer_polygon is not None:
                         is_inner = all(outer_polygon.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs)
                     if not is_inner:
