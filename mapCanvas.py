@@ -33,10 +33,6 @@ class mapCanvas(QGraphicsScene):
         self.object_clicked = []
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
-        self.num_polygons = 0
-        self.num_polygons_added = 0
-        self.num_polygons_subtracted = 0
-
 
     # new events definitions:
     # def mouseMoveEvent(self, event):
@@ -88,9 +84,6 @@ class mapCanvas(QGraphicsScene):
                 polyline_path_item.setZValue(20)
                 self.addItem(polyline_path_item)
             elif isinstance(mapobject, map_items.Polygon):
-                self.num_polygons += 1
-                inner_polygon_num = 0
-                # check_inner = False
                 outer_polygone = None
                 qpainterpaths_to_add = list()
                 for obj_data in mapobject.obj_datax_get('Data0'):
