@@ -80,6 +80,7 @@ class mapCanvas(QGraphicsScene):
                             polyline.lineTo(x, y)
                 polyline_path_item = QGraphicsPathItem(polyline)
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
+                pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)
                 polyline_path_item.setZValue(20)
                 self.addItem(polyline_path_item)
