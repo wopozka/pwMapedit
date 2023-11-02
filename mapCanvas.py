@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem
 from PyQt5.QtSvg import QGraphicsSvgItem
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt5.QtCore import QPointF, Qt
 import platform
 import modes
@@ -91,30 +91,27 @@ class mapCanvas(QGraphicsScene):
                 self.num_polygons += 1
                 inner_polygon_num = 0
                 # check_inner = False
-                polygons_to_add = list()
+                outer_polygone = None
+                qpainterpaths_to_add = list()
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, outer = obj_data
                     nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
                     nodes_qpointfs.append(nodes_qpointfs[0])
-                    if polygons_to_add and all(polygons_to_add[-1].containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
-                        print('Odejmuje poligon', tuple(a.get_coordinates() for a in nodes))
-                        aaa = polygons_to_add[-1].subtracted(QPolygonF(nodes_qpointfs))
-                        print('Polygon odjety')
-                        polygons_to_add[-1] = aaa
-                        self.num_polygons_subtracted += 1
-                        inner_polygon_num += 1
-                        if inner_polygon_num > 5:
-                            break
+                    if outer_polygone is not None \
+                            and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
+                        qpp = QPainterPath()
+                        qpp.addPolygon(QPolygonF(nodes_qpointfs))
+                        qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
                     else:
-                        polygons_to_add.append(QPolygonF(nodes_qpointfs))
-                self.num_polygons_added += len(polygons_to_add)
-                print('Dodaje polygon')
-                for poly in polygons_to_add:
-                    polygon = QGraphicsPolygonItem(poly)
+                        outer_polygone = QPolygonF(nodes_qpointfs)
+                        qpp = QPainterPath()
+                        qpp.addPolygon(outer_polygone)
+                        qpainterpaths_to_add.append(qpp)
+                for poly in qpainterpaths_to_add:
+                    polygon = QGraphicsPathItem(poly)
                     color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
                     polygon.setBrush(QBrush(color))
                     self.addItem(polygon)
-                print('Polygon dodany')
             else:
                 pass
 
