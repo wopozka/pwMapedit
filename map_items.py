@@ -213,12 +213,12 @@ class Poi_Mod(QGraphicsPixmapItem):
         super().__init__(*args, **kwargs)
 
 
-class Poi(QGraphicsItemGroup, BasicMapItem):
+class Poi(BasicMapItem):
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Poi, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+        super(Poi, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
                                   map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POI]'
-        self.create_object()
+        # self.create_object()
 
     def create_object(self):
         nodes, inner_outer = self.obj_datax_get('Data0')[0]
@@ -239,17 +239,17 @@ class Poi(QGraphicsItemGroup, BasicMapItem):
         self.addToGroup(poi)
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
-class Polyline(QGraphicsItemGroup, BasicMapItem):
+class Polyline(BasicMapItem):
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
     # item.setPen(your_pen)
     # self.your_scene.addItem(item)
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Polyline, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+        super(Polyline, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
                                        map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POLYLINE]'
-        self.create_object()
+        # self.create_object()
 
     def create_object(self):
         colour = Qt.black
@@ -282,15 +282,15 @@ class Polyline(QGraphicsItemGroup, BasicMapItem):
             self.addToGroup(graphics_path_item)
 
 
-class Polygon(QGraphicsItemGroup, BasicMapItem):
+class Polygon(BasicMapItem):
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Polygon, self).__init__(parent, map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+        super(Polygon, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
                                       map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POLYLGON]'
-        self.polygon_transparent = False
-        for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
-            self.obj_data[_data].set_polygon()
-        self.create_objects()
+        # self.polygon_transparent = False
+        # for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
+        #     self.obj_data[_data].set_polygon()
+        # self.create_objects()
 
     def create_objects(self):
         polygon_nodes = []
