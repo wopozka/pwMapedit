@@ -49,8 +49,8 @@ class mapCanvas(QGraphicsScene):
     def draw_all_objects_on_map(self, obj_list, maplevel):
         for num, obj in enumerate(obj_list):
             self.draw_object_on_map(obj, maplevel)
-        print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
-              % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
+        # print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
+        #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
