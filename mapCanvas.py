@@ -33,6 +33,9 @@ class mapCanvas(QGraphicsScene):
         self.object_clicked = []
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
+        self.num_polygons = 0
+        self.num_polygons_added = 0
+        self.num_polygons_subtracted = 0
 
 
     # new events definitions:
@@ -50,6 +53,8 @@ class mapCanvas(QGraphicsScene):
     def draw_all_objects_on_map(self, obj_list, maplevel):
         for num, obj in enumerate(obj_list):
             self.draw_object_on_map(obj, maplevel)
+        print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
+              % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
@@ -83,26 +88,33 @@ class mapCanvas(QGraphicsScene):
                 polyline_path_item.setZValue(20)
                 self.addItem(polyline_path_item)
             elif isinstance(mapobject, map_items.Polygon):
-                outer_polygon = None
-                is_inner = False
+                self.num_polygons += 1
+                inner_polygon_num = 0
+                # check_inner = False
+                polygons_to_add = list()
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, outer = obj_data
-                    nodes_qpointfs = tuple(a.get_canvas_coords_as_qpointf() for a in nodes)
-                    if outer_polygon is not None:
-                        is_inner = all(outer_polygon.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs)
-                    if not is_inner:
-                        if outer_polygon is None:
-                            outer_polygon = QPolygonF(nodes_qpointfs)
-                        else:
-                            polygon = QGraphicsPolygonItem(outer_polygon)
-                            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
-                            brush = QBrush(color)
-                            polygon.setBrush(brush)
-                            self.addItem(polygon)
-                            outer_polygon = None
-                            is_inner = False
+                    nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
+                    nodes_qpointfs.append(nodes_qpointfs[0])
+                    if polygons_to_add and all(polygons_to_add[-1].containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
+                        print('Odejmuje poligon', tuple(a.get_coordinates() for a in nodes))
+                        aaa = polygons_to_add[-1].subtracted(QPolygonF(nodes_qpointfs))
+                        print('Polygon odjety')
+                        polygons_to_add[-1] = aaa
+                        self.num_polygons_subtracted += 1
+                        inner_polygon_num += 1
+                        if inner_polygon_num > 5:
+                            break
                     else:
-                        outer_polygon.subtracted(QPolygonF(nodes_qpointfs))
+                        polygons_to_add.append(QPolygonF(nodes_qpointfs))
+                self.num_polygons_added += len(polygons_to_add)
+                print('Dodaje polygon')
+                for poly in polygons_to_add:
+                    polygon = QGraphicsPolygonItem(poly)
+                    color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
+                    polygon.setBrush(QBrush(color))
+                    self.addItem(polygon)
+                print('Polygon dodany')
             else:
                 pass
 
