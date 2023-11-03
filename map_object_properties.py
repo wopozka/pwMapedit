@@ -122,7 +122,10 @@ class MapObjectsProperties(object):
 
     def get_poi_icon(self, poi_type):
         if self.poi_type_has_pixmap_icon(poi_type):
-            return QGraphicsPixmapItem(self.poi_pixmap_icons[poi_type])
+            qpi = QGraphicsPixmapItem(self.poi_pixmap_icons[poi_type])
+            # px0, py0, pheight, pwidth = qpi.boundingRect().getRect()
+            # qpi.setOffset(px0 - pheight/2, py0 - pwidth)
+            return qpi
         elif self.poi_type_has_nonpixmap_icon(poi_type):
             return self.non_pixmap_icons[poi_type]()
         else:

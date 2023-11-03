@@ -30,6 +30,7 @@ class mapRender(QGraphicsView):
 
     # new events definitions:
     def mouseMoveEvent(self, event):
+        super(mapRender, self).mouseMoveEvent(event)
         self._curent_view_mouse_coords = event.pos()
         self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
         x = self._curent_scene_mouse_coords.x()

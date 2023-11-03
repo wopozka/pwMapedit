@@ -115,7 +115,6 @@ class mapCanvas(QGraphicsScene):
                     # polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                     # self.addItem(polygon)
                 self.addItem(polygon)
-                print(polygon.path())
             else:
                 pass
 
