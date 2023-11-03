@@ -278,6 +278,9 @@ class Poi(BasicMapItem):
                                   map_objects_properties=map_objects_properties, projection=projection)
         # self.object_type = '[POI]'
         # self.create_object()
+        # modyfikacja sposobu wizaualizacji prostokata do podswietlania
+        # https://stackoverflow.com/questions/1604995/qt-4-5-changing-the-selection-marquee-for-qgraphicsitem
+        # https://www.qtcentre.org/threads/15089-QGraphicsView-change-selected-rectangle-style
 
     def create_object(self):
         nodes, inner_outer = self.obj_datax_get('Data0')[0]
