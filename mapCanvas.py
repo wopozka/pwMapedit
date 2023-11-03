@@ -60,6 +60,7 @@ class mapCanvas(QGraphicsScene):
                 poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
                 poi.setPos(x, y)
                 poi.setZValue(20)
+                poi.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
@@ -83,6 +84,7 @@ class mapCanvas(QGraphicsScene):
                 pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)
                 polyline_path_item.setZValue(20)
+                polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(polyline_path_item)
             elif isinstance(mapobject, map_items.Polygon):
                 outer_polygone = None
@@ -105,6 +107,7 @@ class mapCanvas(QGraphicsScene):
                     polygon = QGraphicsPathItem(poly)
                     color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
                     polygon.setBrush(QBrush(color))
+                    polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                     self.addItem(polygon)
             else:
                 pass
