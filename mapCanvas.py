@@ -70,6 +70,8 @@ class mapCanvas(QGraphicsScene):
                     poi_label.setZValue(20)
                     self.addItem(poi_label)
             elif isinstance(mapobject, map_items.Polyline):
+                # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
+                # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
                 polyline = QPainterPath()
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, inner_outer = obj_data
@@ -103,12 +105,17 @@ class mapCanvas(QGraphicsScene):
                         qpp = QPainterPath()
                         qpp.addPolygon(outer_polygone)
                         qpainterpaths_to_add.append(qpp)
+                polygon = QGraphicsPathItem()
+                polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 for poly in qpainterpaths_to_add:
-                    polygon = QGraphicsPathItem(poly)
+                    # polygon = QGraphicsPathItem()
+                    polygon.setPath(poly)
                     color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
                     polygon.setBrush(QBrush(color))
-                    polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                    self.addItem(polygon)
+                    # polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                    # self.addItem(polygon)
+                self.addItem(polygon)
+                print(polygon.path())
             else:
                 pass
 
