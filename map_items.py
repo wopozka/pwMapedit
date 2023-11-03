@@ -88,14 +88,38 @@ class BasicMapItem(object):
             self.projection = projection
         self.obj_comment = list()
         self.map_levels = set()
-        self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
-                                     'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'HouseNumber': '',
-                                     'Phone': '', 'CityIdx': '',
-                                     'DisctrictName': '', 'Highway': '',  'Data0': Data_X(),
-                                     'Data1': Data_X(), 'Data2': Data_X(), 'Data3': Data_X(),
-                                     'Data4': Data_X(), 'RouteParam': [], 'CityName': '', 'CountryName': '',
-                                     'RegionName': '', 'RoadID': 0,
-                                     'CountryCode': '', 'ZipCode': '', 'Others': OrderedDict()})
+        self.type = None
+        self.label = None
+        self.label2 = None
+        self.label3 = None
+        self.dirindicator = None
+        self.endlevel = None
+        self.streetdesc = None
+        self.housenumber = None
+        self.phone = None
+        self.cityidx = None
+        self.data0 = None
+        self.data1 = None
+        self.data2 = None
+        self.data3 = None
+        self.data4 = None
+        self.routeparam = None
+        self.cityname = None
+        self.countryname = None
+        self.countrycode = None
+        self.regionname = None
+        self.roadid = None
+        self.zipcode = None
+        self.others = OrderedDict()
+
+        # self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
+        #                              'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'HouseNumber': '',
+        #                              'Phone': '', 'CityIdx': '',
+        #                              'DisctrictName': '', 'Highway': '',  'Data0': Data_X(),
+        #                              'Data1': Data_X(), 'Data2': Data_X(), 'Data3': Data_X(),
+        #                              'Data4': Data_X(), 'RouteParam': [], 'CityName': '', 'CountryName': '',
+        #                              'RegionName': '', 'RoadID': 0,
+        #                              'CountryCode': '', 'ZipCode': '', 'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
@@ -130,10 +154,12 @@ class BasicMapItem(object):
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.obj_datax_set(number_keyname[1], obj_data[number_keyname])
             elif number_keyname[1] == 'RouteParam':
+                if self.routeparam is None:
+                    self.routeparam = []
                 for single_param in obj_data[number_keyname].split(','):
-                    self.obj_data['RouteParam'].append(int(single_param))
+                    self.routeparam.append(int(single_param))
             elif number_keyname[1] == 'RoadID':
-                self.obj_data['RoadID'] = int(obj_data[number_keyname])
+                self.roadid = int(obj_data[number_keyname])
             elif number_keyname[1].startswith('Nod'):
                 pass
             elif number_keyname[1].startswith('Numbers'):
@@ -155,22 +181,55 @@ class BasicMapItem(object):
             self.obj_comment.append(_comment)
 
     def obj_param_get(self, parameter):
-        return self.obj_data[parameter]
+        return getattr(self, parameter.lower())
 
     def obj_param_set(self, parameter, value):
-        self.obj_data[parameter] = value
+        setattr(self, parameter.lower(), value)
+        # self.obj_data[parameter] = value
 
     def obj_datax_get(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
-        return self.obj_data[dataX].get_nodes_and_inn_outer()
+        datax = dataX.lower()
+        if datax == 'data0':
+            return self.data0.get_nodes_and_inn_outer()
+        elif datax == 'data1':
+            return self.data1.get_nodes_and_inn_outer()
+        elif datax == 'data2':
+            return self.data2.get_nodes_and_inn_outer()
+        elif datax == 'data3':
+            return self.data3.get_nodes_and_inn_outer()
+        elif datax == 'data4':
+            return self.data4.get_nodes_and_inn_outer()
 
     def obj_datax_set(self, data012345, data012345_val):
-        self.obj_data[data012345].add_points(self.coords_from_data_to_nodes(data012345_val))
+        datax = data012345.lower()
+        if datax == 'data0':
+            if self.data0 is None:
+                self.data0 = Data_X()
+            self.data0.add_points(self.coords_from_data_to_nodes(data012345_val))
+        elif datax == 'data1':
+            if self.data1 is None:
+                self.data1 = Data_X()
+            self.data1.add_points(self.coords_from_data_to_nodes(data012345_val))
+        elif datax == 'data2':
+            if self.data2 is None:
+                self.data2 = Data_X()
+            self.data2.add_points(self.coords_from_data_to_nodes(data012345_val))
+        elif datax == 'data3':
+            if self.data3 is None:
+                self.data3 = Data_X()
+            self.data3.add_points(self.coords_from_data_to_nodes(data012345_val))
+        elif datax == 'data4':
+            if self.data4 is None:
+                self.data4 = Data_X()
+            self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
         self.map_levels.add(data012345)
+        return
+
 
     def obj_others_set(self, key, value):
-        self.obj_data['Others'][key] = value
+        self.others[key] = value
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
