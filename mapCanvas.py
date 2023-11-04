@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup
 from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt5.QtCore import QPointF, Qt
@@ -55,20 +55,26 @@ class mapCanvas(QGraphicsScene):
     def draw_object_on_map(self, mapobject, maplevel):
         if maplevel in mapobject.get_obj_levels():
             if isinstance(mapobject, map_items.Poi):
+                group_item = QGraphicsItemGroup()
                 nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
                 x, y = nodes[0].get_canvas_coords()
                 poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
                 poi.setPos(x, y)
                 poi.setZValue(20)
                 poi.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                self.addItem(poi)
+                # self.addItem(poi)
+                group_item.addToGroup(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
                     poi_label = QGraphicsSimpleTextItem(mapobject.obj_param_get('Label'))
                     px0, py0, pheight, pwidth = poi_label.boundingRect().getRect()
                     poi_label.setPos(x + x1/2 - pheight/2, y + y1)
                     poi_label.setZValue(20)
-                    self.addItem(poi_label)
+                    # self.addItem(poi_label)
+                    group_item.addToGroup(poi_label)
+                group_item.setZValue(20)
+                group_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                self.addItem(group_item)
             elif isinstance(mapobject, map_items.Polyline):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
@@ -81,7 +87,8 @@ class mapCanvas(QGraphicsScene):
                             polyline.moveTo(x, y)
                         else:
                             polyline.lineTo(x, y)
-                polyline_path_item = QGraphicsPathItem(polyline)
+                # polyline_path_item = QGraphicsPathItem(polyline)
+                polyline_path_item = map_items.PolylineQGraphicsPathItem(polyline)
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
                 pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)
@@ -96,7 +103,8 @@ class mapCanvas(QGraphicsScene):
                     nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
                     nodes_qpointfs.append(nodes_qpointfs[0])
                     if outer_polygone is not None \
-                            and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
+                            and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
+                            # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
                         qpp = QPainterPath()
                         qpp.addPolygon(QPolygonF(nodes_qpointfs))
                         qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)

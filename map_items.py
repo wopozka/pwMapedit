@@ -4,7 +4,7 @@ from collections import OrderedDict
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
-    QGraphicsPolygonItem
+    QGraphicsPolygonItem, QStyle
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
 
@@ -402,3 +402,21 @@ class Restriction(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
+
+class PolylineQGraphicsPathItem(QGraphicsPathItem):
+    def __init__(self, *args, **kwargs):
+        super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
+
+    def paint(self, painter, option, widget=None):
+        # super(QGraphicsPathItem, self).paint(painter, option, widget=widget)
+        if option.state & QStyle.State_Selected:
+            option.state &= not QStyle.State_Selected
+            pen = QPen(QColor("red"))
+            pen.setStyle(Qt.DotLine)
+            super().paint(painter, option, widget=widget)
+            option.state &= QStyle.State_Selected
+            painter.setPen(pen)
+            # draw red outline for example
+            # painter.drawRect(option.rect)
+        else:
+            super().paint(painter, option, widget=widget)
