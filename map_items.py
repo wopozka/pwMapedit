@@ -4,7 +4,7 @@ from collections import OrderedDict
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
-    QGraphicsPolygonItem, QStyle
+    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainterPathStroker
 
@@ -447,3 +447,22 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width())
         return stroker.createStroke(self.path())
+
+class PoiLabel(QGraphicsSimpleTextItem):
+    def __init__(self, string_text, parent):
+        self.parent = parent
+        super().__init__(string_text, parent)
+        px0, py0, pheight, pwidth = parent.boundingRect().getRect()
+        self.setPos(pheight, pwidth/2)
+        self.setZValue(20)
+
+class PolylineLabel(QGraphicsSimpleTextItem):
+    def __init__(self, string_text, parent):
+        self.parent = parent
+        super().__init__(string_text, parent)
+        painter_path = self.parent.path()
+        angle = painter_path.angleAtPercent(0.5)
+        point = painter_path.pointAtPercent(0.5)
+        self.setPos(point)
+        self.setRotation(angle)
+        self.setZValue(20)
