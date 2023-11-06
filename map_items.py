@@ -407,20 +407,24 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
     def __init__(self, *args, **kwargs):
         # self.pen_before_hovering = None
         self.selected = False
+        self.hovered = True
         # self.hovered = False
         self.selected_pen = None
         # self.hovered_pen = QPen(QColor("red"))
         super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
+        self.selected_pen = QPen(QColor("red"))
+        self.selected_pen.setStyle(Qt.DotLine)
+        self.hovered_over_pen = QPen(QColor('red'))
+        self.hovered_over_pen.setWidth(4)
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
-            if self.selected_pen is None:
-                self.selected_pen = QPen(QColor("red"))
-                self.selected_pen.setStyle(Qt.DotLine)
-            self.setPen(self.selected_pen)
+            self.selected = True
         else:
-            self.setPen(self.orig_pen)
+            self.selected = False
+        if self.selected:
+            self.setPen(self.selected_pen)
         super().paint(painter, option, widget=widget)
 
     def setPen(self, pen):
@@ -428,11 +432,13 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
             self.orig_pen = pen
         super().setPen(pen)
 
-    # def hoverEnterEvent(self, event):
-    #     self.hovered = True
-    #
-    # def hoverLeaveEvent(self, event):
-    #     self.hovered = False
+    def hoverEnterEvent(self, event):
+        self.hovered = True
+        self.setPen(self.hovered_over_pen)
+
+    def hoverLeaveEvent(self, event):
+        self.hovered = False
+        self.setPen(self.orig_pen)
 
     def shape(self):
         stroker = QPainterPathStroker()
