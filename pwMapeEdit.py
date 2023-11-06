@@ -29,6 +29,7 @@ class pwMapeditPy(QMainWindow):
         self.status_bar = QStatusBar(self)
         self.projection = projection.Mercator({})
         self.initialize()
+        self.generate_shortcuts()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
 
@@ -40,12 +41,12 @@ class pwMapeditPy(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection)
-        self.generate_shortcuts()
         self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command,
                                         projection=self.projection)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
+
 
         # ramkaglowna = tkinter.Frame(self)
         # ramkaglowna.pack(expand=1, fill='both')
@@ -172,6 +173,8 @@ class pwMapeditPy(QMainWindow):
         scale_down.activated.connect(self.menu_zoom_out_command)
         scale_up = QShortcut(QKeySequence('='), self)
         scale_up.activated.connect(self.menu_zoom_in_command)
+        cancel_selection = QShortcut(QKeySequence('Escape'), self)
+        cancel_selection.activated.connect(self.map_canvas.clearSelection)
 
 
     def open_file(self):

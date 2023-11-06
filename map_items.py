@@ -406,8 +406,7 @@ class Restriction(object):
 class PolylineQGraphicsPathItem(QGraphicsPathItem):
     def __init__(self, *args, **kwargs):
         # self.pen_before_hovering = None
-        self.selected = False
-        self.hovered = True
+        self.hovered = False
         # self.hovered = False
         self.selected_pen = None
         # self.hovered_pen = QPen(QColor("red"))
@@ -420,11 +419,11 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
-            self.selected = True
-        else:
-            self.selected = False
-        if self.selected:
             self.setPen(self.selected_pen)
+        elif self.hovered:
+            self.setPen(self.hovered_over_pen)
+        else:
+            self.setPen(self.orig_pen)
         super().paint(painter, option, widget=widget)
 
     def setPen(self, pen):
@@ -434,11 +433,13 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
 
     def hoverEnterEvent(self, event):
         self.hovered = True
-        self.setPen(self.hovered_over_pen)
+        if not self.isSelected():
+            self.setPen(self.hovered_over_pen)
 
     def hoverLeaveEvent(self, event):
         self.hovered = False
-        self.setPen(self.orig_pen)
+        if not self.isSelected():
+            self.setPen(self.orig_pen)
 
     def shape(self):
         stroker = QPainterPathStroker()
