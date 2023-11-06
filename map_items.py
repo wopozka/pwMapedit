@@ -353,6 +353,8 @@ class Polygon(BasicMapItem):
         # for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
         #     self.obj_data[_data].set_polygon()
         # self.create_objects()
+        # polygon z przesuwanymi rogami za ktore mozna lapac
+        # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
 
     def create_objects(self):
         polygon_nodes = []
