@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle
 from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainterPathStroker
 
 
 class Data_X(object):
@@ -405,33 +405,36 @@ class Restriction(object):
 
 class PolylineQGraphicsPathItem(QGraphicsPathItem):
     def __init__(self, *args, **kwargs):
-        self.default_pen = None
+        # self.pen_before_hovering = None
+        self.selected = False
+        # self.hovered = False
+        self.selected_pen = None
+        # self.hovered_pen = QPen(QColor("red"))
         super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
+        self.orig_pen = None
 
     def paint(self, painter, option, widget=None):
-        super().paint(painter, option, widget=widget)
-        return
         if option.state & QStyle.State_Selected:
-            option.state &= not QStyle.State_Selected
-            pen = QPen(QColor("red"))
-            pen.setStyle(Qt.DotLine)
-            super().paint(painter, option, widget=widget)
-            option.state &= QStyle.State_Selected
-            painter.setPen(pen)
-            # draw red outline for example
-            # painter.drawRect(option.rect)
+            if self.selected_pen is None:
+                self.selected_pen = QPen(QColor("red"))
+                self.selected_pen.setStyle(Qt.DotLine)
+            self.setPen(self.selected_pen)
         else:
-            super().paint(painter, option, widget=widget)
+            self.setPen(self.orig_pen)
+        super().paint(painter, option, widget=widget)
 
-    def hoverEnterEvent(self, event):
-        self.default_pen = self.pen()
-        self.setPen(QPen(QColor("red")))
+    def setPen(self, pen):
+        if self.orig_pen is None:
+            self.orig_pen = pen
+        super().setPen(pen)
 
-    def hoverLeaveEvent(self, event):
-        self.setPen(self.default_pen)
-        self.default_pen = None
+    # def hoverEnterEvent(self, event):
+    #     self.hovered = True
+    #
+    # def hoverLeaveEvent(self, event):
+    #     self.hovered = False
 
-    # def shape(self):
-    #     shape_ = super().shape()
-    #     print(shape_)
-    #     return shape_
+    def shape(self):
+        stroker = QPainterPathStroker()
+        stroker.setWidth(self.pen().width())
+        return stroker.createStroke(self.path())
