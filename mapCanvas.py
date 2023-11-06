@@ -79,6 +79,7 @@ class mapCanvas(QGraphicsScene):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
                 polyline = QPainterPath()
+                # polyline = QGraphicsItem()
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, inner_outer = obj_data
                     for node_num, node in enumerate(nodes):
@@ -92,7 +93,8 @@ class mapCanvas(QGraphicsScene):
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
                 pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)
-                polyline_path_item.setZValue(20)
+                polyline_path_item.setZValue(10)
+                polyline_path_item.setAcceptHoverEvents(True)
                 polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(polyline_path_item)
             elif isinstance(mapobject, map_items.Polygon):
