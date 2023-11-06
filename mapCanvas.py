@@ -66,7 +66,7 @@ class mapCanvas(QGraphicsScene):
                 group_item.addToGroup(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
-                    poi_label = QGraphicsSimpleTextItem(mapobject.obj_param_get('Label'))
+                    poi_label = QGraphicsSimpleTextItem(mapobject.obj_param_get('Label'), poi)
                     px0, py0, pheight, pwidth = poi_label.boundingRect().getRect()
                     poi_label.setPos(x + x1/2 - pheight/2, y + y1)
                     poi_label.setZValue(20)
