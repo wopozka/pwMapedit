@@ -123,6 +123,7 @@ class mapCanvas(QGraphicsScene):
                     polygon.setBrush(QBrush(color))
                     # polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                     # self.addItem(polygon)
+                polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
                 self.addItem(polygon)
             else:
                 pass

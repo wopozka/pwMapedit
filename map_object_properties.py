@@ -106,6 +106,37 @@ class MapObjectsProperties(object):
                                              '0x4f': QColor('yellowgreen')
                                              }
 
+        self.polygon_properties_z_value = {0x4: 5,
+                                           0x5: 5,
+                                           0x13: 5,
+                                           0x14: 4,
+                                           0x15: 4,
+                                           0x16: 4,
+                                           0x17: 4,
+                                           0x19: 5,
+                                           0x1a: 5,
+                                           0x28: 1,
+                                           0x29: 1,
+                                           0x32: 1,
+                                           0x3b: 1,
+                                           0x3c: 1,  # large lake
+                                           0x3d: 5,  # large lake
+                                           0x3e: 5,  # medium lake
+                                           0x3f: 5,  # medium lake
+                                           0x40: 5,  # small lake
+                                           0x41: 5,  # small lake
+                                           0x42: 5,  # major lake
+                                           0x43: 5,  # major lake,
+                                           0x44: 5,  # large lake
+                                           0x45: 5,  # blue unknown
+                                           0x46: 5,  # major river
+                                           0x47: 5,  # large river
+                                           0x48: 5,  # medium river
+                                           0x49: 5,  # small river
+                                           0x4e: 5,  # orchard/plantation
+                                           0x4f: 5,  # scrub
+                                           }
+
     @staticmethod
     def read_icons():
         icons_defs = dict()
@@ -155,6 +186,11 @@ class MapObjectsProperties(object):
         if poly_type in self.polygon_properties_fill_colour:
             return self.polygon_properties_fill_colour[poly_type]
         return QColor('gainsboro')
+
+    def get_polygon_z_value(self, poly_type):
+        if int(poly_type, 16) in self.polygon_properties_z_value:
+            return self.polygon_properties_z_value[int(poly_type, 16)]
+        return 0
 
     def get_polyline_qpen(self, poly_type):
         pen = QPen()
