@@ -357,6 +357,8 @@ class Polygon(BasicMapItem):
         # self.create_objects()
         # polygon z przesuwanymi rogami za ktore mozna lapac
         # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
+        # rysowanie przy pomocy myszy
+        # https://stackoverflow.com/questions/60413976/how-to-draw-polyline-with-pyqt5-in-python
 
     def create_objects(self):
         polygon_nodes = []
