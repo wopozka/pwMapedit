@@ -33,6 +33,7 @@ class MapObjectsProperties(object):
                                          '0x14': Qt.black,
                                          '0x16': QColor('chocolate'),
                                          '0x18': Qt.blue,
+                                         '0x19': Qt.green,  # timezone
                                          '0x1c': QColor('gray'),
                                          '0x1f': Qt.blue,
                                          '0x4b': Qt.red,
@@ -55,7 +56,8 @@ class MapObjectsProperties(object):
                                         '0xa': 2,
                                         '0xc': 2,
                                         '0xd': 2,
-                                        '0x14': 5,
+                                        '0x14': 3,
+                                        '0x15': 2,
                                         '0x1f': 3,
                                         '0x10e11': 2,
                                         '0x10e12': 3,
