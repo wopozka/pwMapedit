@@ -147,7 +147,9 @@ class BasicMapItem(object):
             self.obj_comment_set(comment_data)
         for number_keyname in obj_data:
             _, key = number_keyname
-            if number_keyname[1] in ('Type', 'Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
+            if number_keyname[1] == 'Type':
+                self.obj_param_set('Type', int(obj_data[number_keyname], 16))
+            elif number_keyname[1] in ('Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
                                      'HouseNumber', 'Phone', 'Highway', 'CityName', 'CountryName', 'RegionName',
                                      'CountryCode', 'ZipCode'):
                 self.obj_param_set(key, obj_data[number_keyname])
