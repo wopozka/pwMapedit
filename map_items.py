@@ -5,8 +5,8 @@ from collections import OrderedDict
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
-from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainterPathStroker
+from PyQt5.QtCore import QPointF, Qt, QLineF
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor
 
 
 class Data_X(object):
@@ -356,7 +356,6 @@ class Polygon(BasicMapItem):
         #     self.obj_data[_data].set_polygon()
         # self.create_objects()
         # polygon z przesuwanymi rogami za ktore mozna lapac
-        # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
         # rysowanie przy pomocy myszy
         # https://stackoverflow.com/questions/60413976/how-to-draw-polyline-with-pyqt5-in-python
 
@@ -410,19 +409,18 @@ class Restriction(object):
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
 
 class PolylineQGraphicsPathItem(QGraphicsPathItem):
+    selected_pen = QPen(QColor("red"))
+    selected_pen.setStyle(Qt.DotLine)
+    hovered_over_pen = QPen(QColor('red'))
+    hovered_over_pen.setWidth(4)
     def __init__(self, projection, *args, **kwargs):
         # self.pen_before_hovering = None
         self.hovered = False
         self.projection = projection
-        # self.hovered = False
-        self.selected_pen = None
         # self.hovered_pen = QPen(QColor("red"))
         super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
-        self.selected_pen = QPen(QColor("red"))
-        self.selected_pen.setStyle(Qt.DotLine)
-        self.hovered_over_pen = QPen(QColor('red'))
-        self.hovered_over_pen.setWidth(4)
+
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
@@ -466,19 +464,16 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
                 print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
 
 class PolygonQGraphicsPathItem(QGraphicsPathItem):
+    selected_pen = QPen(QColor("red"))
+    selected_pen.setStyle(Qt.DotLine)
+    hovered_over_pen = QPen(QColor('red'))
+    hovered_over_pen.setWidth(4)
     def __init__(self, projection, *args, **kwargs):
         # self.pen_before_hovering = None
         self.hovered = False
         self.projection = projection
-        # self.hovered = False
-        self.selected_pen = None
-        # self.hovered_pen = QPen(QColor("red"))
         super(PolygonQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
-        self.selected_pen = QPen(QColor("red"))
-        self.selected_pen.setStyle(Qt.DotLine)
-        self.hovered_over_pen = QPen(QColor('red'))
-        self.hovered_over_pen.setWidth(4)
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
@@ -534,3 +529,199 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         self.setPos(point)
         self.setRotation(angle)
         self.setZValue(20)
+
+
+class GripItem(QGraphicsPathItem):
+    # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
+    _pen = QPen(QColor('green'), 2)
+    circle = QPainterPath()
+    circle.addEllipse(-6, -6, 12, 12)
+    circleBrush = QBrush(QColor('green'))
+    square = QPainterPath()
+    square.addRect(-10, -10, 20, 20)
+    squareBrush = QBrush(QColor('red'))
+    # keep the bounding rect consistent
+    _boundingRect = (circle | square).boundingRect()
+
+    def __init__(self, pos, parent):
+        super().__init__(parent)
+        self.poly = parent
+        self.setPos(pos)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+                      | QGraphicsItem.ItemSendsGeometryChanges)
+        self.setAcceptHoverEvents(True)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setPen(self._pen)
+        self._setHover(False)
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemPositionHasChanged:
+            self.poly.gripMoved(self)
+        return super().itemChange(change, value)
+
+    def _setHover(self, hover):
+        if hover:
+            self.setBrush(self.squareBrush)
+            self.setPath(self.square)
+        else:
+            self.setBrush(self.circleBrush)
+            self.setPath(self.circle)
+
+    def boundingRect(self):
+        return self._boundingRect
+
+    def hoverEnterEvent(self, event):
+        super().hoverEnterEvent(event)
+        self._setHover(True)
+
+    def hoverLeaveEvent(self, event):
+        super().hoverLeaveEvent(event)
+        self._setHover(False)
+
+    def mousePressEvent(self, event):
+        if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
+            self.poly.removeGrip(self)
+        else:
+            super().mousePressEvent(event)
+
+
+class PolygonAnnotation(QGraphicsPolygonItem):
+    # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
+    _threshold = None
+    _pen = QPen(QColor("green"), 2)
+    normalBrush = QBrush(Qt.NoBrush)
+    hoverBrush = QBrush(QColor(255, 0, 0, 100))
+    def __init__(self, *args):
+        super().__init__()
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+                      | QGraphicsItem.ItemSendsGeometryChanges)
+        self.setAcceptHoverEvents(True)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setPen(self._pen)
+        self.gripItems = []
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, QPolygonF):
+                self.setPolygon(arg)
+            if isinstance(arg, (tuple, list)):
+                args = arg
+        if all(isinstance(p, QPointF) for p in args):
+            self.setPolygon(QPolygonF(args))
+
+    def threshold(self):
+        if self._threshold is not None:
+            return self._threshold
+        return self.pen().width() or 1.
+
+    def setThreshold(self, threshold):
+        self._threshold = threshold
+
+    def setPolygon(self, poly):
+        if self.polygon() == poly:
+            return
+        if self.gripItems:
+            scene = self.scene()
+            while self.gripItems:
+                grip = self.gripItems.pop()
+                if scene:
+                    scene.removeItem(grip)
+
+        super().setPolygon(poly)
+        for i, p in enumerate(poly):
+            self.gripItems.append(GripItem(p, self))
+
+    def addPoint(self, pos):
+        self.insertPoint(len(self.gripItems), pos)
+
+    def insertPoint(self, index, pos):
+        poly = list(self.polygon())
+        poly.insert(index, pos)
+        self.gripItems.insert(index, GripItem(pos, self))
+        # just call the base implementation, not the override, as all required
+        # items are already in place
+        super().setPolygon(QPolygonF(poly))
+
+    def removePoint(self, index):
+        if len(self.gripItems) <= 3:
+            # a real polygon always has at least three vertexes,
+            # otherwise it would be a line or a point
+            return
+        poly = list(self.polygon())
+        poly.pop(index)
+        grip = self.gripItems.pop(index)
+        if self.scene():
+            self.scene().removeItem(grip)
+        # call the base implementation, as in insertPoint()
+        super().setPolygon(QPolygonF(poly))
+
+    def closestPointToPoly(self, pos):
+        '''
+            Get the position along the polygon sides that is the closest
+            to the given point.
+            Returns:
+            - distance from the edge
+            - QPointF within the polygon edge
+            - insertion index
+            If no closest point is found, distance and index are -1
+        '''
+        poly = self.polygon()
+        points = list(poly)
+
+        # iterate through pair of points, if the polygon is not "closed",
+        # add the start to the end
+        p1 = points.pop(0)
+        if points[-1] != p1: # identical to QPolygonF.isClosed()
+            points.append(p1)
+        intersections = []
+        for i, p2 in enumerate(points, 1):
+            line = QLineF(p1, p2)
+            inters = QPointF()
+            # create a perpendicular line that starts at the given pos
+            perp = QLineF.fromPolar(
+                self.threshold(), line.angle() + 90).translated(pos)
+            if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                # no intersection, reverse the perpendicular line by 180°
+                perp.setAngle(perp.angle() + 180)
+                if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                    # the pos is not within the line extent, ignore it
+                    p1 = p2
+                    continue
+            # get the distance between the given pos and the found intersection
+            # point, then add it, the intersection and the insertion index to
+            # the intersection list
+            intersections.append((QLineF(pos, inters).length(), inters, i))
+            p1 = p2
+
+        if intersections:
+            # return the result with the shortest distance
+            return sorted(intersections)[0]
+        return -1, QPointF(), -1
+
+    def gripMoved(self, grip):
+        if grip in self.gripItems:
+            poly = list(self.polygon())
+            poly[self.gripItems.index(grip)] = grip.pos()
+            super().setPolygon(QPolygonF(poly))
+
+    def removeGrip(self, grip):
+        if grip in self.gripItems:
+            self.removePoint(self.gripItems.index(grip))
+
+    def hoverEnterEvent(self, event):
+        super().hoverEnterEvent(event)
+        self.setBrush(self.hoverBrush)
+
+    def hoverLeaveEvent(self, event):
+        super().hoverLeaveEvent(event)
+        self.setBrush(self.normalBrush)
+
+    def mousePressEvent(self, event):
+        if (
+            event.button() == Qt.LeftButton
+            and event.modifiers() == Qt.ShiftModifier
+        ):
+            dist, pos, index = self.closestPointToPoly(event.pos())
+            if index >= 0 and dist <= self.threshold():
+                self.insertPoint(index, pos)
+                return
+        super().mousePressEvent(event)
