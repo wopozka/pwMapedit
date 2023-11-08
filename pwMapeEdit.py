@@ -20,9 +20,6 @@ class pwMapeditPy(QMainWindow):
         super(pwMapeditPy, self).__init__()
         self.parent = parent
         self.filename = filename
-        self.file_actions = list()
-        self.edit_actions = list()
-        self.select_actions = list()
         self.map_canvas = None
         self.view = None
         self.setWindowTitle("pwMapeEdit")
@@ -101,8 +98,6 @@ class pwMapeditPy(QMainWindow):
             else:
                 select_menu.addSeparator()
 
-
-
         # View menu
         view_menu = menu.addMenu("&View")
         view_menu.addAction(QAction('&Zoom in', self))
@@ -123,50 +118,72 @@ class pwMapeditPy(QMainWindow):
         projection_action_group.addAction(mercator_action)
         projection_action_group.addAction(utm_action)
 
+        # Tools submenu
+        tools_menu = menu.addMenu('&Tools')
+        for action in self._create_tools_actions():
+            if action is not None:
+                tools_menu.addAction(action)
+            else:
+                tools_menu.addSeparator()
+
     def _create_file_actions(self):
-        self.file_actions.append(QAction('&Open', self))
-        self.file_actions[-1].triggered.connect(self.open_file)
-        self.file_actions.append(QAction('&Add', self))
-        self.file_actions.append(QAction('&Close', self))
-        self.file_actions.append(None)
-        self.file_actions.append(QAction('&Save map', self))
-        self.file_actions.append(QAction('&Save map as', self))
-        self.file_actions.append(None)
-        self.file_actions.append(QAction('&Import', self))
-        self.file_actions.append(QAction('&Export', self))
-        return self.file_actions
+        file_actions = list()
+        file_actions.append(QAction('&Open', self))
+        file_actions[-1].triggered.connect(self.open_file)
+        file_actions.append(QAction('&Add', self))
+        file_actions.append(QAction('&Close', self))
+        file_actions.append(None)
+        file_actions.append(QAction('&Save map', self))
+        file_actions.append(QAction('&Save map as', self))
+        file_actions.append(None)
+        file_actions.append(QAction('&Import', self))
+        file_actions.append(QAction('&Export', self))
+        return tuple(file_actions)
 
     def _create_edit_actions(self):
-        self.edit_actions.append(QAction('&Undo', self))
-        self.edit_actions.append(QAction('&Redo', self))
-        self.edit_actions.append(None)
-        self.edit_actions.append(QAction('&Cut', self))
-        self.edit_actions.append(QAction('&Copy', self))
-        self.edit_actions.append(QAction('&Paste', self))
-        self.edit_actions.append(QAction('&Paste here', self))
-        self.edit_actions.append(QAction('&Delete', self))
-        self.edit_actions.append(None)
-        return self.edit_actions
+        edit_actions = list()
+        edit_actions.append(QAction('&Undo', self))
+        edit_actions.append(QAction('&Redo', self))
+        edit_actions.append(None)
+        edit_actions.append(QAction('&Cut', self))
+        edit_actions.append(QAction('&Copy', self))
+        edit_actions.append(QAction('&Paste', self))
+        edit_actions.append(QAction('&Paste here', self))
+        edit_actions.append(QAction('&Delete', self))
+        edit_actions.append(None)
+        return edit_actions
 
     def _create_select_actions(self):
-        self.select_actions.append(QAction('&All objects', self))
-        self.select_actions.append(QAction('&All points', self))
-        self.select_actions.append(QAction('&All polylines', self))
-        self.select_actions.append(QAction('&All polygones', self))
-        self.select_actions.append(QAction('&All roads', self))
-        self.edit_actions.append(None)
-        self.select_actions.append(QAction('&All bookmarks', self))
-        self.select_actions.append(QAction('&All note drivings', self))
-        self.edit_actions.append(None)
-        self.select_actions.append(QAction('&All tracks', self))
-        self.select_actions.append(QAction('&All waypoints', self))
-        self.select_actions.append(QAction('&All routes', self))
-        self.select_actions.append(QAction('&All raster images', self))
-        self.select_actions.append(QAction('&All attached files', self))
-        self.edit_actions.append(None)
-        self.select_actions.append(QAction('&By type', self))
-        self.select_actions.append(QAction('&By labels', self))
-        return self.select_actions
+        select_actions = list()
+        select_actions.append(QAction('&All objects', self))
+        select_actions.append(QAction('&All points', self))
+        select_actions.append(QAction('&All polylines', self))
+        select_actions.append(QAction('&All polygones', self))
+        select_actions.append(QAction('&All roads', self))
+        select_actions.append(None)
+        select_actions.append(QAction('&All bookmarks', self))
+        select_actions.append(QAction('&All note drivings', self))
+        select_actions.append(None)
+        select_actions.append(QAction('&All tracks', self))
+        select_actions.append(QAction('&All waypoints', self))
+        select_actions.append(QAction('&All routes', self))
+        select_actions.append(QAction('&All raster images', self))
+        select_actions.append(QAction('&All attached files', self))
+        select_actions.append(None)
+        select_actions.append(QAction('&By type', self))
+        select_actions.append(QAction('&By labels', self))
+        return select_actions
+
+    def _create_tools_actions(self):
+        tools_action = list()
+        tools_action.append(QAction('&Drag map', self))
+        tools_action.append(QAction('&Zoom map', self))
+        tools_action.append(QAction('&Select objects', self))
+        tools_action.append(QAction('&Rotate object', self))
+        tools_action.append(QAction('&Edit nodes', self))
+        tools_action.append(QAction('&Create object', self))
+        return tools_action
+
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
