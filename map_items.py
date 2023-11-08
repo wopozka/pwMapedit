@@ -420,6 +420,7 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
         # self.hovered_pen = QPen(QColor("red"))
         super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
+        self.node_grip_items = list()
 
 
     def paint(self, painter, option, widget=None):
@@ -462,6 +463,19 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
                 print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
             elif path_elem.isLineTo():
                 print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+
+    def decorate(self):
+        path = self.path()
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
+            self.scene().addItem(self.node_grip_items[-1])
+
+    def undecorate(self):
+        for decorator in self.node_grip_items:
+            self.scene().removeItem(decorator)
+        self.node_grip_items.clear()
+
 
 class PolygonQGraphicsPathItem(QGraphicsPathItem):
     selected_pen = QPen(QColor("red"))
@@ -510,6 +524,18 @@ class PolygonQGraphicsPathItem(QGraphicsPathItem):
                 print('move', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
             elif path_elem.isLineTo():
                 print('lineto', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+
+    def decorate(self):
+        path = self.path()
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
+            self.scene().addItem(self.node_grip_items[-1])
+
+    def undecorate(self):
+        for decorator in self.node_grip_items:
+            self.scene().removeItem(decorator)
+        self.node_grip_items.clear()
 
 class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):

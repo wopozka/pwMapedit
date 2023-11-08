@@ -30,9 +30,13 @@ class mapCanvas(QGraphicsScene):
         # self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
-        self.object_clicked = []
+        self.selected_obiects = []
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
+
+        # selection changed slot conection
+        self.selectionChanged.connect(self.selection_change_actions)
+
 
     # new events definitions:
     # def mouseMoveEvent(self, event):
@@ -232,3 +236,11 @@ class mapCanvas(QGraphicsScene):
                     else:
                         self.itemconfig(a, fill='grey')
 
+    def selection_change_actions(self):
+        if any(isinstance(a, map_items.Poi) for a in self.selectedItems()):
+            return
+        if self.selected_obiects:
+            self.selected_obiects[0].undecorate()
+        self.selected_obiects = self.selectedItems()
+        for obj in self.selected_obiects:
+            obj.decorate()
