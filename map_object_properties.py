@@ -192,6 +192,11 @@ class MapObjectsProperties(object):
             return self.polygon_properties_fill_colour[poly_type]
         return QColor('gainsboro')
 
+    def get_polygon_qpen(self, poly_type):
+        pen = QPen()
+        pen.setBrush(self.get_polygon_fill_colour(poly_type))
+        return pen
+
     def get_polygon_z_value(self, poly_type):
         if poly_type in self.polygon_properties_z_value:
             return self.polygon_properties_z_value[poly_type]

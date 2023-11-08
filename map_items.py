@@ -465,6 +465,57 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
             elif path_elem.isLineTo():
                 print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
 
+class PolygonQGraphicsPathItem(QGraphicsPathItem):
+    def __init__(self, projection, *args, **kwargs):
+        # self.pen_before_hovering = None
+        self.hovered = False
+        self.projection = projection
+        # self.hovered = False
+        self.selected_pen = None
+        # self.hovered_pen = QPen(QColor("red"))
+        super(PolygonQGraphicsPathItem, self).__init__(*args, **kwargs)
+        self.orig_pen = None
+        self.selected_pen = QPen(QColor("red"))
+        self.selected_pen.setStyle(Qt.DotLine)
+        self.hovered_over_pen = QPen(QColor('red'))
+        self.hovered_over_pen.setWidth(4)
+
+    def paint(self, painter, option, widget=None):
+        if option.state & QStyle.State_Selected:
+            self.setPen(self.selected_pen)
+        elif self.hovered:
+            self.setPen(self.hovered_over_pen)
+        else:
+            self.setPen(self.orig_pen)
+        super().paint(painter, option, widget=widget)
+
+    def setPen(self, pen):
+        if self.orig_pen is None:
+            self.orig_pen = pen
+        super().setPen(pen)
+
+    def hoverEnterEvent(self, event):
+        self.hovered = True
+        if not self.isSelected():
+            self.setPen(self.hovered_over_pen)
+
+    def hoverLeaveEvent(self, event):
+        self.hovered = False
+        if not self.isSelected():
+            self.setPen(self.orig_pen)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        path = self.path()
+        print(path.elementCount())
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            # print(QPointF(path_elem))
+            if path_elem.isMoveTo():
+                print('move', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+            elif path_elem.isLineTo():
+                print('lineto', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+
 class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent

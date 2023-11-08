@@ -114,8 +114,11 @@ class mapCanvas(QGraphicsScene):
                         qpp = QPainterPath()
                         qpp.addPolygon(outer_polygone)
                         qpainterpaths_to_add.append(qpp)
-                polygon = QGraphicsPathItem()
+                # polygon = QGraphicsPathItem()
+                polygon = map_items.PolygonQGraphicsPathItem(self.projection)
+                polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
                 polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                polygon.setAcceptHoverEvents(True)
                 for poly in qpainterpaths_to_add:
                     # polygon = QGraphicsPathItem()
                     polygon.setPath(poly)
