@@ -85,7 +85,7 @@ class mapCanvas(QGraphicsScene):
                         else:
                             polyline.lineTo(x, y)
                 # polyline_path_item = QGraphicsPathItem(polyline)
-                polyline_path_item = map_items.PolylineQGraphicsPathItem(polyline)
+                polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection, polyline)
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
                 pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)

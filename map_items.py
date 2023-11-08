@@ -410,9 +410,10 @@ class Restriction(object):
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
 
 class PolylineQGraphicsPathItem(QGraphicsPathItem):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, projection, *args, **kwargs):
         # self.pen_before_hovering = None
         self.hovered = False
+        self.projection = projection
         # self.hovered = False
         self.selected_pen = None
         # self.hovered_pen = QPen(QColor("red"))
@@ -451,6 +452,18 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width())
         return stroker.createStroke(self.path())
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        path = self.path()
+        print(path.elementCount())
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            # print(QPointF(path_elem))
+            if path_elem.isMoveTo():
+                print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+            elif path_elem.isLineTo():
+                print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
 
 class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
