@@ -408,20 +408,20 @@ class Restriction(object):
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
 
-class PolylineQGraphicsPathItem(QGraphicsPathItem):
+
+class PolyQGraphicsPathItem(QGraphicsPathItem):
+    # basic class for Polyline and Polygon, for presentation on maps
     selected_pen = QPen(QColor("red"))
     selected_pen.setStyle(Qt.DotLine)
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(4)
+
     def __init__(self, projection, *args, **kwargs):
-        # self.pen_before_hovering = None
         self.hovered = False
         self.projection = projection
-        # self.hovered_pen = QPen(QColor("red"))
-        super(PolylineQGraphicsPathItem, self).__init__(*args, **kwargs)
+        super(PolyQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
         self.node_grip_items = list()
-
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
@@ -446,96 +446,54 @@ class PolylineQGraphicsPathItem(QGraphicsPathItem):
         self.hovered = False
         if not self.isSelected():
             self.setPen(self.orig_pen)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        # path = self.path()
+        # for elem_num in range(path.elementCount()):
+        #     path_elem = path.elementAt(elem_num)
+        #     # print(QPointF(path_elem))
+        #     if path_elem.isMoveTo():
+        #         print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+        #     elif path_elem.isLineTo():
+        #         print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
+
+    def add_decorators(self):
+        path = self.path()
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
+            self.node_grip_items[-1].setVisible(False)
+            # self.scene().addItem(self.node_grip_items[-1])
+
+    def decorate(self):
+        path = self.path()
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
+            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
+            # self.node_grip_items[-1].setVisible(False)
+            # scene.addItem(self.node_grip_items[-1])
+
+    def undecorate(self):
+        scene = self.scene()
+        for grip_item in self.node_grip_items:
+            scene.removeItem(grip_item)
+        self.node_grip_items = []
+
+
+class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
+    def __init__(self, projection, *args, **kwargs):
+        super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
 
     def shape(self):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width())
         return stroker.createStroke(self.path())
 
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        path = self.path()
-        print(path.elementCount())
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
-            # print(QPointF(path_elem))
-            if path_elem.isMoveTo():
-                print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-            elif path_elem.isLineTo():
-                print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-
-    def decorate(self):
-        path = self.path()
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
-            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-            self.scene().addItem(self.node_grip_items[-1])
-
-    def undecorate(self):
-        for decorator in self.node_grip_items:
-            self.scene().removeItem(decorator)
-        self.node_grip_items.clear()
-
-
-class PolygonQGraphicsPathItem(QGraphicsPathItem):
-    selected_pen = QPen(QColor("red"))
-    selected_pen.setStyle(Qt.DotLine)
-    hovered_over_pen = QPen(QColor('red'))
-    hovered_over_pen.setWidth(4)
+class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
-        # self.pen_before_hovering = None
-        self.hovered = False
-        self.projection = projection
-        super(PolygonQGraphicsPathItem, self).__init__(*args, **kwargs)
-        self.orig_pen = None
+        super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
 
-    def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected:
-            self.setPen(self.selected_pen)
-        elif self.hovered:
-            self.setPen(self.hovered_over_pen)
-        else:
-            self.setPen(self.orig_pen)
-        super().paint(painter, option, widget=widget)
-
-    def setPen(self, pen):
-        if self.orig_pen is None:
-            self.orig_pen = pen
-        super().setPen(pen)
-
-    def hoverEnterEvent(self, event):
-        self.hovered = True
-        if not self.isSelected():
-            self.setPen(self.hovered_over_pen)
-
-    def hoverLeaveEvent(self, event):
-        self.hovered = False
-        if not self.isSelected():
-            self.setPen(self.orig_pen)
-
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        path = self.path()
-        print(path.elementCount())
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
-            # print(QPointF(path_elem))
-            if path_elem.isMoveTo():
-                print('move', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-            elif path_elem.isLineTo():
-                print('lineto', self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-
-    def decorate(self):
-        path = self.path()
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
-            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-            self.scene().addItem(self.node_grip_items[-1])
-
-    def undecorate(self):
-        for decorator in self.node_grip_items:
-            self.scene().removeItem(decorator)
-        self.node_grip_items.clear()
 
 class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
@@ -560,24 +518,25 @@ class PolylineLabel(QGraphicsSimpleTextItem):
 class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _pen = QPen(QColor('green'), 2)
-    circle = QPainterPath()
-    circle.addEllipse(-6, -6, 12, 12)
-    circleBrush = QBrush(QColor('green'))
+    inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
     square.addRect(-10, -10, 20, 20)
-    squareBrush = QBrush(QColor('red'))
+    active_brush = QBrush(QColor('red'))
     # keep the bounding rect consistent
-    _boundingRect = (circle | square).boundingRect()
+    _boundingRect = square.boundingRect()
 
     def __init__(self, pos, parent):
-        super().__init__(parent)
+        super().__init__()
         self.poly = parent
         self.setPos(pos)
+        self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
                       | QGraphicsItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setPath(self.square)
         self.setPen(self._pen)
+        self.setZValue(30)
         self._setHover(False)
 
     def itemChange(self, change, value):
@@ -587,11 +546,9 @@ class GripItem(QGraphicsPathItem):
 
     def _setHover(self, hover):
         if hover:
-            self.setBrush(self.squareBrush)
-            self.setPath(self.square)
+            self.setBrush(self.active_brush)
         else:
-            self.setBrush(self.circleBrush)
-            self.setPath(self.circle)
+            self.setBrush(self.inactive_brush)
 
     def boundingRect(self):
         return self._boundingRect
@@ -617,6 +574,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
     _pen = QPen(QColor("green"), 2)
     normalBrush = QBrush(Qt.NoBrush)
     hoverBrush = QBrush(QColor(255, 0, 0, 100))
+
     def __init__(self, *args):
         super().__init__()
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
@@ -742,10 +700,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         self.setBrush(self.normalBrush)
 
     def mousePressEvent(self, event):
-        if (
-            event.button() == Qt.LeftButton
-            and event.modifiers() == Qt.ShiftModifier
-        ):
+        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closestPointToPoly(event.pos())
             if index >= 0 and dist <= self.threshold():
                 self.insertPoint(index, pos)

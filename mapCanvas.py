@@ -30,7 +30,7 @@ class mapCanvas(QGraphicsScene):
         # self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
-        self.selected_obiects = []
+        self.selected_objects = []
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
 
@@ -66,15 +66,16 @@ class mapCanvas(QGraphicsScene):
                 poi.setPos(x, y)
                 poi.setZValue(20)
                 poi.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                self.addItem(poi)
                 # self.addItem(poi)
-                group_item.addToGroup(poi)
+                # group_item.addToGroup(poi)
                 x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
                     poi_label = map_items.PoiLabel(mapobject.obj_param_get('Label'), poi)
-                    group_item.addToGroup(poi_label)
-                group_item.setZValue(20)
-                group_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                self.addItem(group_item)
+                    # group_item.addToGroup(poi_label)
+                # group_item.setZValue(20)
+                # group_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                # self.addItem(group_item)
             elif isinstance(mapobject, map_items.Polyline):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
@@ -106,7 +107,8 @@ class mapCanvas(QGraphicsScene):
                 for obj_data in mapobject.obj_datax_get('Data0'):
                     nodes, outer = obj_data
                     nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
-                    nodes_qpointfs.append(nodes_qpointfs[0])
+                    # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
+                    # nodes_qpointfs.append(nodes_qpointfs[0])
                     if outer_polygone is not None \
                             and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
                             # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
@@ -237,10 +239,10 @@ class mapCanvas(QGraphicsScene):
                         self.itemconfig(a, fill='grey')
 
     def selection_change_actions(self):
-        if any(isinstance(a, map_items.Poi) for a in self.selectedItems()):
+        if any(isinstance(a, QGraphicsPixmapItem) for a in self.selectedItems()):
             return
-        if self.selected_obiects:
-            self.selected_obiects[0].undecorate()
-        self.selected_obiects = self.selectedItems()
-        for obj in self.selected_obiects:
+        if self.selected_objects:
+            self.selected_objects[0].undecorate()
+        self.selected_objects = self.selectedItems()
+        for obj in self.selected_objects:
             obj.decorate()
