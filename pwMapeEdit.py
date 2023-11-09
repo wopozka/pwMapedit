@@ -29,6 +29,7 @@ class pwMapeditPy(QMainWindow):
         self.generate_shortcuts()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
+        self.tools_actions_group = None
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -120,11 +121,21 @@ class pwMapeditPy(QMainWindow):
 
         # Tools submenu
         tools_menu = menu.addMenu('&Tools')
+        self.tools_actions_group= QActionGroup(self)
         for action in self._create_tools_actions():
             if action is not None:
                 tools_menu.addAction(action)
+                self.tools_actions_group.addAction(action)
             else:
                 tools_menu.addSeparator()
+
+        object_menu = tools_menu.addMenu('&Objects')
+        for action in self._create_object_actions():
+            if action is not None:
+                object_menu.addAction(action)
+                self.tools_actions_group.addAction(action)
+            else:
+                object_menu.addSeparator()
 
     def _create_file_actions(self):
         file_actions = list()
@@ -181,9 +192,26 @@ class pwMapeditPy(QMainWindow):
         tools_action.append(QAction('&Select objects', self))
         tools_action.append(QAction('&Rotate object', self))
         tools_action.append(QAction('&Edit nodes', self))
-        tools_action.append(QAction('&Create object', self))
-        return tools_action
+        for act in tools_action:
+            act.setCheckable(True)
+        return tuple(tools_action)
 
+    def _create_object_actions(self):
+        obj_actions = list()
+        obj_actions.append(QAction('&Point', self))
+        obj_actions.append(None)
+        obj_actions.append(QAction('&Polyline', self))
+        obj_actions.append(QAction('&Polyline: circle', self))
+        obj_actions.append(None)
+        obj_actions.append(QAction('&Polygon', self))
+        obj_actions.append(QAction('&Polygon: stripe', self))
+        obj_actions.append(QAction('&Polygon: rectangle', self))
+        obj_actions.append(QAction('&Polygon: disc', self))
+        for act in obj_actions:
+            if act is None:
+                continue
+            act.setCheckable(True)
+        return tuple(obj_actions)
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphics
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
 from PyQt5.QtCore import QPointF, Qt, QLineF
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor
+from datetime import datetime
 
 
 class Data_X(object):
@@ -460,19 +461,17 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def add_decorators(self):
         path = self.path()
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
+        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
             self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-            self.node_grip_items[-1].setVisible(False)
+            # self.node_grip_items[-1].setVisible(False)
             # self.scene().addItem(self.node_grip_items[-1])
 
     def decorate(self):
+        # elapsed = datetime.now()
         path = self.path()
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
+        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
             self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-            # self.node_grip_items[-1].setVisible(False)
-            # scene.addItem(self.node_grip_items[-1])
+        # print(datetime.now() - elapsed)
 
     def undecorate(self):
         scene = self.scene()
