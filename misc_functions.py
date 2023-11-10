@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 import pwmapedit_constants
+import math
 
 def read_icons_from_skin_file(skin_filename):
     """
@@ -100,4 +101,20 @@ def map_strings_record_to_dict_record(map_strings_record):
             print('Unknown line, without =: %s' % line_content)
     return poi_poly, comment_list, record_dict
 
+def vector_angle(x, y):
+    if x == 0:
+        return 90 if y > 0 else 270
+    y_by_x = round(y / x, 5)
+    if y_by_x == 0:
+        return 0 if x > 0 else 180
+    if x > 0:
+        if y > 0:
+            return math.atan(y_by_x) * 180 / math.pi
+        else:
+            return 360 + math.atan(y_by_x) * 180 / math.pi
+    elif x < 0:
+        if y > 0:
+            return 180 + math.atan(y_by_x) * 180 / math.pi
+        else:
+            return 180 + math.atan(y_by_x) * 180 / math.pi
 

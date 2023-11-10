@@ -1,12 +1,13 @@
+import math
 from collections import OrderedDict
-# import projection
+import misc_functions
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
 from PyQt5.QtCore import QPointF, Qt, QLineF
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D
 from datetime import datetime
 
 
@@ -483,11 +484,34 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
         super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+        self.arrow_head_items = []
 
     def shape(self):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width())
         return stroker.createStroke(self.path())
+
+    def add_arrow_heads(self):
+        # lets add arrowhead every second segment
+        path = self.path()
+        for elem_num in range(0, path.elementCount(), 2):
+            p1 = QPointF(path.elementAt(elem_num))
+            p2 = QPointF(path.elementAt(elem_num + 1))
+            if p1.isNull() or p2.isNull():
+                break
+            position = p1 + (p2-p1) / 2
+            self.arrow_head_items.append(DirectionArrowHead(position, self))
+            angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y())
+            print(elem_num, p1, p2, 360-angle)
+            self.arrow_head_items[-1].setRotation(360-angle)
+            self.arrow_head_items[-1].setToolTip(str(p1) + ', ' + str(p2) + ', ' + str(angle))
+
+    def remove_arrow_heads(self):
+        for arrow_head in self.arrow_head_items:
+            self.scene().removeItem(arrow_head)
+        self.arrow_head_items = []
+
+
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -517,6 +541,7 @@ class PolylineLabel(QGraphicsSimpleTextItem):
 class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _pen = QPen(QColor('green'), 2)
+    _pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
     square.addRect(-10, -10, 20, 20)
@@ -566,6 +591,23 @@ class GripItem(QGraphicsPathItem):
         else:
             super().mousePressEvent(event)
 
+class DirectionArrowHead(QGraphicsPathItem):
+    pen = QPen(Qt.black, 3)
+    pen.setCosmetic(True)
+
+    def __init__(self, pos, parent):
+        super().__init__()
+        self.poly = parent
+        self.setPos(pos)
+        self.setParentItem(parent)
+        arrow_head = QPainterPath()
+        arrow_head.moveTo(QPointF(0, 2))
+        arrow_head.lineTo(QPointF(6, 0))
+        arrow_head.lineTo(QPointF(0, -2))
+        self.setPath(arrow_head)
+        self.setPen(self.pen)
+        self.setZValue(30)
+        self.setTransformOriginPoint(0, 3)
 
 class PolygonAnnotation(QGraphicsPolygonItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem

@@ -101,6 +101,9 @@ class mapCanvas(QGraphicsScene):
                 if mapobject.obj_param_get('Label'):
                     poly_label = map_items.PolylineLabel(mapobject.obj_param_get('Label'), polyline_path_item)
                     # self.addItem(poly_label)
+                if mapobject.obj_param_get('DirIndicator'):
+                    print('Nowa droga')
+                    polyline_path_item.add_arrow_heads()
             elif isinstance(mapobject, map_items.Polygon):
                 outer_polygone = None
                 qpainterpaths_to_add = list()

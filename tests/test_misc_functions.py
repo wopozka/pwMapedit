@@ -42,3 +42,20 @@ TEST_RETURN_ICON_DEFINITION = ((['Type=0x15', 'SubType=0x00', 'Marine=Y', 'strin
 @pytest.mark.parametrize('target, answer', TEST_RETURN_ICON_DEFINITION)
 def test_return_icon_definiton(target, answer):
     assert misc_functions.return_icon_definition(target) == answer
+
+TEST_VECTOR_ANGLE =(
+    ((1, 0), 0),
+    ((1, 1), 45),
+    ((0, 1), 90),
+    ((-1, 1), 135),
+    ((-1, 0), 180),
+    ((-1, -1), 225),
+    ((0, -1), 270),
+    ((1, -1), 315),
+    ((1610068.0 - 1610046.0000000002, -6028342.164686314 - (-6028366.262025454)), 360 - 312.39504388855516),
+    ((1626405.0 - 1626420.999999999, -6229588.90447039 - (-6029489.286012457)), 360 - 260.875),
+)
+
+@pytest.mark.parametrize('target, answer', TEST_VECTOR_ANGLE)
+def test_vector_angle(target, answer):
+    assert round(misc_functions.vector_angle(target[0], target[1]), 7) == round(answer, 7)
