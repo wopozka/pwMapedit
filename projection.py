@@ -47,10 +47,12 @@ class Mercator(Projection):
     def geo_to_canvas(self, latitude, longitude):
         x = float(longitude)
         y = 180.0 / math.pi * math.log(math.tan(math.pi / 4.0 + float(latitude) * (math.pi / 180.0) / 2.0))
+        # as screen 0,0 point is topleft corner of a screen and y increases down direction, we use -y
         return self.mapDataOfset * x, -y * self.mapDataOfset
 
     def canvas_to_geo(self, x, y):
         longitude = x / self.mapDataOfset
+        # we need to take -y as in screen coordinates y increases in down direction
         latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp((-y / self.mapDataOfset) * (math.pi / 180.0))) - math.pi/2.0)
         return latitude, longitude
 

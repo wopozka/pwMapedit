@@ -494,17 +494,14 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_arrow_heads(self):
         # lets add arrowhead every second segment
         path = self.path()
-        for elem_num in range(0, path.elementCount(), 2):
+        for elem_num in range(0, path.elementCount() - 1, 2):
             p1 = QPointF(path.elementAt(elem_num))
             p2 = QPointF(path.elementAt(elem_num + 1))
-            if p1.isNull() or p2.isNull():
-                break
             position = p1 + (p2-p1) / 2
             self.arrow_head_items.append(DirectionArrowHead(position, self))
-            angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y())
-            print(elem_num, p1, p2, 360-angle)
-            self.arrow_head_items[-1].setRotation(360-angle)
-            self.arrow_head_items[-1].setToolTip(str(p1) + ', ' + str(p2) + ', ' + str(angle))
+            angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
+                                                clockwise=True, screen_coord_system=True)
+            self.arrow_head_items[-1].setRotation(angle)
 
     def remove_arrow_heads(self):
         for arrow_head in self.arrow_head_items:
@@ -530,11 +527,23 @@ class PolylineLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
         super().__init__(string_text, parent)
-        painter_path = self.parent.path()
-        angle = painter_path.angleAtPercent(0.5)
-        point = painter_path.pointAtPercent(0.5)
-        self.setPos(point)
-        self.setRotation(angle)
+        path = self.parent.path()
+        num_elem = path.elementCount()
+        if num_elem == 2:
+            p1 = QPointF(path.elementAt(0))
+            p2 = QPointF(path.elementAt(1))
+        else:
+            p1 = QPointF(path.elementAt(num_elem// 2))
+            p2 = QPointF(path.elementAt(num_elem // 2 + 1))
+        self.setPos(p1 + (p2-p1)/2)
+        angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
+                                            clockwise=True, screen_coord_system=True)
+        if 0 <= angle <= 90 or angle >= 270:
+            self.setRotation(angle)
+        elif 90 < angle <= 180:
+            self.setRotation(180 - angle)
+        else:
+            self.setRotation(360 - angle)
         self.setZValue(20)
 
 
@@ -544,7 +553,7 @@ class GripItem(QGraphicsPathItem):
     _pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
-    square.addRect(-10, -10, 20, 20)
+    square.addRect(-5, -5, 10, 10)
     active_brush = QBrush(QColor('red'))
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
@@ -601,13 +610,12 @@ class DirectionArrowHead(QGraphicsPathItem):
         self.setPos(pos)
         self.setParentItem(parent)
         arrow_head = QPainterPath()
-        arrow_head.moveTo(QPointF(0, 2))
-        arrow_head.lineTo(QPointF(6, 0))
-        arrow_head.lineTo(QPointF(0, -2))
+        arrow_head.moveTo(QPointF(-3, 2))
+        arrow_head.lineTo(QPointF(3, 0))
+        arrow_head.lineTo(QPointF(-3, -2))
         self.setPath(arrow_head)
         self.setPen(self.pen)
         self.setZValue(30)
-        self.setTransformOriginPoint(0, 3)
 
 class PolygonAnnotation(QGraphicsPolygonItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem

@@ -12,6 +12,7 @@ class mapRender(QGraphicsView):
         self.master = master
         self.zoom_in_funct = zoom_in_funct
         self.zoom_out_funct = zoom_out_funct
+        self.map_scale = 1
         self.main_window_status_bar = None
         self._curent_scene_mouse_coords = None
         self._curent_view_mouse_coords = None
@@ -28,15 +29,27 @@ class mapRender(QGraphicsView):
     def curent_view_mouse_coords(self):
         return self._curent_view_mouse_coords
 
+    def set_map_scale(self, map_scale_factor):
+        self.map_scale *= map_scale_factor
+        self.set_status_bar()
+
+    def set_status_bar(self, event=None):
+        if event is not None:
+            self._curent_view_mouse_coords = event.pos()
+            self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
+            x = self._curent_scene_mouse_coords.x()
+            y = self._curent_scene_mouse_coords.y()
+            lon, lat = self.projection.canvas_to_geo(x, y)
+            self.main_window_status_bar.showMessage('(%.7f, %.7f), mapscale: %.7f' % (lon, lat, self.map_scale))
+        else:
+            cur_msg = self.main_window_status_bar.currentMessage()
+            new_msg = cur_msg.split('mapscale')[0] + 'mapscale: %.7f' % self.map_scale
+            self.main_window_status_bar.showMessage(new_msg)
+
     # new events definitions:
     def mouseMoveEvent(self, event):
         super(mapRender, self).mouseMoveEvent(event)
-        self._curent_view_mouse_coords = event.pos()
-        self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
-        x = self._curent_scene_mouse_coords.x()
-        y = self._curent_scene_mouse_coords.y()
-        lon, lat = self.projection.canvas_to_geo(x, y)
-        self.main_window_status_bar.showMessage('(%.7f, %.7f)' % (lon, lat))
+        self.set_status_bar(event=event)
 
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:
