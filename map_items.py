@@ -532,19 +532,21 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         if num_elem == 2:
             p1 = QPointF(path.elementAt(0))
             p2 = QPointF(path.elementAt(1))
+        elif num_elem % 2 == 0:
+            p1 = QPointF(path.elementAt(num_elem // 2 - 1))
+            p2 = QPointF(path.elementAt(num_elem // 2))
         else:
-            p1 = QPointF(path.elementAt(num_elem// 2))
+            p1 = QPointF(path.elementAt(num_elem // 2))
             p2 = QPointF(path.elementAt(num_elem // 2 + 1))
         self.setPos(p1 + (p2-p1)/2)
         angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
                                             clockwise=True, screen_coord_system=True)
-        if 0 <= angle <= 90 or angle >= 270:
-            self.setRotation(angle)
-        elif 90 < angle <= 180:
-            self.setRotation(180 - angle)
-        else:
-            self.setRotation(360 - angle)
+        self.setRotation(self.calculate_label_angle(angle))
         self.setZValue(20)
+
+    @staticmethod
+    def calculate_label_angle(angle):
+        return misc_functions.calculate_label_angle(angle)
 
 
 class GripItem(QGraphicsPathItem):

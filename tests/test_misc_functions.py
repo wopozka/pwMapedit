@@ -65,3 +65,19 @@ TEST_VECTOR_ANGLE =(
 @pytest.mark.parametrize('target, answer', TEST_VECTOR_ANGLE)
 def test_vector_angle(target, answer):
     assert misc_functions.vector_angle(target[0], target[1], clockwise=target[2], screen_coord_system=False) == answer
+
+TEST_LABEL_ANGLE = (
+    (0, 0),
+    (45, 45),
+    (90, 90),
+    (135, 315),
+    (180, 0),
+    (225, 45),
+    (270, 90),
+    (315, 45)
+)
+
+@pytest.mark.parametrize('target, answer', TEST_LABEL_ANGLE)
+def test_label_angle(target, answer):
+    assert misc_functions.calculate_label_angle(target) == answer
+

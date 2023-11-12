@@ -128,3 +128,16 @@ def vector_angle(x, y, clockwise=False, screen_coord_system=False):
             return 180 + math.atan(y_by_x) * 180 / math.pi
 
 
+def calculate_label_angle(angle):
+    if 0 <= angle <= 90:
+        return angle
+    elif 90 < angle < 180:
+        return 180 + angle
+    elif angle == 180:
+        return 0
+    elif 180 < angle <= 270:
+        return angle - 180
+    else:
+        return 360 - angle
+
+
