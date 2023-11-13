@@ -543,10 +543,19 @@ class PolylineLabel(QGraphicsSimpleTextItem):
                                             clockwise=True, screen_coord_system=True)
         self.setRotation(self.calculate_label_angle(angle))
         self.setZValue(20)
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
     @staticmethod
     def calculate_label_angle(angle):
         return misc_functions.calculate_label_angle(angle)
+
+    # def paint(self, painter, style, widget):
+    #     print(self.parent.scale())
+    #     if self.parent.scale() < 1:
+    #         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+    #     else:
+    #         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+    #     super().paint(painter, style, widget)
 
 
 class GripItem(QGraphicsPathItem):
