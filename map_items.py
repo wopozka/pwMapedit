@@ -419,7 +419,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(4)
     hovered_over_pen.setCosmetic(True)
-    non_cosmetic_multiplicity = 100
+    non_cosmetic_multiplicity = 4
 
     def __init__(self, projection, *args, **kwargs):
         self.hovered = False
@@ -567,7 +567,7 @@ class GripItem(QGraphicsPathItem):
     _pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
-    square.addRect(-100, -100, 200, 200)
+    square.addRect(-7, -7, 14, 14)
     active_brush = QBrush(QColor('red'))
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
@@ -624,9 +624,9 @@ class DirectionArrowHead(QGraphicsPathItem):
         self.setPos(pos)
         self.setParentItem(parent)
         arrow_head = QPainterPath()
-        arrow_head.moveTo(QPointF(-300, 200))
-        arrow_head.lineTo(QPointF(300, 0))
-        arrow_head.lineTo(QPointF(-300, -200))
+        arrow_head.moveTo(QPointF(-6, 4))
+        arrow_head.lineTo(QPointF(6, 0))
+        arrow_head.lineTo(QPointF(-6, -4))
         self.setPath(arrow_head)
         self.setPen(self.pen)
         self.setZValue(30)
