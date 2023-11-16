@@ -126,9 +126,9 @@ class mapData(object):
             del mp_record[:]
             b += 1
         self.projection.set_map_bounding_box(self.get_map_bounding_box())
-        self.projection.calculate_data_ofset()
+        self.projection.calculate_data_offset()
 
-        print('map data ofset', self.projection.mapDataOfset)
+        print('map data ofset', self.projection.earth_radius)
         print('bonding box', self.map_bounding_box)
 
 

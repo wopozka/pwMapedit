@@ -149,7 +149,7 @@ class mapCanvas(QGraphicsScene):
         old_proj = self.projection
         if proj == 'UTM':
             newProj = projection.UTM(map_bounding_box)
-            if not newProj.calculate_data_ofset():
+            if not newProj.calculate_data_offset():
                 self.projection = newProj
                 print(self.projection.projectionName)
                 self.remove_all_objects_from_map()
