@@ -112,20 +112,14 @@ def vector_angle(x, y, clockwise=False, screen_coord_system=False):
     y_by_x = round(y / x, 5)
     if y_by_x == 0:
         return 0 if x > 0 else 180
+    calc_degrees = math.degrees(math.atan(y_by_x))
     if x > 0:
         if clockwise:
-            if y < 0:
-                return -math.atan(y_by_x) * 180 / math.pi
-            return 360 - math.atan(y_by_x) * 180 / math.pi
+            return -calc_degrees if y < 0 else 360 - calc_degrees
         else:
-            if y > 0:
-                return math.atan(y_by_x) * 180 / math.pi
-            return 360 + math.atan(y_by_x) * 180 / math.pi
-    elif x < 0:
-        if clockwise:
-            return 180 - math.atan(y_by_x) * 180 / math.pi
-        else:
-            return 180 + math.atan(y_by_x) * 180 / math.pi
+            return calc_degrees if y > 0 else 360 + calc_degrees
+    return 180 - calc_degrees if clockwise else 180 + calc_degrees
+
 
 
 def calculate_label_angle(angle):

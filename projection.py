@@ -45,15 +45,16 @@ class Mercator(Projection):
         self.projectionName = 'Mercator'
 
     def geo_to_canvas(self, latitude, longitude):
-        x = float(longitude)
-        y = 180.0 / math.pi * math.log(math.tan(math.pi / 4.0 + float(latitude) * (math.pi / 180.0) / 2.0))
+        x = math.radians(float(longitude)) * self.earth_radius
+        y = math.log(math.tan(math.pi / 4.0 + math.radians(float(latitude)) / 2.0)) * self.earth_radius
         # as screen 0,0 point is topleft corner of a screen and y increases down direction, we use -y
-        return self.earth_radius * x, -y * self.earth_radius
+        return x, -y
 
     def canvas_to_geo(self, x, y):
-        longitude = x / self.earth_radius
+        longitude = math.degrees(x / self.earth_radius)
         # we need to take -y as in screen coordinates y increases in down direction
-        latitude = 180.0 / math.pi * (2.0 * math.atan(math.exp((-y / self.earth_radius) * (math.pi / 180.0))) - math.pi / 2.0)
+        y = -y
+        latitude = math.degrees(2.0 * math.atan(math.exp(y / self.earth_radius)) - math.pi / 2.0)
         return latitude, longitude
 
 class UTM(Projection):
