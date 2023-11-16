@@ -81,3 +81,15 @@ TEST_LABEL_ANGLE = (
 def test_label_angle(target, answer):
     assert misc_functions.calculate_label_angle(target) == answer
 
+TEST_DISTANCE = (
+    ([(51.981570, 16.444900), (51.990910, 16.467280)], 1850),
+    ([(39.152501, -84.412977), (39.152505, -84.412946)], 2.716),
+)
+
+@pytest.mark.parametrize('target, answer', TEST_DISTANCE)
+def test_great_circle_distance(target, answer):
+    assert misc_functions.great_circle_distance(target[0], target[1]) == answer / 1000
+
+@pytest.mark.parametrize('target, answer', TEST_DISTANCE)
+def test_vincenty_distance(target, answer):
+    assert misc_functions.vincenty_distance(target[0], target[1]) == answer
