@@ -33,7 +33,7 @@ class Direct(Projection):
         self.projectionName = 'Direct'
 
     def geo_to_canvas(self, latitude, longitude):
-        return [self.earth_radius * float(longitude), -self.earth_radius * float(latitude)]
+        return self.earth_radius * float(longitude), -self.earth_radius * float(latitude)
 
     def canvas_to_geo(self, latitude, longitude):
         pass
@@ -110,7 +110,7 @@ class UTM(Projection):
         # all latitudes north will be positive, all latitudes south will be negative
         y = self.UTMNorthern * self.UTMNorthing
 
-        return [x, -y]
+        return x, -y
         # return[self.longitude, -self.latitude]
 
     def canvas_to_geo(self, latitude, longitude):
