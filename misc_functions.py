@@ -145,6 +145,17 @@ def great_circle_distance(coord1, coord2):
 
 
 def vincenty_distance(coord1, coord2):
+    """
+    calculates distance betwen two earth points
+    Parameters
+    ----------
+    coord1: tuple(latitude, longitude)
+    coord2 tuple(latitude, longitude)
+
+    Returns: distance in meters
+    -------
+
+    """
     # https://nathanrooy.github.io/posts/2016-12-18/vincenty-formula-with-python/
     a = 6378137.0  # radius at equator in meters (WGS-84)
     f = 1 / 298.257223563  # flattening of the ellipsoid (WGS-84)
@@ -152,9 +163,10 @@ def vincenty_distance(coord1, coord2):
     maxIter = 200
     tol = 10**-12
 
-    # (lat=L_?,lon=phi_?)
-    L_1, phi_1 = coord1
-    L_2, phi_2 = coord2
+    # lat=phi_?   latitude (N, S) of the points
+    # (lon=L_?  longitude (E, W) of points
+    phi_1, L_1 = coord1
+    phi_2, L_2 = coord2
 
     u_1 = math.atan((1 - f) * math.tan(math.radians(phi_1)))
     u_2 = math.atan((1 - f) * math.tan(math.radians(phi_2)))
