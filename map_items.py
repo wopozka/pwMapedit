@@ -414,9 +414,12 @@ class Restriction(object):
 class PolyQGraphicsPathItem(QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
     selected_pen = QPen(QColor("red"))
+    selected_pen.setCosmetic(True)
     selected_pen.setStyle(Qt.DotLine)
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(4)
+    hovered_over_pen.setCosmetic(True)
+    non_cosmetic_multiplicity = 100
 
     def __init__(self, projection, *args, **kwargs):
         self.hovered = False
@@ -488,7 +491,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def shape(self):
         stroker = QPainterPathStroker()
-        stroker.setWidth(self.pen().width())
+        stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
         return stroker.createStroke(self.path())
 
     def add_arrow_heads(self):
