@@ -54,9 +54,9 @@ class MapObjectsProperties(object):
                                           0x8: 2,
                                           0x9: 2,
                                           0xa: 2,
-                                          0xc : 2,
-                                          0xd : 2,
-                                          0x14 : 3,
+                                          0xc: 2,
+                                          0xd: 2,
+                                          0x14: 3,
                                           0x15: 2,
                                           0x1f: 3,
                                           0x10e11: 2,
@@ -178,9 +178,10 @@ class MapObjectsProperties(object):
         return Qt.black
 
     def get_polyline_width(self, poly_type):
+        pline_width_multiplicity = 1
         if poly_type in self.polyline_properties_width:
-            return self.polyline_properties_width[poly_type]
-        return 1
+            return self.polyline_properties_width[poly_type] * pline_width_multiplicity
+        return pline_width_multiplicity
 
     def get_polyline_dash(self, poly_type):
         if poly_type in self.polyline_properties_dash:
