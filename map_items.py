@@ -639,18 +639,21 @@ class MapRuler(QGraphicsPathItem):
     brush = QBrush(Qt.black)
     ruler = QPainterPath()
     screen_coord_1 = QPoint(10, 10)
-    screen_coord_2 = QPoint(20, 10)
+    screen_coord_2 = QPoint(50, 10)
 
-    def __init__(self,  map_render):
+    def __init__(self,  map_render, projection):
         self.map_render = map_render
+        self.projection = projection
         super().__init__()
+        self.geo_distance = None
         self.draw_ruler()
 
     def draw_ruler(self):
-        print('rysuje linijke')
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
-        # ruler_length = (point2 - point1).x()
+        if self.geo_distance is None:
+            self.calculate_geo_distance()
+            print(self.geo_distance)
         # x = point1.x()
         # y_mod = point1.y() * 0.9
         # y = point1.y()
@@ -661,19 +664,26 @@ class MapRuler(QGraphicsPathItem):
         #     ruler.lineTo(x + ruler_length * ruler_segment, y)
         #     ruler.lineTo(x + ruler_length * ruler_segment, y_mod)
         #     ruler.moveTo(x + ruler_length * ruler_segment, y)
-        print(self.pos())
-        self.setPos(point1)
+        # print(self.map_render.mapFromScene(self.pos()))
+        # self.setPos(point1)
         self.setPath(ruler)
         self.setPen(self.pen)
         self.setBrush(self.brush)
         self.setZValue(50)
-        print('resizing', self.pos(), self.map_render.mapToScene(self.screen_coord_1))
-        path = self.path()
-        print(self.map_render.mapFromScene(QPointF(self.path().elementAt(0))))
 
     def move_to(self):
-        self.setPos(self.map_render.mapToScene(self.screen_coord_1))
-        print('move to', self.pos(), self.map_render.mapToScene(self.screen_coord_1))
+        self.draw_ruler()
+
+    def scale_to(self):
+        self.geo_distance = None
+        self.draw_ruler()
+
+    def calculate_geo_distance(self):
+        point1 = self.map_render.mapToScene(self.screen_coord_1)
+        point2 = self.map_render.mapToScene(self.screen_coord_2)
+        start_point = self.projection.canvas_to_geo(point1.x(), point1.y())
+        end_point = self.projection.canvas_to_geo(point2.x(), point2.y())
+        self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
 
 
 

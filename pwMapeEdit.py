@@ -52,7 +52,7 @@ class pwMapeditPy(QMainWindow):
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
-        self.map_ruler = map_items.MapRuler(self.view)
+        self.map_ruler = map_items.MapRuler(self.view, self.projection)
         self.map_canvas.addItem(self.map_ruler)
         self.view.set_ruler(self.map_ruler)
 

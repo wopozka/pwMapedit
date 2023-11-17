@@ -70,7 +70,7 @@ class mapRender(QGraphicsView):
             elif event.angleDelta().y() > 0:
                 self.zoom_in_funct()
             if self.ruler is not None:
-                self.ruler.draw_ruler()
+                self.ruler.scale_to()
         else:
             super(mapRender, self).wheelEvent(event)
             if self.ruler is not None:
