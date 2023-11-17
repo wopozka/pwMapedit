@@ -9,6 +9,7 @@ import sys
 import mapData
 import mapCanvas
 import mapRender
+import map_items
 import map_object_properties
 import projection
 import math
@@ -50,6 +51,9 @@ class pwMapeditPy(QMainWindow):
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
+        map_ruler = map_items.MapRuler(self.view)
+        self.map_canvas.addItem(map_ruler)
+        self.view.set_ruler(map_ruler)
 
 
         # ramkaglowna = tkinter.Frame(self)

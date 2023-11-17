@@ -164,7 +164,7 @@ def vincenty_distance(coord1, coord2):
     tol = 10**-12
 
     # lat=phi_?   latitude (N, S) of the points
-    # (lon=L_?  longitude (E, W) of points
+    # lon=L_?  longitude (E, W) of points
     phi_1, L_1 = coord1
     phi_2, L_2 = coord2
 

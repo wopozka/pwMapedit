@@ -3,13 +3,17 @@
 
 from PyQt5.QtWidgets import QGraphicsView
 from PyQt5.QtCore import QPointF, Qt
+
+import misc_functions
 from singleton_store import Store
+
 
 class mapRender(QGraphicsView):
     """The main map canvas definitions residue here"""
     def __init__(self, master, zoom_in_funct, zoom_out_funct, *args, projection=None, **kwargs):
         super(mapRender, self).__init__(master, *args, **kwargs)
         self.master = master
+        self.ruler = None
         self.zoom_in_funct = zoom_in_funct
         self.zoom_out_funct = zoom_out_funct
         self.map_scale = 1
@@ -19,6 +23,9 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
+
+    def set_ruler(self, ruler):
+        self.ruler = ruler
 
     def set_main_window_status_bar(self, status_bar):
         self.main_window_status_bar = status_bar
@@ -32,6 +39,9 @@ class mapRender(QGraphicsView):
     def set_map_scale(self, map_scale_factor):
         self.map_scale *= map_scale_factor
         self.set_status_bar()
+        coords1 = self.projection.canvas_to_geo(self.mapToScene(0, 0).x(), self.mapToScene(0, 0).y())
+        coords2 = self.projection.canvas_to_geo(self.mapToScene(0, 10).x(), self.mapToScene(0, 10).y())
+        print(misc_functions.vincenty_distance(coords1, coords2))
 
     def set_status_bar(self, event=None):
         if event is not None:
@@ -57,5 +67,9 @@ class mapRender(QGraphicsView):
                 self.zoom_out_funct()
             elif event.angleDelta().y() > 0:
                 self.zoom_in_funct()
+            if self.ruler is not None:
+                self.ruler.draw_ruler()
         else:
             super(mapRender, self).wheelEvent(event)
+            if self.ruler is not None:
+                self.ruler.move_to()

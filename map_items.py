@@ -614,6 +614,7 @@ class GripItem(QGraphicsPathItem):
         else:
             super().mousePressEvent(event)
 
+
 class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 3)
     pen.setCosmetic(True)
@@ -630,6 +631,42 @@ class DirectionArrowHead(QGraphicsPathItem):
         self.setPath(arrow_head)
         self.setPen(self.pen)
         self.setZValue(30)
+
+
+class MapRuler(QGraphicsPathItem):
+    pen = QPen(Qt.black, 10)
+    pen.setCosmetic(True)
+    brush = QBrush(Qt.black)
+    ruler = QPainterPath()
+
+    def __init__(self,  map_render):
+        self.map_render = map_render
+        super().__init__()
+        self.draw_ruler()
+        self.setPen(self.pen)
+        self.setBrush(self.brush)
+        self.setZValue(50)
+
+    def draw_ruler(self):
+        point1 = self.map_render.mapToScene(100, 100)
+        point2 = self.map_render.mapToScene(100, 200)
+        ruler_length = (point2 - point1).x()
+        x = point1.x()
+        y_mod = point1.y() * 0.9
+        y = point1.y()
+        ruler = QPainterPath()
+        ruler.moveTo(point1)
+        for ruler_segment in range(4):
+            ruler.lineTo(x + ruler_length * ruler_segment, y)
+            ruler.lineTo(x + ruler_length * ruler_segment, y_mod)
+            ruler.moveTo(x + ruler_length * ruler_segment, y)
+        self.setPath(ruler)
+        self.setPos(point1)
+
+    def move_to(self):
+        self.setPos(self.map_render.mapToScene(100, 100))
+
+
 
 class PolygonAnnotation(QGraphicsPolygonItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
