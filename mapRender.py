@@ -23,6 +23,7 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
+        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
     def set_ruler(self, ruler):
         self.ruler = ruler
@@ -39,9 +40,9 @@ class mapRender(QGraphicsView):
     def set_map_scale(self, map_scale_factor):
         self.map_scale *= map_scale_factor
         self.set_status_bar()
-        coords1 = self.projection.canvas_to_geo(self.mapToScene(0, 0).x(), self.mapToScene(0, 0).y())
-        coords2 = self.projection.canvas_to_geo(self.mapToScene(0, 10).x(), self.mapToScene(0, 10).y())
-        print(misc_functions.vincenty_distance(coords1, coords2))
+        # coords1 = self.projection.canvas_to_geo(self.mapToScene(0, 0).x(), self.mapToScene(0, 0).y())
+        # coords2 = self.projection.canvas_to_geo(self.mapToScene(0, 10).x(), self.mapToScene(0, 10).y())
+        # print(misc_functions.vincenty_distance(coords1, coords2))
 
     def set_status_bar(self, event=None):
         if event is not None:
@@ -50,7 +51,8 @@ class mapRender(QGraphicsView):
             x = self._curent_scene_mouse_coords.x()
             y = self._curent_scene_mouse_coords.y()
             lon, lat = self.projection.canvas_to_geo(x, y)
-            self.main_window_status_bar.showMessage('(%.7f, %.7f), mapscale: %.7f' % (lon, lat, self.map_scale))
+            self.main_window_status_bar.showMessage('(%.7f, %.7f), (%.7f, %.7f), mapscale: %.7f' % (lon, lat, x, y,
+                                                                                                    self.map_scale))
         else:
             cur_msg = self.main_window_status_bar.currentMessage()
             new_msg = cur_msg.split('mapscale')[0] + 'mapscale: %.7f' % self.map_scale

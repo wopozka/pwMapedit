@@ -6,7 +6,7 @@ import misc_functions
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
-from PyQt5.QtCore import QPointF, Qt, QLineF
+from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D
 from datetime import datetime
 
@@ -634,37 +634,46 @@ class DirectionArrowHead(QGraphicsPathItem):
 
 
 class MapRuler(QGraphicsPathItem):
-    pen = QPen(Qt.black, 10)
+    pen = QPen(Qt.black, 2)
     pen.setCosmetic(True)
     brush = QBrush(Qt.black)
     ruler = QPainterPath()
+    screen_coord_1 = QPoint(100, 100)
+    screen_coord_2 = QPoint(200, 100)
 
     def __init__(self,  map_render):
         self.map_render = map_render
         super().__init__()
         self.draw_ruler()
+
+    def draw_ruler(self):
+        print('rysuje linijke')
+        point1 = self.map_render.mapToScene(self.screen_coord_1)
+        point2 = self.map_render.mapToScene(self.screen_coord_2)
+        # ruler_length = (point2 - point1).x()
+        # x = point1.x()
+        # y_mod = point1.y() * 0.9
+        # y = point1.y()
+        ruler = QPainterPath()
+        ruler.moveTo(point1)
+        ruler.lineTo(point2)
+        # for ruler_segment in range(4):
+        #     ruler.lineTo(x + ruler_length * ruler_segment, y)
+        #     ruler.lineTo(x + ruler_length * ruler_segment, y_mod)
+        #     ruler.moveTo(x + ruler_length * ruler_segment, y)
+        print(self.pos())
+        self.setPos(point1)
+        self.setPath(ruler)
         self.setPen(self.pen)
         self.setBrush(self.brush)
         self.setZValue(50)
-
-    def draw_ruler(self):
-        point1 = self.map_render.mapToScene(100, 100)
-        point2 = self.map_render.mapToScene(100, 200)
-        ruler_length = (point2 - point1).x()
-        x = point1.x()
-        y_mod = point1.y() * 0.9
-        y = point1.y()
-        ruler = QPainterPath()
-        ruler.moveTo(point1)
-        for ruler_segment in range(4):
-            ruler.lineTo(x + ruler_length * ruler_segment, y)
-            ruler.lineTo(x + ruler_length * ruler_segment, y_mod)
-            ruler.moveTo(x + ruler_length * ruler_segment, y)
-        self.setPath(ruler)
-        self.setPos(point1)
+        print('resizing', self.pos(), self.map_render.mapToScene(self.screen_coord_1))
+        path = self.path()
+        print(QPointF(self.path().elementAt(0)))
 
     def move_to(self):
-        self.setPos(self.map_render.mapToScene(100, 100))
+        self.setPos(self.map_render.mapToScene(self.screen_coord_1))
+        print('move to', self.pos(), self.map_render.mapToScene(self.screen_coord_1))
 
 
 

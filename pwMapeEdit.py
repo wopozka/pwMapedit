@@ -37,6 +37,7 @@ class pwMapeditPy(QMainWindow):
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
         self.tools_actions_group = None
+        self.map_ruler = None
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -51,9 +52,9 @@ class pwMapeditPy(QMainWindow):
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
-        map_ruler = map_items.MapRuler(self.view)
-        self.map_canvas.addItem(map_ruler)
-        self.view.set_ruler(map_ruler)
+        self.map_ruler = map_items.MapRuler(self.view)
+        self.map_canvas.addItem(self.map_ruler)
+        self.view.set_ruler(self.map_ruler)
 
 
         # ramkaglowna = tkinter.Frame(self)
