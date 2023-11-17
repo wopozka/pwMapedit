@@ -638,8 +638,8 @@ class MapRuler(QGraphicsPathItem):
     pen.setCosmetic(True)
     brush = QBrush(Qt.black)
     ruler = QPainterPath()
-    screen_coord_1 = QPoint(100, 100)
-    screen_coord_2 = QPoint(200, 100)
+    screen_coord_1 = QPoint(10, 10)
+    screen_coord_2 = QPoint(20, 10)
 
     def __init__(self,  map_render):
         self.map_render = map_render
@@ -669,7 +669,7 @@ class MapRuler(QGraphicsPathItem):
         self.setZValue(50)
         print('resizing', self.pos(), self.map_render.mapToScene(self.screen_coord_1))
         path = self.path()
-        print(QPointF(self.path().elementAt(0)))
+        print(self.map_render.mapFromScene(QPointF(self.path().elementAt(0))))
 
     def move_to(self):
         self.setPos(self.map_render.mapToScene(self.screen_coord_1))

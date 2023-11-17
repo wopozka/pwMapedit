@@ -51,8 +51,8 @@ class mapRender(QGraphicsView):
             x = self._curent_scene_mouse_coords.x()
             y = self._curent_scene_mouse_coords.y()
             lon, lat = self.projection.canvas_to_geo(x, y)
-            self.main_window_status_bar.showMessage('(%.7f, %.7f), (%.7f, %.7f), mapscale: %.7f' % (lon, lat, x, y,
-                                                                                                    self.map_scale))
+            self.main_window_status_bar.showMessage('(%.7f, %.7f), (%.7f, %.7f), mapscale: %.7f' %
+                                                    (lon, lat, event.pos().x(), event.pos().y(), self.map_scale))
         else:
             cur_msg = self.main_window_status_bar.currentMessage()
             new_msg = cur_msg.split('mapscale')[0] + 'mapscale: %.7f' % self.map_scale
