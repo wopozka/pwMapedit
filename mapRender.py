@@ -3,6 +3,7 @@
 
 from PyQt5.QtWidgets import QGraphicsView
 from PyQt5.QtCore import QPointF, Qt
+import math
 
 import misc_functions
 from singleton_store import Store
@@ -10,12 +11,10 @@ from singleton_store import Store
 
 class mapRender(QGraphicsView):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, zoom_in_funct, zoom_out_funct, *args, projection=None, **kwargs):
+    def __init__(self, master, *args, projection=None, **kwargs):
         super(mapRender, self).__init__(master, *args, **kwargs)
         self.master = master
         self.ruler = None
-        self.zoom_in_funct = zoom_in_funct
-        self.zoom_out_funct = zoom_out_funct
         self.map_scale = 1
         self.main_window_status_bar = None
         self._curent_scene_mouse_coords = None
@@ -66,12 +65,33 @@ class mapRender(QGraphicsView):
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:
             if event.angleDelta().y() < 0:
-                self.zoom_out_funct()
+                # self.zoom_out_funct()
+                self.zoom_out_command()
             elif event.angleDelta().y() > 0:
-                self.zoom_in_funct()
+                self.zoom_in_command()
             if self.ruler is not None:
                 self.ruler.scale_to()
         else:
             super(mapRender, self).wheelEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
+
+    def zoom_in_command(self):
+        center_coords = self.mapToScene(self.width() // 2, self.height() // 2)
+        curent_mouse_coords = self.curent_scene_mouse_coords()
+        mouse_center_vector = center_coords - curent_mouse_coords
+        mouse_center_vector_lenght = math.sqrt(mouse_center_vector.x() ** 2 + mouse_center_vector.y() ** 2)
+        self.scale(1.1, 1.1)
+        self.set_map_scale(1.1)
+        center_coords1 = self.mapToScene(self.width() // 2, self.height() // 2)
+        curent_mouse_coords1 = self.mapToScene(self.curent_view_mouse_coords())
+        mouse_center_vector1 = center_coords1 - curent_mouse_coords1
+        vector_lenght_factor = math.sqrt(mouse_center_vector1.x() ** 2 + mouse_center_vector1.y() ** 2) / \
+                               mouse_center_vector_lenght
+        new_position = curent_mouse_coords + mouse_center_vector * vector_lenght_factor
+        self.centerOn(new_position)
+
+
+    def zoom_out_command(self):
+        self.scale(0.9, 0.9)
+        self.set_map_scale(0.9)

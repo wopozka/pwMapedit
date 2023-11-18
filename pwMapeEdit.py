@@ -47,8 +47,7 @@ class pwMapeditPy(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection)
-        self.view = mapRender.mapRender(self.map_canvas, self.menu_zoom_in_command, self.menu_zoom_out_command,
-                                        projection=self.projection)
+        self.view = mapRender.mapRender(self.map_canvas, projection=self.projection)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
         self.setCentralWidget(self.view)
@@ -251,24 +250,12 @@ class pwMapeditPy(QMainWindow):
             # self.view.ensureVisible(self.map_canvas.itemsBoundingRect())
 
     def menu_zoom_in_command(self):
-        center_coords = self.view.mapToScene(self.view.width() // 2, self.view.height() // 2)
-        curent_mouse_coords = self.view.curent_scene_mouse_coords()
-        mouse_center_vector = center_coords - curent_mouse_coords
-        mouse_center_vector_lenght = math.sqrt(mouse_center_vector.x() ** 2 + mouse_center_vector.y() ** 2)
-        self.view.scale(1.1, 1.1)
-        self.view.set_map_scale(1.1)
-        center_coords1 = self.view.mapToScene(self.view.width() // 2, self.view.height() // 2)
-        curent_mouse_coords1 = self.view.mapToScene(self.view.curent_view_mouse_coords())
-        mouse_center_vector1 = center_coords1 - curent_mouse_coords1
-        vector_lenght_factor = math.sqrt(mouse_center_vector1.x() ** 2 + mouse_center_vector1.y() ** 2) / \
-                               mouse_center_vector_lenght
-        new_position = curent_mouse_coords + mouse_center_vector * vector_lenght_factor
-        self.view.centerOn(new_position)
+        self.view.zoom_in_command()
 
 
     def menu_zoom_out_command(self):
-        self.view.scale(0.9, 0.9)
-        self.view.set_map_scale(0.9)
+        self.view.zoom_out_command()
+        return
 
     def menu_change_projection(self):
         projection = self.menuProjectionVar.get()
