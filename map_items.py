@@ -567,7 +567,7 @@ class GripItem(QGraphicsPathItem):
     _pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
-    square.addRect(-7, -7, 14, 14)
+    square.addRect(-5, -5, 10, 10)
     active_brush = QBrush(QColor('red'))
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
