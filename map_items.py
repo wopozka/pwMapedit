@@ -428,6 +428,17 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.orig_pen = None
         self.node_grip_items = list()
 
+    def gripMoved(self, grip):
+        print('ruszanm')
+        if grip not in self.node_grip_items:
+            return
+        grip_index = self.node_grip_items.index(grip)
+        self.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
+
+    def removeGrip(self, grip):
+        if grip in self.gripItems:
+            self.removePoint(self.gripItems.index(grip))
+
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
             self.setPen(self.selected_pen)
@@ -443,11 +454,15 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         super().setPen(pen)
 
     def hoverEnterEvent(self, event):
+        if self.node_grip_items:
+            return
         self.hovered = True
         if not self.isSelected():
             self.setPen(self.hovered_over_pen)
 
     def hoverLeaveEvent(self, event):
+        if self.node_grip_items:
+            return
         self.hovered = False
         if not self.isSelected():
             self.setPen(self.orig_pen)
@@ -471,11 +486,13 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             # self.scene().addItem(self.node_grip_items[-1])
 
     def decorate(self):
-        # elapsed = datetime.now()
+        elapsed = datetime.now()
         path = self.path()
         for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
             self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-        # print(datetime.now() - elapsed)
+        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
+        #                         for elem_num in range(path.elementCount())]
+        print(datetime.now() - elapsed)
 
     def undecorate(self):
         scene = self.scene()
@@ -583,7 +600,7 @@ class GripItem(QGraphicsPathItem):
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setPath(self.square)
         self.setPen(self._pen)
-        self.setZValue(30)
+        self.setZValue(100)
         self._setHover(False)
 
     def itemChange(self, change, value):
@@ -609,10 +626,11 @@ class GripItem(QGraphicsPathItem):
         self._setHover(False)
 
     def mousePressEvent(self, event):
-        if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
-            self.poly.removeGrip(self)
-        else:
-            super().mousePressEvent(event)
+        # if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
+        #     self.poly.removeGrip(self)
+        # else:
+        print('mousePpress')
+        super().mousePressEvent(event)
 
 
 class DirectionArrowHead(QGraphicsPathItem):
@@ -652,7 +670,7 @@ class MapRuler(QGraphicsPathItem):
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
         if self.geo_distance is None:
-            self.calculate_geo_distance()
+            self.calculate_geo_distance(point1, point2)
             print(self.geo_distance)
         # x = point1.x()
         # y_mod = point1.y() * 0.9
@@ -678,12 +696,12 @@ class MapRuler(QGraphicsPathItem):
         self.geo_distance = None
         self.draw_ruler()
 
-    def calculate_geo_distance(self):
-        point1 = self.map_render.mapToScene(self.screen_coord_1)
-        point2 = self.map_render.mapToScene(self.screen_coord_2)
+    def calculate_geo_distance(self, point1, point2):
         start_point = self.projection.canvas_to_geo(point1.x(), point1.y())
         end_point = self.projection.canvas_to_geo(point2.x(), point2.y())
+        end_point1 = self.projection.canvas_to_geo(point1.x() + 1, point1.y())
         self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
+        print(misc_functions.vincenty_distance(start_point, end_point1))
 
 
 
