@@ -44,10 +44,7 @@ class mapCanvas(QGraphicsScene):
     #     print(event.pos().x(), event.pos().y())
 
     def get_viewer_scale(self):
-        return self.map_viewer.map_scale
-
-    def set_map_viewer(self, viewer):
-        self.map_viewer = viewer
+        return self.views()[0].map_scale
 
     def set_canvas_rectangle(self, map_bounding_box):
         start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])

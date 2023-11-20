@@ -647,7 +647,10 @@ class PoiLabel(QGraphicsSimpleTextItem):
         self.setZValue(20)
 
     def paint(self, painter, option, widget):
-        print(self.parent.scene().get_viewer_scale())
+        if self.parent.scene().get_viewer_scale() > 1:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
         super().paint(painter, option, widget)
 
 class PolylineLabel(QGraphicsSimpleTextItem):
@@ -657,7 +660,6 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         self.setPos(self.get_label_pos())
         self.setRotation(self.get_label_angle())
         self.setZValue(20)
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
     def get_label_angle(self):
         p1, p2 = self.get_label_nodes()
@@ -677,15 +679,12 @@ class PolylineLabel(QGraphicsSimpleTextItem):
             return QPointF(path.elementAt(num_elem // 2 - 1)), QPointF(path.elementAt(num_elem // 2))
         return QPointF(path.elementAt(num_elem // 2)), QPointF(path.elementAt(num_elem // 2 + 1))
 
-
-
-    # def paint(self, painter, style, widget):
-    #     print(self.parent.scale())
-    #     if self.parent.scale() < 1:
-    #         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-    #     else:
-    #         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-    #     super().paint(painter, style, widget)
+    def paint(self, painter, option, widget):
+        if self.parent.scene().get_viewer_scale() > 1:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+        super().paint(painter, option, widget)
 
 class PolygoneLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
@@ -693,10 +692,16 @@ class PolygoneLabel(QGraphicsSimpleTextItem):
         super().__init__(string_text, parent)
         self.setPos(self.get_label_pos())
         self.setZValue(20)
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
     def get_label_pos(self):
         return self.parent.boundingRect().center()
+
+    def paint(self, painter, option, widget):
+        if self.parent.scene().get_viewer_scale() > 1:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+        super().paint(painter, option, widget)
 
 
 class GripItem(QGraphicsPathItem):
