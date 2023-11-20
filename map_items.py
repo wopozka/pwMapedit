@@ -429,7 +429,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.node_grip_items = list()
         self.node_grip_hovered = False
 
-    def gripMoved(self, grip):
+    def move_grip(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
@@ -438,14 +438,18 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         path.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
         self.setPath(path)
 
-    def removeGrip(self, grip):
-        if grip in self.gripItems:
-            self.removePoint(self.gripItems.index(grip))
+    def remove_grip(self, grip):
+        if grip in self.node_grip_items:
+            self.remove_point(self.node_grip_items.index(grip))
+
+    def remove_point(self, index):
+        # placeholder, real functions need to be reimplemented for polyline and polygon separately
+        pass
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
             self.setPen(self.selected_pen)
-        elif self.hovered:
+        elif self.hovered and not self.node_grip_items:
             self.setPen(self.hovered_over_pen)
         else:
             self.setPen(self.orig_pen)
@@ -507,6 +511,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         for grip_item in self.node_grip_items:
             scene.removeItem(grip_item)
         self.node_grip_items = []
+        self.hoverLeaveEvent(None)
 
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
@@ -536,7 +541,36 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(arrow_head)
         self.arrow_head_items = []
 
+    def remove_point(self, index):
+        if len(self.node_grip_items) <= 2:
+            # polyline need to have at least 2 points, still need to reimplement as some polylines might be jointed
+            return
+        path = self.path()
+        new_path = QPainterPath()
+        next_elem_type = ''
+        for elem_num in range(path.elementCount()):
+            if elem_num == index:
+                if path.elementAt(elem_num).isMoveTo():
+                    next_elem_type = 'move_to'
+                else:
+                    next_elem_type = 'draw_to'
+            else:
+                if next_elem_type:
+                    if next_elem_type == 'move_to':
+                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
+                    else:
+                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
+                    next_elem_type = ''
+                else:
+                    if path.elementAt(elem_num).isMoveTo():
+                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
+                    else:
+                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
+            self.setPath(new_path)
 
+        grip = self.node_grip_items .pop(index)
+        if self.scene():
+            self.scene().removeItem(grip)
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -614,7 +648,7 @@ class GripItem(QGraphicsPathItem):
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
-            self.parent.gripMoved(self)
+            self.parent.move_grip(self)
         return super().itemChange(change, value)
 
     def _setHover(self, hover):
@@ -637,11 +671,10 @@ class GripItem(QGraphicsPathItem):
         self._setHover(False)
 
     def mousePressEvent(self, event):
-        # if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
-        #     self.poly.removeGrip(self)
-        # else:
-        print('mousePress')
-        super().mousePressEvent(event)
+        if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
+            self.parent.remove_grip(self)
+        else:
+            super().mousePressEvent(event)
 
 
 class DirectionArrowHead(QGraphicsPathItem):
