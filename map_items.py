@@ -550,10 +550,14 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         grip = self.node_grip_items.pop(index)
         if self.scene():
             self.scene().removeItem(grip)
+        self.refresh_arrow_heads()
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return False
+
+    def refresh_arrow_heads(self):
+        return
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -581,6 +585,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for arrow_head in self.arrow_head_items:
             self.scene().removeItem(arrow_head)
         self.arrow_head_items = []
+
+    def refresh_arrow_heads(self):
+        if self.arrow_head_items:
+            self.remove_arrow_heads()
+            self.add_arrow_heads()
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):

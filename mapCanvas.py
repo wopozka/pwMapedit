@@ -102,7 +102,7 @@ class mapCanvas(QGraphicsScene):
                 polyline_path_item.setPen(pen)
                 polyline_path_item.setZValue(10)
                 polyline_path_item.setAcceptHoverEvents(True)
-                # polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(polyline_path_item)
                 if mapobject.obj_param_get('Label'):
                     poly_label = map_items.PolylineLabel(mapobject.obj_param_get('Label'), polyline_path_item)
