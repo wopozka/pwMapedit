@@ -105,7 +105,7 @@ class mapCanvas(QGraphicsScene):
                 polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(polyline_path_item)
                 if mapobject.obj_param_get('Label'):
-                    poly_label = map_items.PolylineLabel(mapobject.obj_param_get('Label'), polyline_path_item)
+                    polyline_path_item.add_label(mapobject.obj_param_get('Label'))
                     # self.addItem(poly_label)
                 if mapobject.obj_param_get('DirIndicator'):
                     polyline_path_item.add_arrow_heads()
@@ -142,6 +142,8 @@ class mapCanvas(QGraphicsScene):
                     # self.addItem(polygon)
                 polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
                 self.addItem(polygon)
+                if mapobject.obj_param_get('Label'):
+                    polygon.add_label(mapobject.obj_param_get('Label'))
             else:
                 pass
 

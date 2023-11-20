@@ -437,6 +437,8 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         path = self.path()
         path.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
         self.setPath(path)
+        self.refresh_arrow_heads()
+        self.update_label_pos()
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
@@ -551,6 +553,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         if self.scene():
             self.scene().removeItem(grip)
         self.refresh_arrow_heads()
+        self.update_label_pos()
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -559,10 +562,14 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def refresh_arrow_heads(self):
         return
 
+    def update_label_pos(self):
+        return
+
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
         super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
         self.arrow_head_items = []
+        self.label = None
 
     def shape(self):
         stroker = QPainterPathStroker()
@@ -591,6 +598,19 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_arrow_heads()
             self.add_arrow_heads()
 
+    def add_label(self, label):
+        self.label = PolylineLabel(label, self)
+
+    def remove_label(self):
+        self.scene().removeItem(self.label)
+        self.label = None
+
+    def update_label_pos(self):
+        if self.label is not None:
+            self.label.setPos(self.label.get_label_pos())
+            self.label.setRotation(self.label.get_label_angle())
+
+
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 2 for a in num_elems_in_path)
@@ -599,10 +619,22 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def __init__(self, projection, *args, **kwargs):
         super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+        self.label = None
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 3 for a in num_elems_in_path)
+
+    def add_label(self, label):
+        self.label = PolygoneLabel(label, self)
+
+    def remove_label(self):
+        self.scene().removeItem(self.label)
+        self.label = None
+
+    def update_label_pos(self):
+        if self.label is not None:
+            self.label.setPos(self.label.get_label_pos())
 
 
 
@@ -622,27 +654,30 @@ class PolylineLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
         super().__init__(string_text, parent)
-        path = self.parent.path()
-        num_elem = path.elementCount()
-        if num_elem == 2:
-            p1 = QPointF(path.elementAt(0))
-            p2 = QPointF(path.elementAt(1))
-        elif num_elem % 2 == 0:
-            p1 = QPointF(path.elementAt(num_elem // 2 - 1))
-            p2 = QPointF(path.elementAt(num_elem // 2))
-        else:
-            p1 = QPointF(path.elementAt(num_elem // 2))
-            p2 = QPointF(path.elementAt(num_elem // 2 + 1))
-        self.setPos(p1 + (p2-p1)/2)
-        angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
-                                            clockwise=True, screen_coord_system=True)
-        self.setRotation(self.calculate_label_angle(angle))
+        self.setPos(self.get_label_pos())
+        self.setRotation(self.get_label_angle())
         self.setZValue(20)
         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
-    @staticmethod
-    def calculate_label_angle(angle):
+    def get_label_angle(self):
+        p1, p2 = self.get_label_nodes()
+        angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(), clockwise=True, screen_coord_system=True)
         return misc_functions.calculate_label_angle(angle)
+
+    def get_label_pos(self):
+        p1, p2 = self.get_label_nodes()
+        return p1 + (p2-p1)/2
+
+    def get_label_nodes(self):
+        path = self.parent.path()
+        num_elem = path.elementCount()
+        if num_elem == 2:
+            return QPointF(path.elementAt(0)), QPointF(path.elementAt(1))
+        elif num_elem % 2 == 0:
+            return QPointF(path.elementAt(num_elem // 2 - 1)), QPointF(path.elementAt(num_elem // 2))
+        return QPointF(path.elementAt(num_elem // 2)), QPointF(path.elementAt(num_elem // 2 + 1))
+
+
 
     # def paint(self, painter, style, widget):
     #     print(self.parent.scale())
@@ -651,6 +686,17 @@ class PolylineLabel(QGraphicsSimpleTextItem):
     #     else:
     #         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
     #     super().paint(painter, style, widget)
+
+class PolygoneLabel(QGraphicsSimpleTextItem):
+    def __init__(self, string_text, parent):
+        self.parent = parent
+        super().__init__(string_text, parent)
+        self.setPos(self.get_label_pos())
+        self.setZValue(20)
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+
+    def get_label_pos(self):
+        return self.parent.boundingRect().center()
 
 
 class GripItem(QGraphicsPathItem):
