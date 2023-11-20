@@ -429,7 +429,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.node_grip_items = list()
 
     def gripMoved(self, grip):
-        print('ruszanm')
+        print('ruszam')
         if grip not in self.node_grip_items:
             return
         grip_index = self.node_grip_items.index(grip)
@@ -486,13 +486,17 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             # self.scene().addItem(self.node_grip_items[-1])
 
     def decorate(self):
-        elapsed = datetime.now()
+        #elapsed = datetime.now()
         path = self.path()
         for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
-            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
+            point = QPointF(path_elem)
+            elapsed = datetime.now()
+            square = GripItem(QPointF(point), self)
+            print(datetime.now() - elapsed)
+            self.node_grip_items.append(square)
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
         #                         for elem_num in range(path.elementCount())]
-        print(datetime.now() - elapsed)
+        #print(datetime.now() - elapsed)
 
     def undecorate(self):
         scene = self.scene()
