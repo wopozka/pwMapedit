@@ -442,10 +442,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         if grip in self.node_grip_items:
             self.remove_point(self.node_grip_items.index(grip))
 
-    def remove_point(self, index):
-        # placeholder, real functions need to be reimplemented for polyline and polygon separately
-        pass
-
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
             self.setPen(self.selected_pen)
@@ -493,6 +489,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             # self.scene().addItem(self.node_grip_items[-1])
 
     def decorate(self):
+        self.setZValue(self.zValue() + 100)
         #elapsed = datetime.now()
         path = self.path()
         for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
@@ -501,18 +498,62 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             square = GripItem(QPointF(point), self)
             print(datetime.now() - elapsed)
             self.node_grip_items.append(square)
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
         #                         for elem_num in range(path.elementCount())]
         #print(datetime.now() - elapsed)
 
     def undecorate(self):
         print('usuwam dekoracje')
+        self.setZValue(self.zValue() - 100)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         scene = self.scene()
         for grip_item in self.node_grip_items:
             scene.removeItem(grip_item)
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
 
+    def remove_point(self, index):
+        if len(self.node_grip_items) <= 2:
+            # polyline need to have at least 2 points, still need to reimplement as some polylines might be jointed
+            return
+        path = self.path()
+        new_path = QPainterPath()
+        next_elem_type = ''
+        num_elems_in_path = []
+        for elem_num in range(path.elementCount()):
+            if elem_num == index:
+                if path.elementAt(elem_num).isMoveTo():
+                    next_elem_type = 'move_to'
+                else:
+                    next_elem_type = 'draw_to'
+            else:
+                if next_elem_type:
+                    if next_elem_type == 'move_to':
+                        num_elems_in_path.append(1)
+                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
+                    else:
+                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
+                        num_elems_in_path[-1] += 1
+                    next_elem_type = ''
+                else:
+                    if path.elementAt(elem_num).isMoveTo():
+                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
+                        num_elems_in_path.append(1)
+                    else:
+                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
+                        num_elems_in_path[-1] += 1
+        if not self.is_point_removal_possible(num_elems_in_path):
+            return
+
+        self.setPath(new_path)
+        grip = self.node_grip_items.pop(index)
+        if self.scene():
+            self.scene().removeItem(grip)
+
+    @staticmethod
+    def is_point_removal_possible(num_elems_in_path):
+        return False
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -541,40 +582,19 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(arrow_head)
         self.arrow_head_items = []
 
-    def remove_point(self, index):
-        if len(self.node_grip_items) <= 2:
-            # polyline need to have at least 2 points, still need to reimplement as some polylines might be jointed
-            return
-        path = self.path()
-        new_path = QPainterPath()
-        next_elem_type = ''
-        for elem_num in range(path.elementCount()):
-            if elem_num == index:
-                if path.elementAt(elem_num).isMoveTo():
-                    next_elem_type = 'move_to'
-                else:
-                    next_elem_type = 'draw_to'
-            else:
-                if next_elem_type:
-                    if next_elem_type == 'move_to':
-                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
-                    else:
-                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
-                    next_elem_type = ''
-                else:
-                    if path.elementAt(elem_num).isMoveTo():
-                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
-                    else:
-                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
-            self.setPath(new_path)
-
-        grip = self.node_grip_items .pop(index)
-        if self.scene():
-            self.scene().removeItem(grip)
+    @staticmethod
+    def is_point_removal_possible(num_elems_in_path):
+        return all(a >= 2 for a in num_elems_in_path)
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
+
     def __init__(self, projection, *args, **kwargs):
         super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+
+    @staticmethod
+    def is_point_removal_possible(num_elems_in_path):
+        return all(a >= 3 for a in num_elems_in_path)
+
 
 
 class PoiLabel(QGraphicsSimpleTextItem):
