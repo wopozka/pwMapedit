@@ -243,6 +243,8 @@ class mapCanvas(QGraphicsScene):
     def selection_change_actions(self):
         if any(isinstance(a, QGraphicsPixmapItem) for a in self.selectedItems()):
             return
+        if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in self.selectedItems()):
+            return
         if self.selected_objects:
             self.selected_objects[0].undecorate()
         self.selected_objects = self.selectedItems()

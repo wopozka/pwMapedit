@@ -427,13 +427,16 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         super(PolyQGraphicsPathItem, self).__init__(*args, **kwargs)
         self.orig_pen = None
         self.node_grip_items = list()
+        self.node_grip_hovered = False
 
     def gripMoved(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
         grip_index = self.node_grip_items.index(grip)
-        self.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
+        path = self.path()
+        path.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
+        self.setPath(path)
 
     def removeGrip(self, grip):
         if grip in self.gripItems:
@@ -499,6 +502,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         #print(datetime.now() - elapsed)
 
     def undecorate(self):
+        print('usuwam dekoracje')
         scene = self.scene()
         for grip_item in self.node_grip_items:
             scene.removeItem(grip_item)
@@ -595,7 +599,7 @@ class GripItem(QGraphicsPathItem):
 
     def __init__(self, pos, parent):
         super().__init__()
-        self.poly = parent
+        self.parent = parent
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
@@ -606,17 +610,20 @@ class GripItem(QGraphicsPathItem):
         self.setPen(self._pen)
         self.setZValue(100)
         self._setHover(False)
+        self.hover_drag_mode = False
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
-            self.poly.gripMoved(self)
+            self.parent.gripMoved(self)
         return super().itemChange(change, value)
 
     def _setHover(self, hover):
         if hover:
             self.setBrush(self.active_brush)
+            self.hover_drag_mode = True
         else:
             self.setBrush(self.inactive_brush)
+            self.hover_drag_mode = False
 
     def boundingRect(self):
         return self._boundingRect
@@ -633,7 +640,7 @@ class GripItem(QGraphicsPathItem):
         # if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
         #     self.poly.removeGrip(self)
         # else:
-        print('mousePpress')
+        print('mousePress')
         super().mousePressEvent(event)
 
 
