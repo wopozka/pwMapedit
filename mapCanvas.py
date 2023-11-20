@@ -19,10 +19,10 @@ from singleton_store import Store
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, *args, projection=None, **kwargs):
+    def __init__(self, master, *args, projection=None, map_viewer=None, **kwargs):
         self.master = master
         super(mapCanvas, self).__init__(*args, **kwargs)
-        self.mapScale = 1
+        self.map_viewer = map_viewer
         self.projection = None
         if projection is not None:
             self.projection = projection
@@ -42,6 +42,12 @@ class mapCanvas(QGraphicsScene):
     # def mouseMoveEvent(self, event):
     #     # Store.status_bar.showMessage('(%s,%s)' % (event.localPos().x(), event.localPos().y()))
     #     print(event.pos().x(), event.pos().y())
+
+    def get_viewer_scale(self):
+        return self.map_viewer.map_scale
+
+    def set_map_viewer(self, viewer):
+        self.map_viewer = viewer
 
     def set_canvas_rectangle(self, map_bounding_box):
         start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])

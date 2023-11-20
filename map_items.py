@@ -605,6 +605,10 @@ class PoiLabel(QGraphicsSimpleTextItem):
         self.setPos(pheight, pwidth/2)
         self.setZValue(20)
 
+    def paint(self, painter, option, widget):
+        print(self.parent.scene().get_viewer_scale())
+        super().paint(painter, option, widget)
+
 class PolylineLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
