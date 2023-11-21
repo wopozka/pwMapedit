@@ -121,7 +121,6 @@ def vector_angle(x, y, clockwise=False, screen_coord_system=False):
     return 180 - calc_degrees if clockwise else 180 + calc_degrees
 
 
-
 def calculate_label_angle(angle):
     if 0 <= angle <= 90:
         return angle
