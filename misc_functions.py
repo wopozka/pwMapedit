@@ -132,7 +132,7 @@ def calculate_label_angle(angle):
     elif 180 < angle <= 270:
         return angle - 180
     else:
-        return 360 - angle
+        return angle
 
 
 def great_circle_distance(coord1, coord2):

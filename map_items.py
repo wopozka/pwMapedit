@@ -428,6 +428,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.orig_pen = None
         self.node_grip_items = list()
         self.node_grip_hovered = False
+        self.label = None
 
     def move_grip(self, grip):
         print('ruszam')
@@ -565,6 +566,10 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def update_label_pos(self):
         return
 
+    def remove_label(self):
+        self.scene().removeItem(self.label)
+        self.label = None
+
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
         super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
@@ -601,9 +606,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_label(self, label):
         self.label = PolylineLabel(label, self)
 
-    def remove_label(self):
-        self.scene().removeItem(self.label)
-        self.label = None
 
     def update_label_pos(self):
         if self.label is not None:
@@ -626,11 +628,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         return all(a >= 3 for a in num_elems_in_path)
 
     def add_label(self, label):
-        self.label = PolygoneLabel(label, self)
-
-    def remove_label(self):
-        self.scene().removeItem(self.label)
-        self.label = None
+        self.label = PolygonLabel(label, self)
 
     def update_label_pos(self):
         if self.label is not None:
@@ -686,7 +684,7 @@ class PolylineLabel(QGraphicsSimpleTextItem):
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
         super().paint(painter, option, widget)
 
-class PolygoneLabel(QGraphicsSimpleTextItem):
+class PolygonLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
         super().__init__(string_text, parent)
@@ -760,14 +758,22 @@ class GripItem(QGraphicsPathItem):
         else:
             super().mousePressEvent(event)
 
+    def paint(self, painter, option, widget):
+        if self.parent.scene().get_viewer_scale() > 1:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+        super().paint(painter, option, widget)
+
 
 class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 3)
-    pen.setCosmetic(True)
+    brush = QBrush(Qt.black)
+    # pen.setCosmetic(True)
 
     def __init__(self, pos, parent):
         super().__init__()
-        self.poly = parent
+        self.parent = parent
         self.setPos(pos)
         self.setParentItem(parent)
         arrow_head = QPainterPath()
@@ -776,7 +782,15 @@ class DirectionArrowHead(QGraphicsPathItem):
         arrow_head.lineTo(QPointF(-6, -4))
         self.setPath(arrow_head)
         self.setPen(self.pen)
+        self.setBrush(self.brush)
         self.setZValue(30)
+
+    def paint(self, painter, option, widget):
+        if self.parent.scene().get_viewer_scale() > 1:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+        super().paint(painter, option, widget)
 
 
 class MapRuler(QGraphicsPathItem):
