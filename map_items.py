@@ -780,7 +780,6 @@ class PolylineLevelNumber(QGraphicsSimpleTextItem):
         super().paint(painter, option, widget)
 
 
-
 class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _pen = QPen(QColor('green'), 2)
@@ -910,8 +909,8 @@ class MapRuler(QGraphicsPathItem):
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
         if self.geo_distance is None:
-            self.calculate_geo_distance(point1, point2)
-        # x = point1.x()
+            self.geo_distance = self.calculate_geo_distance(point1, point2)
+               # x = point1.x()
         # y_mod = point1.y() * 0.9
         # y = point1.y()
         ruler = QPainterPath()
@@ -934,6 +933,7 @@ class MapRuler(QGraphicsPathItem):
             label = '%.1f m' % self.geo_distance
         else:
             label = '%.1f km' % (self.geo_distance / 1000)
+        print(self.geo_distance / (self.map_render.physicalDpiX()/self.map_render.width() * 40 * 2.54) * 100)
         self.distance_label = QGraphicsSimpleTextItem(label, self)
         self.distance_label.setPos(point1)
         self.distance_label.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
@@ -953,9 +953,8 @@ class MapRuler(QGraphicsPathItem):
         start_point = self.projection.canvas_to_geo(point1.x(), point1.y())
         end_point = self.projection.canvas_to_geo(point2.x(), point2.y())
         # end_point1 = self.projection.canvas_to_geo(point1.x() + 1, point1.y())
-        self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
+        return misc_functions.vincenty_distance(start_point, end_point)
         # print(misc_functions.vincenty_distance(start_point, end_point1))
-
 
 
 class PolygonAnnotation(QGraphicsPolygonItem):
