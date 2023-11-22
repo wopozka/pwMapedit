@@ -902,14 +902,14 @@ class MapRuler(QGraphicsPathItem):
         self.geo_distance = None
         self.distance_label = None
         self.draw_ruler()
+        self.screen_dpi = self.map_render.physicalDpiX()
 
     def draw_ruler(self):
         if self.distance_label is not None:
             self.remove_distance_label()
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
-        if self.geo_distance is None:
-            self.geo_distance = self.calculate_geo_distance(point1, point2)
+        self.calculate_geo_distance()
                # x = point1.x()
         # y_mod = point1.y() * 0.9
         # y = point1.y()
@@ -933,7 +933,7 @@ class MapRuler(QGraphicsPathItem):
             label = '%.1f m' % self.geo_distance
         else:
             label = '%.1f km' % (self.geo_distance / 1000)
-        print(self.geo_distance / (self.map_render.physicalDpiX()/self.map_render.width() * 40 * 2.54) * 100)
+        # print(self.geo_distance / (40 / self.map_render.physicalDpiX() * 2.54 / 100))
         self.distance_label = QGraphicsSimpleTextItem(label, self)
         self.distance_label.setPos(point1)
         self.distance_label.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
@@ -949,12 +949,20 @@ class MapRuler(QGraphicsPathItem):
         self.geo_distance = None
         self.draw_ruler()
 
-    def calculate_geo_distance(self, point1, point2):
+    def calculate_geo_distance(self):
+        if self.geo_distance is not None:
+            return
+        point1 = self.map_render.mapToScene(self.screen_coord_1)
+        point2 = self.map_render.mapToScene(self.screen_coord_2)
         start_point = self.projection.canvas_to_geo(point1.x(), point1.y())
         end_point = self.projection.canvas_to_geo(point2.x(), point2.y())
         # end_point1 = self.projection.canvas_to_geo(point1.x() + 1, point1.y())
-        return misc_functions.vincenty_distance(start_point, end_point)
+        self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
         # print(misc_functions.vincenty_distance(start_point, end_point1))
+
+    def get_map_scale(self):
+        self.calculate_geo_distance()
+        return self.geo_distance / (40 / self.map_render.physicalDpiX() * 2.54 / 100)
 
 
 class PolygonAnnotation(QGraphicsPolygonItem):

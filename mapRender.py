@@ -44,18 +44,20 @@ class mapRender(QGraphicsView):
         # print(misc_functions.vincenty_distance(coords1, coords2))
 
     def set_status_bar(self, event=None):
+        msg_view_render = 'view_render scale: %.3f, ' % self.map_scale
+        msg_map_scale = 'map scale: 1:%.0f' % self.ruler.get_map_scale()
         if event is not None:
             self._curent_view_mouse_coords = event.pos()
             self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
             x = self._curent_scene_mouse_coords.x()
             y = self._curent_scene_mouse_coords.y()
             lon, lat = self.projection.canvas_to_geo(x, y)
-            self.main_window_status_bar.showMessage('(%.7f, %.7f), (%.7f, %.7f), mapscale: %.7f' %
-                                                    (lon, lat, x, -y, self.map_scale))
+            msg_coords = '(%.7f, %.7f), (%.1f, %.1f), ' % (lon, lat, x, -y)
+            self.main_window_status_bar.showMessage(msg_coords + msg_view_render + msg_map_scale)
         else:
             cur_msg = self.main_window_status_bar.currentMessage()
-            new_msg = cur_msg.split('mapscale')[0] + 'mapscale: %.7f' % self.map_scale
-            self.main_window_status_bar.showMessage(new_msg)
+            new_msg = cur_msg.split('view_render')[0]
+            self.main_window_status_bar.showMessage(new_msg + msg_view_render + msg_map_scale)
 
     # new events definitions:
     def mouseMoveEvent(self, event):
