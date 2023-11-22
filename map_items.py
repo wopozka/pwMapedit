@@ -654,10 +654,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.hlevel_labels = None
         self.update_hlevel_labels()
 
-
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 2 for a in num_elems_in_path)
+
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
@@ -677,7 +677,6 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             self.label.setPos(self.label.get_label_pos())
 
 
-
 class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
@@ -693,6 +692,7 @@ class PoiLabel(QGraphicsSimpleTextItem):
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
         super().paint(painter, option, widget)
 
+
 class PolylineLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
@@ -700,6 +700,7 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         self.setPos(self.get_label_pos())
         self.setRotation(self.get_label_angle())
         self.setZValue(20)
+        self.set_transformation_flag()
 
     def get_label_angle(self):
         p1, p2 = self.get_label_nodes()
@@ -720,11 +721,14 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         return QPointF(path.elementAt(num_elem // 2)), QPointF(path.elementAt(num_elem // 2 + 1))
 
     def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
 
 class PolygonLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
@@ -732,16 +736,20 @@ class PolygonLabel(QGraphicsSimpleTextItem):
         super().__init__(string_text, parent)
         self.setPos(self.get_label_pos())
         self.setZValue(20)
+        self.set_transformation_flag()
 
     def get_label_pos(self):
         return self.parent.boundingRect().center()
 
     def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
 
 
 class PolylineAddressNumber(QGraphicsSimpleTextItem):
@@ -798,6 +806,7 @@ class GripItem(QGraphicsPathItem):
         self.setZValue(100)
         self._setHover(False)
         self.hover_drag_mode = False
+        self.set_transformation_flag()
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
 
     def itemChange(self, change, value):
@@ -838,12 +847,14 @@ class GripItem(QGraphicsPathItem):
             super().wheelEvent(event)
 
     def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
-
 
 class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 3)
@@ -864,13 +875,16 @@ class DirectionArrowHead(QGraphicsPathItem):
         self.setBrush(self.brush)
         self.setZValue(30)
         # by default lets ignore transformations, as this helps when moving nodes. The arrow heads keep their size
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        self.set_transformation_flag()
 
-    def paint(self, painter, option, widget):
+    def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+
+    def paint(self, painter, option, widget):
+        self.set_transformation_flag()
         super().paint(painter, option, widget)
 
 
