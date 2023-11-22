@@ -110,8 +110,8 @@ class mapCanvas(QGraphicsScene):
                     # self.addItem(poly_label)
                 if mapobject.obj_param_get('DirIndicator'):
                     polyline_path_item.add_arrow_heads()
-                if mapobject.get_hlevels():
-                    polyline_path_item.add_hlevel_labels(mapobject.get_hlevels())
+                if mapobject.get_hlevels('Data0'):
+                    polyline_path_item.add_hlevel_labels(mapobject.get_hlevels('Data0'))
             elif isinstance(mapobject, map_items.Polygon):
                 outer_polygone = None
                 qpainterpaths_to_add = list()

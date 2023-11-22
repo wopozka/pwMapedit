@@ -19,20 +19,20 @@ class Data_X(object):
         self.outer_inner = []
         self.last_outer_index = 0
         self.polygon = False
-        self.hlevel_base = None
+        self.hlevel_offset = None
 
     def add_points(self, points_list):
         self.nodes_list.append(points_list)
         self.outer_inner.append('outer')
-        if self.hlevel_base is None:
-            self.hlevel_base = len(points_list)
+        if self.hlevel_offset is None:
+            self.hlevel_offset = len(points_list)
         else:
-            self.hlevel_base += len(points_list)
+            self.hlevel_offset += len(points_list)
 
     def get_nodes_and_inn_outer(self):
         returned_data = list()
         for num, data_list in enumerate(self.nodes_list):
-            returned_data.append((data_list, 'outer')
+            returned_data.append((data_list, 'outer'))
         return returned_data
 
     def set_polygon(self):
@@ -43,7 +43,7 @@ class Data_X(object):
 
     def get_translated_hlevels(self, orig_hlevels):
         node_num, hlevel = orig_hlevels
-        return node_num + self.hlevel_base, hlevel
+        return node_num + self.hlevel_offset, hlevel
 
 
 class Node(object):
@@ -185,7 +185,7 @@ class BasicMapItem(object):
                 _hlevel = []
                 for hlevel_item in obj_data[number_keyname].lstrip('(').rstrip(')').split('),('):
                     node_num, node_level = hlevel_item.split(',')
-                    self._levels.append((int(node_num), int(node_level)))
+                    _hlevel.append((int(node_num), int(node_level)))
                 if self.last_data_level == 0:
                     if self.hlevels0 is None:
                         self.hlevels0 = []
@@ -201,7 +201,7 @@ class BasicMapItem(object):
                 elif self.last_data_level == 3:
                     if self.hlevels3 is None:
                         self.hlevels3 = []
-                    self.hlevels3 += _hlevells
+                    self.hlevels3 += _hlevel
                 elif self.last_data_level == 4:
                     if self.hlevels4 is None:
                         self.hlevels4 = []
@@ -250,30 +250,30 @@ class BasicMapItem(object):
     def obj_datax_set(self, data012345, data012345_val):
         datax = data012345.lower()
         if datax == 'data0':
-            self.last_data_level = 0
             if self.data0 is None:
                 self.data0 = Data_X()
             self.data0.add_points(self.coords_from_data_to_nodes(data012345_val))
+            self.last_data_level = self.data0
         elif datax == 'data1':
-            self.last_data_level = 1
             if self.data1 is None:
                 self.data1 = Data_X()
             self.data1.add_points(self.coords_from_data_to_nodes(data012345_val))
+            self.last_data_level = self.data1
         elif datax == 'data2':
-            self.last_data_level = 2
             if self.data2 is None:
                 self.data2 = Data_X()
             self.data2.add_points(self.coords_from_data_to_nodes(data012345_val))
+            self.last_data_level = self.data2
         elif datax == 'data3':
-            self.last_data_level = 3
             if self.data3 is None:
                 self.data3 = Data_X()
             self.data3.add_points(self.coords_from_data_to_nodes(data012345_val))
-        elif datax == 'data4'
-            self.last_data_level = 4
+            self.last_data_level = self.data3
+        elif datax == 'data4':
             if self.data4 is None:
                 self.data4 = Data_X()
             self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
+            self.last_data_level = self.data4
         self.map_levels.add(data012345)
         return
 
@@ -315,10 +315,52 @@ class BasicMapItem(object):
     def get_obj_levels(self):
         return self.map_levels
 
-    def get_hlevels(self):
-        if self.hlevels is not None:
-            return self.hlevels
-        return tuple()
+    def get_hlevels(self, level_for_data):
+        if isinstance(level_for_data, int):
+            level = level_for_data
+        else:
+            level = int(level_for_data[-1])
+        if level == 0:
+            return self.hlevels0 if self.hlevels0 is not None else tuple()
+        elif level == 1:
+            return self.hlevels1 if self.hlevels1 is not None else tuple()
+        elif level == 2:
+            return self.hlevels2 if self.hlevels2 is not None else tuple()
+        elif level == 3:
+            return self.hlevels3 if self.hlevels3 is not None else tuple()
+        elif level == 4:
+            return self.hlevels4 if self.hlevels4 is not None else tuple()
+        return self.hlevels_other if self.hlevels_other is not None else tuple()
+
+    def set_hlevels(self, hlevel_items):
+        _hlevel = []
+        for hlevel_item in hlevel_items.lstrip('(').rstrip(')').split('),('):
+            node_num, node_level = hlevel_item.split(',')
+            self._levels.append(self.last_data_level.get_translated_hlevels(int(node_num), int(node_level)))
+        if self.last_data_level == 0:
+            if self.hlevels0 is None:
+                self.hlevels0 = []
+            self.hlevels0 += _hlevel
+        elif self.last_data_level == 1:
+            if self.hlevels1 is None:
+                self.hlevels1 = []
+            self.hlevels1 += _hlevel
+        elif self.last_data_level == 2:
+            if self.hlevels2 is None:
+                self.hlevels2 = []
+            self.hlevels2 += _hlevel
+        elif self.last_data_level == 3:
+            if self.hlevels3 is None:
+                self.hlevels3 = []
+            self.hlevels3 += _hlevel
+        elif self.last_data_level == 4:
+            if self.hlevels4 is None:
+                self.hlevels4 = []
+            self.hlevels4 += _hlevel
+        else:
+            if self.hlevels_other is None:
+                self.hlevels_other = []
+            self.hlevels_other += _hlevel
 
 class Poi(BasicMapItem):
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
