@@ -93,10 +93,9 @@ class BasicMapItem(object):
         basic map items properties, derived map items inherit from it
         Parameters
         ----------
-        args
+        map_comment_data: comment to map item
         map_elem_data: dict, key=tuple(elem_name, elem_position), value=value
         map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
-        kwargs
         """
         # super(BasicMapItem, self).__init__()
         self.projection = None
@@ -119,7 +118,7 @@ class BasicMapItem(object):
         self.data2 = None
         self.data3 = None
         self.data4 = None
-        self.last_data_level = 0
+        self.last_data_level = None
         self.hlevels0 = None
         self.hlevels1 = None
         self.hlevels2 = None
@@ -134,15 +133,6 @@ class BasicMapItem(object):
         self.roadid = None
         self.zipcode = None
         self.others = OrderedDict()
-
-        # self.obj_data = OrderedDict({'Type': '', 'Label': '', 'Label2': '', 'Label3': '',
-        #                              'DirIndicator': bool, 'EndLevel': '', 'StreetDesc': '', 'HouseNumber': '',
-        #                              'Phone': '', 'CityIdx': '',
-        #                              'DisctrictName': '', 'Highway': '',  'Data0': Data_X(),
-        #                              'Data1': Data_X(), 'Data2': Data_X(), 'Data3': Data_X(),
-        #                              'Data4': Data_X(), 'RouteParam': [], 'CityName': '', 'CountryName': '',
-        #                              'RegionName': '', 'RoadID': 0,
-        #                              'CountryCode': '', 'ZipCode': '', 'Others': OrderedDict()})
         self.map_objects_properties = None
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
@@ -151,10 +141,10 @@ class BasicMapItem(object):
             self.set_data(map_comment_data, map_elem_data)
 
     def __repr__(self):
-        return self.obj_data
+        return self.type
 
     def __str__(self):
-        return str(self.obj_data)
+        return str(self.type)
 
     def set_data(self, comment_data, obj_data):
         """
@@ -173,8 +163,8 @@ class BasicMapItem(object):
             if number_keyname[1] == 'Type':
                 self.obj_param_set('Type', int(obj_data[number_keyname], 16))
             elif number_keyname[1] in ('Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
-                                     'HouseNumber', 'Phone', 'Highway', 'CityName', 'CountryName', 'RegionName',
-                                     'CountryCode', 'ZipCode'):
+                                       'HouseNumber', 'Phone', 'Highway', 'CityName', 'CountryName', 'RegionName',
+                                       'CountryCode', 'ZipCode'):
                 self.obj_param_set(key, obj_data[number_keyname])
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.obj_datax_set(number_keyname[1], obj_data[number_keyname])
@@ -257,7 +247,6 @@ class BasicMapItem(object):
         self.map_levels.add(data012345)
         return
 
-
     def obj_others_set(self, key, value):
         self.others[key] = value
 
@@ -286,11 +275,6 @@ class BasicMapItem(object):
             elif longitude >= self.obj_bounding_box['E']:
                 self.obj_bounding_box['E'] = longitude
         return
-
-    def data_values(self):
-        tmp_data = OrderedDict({})
-        for key in self.obj_data['DataX']:
-            tmp_data[key].items()
 
     def get_obj_levels(self):
         return self.map_levels
@@ -341,6 +325,7 @@ class BasicMapItem(object):
                 self.hlevels_other = []
             self.hlevels_other += _hlevel
 
+
 class Poi(BasicMapItem):
     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
         super(Poi, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
@@ -365,12 +350,13 @@ class Poi(BasicMapItem):
             poi.setBrush(brush)
             poi.show()
         # poi.setParentItem(self)
-        self.setPos(x, y)
-        self.setZValue(20)
-        self.addToGroup(poi)
+        # self.setPos(x, y)
+        # self.setZValue(20)
+        # self.addToGroup(poi)
 
-# tutaj chyba lepiej byloby uzyc QPainterPath
+
 class Polyline(BasicMapItem):
+    # tutaj chyba lepiej byloby uzyc QPainterPath
     # qpp = QPainterPath()
     # qpp.addPolygon(your_polyline)
     # item = QGraphicsPathItem(qpp)
@@ -410,7 +396,7 @@ class Polyline(BasicMapItem):
             graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
             graphics_path_item.setZValue(10)
             # self.addItem(graphics_path_item)
-            self.addToGroup(graphics_path_item)
+            # self.addToGroup(graphics_path_item)
 
 
 class Polygon(BasicMapItem):
@@ -442,7 +428,7 @@ class Polygon(BasicMapItem):
         q_polygon.setBrush(brush)
         q_polygon.setZValue(0)
         # self.addItem(q_polygon)
-        self.addToGroup(q_polygon)
+        # self.addToGroup(q_polygon)
         return
 
 
@@ -459,22 +445,22 @@ class BasicSignRestrict(object):
     def set_data(self, map_elem_data):
         for number_keyname in map_elem_data:
             _, key = number_keyname
-            if key in self.restr_data:
-                self.self.restr_sign_data[key].append(map_elem_data[number_keyname])
+            if key in self.restr_sign_data:
+                self.restr_sign_data[key].append(map_elem_data[number_keyname])
             else:
                 self.restr_sign_data_others[number_keyname] = map_elem_data[number_keyname]
 
 
 class RoadSign(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
-        self.restr_sign_data = OrderedDict({'SignPoints': [], 'SignRoads': [], 'SignParams': []})
         super(RoadSign, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
+        self.restr_sign_data = OrderedDict({'SignPoints': [], 'SignRoads': [], 'SignParams': []})
 
 
 class Restriction(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
-        self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
+        self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
 
 
 class PolyQGraphicsPathItem(QGraphicsPathItem):
@@ -560,7 +546,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def decorate(self):
         self.setZValue(self.zValue() + 100)
-        #elapsed = datetime.now()
+        # elapsed = datetime.now()
         path = self.path()
         for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
             point = QPointF(path_elem)
@@ -571,7 +557,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
         #                         for elem_num in range(path.elementCount())]
-        #print(datetime.now() - elapsed)
+        # print(datetime.now() - elapsed)
 
     def undecorate(self):
         print('usuwam dekoracje')
@@ -792,6 +778,7 @@ class PolylineLabel(QGraphicsSimpleTextItem):
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
+
 class PolygonLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
@@ -907,15 +894,16 @@ class GripItem(QGraphicsPathItem):
         else:
             super().wheelEvent(event)
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget=None):
         self.set_transformation_flag()
-        super().paint(painter, option, widget)
+        super().paint(painter, option, widget=widget)
 
     def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+
 
 class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 3)
@@ -944,9 +932,9 @@ class DirectionArrowHead(QGraphicsPathItem):
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget=None):
         self.set_transformation_flag()
-        super().paint(painter, option, widget)
+        super().paint(painter, option, widget=widget)
 
 
 class MapRuler(QGraphicsPathItem):
@@ -972,7 +960,7 @@ class MapRuler(QGraphicsPathItem):
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
         self.calculate_geo_distance()
-               # x = point1.x()
+        # x = point1.x()
         # y_mod = point1.y() * 0.9
         # y = point1.y()
         ruler = QPainterPath()
@@ -1098,7 +1086,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         super().setPolygon(QPolygonF(poly))
 
     def closestPointToPoly(self, pos):
-        '''
+        """
             Get the position along the polygon sides that is the closest
             to the given point.
             Returns:
@@ -1106,7 +1094,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
             - QPointF within the polygon edge
             - insertion index
             If no closest point is found, distance and index are -1
-        '''
+        """
         poly = self.polygon()
         points = list(poly)
 
