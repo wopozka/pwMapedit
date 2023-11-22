@@ -863,6 +863,8 @@ class DirectionArrowHead(QGraphicsPathItem):
         self.setPen(self.pen)
         self.setBrush(self.brush)
         self.setZValue(30)
+        # by default lets ignore transformations, as this helps when moving nodes. The arrow heads keep their size
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
     def paint(self, painter, option, widget):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
