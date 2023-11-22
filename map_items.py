@@ -19,26 +19,31 @@ class Data_X(object):
         self.outer_inner = []
         self.last_outer_index = 0
         self.polygon = False
+        self.hlevel_base = None
 
     def add_points(self, points_list):
         self.nodes_list.append(points_list)
-        self.outer_inner.append('inner' if self.is_data_inner(points_list) else 'outer')
+        self.outer_inner.append('outer')
+        if self.hlevel_base is None:
+            self.hlevel_base = len(points_list)
+        else:
+            self.hlevel_base += len(points_list)
 
     def get_nodes_and_inn_outer(self):
         returned_data = list()
         for num, data_list in enumerate(self.nodes_list):
-            returned_data.append((data_list, self.outer_inner[num]))
+            returned_data.append((data_list, 'outer')
         return returned_data
-
-    def is_data_inner(self, points_list):
-        if self.polygon:
-            # for the present moment I treat all polygons as outer, here checking whether all points lay inside
-            # one polygon, then we can say it is inner or outer
-            return False
-        return False
 
     def set_polygon(self):
         self.polygon = True
+
+    def is_polygon(self):
+        return self.polygon
+
+    def get_translated_hlevels(self, orig_hlevels):
+        node_num, hlevel = orig_hlevels
+        return node_num + self.hlevel_base, hlevel
 
 
 class Node(object):
@@ -106,7 +111,13 @@ class BasicMapItem(object):
         self.data2 = None
         self.data3 = None
         self.data4 = None
-        self.hlevels = None
+        self.last_data_level = 0
+        self.hlevels0 = None
+        self.hlevels1 = None
+        self.hlevels2 = None
+        self.hlevels3 = None
+        self.hlevels4 = None
+        self.hlevels_other = None
         self.routeparam = None
         self.cityname = None
         self.countryname = None
@@ -171,11 +182,35 @@ class BasicMapItem(object):
             elif number_keyname[1].startswith('Numbers'):
                 pass
             elif number_keyname[1].startswith('HLevel'):
-                if self.hlevels is None:
-                    self.hlevels = list()
+                _hlevel = []
                 for hlevel_item in obj_data[number_keyname].lstrip('(').rstrip(')').split('),('):
                     node_num, node_level = hlevel_item.split(',')
-                    self.hlevels.append((int(node_num), int(node_level)))
+                    self._levels.append((int(node_num), int(node_level)))
+                if self.last_data_level == 0:
+                    if self.hlevels0 is None:
+                        self.hlevels0 = []
+                    self.hlevels0 += _hlevel
+                elif self.last_data_level == 1:
+                    if self.hlevels1 is None:
+                        self.hlevels1 = []
+                    self.hlevels1 += _hlevel
+                elif self.last_data_level == 2:
+                    if self.hlevels2 is None:
+                        self.hlevels2 = []
+                    self.hlevels2 += _hlevel
+                elif self.last_data_level == 3:
+                    if self.hlevels3 is None:
+                        self.hlevels3 = []
+                    self.hlevels3 += _hlevells
+                elif self.last_data_level == 4:
+                    if self.hlevels4 is None:
+                        self.hlevels4 = []
+                    self.hlevels4 += _hlevel
+                else:
+                    if self.hlevels_other is None:
+                        self.hlevels_other = []
+                    self.hlevels_other += _hlevel
+
             elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
                 # temporary remove these from reporting
                 pass
@@ -215,22 +250,27 @@ class BasicMapItem(object):
     def obj_datax_set(self, data012345, data012345_val):
         datax = data012345.lower()
         if datax == 'data0':
+            self.last_data_level = 0
             if self.data0 is None:
                 self.data0 = Data_X()
             self.data0.add_points(self.coords_from_data_to_nodes(data012345_val))
         elif datax == 'data1':
+            self.last_data_level = 1
             if self.data1 is None:
                 self.data1 = Data_X()
             self.data1.add_points(self.coords_from_data_to_nodes(data012345_val))
         elif datax == 'data2':
+            self.last_data_level = 2
             if self.data2 is None:
                 self.data2 = Data_X()
             self.data2.add_points(self.coords_from_data_to_nodes(data012345_val))
         elif datax == 'data3':
+            self.last_data_level = 3
             if self.data3 is None:
                 self.data3 = Data_X()
             self.data3.add_points(self.coords_from_data_to_nodes(data012345_val))
-        elif datax == 'data4':
+        elif datax == 'data4'
+            self.last_data_level = 4
             if self.data4 is None:
                 self.data4 = Data_X()
             self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
