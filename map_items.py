@@ -14,18 +14,19 @@ from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
-    def __init__(self):
+    def __init__(self, data_level=0):
         self.nodes_list = []
         self.outer_inner = []
         self.last_outer_index = 0
         self.polygon = False
         self.hlevel_offset = None
+        self.data_level = data_level
 
     def add_points(self, points_list):
         self.nodes_list.append(points_list)
         self.outer_inner.append('outer')
         if self.hlevel_offset is None:
-            self.hlevel_offset = len(points_list)
+            self.hlevel_offset = 0
         else:
             self.hlevel_offset += len(points_list)
 
@@ -43,7 +44,14 @@ class Data_X(object):
 
     def get_translated_hlevels(self, orig_hlevels):
         node_num, hlevel = orig_hlevels
+        if isinstance(node_num, str):
+            node_num = int(node_num)
+        if isinstance(hlevel, str):
+            hlevel = int(hlevel)
         return node_num + self.hlevel_offset, hlevel
+
+    def get_data_level(self):
+        return self.data_level
 
 
 class Node(object):
@@ -182,35 +190,7 @@ class BasicMapItem(object):
             elif number_keyname[1].startswith('Numbers'):
                 pass
             elif number_keyname[1].startswith('HLevel'):
-                _hlevel = []
-                for hlevel_item in obj_data[number_keyname].lstrip('(').rstrip(')').split('),('):
-                    node_num, node_level = hlevel_item.split(',')
-                    _hlevel.append((int(node_num), int(node_level)))
-                if self.last_data_level == 0:
-                    if self.hlevels0 is None:
-                        self.hlevels0 = []
-                    self.hlevels0 += _hlevel
-                elif self.last_data_level == 1:
-                    if self.hlevels1 is None:
-                        self.hlevels1 = []
-                    self.hlevels1 += _hlevel
-                elif self.last_data_level == 2:
-                    if self.hlevels2 is None:
-                        self.hlevels2 = []
-                    self.hlevels2 += _hlevel
-                elif self.last_data_level == 3:
-                    if self.hlevels3 is None:
-                        self.hlevels3 = []
-                    self.hlevels3 += _hlevel
-                elif self.last_data_level == 4:
-                    if self.hlevels4 is None:
-                        self.hlevels4 = []
-                    self.hlevels4 += _hlevel
-                else:
-                    if self.hlevels_other is None:
-                        self.hlevels_other = []
-                    self.hlevels_other += _hlevel
-
+                self.set_hlevels(obj_data[number_keyname])
             elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
                 # temporary remove these from reporting
                 pass
@@ -251,27 +231,27 @@ class BasicMapItem(object):
         datax = data012345.lower()
         if datax == 'data0':
             if self.data0 is None:
-                self.data0 = Data_X()
+                self.data0 = Data_X(data_level=0)
             self.data0.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data0
         elif datax == 'data1':
             if self.data1 is None:
-                self.data1 = Data_X()
+                self.data1 = Data_X(data_level=1)
             self.data1.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data1
         elif datax == 'data2':
             if self.data2 is None:
-                self.data2 = Data_X()
+                self.data2 = Data_X(data_level=2)
             self.data2.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data2
         elif datax == 'data3':
             if self.data3 is None:
-                self.data3 = Data_X()
+                self.data3 = Data_X(data_level=3)
             self.data3.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data3
         elif datax == 'data4':
             if self.data4 is None:
-                self.data4 = Data_X()
+                self.data4 = Data_X(data_level=4)
             self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data4
         self.map_levels.add(data012345)
@@ -335,25 +315,24 @@ class BasicMapItem(object):
     def set_hlevels(self, hlevel_items):
         _hlevel = []
         for hlevel_item in hlevel_items.lstrip('(').rstrip(')').split('),('):
-            node_num, node_level = hlevel_item.split(',')
-            self._levels.append(self.last_data_level.get_translated_hlevels(int(node_num), int(node_level)))
-        if self.last_data_level == 0:
+            _hlevel.append(self.last_data_level.get_translated_hlevels(hlevel_item.split(',')))
+        if self.last_data_level.get_data_level() == 0:
             if self.hlevels0 is None:
                 self.hlevels0 = []
             self.hlevels0 += _hlevel
-        elif self.last_data_level == 1:
+        elif self.last_data_level.get_data_level() == 1:
             if self.hlevels1 is None:
                 self.hlevels1 = []
             self.hlevels1 += _hlevel
-        elif self.last_data_level == 2:
+        elif self.last_data_level.get_data_level() == 2:
             if self.hlevels2 is None:
                 self.hlevels2 = []
             self.hlevels2 += _hlevel
-        elif self.last_data_level == 3:
+        elif self.last_data_level.get_data_level() == 3:
             if self.hlevels3 is None:
                 self.hlevels3 = []
             self.hlevels3 += _hlevel
-        elif self.last_data_level == 4:
+        elif self.last_data_level.get_data_level() == 4:
             if self.hlevels4 is None:
                 self.hlevels4 = []
             self.hlevels4 += _hlevel
@@ -715,6 +694,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for node_num_value in node_nums_values:
             node_num, value = node_num_value
             position = QPointF(path.elementAt(node_num))
+            print(position)
             self.hlevel_labels[node_num] = PolylineLevelNumber(value, self)
             self.hlevel_labels[node_num].setPos(position)
 
