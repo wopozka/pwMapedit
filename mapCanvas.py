@@ -64,86 +64,56 @@ class mapCanvas(QGraphicsScene):
         #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject, maplevel):
+        mp_data_range = ('Data0', 'Data1', 'Data2', 'Data3', 'Data4')
         if maplevel in mapobject.get_obj_levels():
             if isinstance(mapobject, map_items.Poi):
-                group_item = QGraphicsItemGroup()
-                nodes, inner_outer = mapobject.obj_datax_get('Data0')[0]
-                x, y = nodes[0].get_canvas_coords()
-                poi = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
-                poi.setPos(x, y)
-                poi.setZValue(20)
-                poi.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+                # group_item = QGraphicsItemGroup()
+                # nodes = mapobject.obj_datax_get('Data0')[0]
+                # x, y = nodes[0].get_canvas_coords()
+                poi_icon = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
+                if isinstance(poi_icon, QPainterPath):
+                    poi = map_items.PoiAsPath(projection, poi_icon)
+                    poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(
+                        mapobject.obj_param_get('Type'))
+                elif isinstance(poi_icon, QPixmap):
+                    poi = map_items.PoiAsPixmap(projection, poi_icon)
+                    poi_icon_brush = False
+                for data_x in mp_data_range:
+                    if mapobject.obj_datax_get(data_x):
+                        poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+                poi.set_map_level(0)
+                if poi_icon_brush:
+                    poi.setBrush(poi_icon_brush)
                 self.addItem(poi)
-                # self.addItem(poi)
-                # group_item.addToGroup(poi)
-                x0, y0, x1, y1 = poi.boundingRect().getRect()
                 if mapobject.obj_param_get('Label'):
                     poi_label = map_items.PoiLabel(mapobject.obj_param_get('Label'), poi)
-                    # group_item.addToGroup(poi_label)
-                # group_item.setZValue(20)
-                # group_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                # self.addItem(group_item)
             elif isinstance(mapobject, map_items.Polyline):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
-                polyline = QPainterPath()
-                # polyline = QGraphicsItem()
-                for obj_data in mapobject.obj_datax_get('Data0'):
-                    nodes, inner_outer = obj_data
-                    for node_num, node in enumerate(nodes):
-                        x, y = node.get_canvas_coords()
-                        if node_num == 0:
-                            polyline.moveTo(x, y)
-                        else:
-                            polyline.lineTo(x, y)
-                # polyline_path_item = QGraphicsPathItem(polyline)
-                polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection, polyline)
+                polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
+                for data_x in mp_data_range:
+                    if mapobject.obj_datax_get(data_x):
+                        polyline_path_item.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+                    if mapobject.get_hlevels(data_x):
+                        polyline_path_item.set_mp_hlevels(data_x, mapobject.get_hlevels(data_x))
+                polyline_path_item.set_mp_end_level(0)
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
-                pen.setCosmetic(True)
                 polyline_path_item.setPen(pen)
-                polyline_path_item.setZValue(10)
-                polyline_path_item.setAcceptHoverEvents(True)
-                polyline_path_item.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
                 self.addItem(polyline_path_item)
                 if mapobject.obj_param_get('Label'):
                     polyline_path_item.add_label(mapobject.obj_param_get('Label'))
-                    # self.addItem(poly_label)
                 if mapobject.obj_param_get('DirIndicator'):
                     polyline_path_item.add_arrow_heads()
-                if mapobject.get_hlevels('Data0'):
-                    polyline_path_item.add_hlevel_labels(mapobject.get_hlevels('Data0'))
+                polyline_path_item.add_hlevel_labels()
             elif isinstance(mapobject, map_items.Polygon):
-                outer_polygone = None
-                qpainterpaths_to_add = list()
-                for obj_data in mapobject.obj_datax_get('Data0'):
-                    nodes, outer = obj_data
-                    nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
-                    # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
-                    # nodes_qpointfs.append(nodes_qpointfs[0])
-                    if outer_polygone is not None \
-                            and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
-                            # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
-                        qpp = QPainterPath()
-                        qpp.addPolygon(QPolygonF(nodes_qpointfs))
-                        qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
-                    else:
-                        outer_polygone = QPolygonF(nodes_qpointfs)
-                        qpp = QPainterPath()
-                        qpp.addPolygon(outer_polygone)
-                        qpainterpaths_to_add.append(qpp)
-                # polygon = QGraphicsPathItem()
                 polygon = map_items.PolygonQGraphicsPathItem(self.projection)
-                polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
-                polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                polygon.setAcceptHoverEvents(True)
-                for poly in qpainterpaths_to_add:
-                    # polygon = QGraphicsPathItem()
-                    polygon.setPath(poly)
-                    color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
-                    polygon.setBrush(QBrush(color))
-                    # polygon.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-                    # self.addItem(polygon)
+                for data_x in mp_data_range:
+                    if mapobject.obj_datax_get(data_x):
+                        polygon.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
                 polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
+                polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
+                color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
+                polygon.setBrush(QBrush(color))
                 self.addItem(polygon)
                 if mapobject.obj_param_get('Label'):
                     polygon.add_label(mapobject.obj_param_get('Label'))

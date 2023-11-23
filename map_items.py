@@ -30,10 +30,10 @@ class Data_X(object):
         else:
             self.hlevel_offset += len(points_list)
 
-    def get_nodes_and_inn_outer(self):
+    def get_nodes(self):
         returned_data = list()
-        for num, data_list in enumerate(self.nodes_list):
-            returned_data.append((data_list, 'outer'))
+        for data_list in self.nodes_list:
+            returned_data.append(data_list)
         return returned_data
 
     def set_polygon(self):
@@ -207,15 +207,15 @@ class BasicMapItem(object):
         # zwracamy liste Nodow, jesli
         datax = dataX.lower()
         if datax == 'data0':
-            return self.data0.get_nodes_and_inn_outer()
+            return self.data0.get_nodes() if self.data0 is not None else tuple()
         elif datax == 'data1':
-            return self.data1.get_nodes_and_inn_outer()
+            return self.data1.get_nodes() if self.data1 is not None else tuple()
         elif datax == 'data2':
-            return self.data2.get_nodes_and_inn_outer()
+            return self.data2.get_nodes() if self.data2 is not None else tuple()
         elif datax == 'data3':
-            return self.data3.get_nodes_and_inn_outer()
+            return self.data3.get_nodes() if self.data3 is not None else tuple()
         elif datax == 'data4':
-            return self.data4.get_nodes_and_inn_outer()
+            return self.data4.get_nodes() if self.data4 is not None else tuple()
 
     def obj_datax_set(self, data012345, data012345_val):
         datax = data012345.lower()
@@ -465,9 +465,41 @@ class Restriction(object):
 
 class PoiAsPath(QGraphicsPathItem):
     # basic class for poi without pixmap icon
-    def __init__(self, projection):
+    def __init__(self, projection, icon):
         self.projection = projection
         super(PoiAsPath, self).__init__()
+        self._mp_data = [None, None, None, None, None]
+        self._mp_end_level = 0
+        self._curent_map_level = 0
+        self.icon = icon
+        self.setZValue(20)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+
+    def set_map_level(self, level):
+        if self._curent_map_level == level:
+            return
+        if self._mp_data[level] is not None:
+            self.setPos(self._mp_data[level])
+        elif self._mp_data[level] is None and self._mp_end_level < level:
+            self.setVisible(False)
+        elif self._mp_data[level] is None and self._mp_end_level >= level:
+            self.setVisible(True)
+        return
+
+    def set_mp_data(self, given_level, data):
+        if self.path().isEmpty():
+            self.setPath(self.icon)
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
+        # creates qpainterpaths for polylines at given Data level
+        node = data[0]
+        x, y = node[0].get_canvas_coords()
+        self._mp_data[level] = QPointF(x, y)
+        if self.pos().isNull():
+            self.setPos(self._mp_data[level])
+
 
     def decorate(self):
         pass
@@ -477,9 +509,38 @@ class PoiAsPath(QGraphicsPathItem):
 
 class PoiAsPixmap(QGraphicsPixmapItem):
     # basic class for poi with pixmap icon
-    def __init__(self, projection):
+    def __init__(self, projection, icon):
         self.projection = projection
         super(PoiAsPixmap, self).__init__()
+        self._mp_data = [None, None, None, None, None]
+        self._mp_end_level = 0
+        self._curent_map_level = 0
+        self.icon = icon
+        self.setZValue(20)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+    def set_map_level(self, level):
+        if self._curent_map_level == level:
+            return
+        if self._mp_data[level] is not None:
+            self.setPath(self._mp_data[level])
+        elif self._mp_data[level] is None and self._mp_end_level < level:
+            self.setVisible(False)
+        elif self._mp_data[level] is None and self._mp_end_level >= level:
+            self.setVisible(True)
+        return
+
+    def set_mp_data(self, given_level, data):
+        if self.pixmap().isNull():
+            self.setPixmap(self.icon)
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
+        node = data[0]
+        x, y = node[0].get_canvas_coords()
+        self._mp_data[level] = QPointF(x, y)
+        if self.pos().isNull():
+            self.setPos(self._mp_data[level])
 
     def decorate(self):
         pass
@@ -505,27 +566,27 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.node_grip_items = list()
         self.node_grip_hovered = False
         self.label = None
-        self._defs_data = [None, None, None, None, None]
-        self._defs_end_level = 0
+        self._mp_data = [None, None, None, None, None]
+        self._mp_end_level = 0
         self._curent_map_level = 0
 
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
-        if self._defs_data[level] is not None:
-            self.setPath(self._defs_data[level])
-        elif self._defs_data[level] is None and self._defs_end_level < level:
+        if self._mp_data[level] is not None:
+            self.setPath(self._mp_data[level])
+        elif self._mp_data[level] is None and self._mp_end_level < level:
             self.setVisible(False)
-        elif self._defs_data[level] is None and self._defs_end_level >= level:
+        elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
         return
 
-    def set_defs_data(self, level, data):
+    def set_mp_data(self, level, data):
         # to be defined separately for polygon and polyline
         pass
 
-    def set_defs_end_level(self, end_level):
-        self._defs_end_level = end_level
+    def set_mp_end_level(self, end_level):
+        self._mp_end_level = end_level
 
     def move_grip(self, grip):
         print('ruszam')
@@ -666,21 +727,36 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
         self.arrow_head_items = []
         self.hlevel_labels = None
-        self._defs_hlevels = [None, None, None, None, None]
-        self._defs_address_numbers = [None, None, None, None, None]
+        self._mp_hlevels = [None, None, None, None, None]
+        self._mp_address_numbers = [None, None, None, None, None]
+        self.setZValue(10)
+        self.setAcceptHoverEvents(True)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
 
-    def set_defs_data(self, level, data):
+    def set_mp_data(self, given_level, data):
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
         # creates qpainterpaths for polylines at given Data level
         polyline = QPainterPath()
-        for obj_data in data:
-            nodes, inner_outer = obj_data
+        for nodes in data:
             for node_num, node in enumerate(nodes):
                 x, y = node.get_canvas_coords()
                 if node_num == 0:
                     polyline.moveTo(x, y)
                 else:
                     polyline.lineTo(x, y)
-        self._defs_data[level] = polyline
+        self._mp_data[level] = polyline
+        if self.path().isEmpty():
+            self.setPath(polyline)
+
+    def set_mp_hlevels(self, given_level, data):
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
+        self._mp_hlevels[level] = data
 
     def shape(self):
         stroker = QPainterPathStroker()
@@ -717,18 +793,22 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.label.setPos(self.label.get_label_pos())
             self.label.setRotation(self.label.get_label_angle())
 
-    def add_hlevel_labels(self, node_nums_values):
+    def add_hlevel_labels(self):
+        # add hlevel numbers dependly on map level
+        if not self._mp_hlevels[self._curent_map_level]:
+            return
         if self.hlevel_labels is None:
             self.hlevel_labels = dict()
         path = self.path()
-        for node_num_value in node_nums_values:
+        for node_num_value in self._mp_hlevels[self._curent_map_level]:
             node_num, value = node_num_value
             position = QPointF(path.elementAt(node_num))
-            print(position)
+            # print(position)
             self.hlevel_labels[node_num] = PolylineLevelNumber(value, self)
             self.hlevel_labels[node_num].setPos(position)
 
     def update_hlevel_labels(self):
+        # update numbers positions when nodes are moved around
         if self.hlevel_labels is None:
             return
         path = self.path()
@@ -736,6 +816,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.hlevel_labels[node_num].setPos(QPointF(path.elementAt(node_num)))
 
     def delete_hlevel_label(self, node_num):
+        # remove hlevels labels when node is removed
         if self.hlevel_labels is None:
             return
         if node_num not in self.hlevel_labels:
@@ -746,6 +827,13 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.hlevel_labels = None
         self.update_hlevel_labels()
 
+    def remove_all_hlevel_labels(self):
+        # called when map level is changed, for a new maplevel we need to remove old hlevels
+        for hl in self.hlevel_labels:
+            self.scene().removeItem(self.hlevel_labels[hl])
+            del self.hlevel_labels[hl]
+        self.hlevel_labels = None
+
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 2 for a in num_elems_in_path)
@@ -755,11 +843,16 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def __init__(self, projection, *args, **kwargs):
         super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setAcceptHoverEvents(True)
 
-    def set_defs_data(self, level, data):
+    def set_mp_data(self, given_level, data):
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
         qpainterpaths_to_add = []
-        for obj_data in data:
-            nodes, outer = obj_data
+        for nodes in data:
             nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
             # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
             # nodes_qpointfs.append(nodes_qpointfs[0])
@@ -773,7 +866,9 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         polygon = QPainterPath()
         for poly in qpainterpaths_to_add:
             polygon.addPath(poly)
-        self._defs_data[level] = polygon
+        self._mp_data[level] = polygon
+        if self.path().isEmpty():
+            self.setPath(polygon)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):

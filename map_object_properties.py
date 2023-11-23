@@ -1,7 +1,7 @@
 import os.path
 import glob
-from PyQt5.QtGui import QPixmap, QColor, QPen, QFont, QBrush
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QColor, QPen, QFont, QBrush, QPainterPath
+from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
 
 
@@ -12,6 +12,7 @@ class MapObjectsProperties(object):
         # points definitions
         self.poi_pixmap_icons = self.read_icons()
         self.non_pixmap_icons = self.create_nonpixmap_icons()
+        self.non_pixmap_brushes = self.create_nonpixmap_brushes()
         self.question_mark_icon = self.create_question_mark_icon()
 
         # polylines definitions
@@ -158,10 +159,9 @@ class MapObjectsProperties(object):
 
     def get_poi_icon(self, poi_type):
         if self.poi_type_has_pixmap_icon(poi_type):
-            qpi = QGraphicsPixmapItem(self.poi_pixmap_icons[poi_type])
+            return self.poi_pixmap_icons[poi_type]
             # px0, py0, pheight, pwidth = qpi.boundingRect().getRect()
             # qpi.setOffset(px0 - pheight/2, py0 - pwidth)
-            return qpi
         elif self.poi_type_has_nonpixmap_icon(poi_type):
             return self.non_pixmap_icons[poi_type]()
         else:
@@ -171,6 +171,12 @@ class MapObjectsProperties(object):
         if self.poi_type_has_pixmap_icon(poi_type):
             return self.poi_pixmap_icons[poi_type]
         return self.poi_pixmap_icons['question_mark']
+
+    def get_nonpixmap_poi_brush(self, poi_type):
+        if poi_type in self.non_pixmap_brushes:
+            return self.non_pixmap_brushes[poi_type]
+        else:
+            return False
 
     def get_polyline_colour(self, poly_type):
         if poly_type in self.polyline_properties_colour:
@@ -208,6 +214,7 @@ class MapObjectsProperties(object):
         pen.setWidth(self.get_polyline_width(poly_type))
         pen.setBrush(self.get_polyline_colour(poly_type))
         pen.setStyle(self.get_polyline_dash(poly_type))
+        pen.setCosmetic(True)
         return pen
 
     def poi_type_has_pixmap_icon(self, poi_type):
@@ -238,128 +245,161 @@ class MapObjectsProperties(object):
         non_pixmaps[0x2800] = self.create_2800_icon
         return non_pixmaps
 
+    def create_nonpixmap_brushes(self):
+        non_pixmaps = {}
+        non_pixmaps[0x100] = QBrush(Qt.black)
+        # non_pixmaps[0x200] = QBrush(Qt.black)
+        non_pixmaps[0x300] = QBrush(Qt.black)
+        # non_pixmaps[0x400] = self.create_0x400_icon
+        non_pixmaps[0x500] = QBrush(Qt.black)
+        non_pixmaps[0x600] = QBrush(Qt.black)
+        non_pixmaps[0x700] = self.create_0x700_icon
+        # non_pixmaps[0x800] = self.create_0x800_icon
+        # non_pixmaps[0x900] = self.create_0x900_icon
+        non_pixmaps[0xa00] = QBrush(Qt.black)
+        non_pixmaps[0xb00] = QBrush(Qt.black)
+        # non_pixmaps[0xc00] = self.create_0xc00_icon
+        non_pixmaps[0xd00] = QBrush(Qt.black)
+        non_pixmaps[0xe00] = QBrush(Qt.black)
+        non_pixmaps[0xf00] = QBrush(Qt.black)
+        # non_pixmaps[0x1000] = self.create_0x1000_icon
+        # non_pixmaps[0x1100] = self.create_0x1100_icon
+        non_pixmaps[0x2800] = QBrush(Qt.black)
+        return non_pixmaps
+
     @staticmethod
     def create_question_mark_icon():
-        qm = QGraphicsTextItem('?')
-        qm.setDefaultTextColor(Qt.red)
         qm_font = QFont()
         qm_font.setBold(True)
-        qm.setFont(qm_font)
+        qm = QPainterPath()
+        qm.addText(0, 0, qm_font, '?')
         return qm
 
     @staticmethod
     def create_0x100_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 5, 5)
-        ellipse.setBrush(QBrush(Qt.black))
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 5, 5)
+        # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x200_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 5, 5)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 5, 5)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x300_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 4, 4)
-        ellipse.setBrush(QBrush(Qt.black))
-        return ellipse
-
-    @staticmethod
-    def create_0x400_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 4, 4)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 4, 4)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x400_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
-        ellipse.setBrush(QBrush(Qt.black))
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 4, 4)
+        # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x500_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
-        ellipse.setBrush(QBrush(Qt.black))
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 3, 3)
+        # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x600_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
-        ellipse.setBrush(QBrush(Qt.black))
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 3, 3)
+        # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x700_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 3, 3)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x800_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 3, 3)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x900_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 3, 3)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 3, 3)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xa00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 2, 2)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 2, 2)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xb00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 2, 2)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 2, 2)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xc00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 2, 2)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 2, 2)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xd00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 1, 1)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xe00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 1, 1)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0xf00_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 1, 1)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x1000_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 1, 1)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
     @staticmethod
     def create_0x1100_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 1, 1)
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 1, 1)
         # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
 
     @staticmethod
     def create_2800_icon():
-        ellipse = QGraphicsEllipseItem(0, 0, 2, 2)
-        ellipse.setBrush(QBrush(Qt.black))
+        ellipse = QPainterPath()
+        ellipse.addEllipse(QPointF(0, 0), 2, 2)
+        # ellipse.setBrush(QBrush(Qt.black))
         return ellipse
 
 
