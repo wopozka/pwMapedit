@@ -463,6 +463,30 @@ class Restriction(object):
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
 
 
+class PoiAsPath(QGraphicsPathItem):
+    # basic class for poi without pixmap icon
+    def __init__(self, projection):
+        self.projection = projection
+        super(PoiAsPath, self).__init__()
+
+    def decorate(self):
+        pass
+
+    def undecorate(self):
+        pass
+
+class PoiAsPixmap(QGraphicsPixmapItem):
+    # basic class for poi with pixmap icon
+    def __init__(self, projection):
+        self.projection = projection
+        super(PoiAsPixmap, self).__init__()
+
+    def decorate(self):
+        pass
+
+    def undecorate(self):
+        pass
+
 class PolyQGraphicsPathItem(QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
     selected_pen = QPen(QColor("red"))
@@ -481,6 +505,15 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.node_grip_items = list()
         self.node_grip_hovered = False
         self.label = None
+        self._defs_data = [None, None, None, None, None]
+        self._defs_end_level = 0
+
+    def set_defs_data(self, level, data):
+        # to be defined separately for polygon and polyline
+        pass
+
+    def set_defs_end_level(self, end_level):
+        self._defs_end_level = end_level
 
     def move_grip(self, grip):
         print('ruszam')
@@ -528,21 +561,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
-        # path = self.path()
-        # for elem_num in range(path.elementCount()):
-        #     path_elem = path.elementAt(elem_num)
-        #     # print(QPointF(path_elem))
-        #     if path_elem.isMoveTo():
-        #         print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-        #     elif path_elem.isLineTo():
-        #         print(self.projection.canvas_to_geo(path_elem.x, path_elem.y))
-
-    def add_decorators(self):
-        path = self.path()
-        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
-            self.node_grip_items.append(GripItem(QPointF(path_elem), self))
-            # self.node_grip_items[-1].setVisible(False)
-            # self.scene().addItem(self.node_grip_items[-1])
 
     def decorate(self):
         self.setZValue(self.zValue() + 100)
@@ -635,8 +653,22 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
         super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
         self.arrow_head_items = []
-        self.label = None
         self.hlevel_labels = None
+        self._defs_hlevels = [None, None, None, None, None]
+        self._defs_address_numbers = [None, None, None, None, None]
+
+    def set_defs_data(self, level, data):
+        # creates qpainterpaths for polylines at given Data level
+        polyline = QPainterPath()
+        for obj_data in data:
+            nodes, inner_outer = obj_data
+            for node_num, node in enumerate(nodes):
+                x, y = node.get_canvas_coords()
+                if node_num == 0:
+                    polyline.moveTo(x, y)
+                else:
+                    polyline.lineTo(x, y)
+        self._defs_data[level] = polyline
 
     def shape(self):
         stroker = QPainterPathStroker()
@@ -711,7 +743,25 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def __init__(self, projection, *args, **kwargs):
         super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
-        self.label = None
+
+    def set_defs_data(self, level, data):
+        qpainterpaths_to_add = []
+        for obj_data in data:
+            nodes, outer = obj_data
+            nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
+            # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
+            # nodes_qpointfs.append(nodes_qpointfs[0])
+            qpp = QPainterPath()
+            qpp.addPolygon(QPolygonF(nodes_qpointfs))
+            if qpainterpaths_to_add and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
+                # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
+                qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
+            else:
+                qpainterpaths_to_add.append(qpp)
+        polygon = QPainterPath()
+        for poly in qpainterpaths_to_add:
+            polygon.addPath(poly)
+        self._defs_data[level] = polygon
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
