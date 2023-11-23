@@ -507,6 +507,16 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.label = None
         self._defs_data = [None, None, None, None, None]
         self._defs_end_level = 0
+        self._curent_map_level = 0
+
+    def set_map_level(self, level):
+        if self._curent_map_level == level:
+            return
+        if self._defs_data[level] is not None:
+            self.setPath(self._defs_data[level])
+        elif self._defs_data[level] is None and self._defs_end_level <= level:
+            self.setVisible(False)
+        return
 
     def set_defs_data(self, level, data):
         # to be defined separately for polygon and polyline
