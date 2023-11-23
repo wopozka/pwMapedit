@@ -468,6 +468,7 @@ class PoiAsPath(QGraphicsPathItem):
     def __init__(self, projection, icon):
         self.projection = projection
         super(PoiAsPath, self).__init__()
+        self.label = None
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._curent_map_level = 0
@@ -500,6 +501,8 @@ class PoiAsPath(QGraphicsPathItem):
         if self.pos().isNull():
             self.setPos(self._mp_data[level])
 
+    def add_label(self, label):
+        self.label = PoiLabel(label, self)
 
     def decorate(self):
         pass
@@ -512,12 +515,15 @@ class PoiAsPixmap(QGraphicsPixmapItem):
     def __init__(self, projection, icon):
         self.projection = projection
         super(PoiAsPixmap, self).__init__()
+        self.label = None
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
+        self._mp_label = None
         self._curent_map_level = 0
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
@@ -541,6 +547,11 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self._mp_data[level] = QPointF(x, y)
         if self.pos().isNull():
             self.setPos(self._mp_data[level])
+
+    def add_label(self, label):
+        self.label = PoiLabel(label, self)
+        if self._mp_label is None:
+            self._mp_label = label
 
     def decorate(self):
         pass

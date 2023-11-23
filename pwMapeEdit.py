@@ -32,11 +32,12 @@ class pwMapeditPy(QMainWindow):
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
         self.projection = projection.Mercator({})
+        self.tools_actions_group = None
+        self.map_level_action_group = None
         self.initialize()
         self.generate_shortcuts()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
-        self.tools_actions_group = None
         self.map_ruler = None
 
     def initialize(self):
@@ -113,6 +114,17 @@ class pwMapeditPy(QMainWindow):
         view_menu = menu.addMenu("&View")
         view_menu.addAction(QAction('&Zoom in', self))
         view_menu.addAction(QAction('&Zoom out', self))
+        map_level_menu = view_menu.addMenu("&Levels")
+        self.map_level_action_group = QActionGroup(self)
+        for level in range(5):
+            l_act = QAction('&Level ' + str(level), self)
+            l_act.setCheckable(True)
+            l_act.setData(level)
+            l_act.triggered.connect(self.menu_select_map_level)
+            if not level:
+                l_act.setChecked(True)
+            map_level_menu.addAction(l_act)
+            self.map_level_action_group.addAction(l_act)
 
         # projection submenu
         # self.menuProjectionVar = tkinter.StringVar()
@@ -131,7 +143,7 @@ class pwMapeditPy(QMainWindow):
 
         # Tools submenu
         tools_menu = menu.addMenu('&Tools')
-        self.tools_actions_group= QActionGroup(self)
+        self.tools_actions_group = QActionGroup(self)
         for action in self._create_tools_actions():
             if action is not None:
                 tools_menu.addAction(action)
@@ -263,6 +275,9 @@ class pwMapeditPy(QMainWindow):
                                        self.map_objects.get_all_map_objects()):
             self.menuProjectionVar.set(projection)
 
+    def menu_select_map_level(self):
+        map_level = self.map_level_action_group.checkedAction().data()
+        self.map_canvas.set_map_level(map_level)
 
 if __name__ == "__main__":
 

@@ -86,7 +86,7 @@ class mapCanvas(QGraphicsScene):
                     poi.setBrush(poi_icon_brush)
                 self.addItem(poi)
                 if mapobject.obj_param_get('Label'):
-                    poi_label = map_items.PoiLabel(mapobject.obj_param_get('Label'), poi)
+                    poi.add_label(mapobject.obj_param_get('Label'))
             elif isinstance(mapobject, map_items.Polyline):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
@@ -146,6 +146,10 @@ class mapCanvas(QGraphicsScene):
             return 0
         else:
             return 0
+
+    def set_map_level(self, map_level):
+        for item in self.items():
+            item.set_map_level(map_level)
 
     # bindings and the binding functions
     def apply_bindings(self):
