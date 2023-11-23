@@ -514,8 +514,10 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             return
         if self._defs_data[level] is not None:
             self.setPath(self._defs_data[level])
-        elif self._defs_data[level] is None and self._defs_end_level <= level:
+        elif self._defs_data[level] is None and self._defs_end_level < level:
             self.setVisible(False)
+        elif self._defs_data[level] is None and self._defs_end_level >= level:
+            self.setVisible(True)
         return
 
     def set_defs_data(self, level, data):
