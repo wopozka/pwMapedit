@@ -176,7 +176,7 @@ class MapObjectsProperties(object):
         if poi_type in self.non_pixmap_brushes:
             return self.non_pixmap_brushes[poi_type]
         else:
-            return False
+            return QBrush(Qt.red)
 
     def get_polyline_colour(self, poly_type):
         if poly_type in self.polyline_properties_colour:
@@ -248,22 +248,22 @@ class MapObjectsProperties(object):
     def create_nonpixmap_brushes(self):
         non_pixmaps = {}
         non_pixmaps[0x100] = QBrush(Qt.black)
-        # non_pixmaps[0x200] = QBrush(Qt.black)
+        non_pixmaps[0x200] = False
         non_pixmaps[0x300] = QBrush(Qt.black)
-        # non_pixmaps[0x400] = self.create_0x400_icon
+        non_pixmaps[0x400] = False
         non_pixmaps[0x500] = QBrush(Qt.black)
         non_pixmaps[0x600] = QBrush(Qt.black)
         non_pixmaps[0x700] = self.create_0x700_icon
-        # non_pixmaps[0x800] = self.create_0x800_icon
-        # non_pixmaps[0x900] = self.create_0x900_icon
+        non_pixmaps[0x800] = False
+        non_pixmaps[0x900] = False
         non_pixmaps[0xa00] = QBrush(Qt.black)
         non_pixmaps[0xb00] = QBrush(Qt.black)
-        # non_pixmaps[0xc00] = self.create_0xc00_icon
+        non_pixmaps[0xc00] = False
         non_pixmaps[0xd00] = QBrush(Qt.black)
         non_pixmaps[0xe00] = QBrush(Qt.black)
         non_pixmaps[0xf00] = QBrush(Qt.black)
-        # non_pixmaps[0x1000] = self.create_0x1000_icon
-        # non_pixmaps[0x1100] = self.create_0x1100_icon
+        non_pixmaps[0x1000] = False
+        non_pixmaps[0x1100] = False
         non_pixmaps[0x2800] = QBrush(Qt.black)
         return non_pixmaps
 

@@ -87,6 +87,8 @@ class mapCanvas(QGraphicsScene):
                 self.addItem(poi)
                 if mapobject.obj_param_get('Label'):
                     poi.add_label(mapobject.obj_param_get('Label'))
+                if mapobject.obj_param_get('EndLevel'):
+                    poi.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
             elif isinstance(mapobject, map_items.Polyline):
                 # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
                 # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
@@ -97,13 +99,15 @@ class mapCanvas(QGraphicsScene):
                     if mapobject.get_hlevels(data_x):
                         polyline_path_item.set_mp_hlevels(data_x, mapobject.get_hlevels(data_x))
                 polyline_path_item.set_mp_end_level(0)
+                self.addItem(polyline_path_item)
+                if mapobject.obj_param_get('DirIndicator'):
+                    polyline_path_item.set_mp_dir_indicator(True)
+                if mapobject.obj_param_get('Label'):
+                    polyline_path_item.set_mp_label(mapobject.obj_param_get('Label'))
+                if mapobject.obj_param_get('EndLevel'):
+                    polyline_path_item.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
                 pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
                 polyline_path_item.setPen(pen)
-                self.addItem(polyline_path_item)
-                if mapobject.obj_param_get('Label'):
-                    polyline_path_item.add_label(mapobject.obj_param_get('Label'))
-                if mapobject.obj_param_get('DirIndicator'):
-                    polyline_path_item.add_arrow_heads()
                 polyline_path_item.add_hlevel_labels()
             elif isinstance(mapobject, map_items.Polygon):
                 polygon = map_items.PolygonQGraphicsPathItem(self.projection)
@@ -116,7 +120,9 @@ class mapCanvas(QGraphicsScene):
                 polygon.setBrush(QBrush(color))
                 self.addItem(polygon)
                 if mapobject.obj_param_get('Label'):
-                    polygon.add_label(mapobject.obj_param_get('Label'))
+                    polygon.set_mp_label(mapobject.obj_param_get('Label'))
+                if mapobject.obj_param_get('EndLevel'):
+                    polygon.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
             else:
                 pass
 
@@ -148,8 +154,12 @@ class mapCanvas(QGraphicsScene):
             return 0
 
     def set_map_level(self, map_level):
+        self.clearSelection()
+        if isinstance(map_level, str):
+            map_level = int(map_level)
         for item in self.items():
-            item.set_map_level(map_level)
+            if item.accept_map_level_change():
+                item.set_map_level(map_level)
 
     # bindings and the binding functions
     def apply_bindings(self):

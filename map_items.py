@@ -465,6 +465,7 @@ class Restriction(object):
 
 class PoiAsPath(QGraphicsPathItem):
     # basic class for poi without pixmap icon
+
     def __init__(self, projection, icon):
         self.projection = projection
         super(PoiAsPath, self).__init__()
@@ -476,15 +477,21 @@ class PoiAsPath(QGraphicsPathItem):
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
 
+    @staticmethod
+    def accept_map_level_change():
+        return True
+
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
+            self.setVisible(True)
         elif self._mp_data[level] is None and self._mp_end_level < level:
             self.setVisible(False)
         elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
+        self._curent_map_level = level
         return
 
     def set_mp_data(self, given_level, data):
@@ -504,6 +511,11 @@ class PoiAsPath(QGraphicsPathItem):
     def add_label(self, label):
         self.label = PoiLabel(label, self)
 
+    def set_mp_end_level(self, end_level):
+        if isinstance(end_level, str):
+            end_level = int(end_level)
+        self._mp_end_level = end_level
+
     def decorate(self):
         pass
 
@@ -511,6 +523,7 @@ class PoiAsPath(QGraphicsPathItem):
         pass
 
 class PoiAsPixmap(QGraphicsPixmapItem):
+
     # basic class for poi with pixmap icon
     def __init__(self, projection, icon):
         self.projection = projection
@@ -524,15 +537,21 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
 
+    @staticmethod
+    def accept_map_level_change():
+        return True
+
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
         if self._mp_data[level] is not None:
-            self.setPath(self._mp_data[level])
+            self.setPos(self._mp_data[level])
+            self.setVisible(True)
         elif self._mp_data[level] is None and self._mp_end_level < level:
             self.setVisible(False)
         elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
+        self._curent_map_level = level
         return
 
     def set_mp_data(self, given_level, data):
@@ -552,6 +571,11 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.label = PoiLabel(label, self)
         if self._mp_label is None:
             self._mp_label = label
+
+    def set_mp_end_level(self, end_level):
+        if isinstance(end_level, str):
+            end_level = int(end_level)
+        self._mp_end_level = end_level
 
     def decorate(self):
         pass
@@ -579,17 +603,32 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.label = None
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
+        self._mp_label = None
         self._curent_map_level = 0
+
+    @staticmethod
+    def accept_map_level_change():
+        return True
 
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
         if self._mp_data[level] is not None:
+            self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
+            self.add_items_after_new_map_level_set()
+            self.setVisible(True)
         elif self._mp_data[level] is None and self._mp_end_level < level:
             self.setVisible(False)
         elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
+        self._curent_map_level = level
+        return
+
+    def remove_items_before_new_map_level_set(self):
+        return
+
+    def add_items_after_new_map_level_set(self):
         return
 
     def set_mp_data(self, level, data):
@@ -597,7 +636,22 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         pass
 
     def set_mp_end_level(self, end_level):
+        if isinstance(end_level, str):
+            end_level = int(end_level)
         self._mp_end_level = end_level
+
+    def set_mp_label(self, label):
+        self._mp_label = label
+        self.add_label()
+
+    def add_label(self):
+        pass
+
+    def remove_label(self):
+        if self.label is not None:
+            self.scene().removeItem(self.label)
+        self.label = None
+
 
     def move_grip(self, grip):
         print('ruszam')
@@ -711,7 +765,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             self.scene().removeItem(grip)
         self.refresh_arrow_heads()
         self.update_label_pos()
-        self.delete_hlevel_label(index)
+        self.remove_hlevel_labels(index)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -726,12 +780,8 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def update_hlevel_labels(self):
         return
 
-    def delete_hlevel_label(self, node_num):
+    def remove_hlevel_labels(self, node_num):
         return
-
-    def remove_label(self):
-        self.scene().removeItem(self.label)
-        self.label = None
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -740,6 +790,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.hlevel_labels = None
         self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
+        self._mp_dir_indicator = False
         self.setZValue(10)
         self.setAcceptHoverEvents(True)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
@@ -769,12 +820,36 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             level = given_level
         self._mp_hlevels[level] = data
 
+    def remove_items_before_new_map_level_set(self):
+        if self.arrow_head_items is not None and self.arrow_head_items:
+            self.remove_arrow_heads()
+        if self.label is not None:
+            self.remove_label()
+        if self.hlevel_labels is not None and self.hlevel_labels:
+            self.remove_all_hlevel_labels()
+
+    def add_items_after_new_map_level_set(self):
+        if self._mp_dir_indicator:
+            self.add_arrow_heads()
+        if self._mp_label:
+            self.add_label()
+        self.add_hlevel_labels()
+
+    def set_mp_dir_indicator(self, dir_indicator):
+        self._mp_dir_indicator = dir_indicator
+        if dir_indicator:
+            self.add_arrow_heads()
+        else:
+            self.remove_arrow_heads()
+
     def shape(self):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
         return stroker.createStroke(self.path())
 
     def add_arrow_heads(self):
+        if not self._mp_dir_indicator:
+            return
         # lets add arrowhead every second segment
         path = self.path()
         for elem_num in range(0, path.elementCount() - 1, 2):
@@ -796,8 +871,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_arrow_heads()
             self.add_arrow_heads()
 
-    def add_label(self, label):
-        self.label = PolylineLabel(label, self)
+    def add_label(self):
+        if self._mp_label is not None and self._mp_label:
+            self.label = PolylineLabel(self._mp_label, self)
 
     def update_label_pos(self):
         if self.label is not None:
@@ -826,7 +902,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for node_num in self.hlevel_labels:
             self.hlevel_labels[node_num].setPos(QPointF(path.elementAt(node_num)))
 
-    def delete_hlevel_label(self, node_num):
+    def remove_hlevel_labels(self, node_num):
         # remove hlevels labels when node is removed
         if self.hlevel_labels is None:
             return
@@ -840,7 +916,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def remove_all_hlevel_labels(self):
         # called when map level is changed, for a new maplevel we need to remove old hlevels
-        for hl in self.hlevel_labels:
+        for hl in tuple(self.hlevel_labels.keys()):
             self.scene().removeItem(self.hlevel_labels[hl])
             del self.hlevel_labels[hl]
         self.hlevel_labels = None
@@ -881,38 +957,62 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         if self.path().isEmpty():
             self.setPath(polygon)
 
+    def remove_items_before_new_map_level_set(self):
+        if self.label is not None:
+            self.remove_label()
+
+    def add_items_after_new_map_level_set(self):
+        if self._mp_label:
+            self.add_label()
+
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 3 for a in num_elems_in_path)
 
-    def add_label(self, label):
-        self.label = PolygonLabel(label, self)
+    def add_label(self):
+        if self._mp_label is not None and self._mp_label:
+            self.label = PolygonLabel(self._mp_label, self)
 
     def update_label_pos(self):
         if self.label is not None:
             self.label.setPos(self.label.get_label_pos())
 
+class MapLabels(QGraphicsSimpleTextItem):
 
-class PoiLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
-        self.parent = parent
-        super().__init__(string_text, parent)
-        px0, py0, pheight, pwidth = parent.boundingRect().getRect()
-        self.setPos(pheight, pwidth/2)
-        self.setZValue(20)
+        super(MapLabels, self).__init__(string_text, parent)
+
+    @staticmethod
+    def accept_map_level_change():
+        return False
 
     def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
 
 
-class PolylineLabel(QGraphicsSimpleTextItem):
+class PoiLabel(MapLabels):
+
     def __init__(self, string_text, parent):
         self.parent = parent
-        super().__init__(string_text, parent)
+        super(PoiLabel, self).__init__(string_text, parent)
+        px0, py0, pheight, pwidth = parent.boundingRect().getRect()
+        self.setPos(pheight, pwidth/2)
+        self.setZValue(20)
+        self.set_transformation_flag()
+
+
+class PolylineLabel(MapLabels):
+
+    def __init__(self, string_text, parent):
+        self.parent = parent
+        super(PolylineLabel, self).__init__(string_text, parent)
         self.setPos(self.get_label_pos())
         self.setRotation(self.get_label_angle())
         self.setZValue(20)
@@ -936,21 +1036,12 @@ class PolylineLabel(QGraphicsSimpleTextItem):
             return QPointF(path.elementAt(num_elem // 2 - 1)), QPointF(path.elementAt(num_elem // 2))
         return QPointF(path.elementAt(num_elem // 2)), QPointF(path.elementAt(num_elem // 2 + 1))
 
-    def paint(self, painter, option, widget):
-        self.set_transformation_flag()
-        super().paint(painter, option, widget)
 
-    def set_transformation_flag(self):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+class PolygonLabel(MapLabels):
 
-
-class PolygonLabel(QGraphicsSimpleTextItem):
     def __init__(self, string_text, parent):
         self.parent = parent
-        super().__init__(string_text, parent)
+        super(PolygonLabel, self).__init__(string_text, parent)
         self.setPos(self.get_label_pos())
         self.setZValue(20)
         self.set_transformation_flag()
@@ -958,43 +1049,22 @@ class PolygonLabel(QGraphicsSimpleTextItem):
     def get_label_pos(self):
         return self.parent.boundingRect().center()
 
-    def paint(self, painter, option, widget):
-        self.set_transformation_flag()
-        super().paint(painter, option, widget)
+class PolylineAddressNumber(MapLabels):
 
-    def set_transformation_flag(self):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-
-
-class PolylineAddressNumber(QGraphicsSimpleTextItem):
     def __init__(self, text, parent):
         self.parent = parent
-        super().__init__(text, parent)
-
-    def paint(self, painter, option, widget):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
+        super(PolylineAddressNumber, self).__init__(text, parent)
+        self.set_transformation_flag()
 
 
-class PolylineLevelNumber(QGraphicsSimpleTextItem):
+class PolylineLevelNumber(MapLabels):
+
     def __init__(self, text, parent):
         self.parent = parent
         if not isinstance(text, str):
             text = str(text)
-        super().__init__(text, parent)
-
-    def paint(self, painter, option, widget):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
-        super().paint(painter, option, widget)
+        super(PolylineLevelNumber, self).__init__(text, parent)
+        self.set_transformation_flag()
 
 
 class GripItem(QGraphicsPathItem):
@@ -1024,6 +1094,9 @@ class GripItem(QGraphicsPathItem):
         self.hover_drag_mode = False
         self.set_transformation_flag()
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
+
+    def accept_map_level_change(self):
+        return False
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionHasChanged:
@@ -1094,6 +1167,10 @@ class DirectionArrowHead(QGraphicsPathItem):
         # by default lets ignore transformations, as this helps when moving nodes. The arrow heads keep their size
         self.set_transformation_flag()
 
+    @staticmethod
+    def accept_map_level_change():
+        return False
+
     def set_transformation_flag(self):
         if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
@@ -1103,6 +1180,12 @@ class DirectionArrowHead(QGraphicsPathItem):
     def paint(self, painter, option, widget=None):
         self.set_transformation_flag()
         super().paint(painter, option, widget=widget)
+
+
+class MapRulerLabel(MapLabels):
+    def __init__(self, label, parent):
+        self.parent = parent
+        super(MapRulerLabel, self).__init__(label, parent)
 
 
 class MapRuler(QGraphicsPathItem):
@@ -1121,6 +1204,10 @@ class MapRuler(QGraphicsPathItem):
         self.distance_label = None
         self.draw_ruler()
         self.screen_dpi = self.map_render.physicalDpiX()
+
+    @staticmethod
+    def accept_map_level_change():
+        return False
 
     def draw_ruler(self):
         if self.distance_label is not None:
@@ -1152,7 +1239,7 @@ class MapRuler(QGraphicsPathItem):
         else:
             label = '%.1f km' % (self.geo_distance / 1000)
         # print(self.geo_distance / (40 / self.map_render.physicalDpiX() * 2.54 / 100))
-        self.distance_label = QGraphicsSimpleTextItem(label, self)
+        self.distance_label = MapRulerLabel(label, self)
         self.distance_label.setPos(point1)
         self.distance_label.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 

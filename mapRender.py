@@ -22,7 +22,6 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
-        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
 
     def set_ruler(self, ruler):
         self.ruler = ruler
