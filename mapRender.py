@@ -24,7 +24,7 @@ class mapRender(QGraphicsView):
             self.projection = projection
 
     def get_pw_mapedit_mode(self):
-        return self.parent().pw_mapedit_mode
+        return self.parent.pw_mapedit_mode
 
     def set_ruler(self, ruler):
         self.ruler = ruler

@@ -330,6 +330,7 @@ class pwMapeditPy(QMainWindow):
         self.menu_select_map_level()
 
     def menu_tools_set_mode(self):
+        self.map_canvas.clearSelection()
         self.pw_mapedit_mode = self.tools_actions_group.checkedAction().data()
         print(self.pw_mapedit_mode)
 
