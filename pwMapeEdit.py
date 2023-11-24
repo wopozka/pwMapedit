@@ -35,11 +35,13 @@ class pwMapeditPy(QMainWindow):
         self.tools_actions_group = None
         self.map_level_action_group = None
         self.map_level_actions = list()
+        self.pw_mapedit_mode = ''
         self.initialize()
         self.generate_shortcuts()
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
         self.map_ruler = None
+        self.menu_tools_set_mode()
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -212,29 +214,45 @@ class pwMapeditPy(QMainWindow):
     def _create_tools_actions(self):
         tools_action = list()
         tools_action.append(QAction('&Drag map', self))
+        tools_action[-1].setData('drag_map')
         tools_action.append(QAction('&Zoom map', self))
+        tools_action[-1].setData('zoom_map')
         tools_action.append(QAction('&Select objects', self))
+        tools_action[-1].setData('select_objects')
         tools_action.append(QAction('&Rotate object', self))
+        tools_action[-1].setData('rotate_objects')
         tools_action.append(QAction('&Edit nodes', self))
+        tools_action[-1].setData('edit_nodes')
         for act in tools_action:
             act.setCheckable(True)
+            if act.data() == 'drag_map':
+                act.setChecked(True)
+            act.triggered.connect(self.menu_tools_set_mode)
         return tuple(tools_action)
 
     def _create_object_actions(self):
         obj_actions = list()
         obj_actions.append(QAction('&Point', self))
+        obj_actions[-1].setData('create_point')
         obj_actions.append(None)
         obj_actions.append(QAction('&Polyline', self))
+        obj_actions[-1].setData('create_polyline')
         obj_actions.append(QAction('&Polyline: circle', self))
+        obj_actions[-1].setData('create_polyline_circle')
         obj_actions.append(None)
         obj_actions.append(QAction('&Polygon', self))
+        obj_actions[-1].setData('create_polygon')
         obj_actions.append(QAction('&Polygon: stripe', self))
+        obj_actions[-1].setData('create_polygon_stripe')
         obj_actions.append(QAction('&Polygon: rectangle', self))
+        obj_actions[-1].setData('create_polygon_rectangle')
         obj_actions.append(QAction('&Polygon: disc', self))
+        obj_actions[-1].setData('create_polygon_dics')
         for act in obj_actions:
             if act is None:
                 continue
             act.setCheckable(True)
+            act.triggered.connect(self.menu_tools_set_mode)
         return tuple(obj_actions)
 
     def generate_shortcuts(self):
@@ -310,6 +328,10 @@ class pwMapeditPy(QMainWindow):
     def menu_view_set_map_level_4(self):
         self.map_level_actions[4].setChecked(True)
         self.menu_select_map_level()
+
+    def menu_tools_set_mode(self):
+        self.pw_mapedit_mode = self.tools_actions_group.checkedAction().data()
+        print(self.pw_mapedit_mode)
 
 if __name__ == "__main__":
 

@@ -11,9 +11,9 @@ from singleton_store import Store
 
 class mapRender(QGraphicsView):
     """The main map canvas definitions residue here"""
-    def __init__(self, master, *args, projection=None, **kwargs):
-        super(mapRender, self).__init__(master, *args, **kwargs)
-        self.master = master
+    def __init__(self, parent, *args, projection=None, **kwargs):
+        super(mapRender, self).__init__(parent, *args, **kwargs)
+        self.parent = parent
         self.ruler = None
         self.map_scale = 1
         self.main_window_status_bar = None
@@ -22,6 +22,9 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
+
+    def get_pw_mapedit_mode(self):
+        return self.parent().pw_mapedit_mode
 
     def set_ruler(self, ruler):
         self.ruler = ruler
