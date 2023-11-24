@@ -34,6 +34,7 @@ class pwMapeditPy(QMainWindow):
         self.projection = projection.Mercator({})
         self.tools_actions_group = None
         self.map_level_action_group = None
+        self.map_level_actions = list()
         self.initialize()
         self.generate_shortcuts()
         self.map_objects = None
@@ -124,6 +125,7 @@ class pwMapeditPy(QMainWindow):
             if not level:
                 l_act.setChecked(True)
             map_level_menu.addAction(l_act)
+            self.map_level_actions.append(l_act)
             self.map_level_action_group.addAction(l_act)
 
         # projection submenu
@@ -242,6 +244,16 @@ class pwMapeditPy(QMainWindow):
         scale_up.activated.connect(self.menu_zoom_in_command)
         cancel_selection = QShortcut(QKeySequence('Escape'), self)
         cancel_selection.activated.connect(self.map_canvas.clearSelection)
+        set_maplevel_0 = QShortcut(QKeySequence('0'), self)
+        set_maplevel_0.activated.connect(self.menu_view_set_map_level_0)
+        set_maplevel_1 = QShortcut(QKeySequence('1'), self)
+        set_maplevel_1.activated.connect(self.menu_view_set_map_level_1)
+        set_maplevel_2 = QShortcut(QKeySequence('2'), self)
+        set_maplevel_2.activated.connect(self.menu_view_set_map_level_2)
+        set_maplevel_3 = QShortcut(QKeySequence('3'), self)
+        set_maplevel_3.activated.connect(self.menu_view_set_map_level_3)
+        set_maplevel_4 = QShortcut(QKeySequence('4'), self)
+        set_maplevel_4.activated.connect(self.menu_view_set_map_level_4)
 
 
     def open_file(self):
@@ -278,6 +290,26 @@ class pwMapeditPy(QMainWindow):
     def menu_select_map_level(self):
         map_level = self.map_level_action_group.checkedAction().data()
         self.map_canvas.set_map_level(map_level)
+
+    def menu_view_set_map_level_0(self):
+        self.map_level_actions[0].setChecked(True)
+        self.menu_select_map_level()
+
+    def menu_view_set_map_level_1(self):
+        self.map_level_actions[1].setChecked(True)
+        self.menu_select_map_level()
+
+    def menu_view_set_map_level_2(self):
+        self.map_level_actions[2].setChecked(True)
+        self.menu_select_map_level()
+
+    def menu_view_set_map_level_3(self):
+        self.map_level_actions[3].setChecked(True)
+        self.menu_select_map_level()
+
+    def menu_view_set_map_level_4(self):
+        self.map_level_actions[4].setChecked(True)
+        self.menu_select_map_level()
 
 if __name__ == "__main__":
 

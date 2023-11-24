@@ -1182,10 +1182,14 @@ class DirectionArrowHead(QGraphicsPathItem):
         super().paint(painter, option, widget=widget)
 
 
-class MapRulerLabel(MapLabels):
+class MapRulerLabel(QGraphicsSimpleTextItem):
     def __init__(self, label, parent):
         self.parent = parent
         super(MapRulerLabel, self).__init__(label, parent)
+
+    @staticmethod
+    def accept_map_level_change():
+        return False
 
 
 class MapRuler(QGraphicsPathItem):
