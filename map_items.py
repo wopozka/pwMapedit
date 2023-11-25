@@ -611,6 +611,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def set_map_level(self, level):
         if self._curent_map_level == level:
             return
+        self._curent_map_level = level
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
@@ -623,7 +624,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
                 self.setVisible(True)
             else:
                 self.setVisible(False)
-        self._curent_map_level = level
         return
 
     def remove_items_before_new_map_level_set(self):
