@@ -60,74 +60,74 @@ class mapCanvas(QGraphicsScene):
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
 
-    def draw_all_objects_on_map(self, obj_list, maplevel):
+    def draw_all_objects_on_map(self, obj_list):
         for num, obj in enumerate(obj_list):
-            self.draw_object_on_map(obj, maplevel)
+            self.draw_object_on_map(obj)
         # print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
         #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
-    def draw_object_on_map(self, mapobject, maplevel):
+    def draw_object_on_map(self, mapobject):
         mp_data_range = ('Data0', 'Data1', 'Data2', 'Data3', 'Data4')
-        if maplevel in mapobject.get_obj_levels():
-            if isinstance(mapobject, map_items.Poi):
-                # group_item = QGraphicsItemGroup()
-                # nodes = mapobject.obj_datax_get('Data0')[0]
-                # x, y = nodes[0].get_canvas_coords()
-                poi_icon = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
-                if isinstance(poi_icon, QPainterPath):
-                    poi = map_items.PoiAsPath(projection, poi_icon)
-                    poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(
-                        mapobject.obj_param_get('Type'))
-                elif isinstance(poi_icon, QPixmap):
-                    poi = map_items.PoiAsPixmap(projection, poi_icon)
-                    poi_icon_brush = False
-                for data_x in mp_data_range:
-                    if mapobject.obj_datax_get(data_x):
-                        poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-                poi.set_map_level(0)
-                if poi_icon_brush:
-                    poi.setBrush(poi_icon_brush)
-                self.addItem(poi)
-                if mapobject.obj_param_get('Label'):
-                    poi.add_label(mapobject.obj_param_get('Label'))
-                if mapobject.obj_param_get('EndLevel'):
-                    poi.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            elif isinstance(mapobject, map_items.Polyline):
-                # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
-                # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
-                polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
-                for data_x in mp_data_range:
-                    if mapobject.obj_datax_get(data_x):
-                        polyline_path_item.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-                    if mapobject.get_hlevels(data_x):
-                        polyline_path_item.set_mp_hlevels(data_x, mapobject.get_hlevels(data_x))
-                polyline_path_item.set_mp_end_level(0)
-                self.addItem(polyline_path_item)
-                if mapobject.obj_param_get('DirIndicator'):
-                    polyline_path_item.set_mp_dir_indicator(True)
-                if mapobject.obj_param_get('Label'):
-                    polyline_path_item.set_mp_label(mapobject.obj_param_get('Label'))
-                if mapobject.obj_param_get('EndLevel'):
-                    polyline_path_item.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-                pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
-                polyline_path_item.setPen(pen)
-                polyline_path_item.add_hlevel_labels()
-            elif isinstance(mapobject, map_items.Polygon):
-                polygon = map_items.PolygonQGraphicsPathItem(self.projection)
-                for data_x in mp_data_range:
-                    if mapobject.obj_datax_get(data_x):
-                        polygon.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-                polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
-                polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
-                color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
-                polygon.setBrush(QBrush(color))
-                self.addItem(polygon)
-                if mapobject.obj_param_get('Label'):
-                    polygon.set_mp_label(mapobject.obj_param_get('Label'))
-                if mapobject.obj_param_get('EndLevel'):
-                    polygon.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            else:
-                pass
+        if isinstance(mapobject, map_items.Poi):
+            # group_item = QGraphicsItemGroup()
+            # nodes = mapobject.obj_datax_get('Data0')[0]
+            # x, y = nodes[0].get_canvas_coords()
+            poi_icon = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
+            if isinstance(poi_icon, QPainterPath):
+                poi = map_items.PoiAsPath(projection, poi_icon)
+                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(
+                    mapobject.obj_param_get('Type'))
+            elif isinstance(poi_icon, QPixmap):
+                poi = map_items.PoiAsPixmap(projection, poi_icon)
+                poi_icon_brush = False
+            for data_x in mp_data_range:
+                if mapobject.obj_datax_get(data_x):
+                    poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+            if poi_icon_brush:
+                poi.setBrush(poi_icon_brush)
+            self.addItem(poi)
+            if mapobject.obj_param_get('Label'):
+                poi.add_label(mapobject.obj_param_get('Label'))
+            if mapobject.obj_param_get('EndLevel'):
+                poi.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
+            poi.set_map_level(0)
+        elif isinstance(mapobject, map_items.Polyline):
+            # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
+            # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
+            polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
+            for data_x in mp_data_range:
+                if mapobject.obj_datax_get(data_x):
+                    polyline_path_item.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+                if mapobject.get_hlevels(data_x):
+                    polyline_path_item.set_mp_hlevels(data_x, mapobject.get_hlevels(data_x))
+            self.addItem(polyline_path_item)
+            if mapobject.obj_param_get('DirIndicator'):
+                polyline_path_item.set_mp_dir_indicator(True)
+            if mapobject.obj_param_get('Label'):
+                polyline_path_item.set_mp_label(mapobject.obj_param_get('Label'))
+            if mapobject.obj_param_get('EndLevel'):
+                polyline_path_item.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
+            polyline_path_item.set_map_level(0)
+            pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
+            polyline_path_item.setPen(pen)
+            polyline_path_item.add_hlevel_labels()
+        elif isinstance(mapobject, map_items.Polygon):
+            polygon = map_items.PolygonQGraphicsPathItem(self.projection)
+            for data_x in mp_data_range:
+                if mapobject.obj_datax_get(data_x):
+                    polygon.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+            polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
+            polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
+            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
+            polygon.setBrush(QBrush(color))
+            self.addItem(polygon)
+            if mapobject.obj_param_get('Label'):
+                polygon.set_mp_label(mapobject.obj_param_get('Label'))
+            if mapobject.obj_param_get('EndLevel'):
+                polygon.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
+            polygon.set_map_level(0)
+        else:
+            pass
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')

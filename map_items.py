@@ -102,7 +102,6 @@ class BasicMapItem(object):
         if projection is not None:
             self.projection = projection
         self.obj_comment = list()
-        self.map_levels = set()
         self.type = None
         self.label = None
         self.label2 = None
@@ -244,7 +243,6 @@ class BasicMapItem(object):
                 self.data4 = Data_X(data_level=4)
             self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
             self.last_data_level = self.data4
-        self.map_levels.add(data012345)
         return
 
     def obj_others_set(self, key, value):
@@ -275,9 +273,6 @@ class BasicMapItem(object):
             elif longitude >= self.obj_bounding_box['E']:
                 self.obj_bounding_box['E'] = longitude
         return
-
-    def get_obj_levels(self):
-        return self.map_levels
 
     def get_hlevels(self, level_for_data):
         if isinstance(level_for_data, int):
@@ -472,7 +467,8 @@ class PoiAsPath(QGraphicsPathItem):
         self.label = None
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
-        self._curent_map_level = 0
+        # setting level 4, makes it easier to handle levels when file is loaded
+        self._curent_map_level = 4
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
@@ -532,7 +528,8 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._mp_label = None
-        self._curent_map_level = 0
+        # setting level 4, makes it easier to handle levels when file is loaded
+        self._curent_map_level = 4
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
@@ -604,7 +601,8 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._mp_label = None
-        self._curent_map_level = 0
+        # setting level 4, makes it easier to handle levels when file is loaded
+        self._curent_map_level = 4
 
     @staticmethod
     def accept_map_level_change():
@@ -618,10 +616,13 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             self.setPath(self._mp_data[level])
             self.add_items_after_new_map_level_set()
             self.setVisible(True)
-        elif self._mp_data[level] is None and self._mp_end_level < level:
+        elif self._mp_end_level < level:
             self.setVisible(False)
-        elif self._mp_data[level] is None and self._mp_end_level >= level:
-            self.setVisible(True)
+        else:
+            if any(self._mp_data[a] is not None for a in range(level)):
+                self.setVisible(True)
+            else:
+                self.setVisible(False)
         self._curent_map_level = level
         return
 
