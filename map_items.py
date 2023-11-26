@@ -472,14 +472,14 @@ class PoiAsPath(QGraphicsPathItem):
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.current_data_x = 4
 
     @staticmethod
     def accept_map_level_change():
         return True
 
-    def set_map_level(self, level):
-        if self._curent_map_level == level:
-            return
+    def set_map_level(self):
+        level = self.scene().get_map_level()
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
@@ -487,7 +487,6 @@ class PoiAsPath(QGraphicsPathItem):
             self.setVisible(False)
         elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
-        self._curent_map_level = level
         return
 
     def set_mp_data(self, given_level, data):
@@ -503,6 +502,7 @@ class PoiAsPath(QGraphicsPathItem):
         self._mp_data[level] = QPointF(x, y)
         if self.pos().isNull():
             self.setPos(self._mp_data[level])
+            self.current_data_x = level
 
     def add_label(self, label):
         self.label = PoiLabel(label, self)
@@ -533,14 +533,14 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.current_data_x = 4
 
     @staticmethod
     def accept_map_level_change():
         return True
 
-    def set_map_level(self, level):
-        if self._curent_map_level == level:
-            return
+    def set_map_level(self):
+        level = self.scene().get_map_level()
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
@@ -563,6 +563,7 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self._mp_data[level] = QPointF(x, y)
         if self.pos().isNull():
             self.setPos(self._mp_data[level])
+            self.current_data_x = level
 
     def add_label(self, label):
         self.label = PoiLabel(label, self)
@@ -601,22 +602,20 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._mp_label = None
-        # setting level 4, makes it easier to handle levels when file is loaded
-        self._curent_map_level = 4
+        self.current_data_x = 0
 
     @staticmethod
     def accept_map_level_change():
         return True
 
-    def set_map_level(self, level):
-        if self._curent_map_level == level:
-            return
-        self._curent_map_level = level
+    def set_map_level(self):
+        level = self.scene().get_map_level()
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
             self.add_items_after_new_map_level_set()
             self.setVisible(True)
+            self.current_data_x = level
         elif self._mp_end_level < level:
             self.setVisible(False)
         else:
@@ -813,6 +812,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self._mp_data[level] = polyline
         if self.path().isEmpty():
             self.setPath(polyline)
+            self.current_data_x = level
 
     def set_mp_hlevels(self, given_level, data):
         if isinstance(given_level, str):
@@ -883,12 +883,13 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def add_hlevel_labels(self):
         # add hlevel numbers dependly on map level
-        if not self._mp_hlevels[self._curent_map_level]:
+        level = self.scene().get_map_level()
+        if not self._mp_hlevels[level]:
             return
         if self.hlevel_labels is None:
             self.hlevel_labels = dict()
         path = self.path()
-        for node_num_value in self._mp_hlevels[self._curent_map_level]:
+        for node_num_value in self._mp_hlevels[level]:
             node_num, value = node_num_value
             position = QPointF(path.elementAt(node_num))
             # print(position)
@@ -957,6 +958,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self._mp_data[level] = polygon
         if self.path().isEmpty():
             self.setPath(polygon)
+            self.current_data_x = level
 
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:

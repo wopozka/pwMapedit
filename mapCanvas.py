@@ -33,6 +33,7 @@ class mapCanvas(QGraphicsScene):
         self.selected_objects = []
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
+        self.current_map_level = 0
 
         # selection changed slot conection
         self.selectionChanged.connect(self.selection_change_actions)
@@ -90,7 +91,7 @@ class mapCanvas(QGraphicsScene):
                 poi.add_label(mapobject.obj_param_get('Label'))
             if mapobject.obj_param_get('EndLevel'):
                 poi.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            poi.set_map_level(0)
+            poi.set_map_level()
         elif isinstance(mapobject, map_items.Polyline):
             # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
             # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
@@ -107,7 +108,7 @@ class mapCanvas(QGraphicsScene):
                 polyline_path_item.set_mp_label(mapobject.obj_param_get('Label'))
             if mapobject.obj_param_get('EndLevel'):
                 polyline_path_item.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            polyline_path_item.set_map_level(0)
+            polyline_path_item.set_map_level()
             pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
             polyline_path_item.setPen(pen)
             polyline_path_item.add_hlevel_labels()
@@ -125,7 +126,7 @@ class mapCanvas(QGraphicsScene):
                 polygon.set_mp_label(mapobject.obj_param_get('Label'))
             if mapobject.obj_param_get('EndLevel'):
                 polygon.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            polygon.set_map_level(0)
+            polygon.set_map_level()
         else:
             pass
 
@@ -157,12 +158,18 @@ class mapCanvas(QGraphicsScene):
             return 0
 
     def set_map_level(self, map_level):
-        self.clearSelection()
         if isinstance(map_level, str):
             map_level = int(map_level)
+        if map_level == self.current_map_level:
+            return
+        self.current_map_level = map_level
+        self.clearSelection()
         for item in self.items():
             if item.accept_map_level_change():
-                item.set_map_level(map_level)
+                item.set_map_level()
+
+    def get_map_level(self):
+        return self.current_map_level
 
     # # bindings and the binding functions
     # def apply_bindings(self):
