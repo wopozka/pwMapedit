@@ -151,6 +151,8 @@ class mapData(object):
     def get_all_map_objects(self):
         return self.mapObjectsList
 
+    def clean_all_map_objects(self):
+        self.mapObjectsList.clear()
 #
 # class Point(object):
 #     """Class used for storing coordinates of given map object point"""

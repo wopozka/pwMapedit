@@ -286,6 +286,7 @@ class pwMapeditPy(QMainWindow):
             self.map_canvas.draw_all_objects_on_map(self.map_objects.get_all_map_objects())
             self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
             print(self.map_canvas.sceneRect())
+            self.map_objects.clean_all_map_objects()
             # print(self.map_canvas.sceneRect())
             # print(self.map_canvas.itemsBoundingRect())
             # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)

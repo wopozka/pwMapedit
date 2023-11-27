@@ -1013,6 +1013,14 @@ class PoiLabel(MapLabels):
         self.set_transformation_flag()
 
 
+class AdrLabel(MapLabels):
+
+    def __init(self, projection):
+        self.projection = projection
+        super(AdrLabel, self).__init__()
+        self.setZValue()
+        self.set_transformation_flag()
+
 class PolylineLabel(MapLabels):
 
     def __init__(self, string_text, parent):
