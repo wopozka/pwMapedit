@@ -854,6 +854,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         # lets add arrowhead every second segment
         path = self.path()
         for elem_num in range(0, path.elementCount() - 1, 2):
+            # QLineF could be used here, but due to the screen coordinates system, where y = -y, it is easier to
+            # create custom function to angle calculation
             p1 = QPointF(path.elementAt(elem_num))
             p2 = QPointF(path.elementAt(elem_num + 1))
             position = p1 + (p2-p1) / 2
