@@ -4,6 +4,8 @@ from PyQt5.QtGui import QPixmap, QColor, QPen, QFont, QBrush, QPainterPath
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
 
+import map_items
+
 
 class MapObjectsProperties(object):
     """here this class contains definitions of all map objects: the points, polylines and polygons"""
@@ -400,7 +402,7 @@ class MapObjectsProperties(object):
         ellipse = QPainterPath()
         ellipse.addEllipse(QPointF(0, 0), 2, 2)
         # ellipse.setBrush(QBrush(Qt.black))
-        return ellipse
+        return 'adr'
 
 
 

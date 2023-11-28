@@ -81,6 +81,9 @@ class mapCanvas(QGraphicsScene):
             elif isinstance(poi_icon, QPixmap):
                 poi = map_items.PoiAsPixmap(projection, poi_icon)
                 poi_icon_brush = False
+            elif isinstance(poi_icon, str):
+                poi = map_items.AddrLabel(projection, '__tmp__')
+                poi_icon_brush = False
             for data_x in mp_data_range:
                 if mapobject.obj_datax_get(data_x):
                     poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))

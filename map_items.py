@@ -468,7 +468,7 @@ class PoiAsPath(QGraphicsPathItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         # setting level 4, makes it easier to handle levels when file is loaded
-        self._curent_map_level = 4
+        self._current_map_level = 4
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
@@ -529,7 +529,7 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self._mp_end_level = 0
         self._mp_label = None
         # setting level 4, makes it easier to handle levels when file is loaded
-        self._curent_map_level = 4
+        self._current_map_level = 4
         self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
@@ -548,7 +548,7 @@ class PoiAsPixmap(QGraphicsPixmapItem):
             self.setVisible(False)
         elif self._mp_data[level] is None and self._mp_end_level >= level:
             self.setVisible(True)
-        self._curent_map_level = level
+        self._current_map_level = level
         return
 
     def set_mp_data(self, given_level, data):
@@ -580,6 +580,82 @@ class PoiAsPixmap(QGraphicsPixmapItem):
 
     def undecorate(self):
         pass
+
+
+class AddrLabel(QGraphicsSimpleTextItem):
+
+    def __init__(self, projection, text):
+        self.projection = projection
+        super(AddrLabel, self).__init__(text)
+        self.setZValue(20)
+        self.text = None
+        self._mp_data = [None, None, None, None, None]
+        self._mp_end_level = 0
+        self._mp_label = ''
+        # setting level 4, makes it easier to handle levels when file is loaded
+        self._current_map_level = 4
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.current_data_x = 4
+        self.set_transformation_flag()
+
+    @staticmethod
+    def accept_map_level_change():
+        return True
+
+    def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
+        if self.scene() is None:
+            return
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+
+    def set_map_level(self):
+        level = self.scene().get_map_level()
+        if self._mp_data[level] is not None:
+            self.setPos(self._mp_data[level])
+            self.setVisible(True)
+        elif self._mp_data[level] is None and self._mp_end_level < level:
+            self.setVisible(False)
+        elif self._mp_data[level] is None and self._mp_end_level >= level:
+            self.setVisible(True)
+        self._current_map_level = level
+        return
+
+    def set_mp_data(self, given_level, data):
+        # if not self.text() == '__tmp__' and self._mp_label:
+        #     self.setText(self._mp_label)
+        if isinstance(given_level, str):
+            level = int(given_level[-1])
+        else:
+            level = given_level
+        node = data[0]
+        x, y = node[0].get_canvas_coords()
+        self._mp_data[level] = QPointF(x, y)
+        if self.pos().isNull():
+            self.setPos(self._mp_data[level])
+            self.current_data_x = level
+
+    def add_label(self, label):
+        self._mp_label = label
+        self.setText(label)
+
+    def set_mp_end_level(self, end_level):
+        if isinstance(end_level, str):
+            end_level = int(end_level)
+        self._mp_end_level = end_level
+
+    def decorate(self):
+        pass
+
+    def undecorate(self):
+        pass
+
+
 
 class PolyQGraphicsPathItem(QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
@@ -1012,14 +1088,6 @@ class PoiLabel(MapLabels):
         self.setZValue(20)
         self.set_transformation_flag()
 
-
-class AdrLabel(MapLabels):
-
-    def __init(self, projection):
-        self.projection = projection
-        super(AdrLabel, self).__init__()
-        self.setZValue()
-        self.set_transformation_flag()
 
 class PolylineLabel(MapLabels):
 
