@@ -38,11 +38,8 @@ class mapCanvas(QGraphicsScene):
         # selection changed slot conection
         self.selectionChanged.connect(self.selection_change_actions)
 
-
-    # new events definitions:
-    # def mouseMoveEvent(self, event):
-    #     # Store.status_bar.showMessage('(%s,%s)' % (event.localPos().x(), event.localPos().y()))
-    #     print(event.pos().x(), event.pos().y())
+    def get_item_ignores_transformations(self):
+        return self.self.views()[0].get_item_ignores_transformations()
 
     def get_pw_mapedit_mode(self):
         return self.parent.pw_mapedit_mode
@@ -52,7 +49,6 @@ class mapCanvas(QGraphicsScene):
 
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
-
 
     def set_canvas_rectangle(self, map_bounding_box):
         start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])

@@ -548,9 +548,11 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         if self.scene() is None:
             return
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
     def set_map_level(self):
         level = self.scene().get_map_level()
@@ -623,9 +625,11 @@ class AddrLabel(QGraphicsSimpleTextItem):
         if self.scene() is None:
             return
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
     def set_map_level(self):
         level = self.scene().get_map_level()
@@ -1085,10 +1089,12 @@ class MapLabels(QGraphicsSimpleTextItem):
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
 
 class PoiLabel(MapLabels):
@@ -1234,10 +1240,12 @@ class GripItem(QGraphicsPathItem):
         super().paint(painter, option, widget=widget)
 
     def set_transformation_flag(self):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
 
 class DirectionArrowHead(QGraphicsPathItem):
@@ -1266,10 +1274,12 @@ class DirectionArrowHead(QGraphicsPathItem):
         return False
 
     def set_transformation_flag(self):
-        if self.parent.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         else:
-            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
     def paint(self, painter, option, widget=None):
         self.set_transformation_flag()
