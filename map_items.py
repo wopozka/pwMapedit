@@ -534,10 +534,23 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.current_data_x = 4
+        self.set_transformation_flag()
 
     @staticmethod
     def accept_map_level_change():
         return True
+
+    def paint(self, painter, option, widget):
+        self.set_transformation_flag()
+        super().paint(painter, option, widget)
+
+    def set_transformation_flag(self):
+        if self.scene() is None:
+            return
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        else:
+            self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
     def set_map_level(self):
         level = self.scene().get_map_level()
