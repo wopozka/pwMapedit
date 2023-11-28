@@ -255,7 +255,7 @@ class MapObjectsProperties(object):
         non_pixmaps[0x400] = False
         non_pixmaps[0x500] = QBrush(Qt.black)
         non_pixmaps[0x600] = QBrush(Qt.black)
-        non_pixmaps[0x700] = self.create_0x700_icon
+        non_pixmaps[0x700] = QBrush(Qt.black)
         non_pixmaps[0x800] = False
         non_pixmaps[0x900] = False
         non_pixmaps[0xa00] = QBrush(Qt.black)
