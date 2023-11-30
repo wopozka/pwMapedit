@@ -89,6 +89,7 @@ class mapRender(QGraphicsView):
                 self.ruler.move_to()
 
     def zoom_in_command(self):
+        self.setInteractive(False)
         previous_map_scale = self.get_map_scale()
         center_coords = self.mapToScene(self.width() // 2, self.height() // 2)
         curent_mouse_coords = self.curent_scene_mouse_coords()
@@ -107,9 +108,10 @@ class mapRender(QGraphicsView):
                                mouse_center_vector_lenght
         new_position = curent_mouse_coords + mouse_center_vector * vector_lenght_factor
         self.centerOn(new_position)
-
+        self.setInteractive(True)
 
     def zoom_out_command(self):
+        self.setInteractive(False)
         previous_map_scale = self.get_map_scale()
         self.set_map_scale(0.9)
         if self.get_map_scale() > IGNORE_TRANSFORMATION_TRESHOLD >= previous_map_scale:
@@ -117,3 +119,5 @@ class mapRender(QGraphicsView):
         else:
             self.item_ignores_transformations = 0
         self.scale(0.9, 0.9)
+        self.setInteractive(True)
+
