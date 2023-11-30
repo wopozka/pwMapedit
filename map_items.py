@@ -1312,6 +1312,7 @@ class MapRuler(QGraphicsPathItem):
         self.distance_label = None
         self.draw_ruler()
         self.screen_dpi = self.map_render.physicalDpiX()
+        print('Screen dpi: ', self.screen_dpi)
 
     @staticmethod
     def accept_map_level_change():
