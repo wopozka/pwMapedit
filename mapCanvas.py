@@ -72,8 +72,7 @@ class mapCanvas(QGraphicsScene):
             poi_icon = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
             if isinstance(poi_icon, QPainterPath):
                 poi = map_items.PoiAsPath(projection, poi_icon)
-                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(
-                    mapobject.obj_param_get('Type'))
+                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.obj_param_get('Type'))
             elif isinstance(poi_icon, QPixmap):
                 poi = map_items.PoiAsPixmap(projection, poi_icon)
                 poi_icon_brush = False
@@ -83,7 +82,7 @@ class mapCanvas(QGraphicsScene):
             for data_x in mp_data_range:
                 if mapobject.obj_datax_get(data_x):
                     poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-            if poi_icon_brush:
+            if isinstance(poi_icon_brush, QBrush):
                 poi.setBrush(poi_icon_brush)
             self.addItem(poi)
             if mapobject.obj_param_get('Label'):
