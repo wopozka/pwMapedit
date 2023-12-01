@@ -162,9 +162,12 @@ class mapCanvas(QGraphicsScene):
             return
         self.current_map_level = map_level
         self.clearSelection()
+        num_screen_items = 0
         for item in self.items():
+            num_screen_items += 1
             if item.accept_map_level_change():
                 item.set_map_level()
+        print('num screen items: %s' % num_screen_items)
 
     def get_map_level(self):
         return self.current_map_level
