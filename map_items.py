@@ -695,6 +695,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._mp_label = None
+        self._threshold = None
         self.current_data_x = 0
 
     @staticmethod
@@ -859,6 +860,18 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.refresh_arrow_heads()
         self.update_label_pos()
         self.remove_hlevel_labels(index)
+
+    def closest_point_to_poly(self, event_pos):
+        # redefined in derived classes
+        return
+
+    def threshold(self):
+        if self._threshold is not None:
+            return self._threshold
+        return self.pen().width() or 1.
+
+    def set_threshold(self, threshold):
+        self._threshold = threshold
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -1074,6 +1087,63 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def update_label_pos(self):
         if self.label is not None:
             self.label.setPos(self.label.get_label_pos())
+
+    def closest_point_to_poly(self, event_pos):
+        """
+        Get the position along the polyline/polygon sides that is the closest
+            to the given point.
+        Parameters
+        ----------
+        event_pos: event class position (event.pos)
+
+        Returns
+        -------
+        tuple(distance from edge, qpointf within polygon edge, insertion index) in case of succes and
+        tuple(-1, qpoinf, -1) in case of failure
+        """
+
+        path = self.path()
+        points_list = list()
+        for elem_num in range(path.elementCount()):
+            point = QPointF(path.elementAt(elem_num))
+            if path.elementAt(elem_num).isMoveTo():
+                points_list.append([point])
+            else:
+                points_list[-1].append(point)
+
+        intersections_for_separate_paths = list()
+        for points in points_list:
+            # iterate through pair of points, if the polygon is not "closed",
+            # add the start to the end
+            p1 = points.pop(0)
+            if points[-1] != p1:  # identical to QPolygonF.isClosed()
+                points.append(p1)
+            intersections = []
+            for i, p2 in enumerate(points, 1):
+                line = QLineF(p1, p2)
+                inters = QPointF()
+                # create a perpendicular line that starts at the given pos
+                perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(event_pos)
+                if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                    # no intersection, reverse the perpendicular line by 180°
+                    perp.setAngle(perp.angle() + 180)
+                    if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                        # the pos is not within the line extent, ignore it
+                        p1 = p2
+                        continue
+                # get the distance between the given pos and the found intersection
+                # point, then add it, the intersection and the insertion index to
+                # the intersection list
+                intersections.append((QLineF(event_pos, inters).length(), inters, i))
+                p1 = p2
+            if intersections:
+                intersections_for_separate_paths.append(sorted(intersections)[0])
+
+        if intersections_for_separate_paths:
+            # return the result with the shortest distance
+            return sorted(intersections_for_separate_paths)[0]
+        return -1, QPointF(), -1
+
 
 class MapLabels(QGraphicsSimpleTextItem):
 
