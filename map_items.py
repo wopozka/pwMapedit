@@ -683,6 +683,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     hovered_over_pen.setWidth(4)
     hovered_over_pen.setCosmetic(True)
     non_cosmetic_multiplicity = 4
+    _threshold = None
 
     def __init__(self, projection, *args, **kwargs):
         self.hovered = False
@@ -695,7 +696,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self._mp_data = [None, None, None, None, None]
         self._mp_end_level = 0
         self._mp_label = None
-        self._threshold = None
         self.current_data_x = 0
 
     @staticmethod
@@ -819,6 +819,9 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
 
+    def insert_point(self, index, pos):
+        return
+
     def remove_point(self, index):
         # if there are 2 grip items in a path, then removal is not possible do not even try
         # in another case decide later whether it is possible
@@ -863,7 +866,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
-        return
+        return -1, QPointF(), -1
 
     def threshold(self):
         if self._threshold is not None:
@@ -888,6 +891,15 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def remove_hlevel_labels(self, node_num):
         return
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
+            dist, pos, index = self.closest_point_to_poly(event.pos())
+            print(dist, pos, index)
+            if index >= 0 and dist <= self.threshold():
+                self.insert_point(index, pos)
+                return
+        super().mousePressEvent(event)
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -1124,10 +1136,10 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
                 perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(event_pos)
-                if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                if line.intersect(perp, inters) != QLineF.BoundedIntersection:
                     # no intersection, reverse the perpendicular line by 180°
                     perp.setAngle(perp.angle() + 180)
-                    if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                    if line.intersect(perp, inters) != QLineF.BoundedIntersection:
                         # the pos is not within the line extent, ignore it
                         p1 = p2
                         continue
@@ -1144,6 +1156,23 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             return sorted(intersections_for_separate_paths)[0]
         return -1, QPointF(), -1
 
+    def insert_point(self, index, pos):
+        # index is always > 0, so the first element will always be moveTo
+        new_poly = QPainterPath()
+        path = self.path()
+        new_poly.moveTo(QPointF(path.elementAt(0)))
+        for node_num in range(1, path.elementCount()):
+            if node_num == index:
+                new_poly.lineTo(pos)
+            if path.elementAt(node_num).isMoveTo():
+                new_poly.moveTo(QPointF(path.elementAt(node_num)))
+            else:
+                new_poly.lineTo(QPointF(path.elementAt(node_num)))
+        if index == path.elementCount():
+            new_poly.lineTo(pos)
+        self.undecorate()
+        self.setPath(new_poly)
+        self.decorate()
 
 class MapLabels(QGraphicsSimpleTextItem):
 
