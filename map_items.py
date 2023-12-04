@@ -777,23 +777,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             self.orig_pen = pen
         super().setPen(pen)
 
-    def hoverEnterEvent(self, event):
-        if self.node_grip_items:
-            return
-        self.hovered = True
-        if not self.isSelected():
-            self.setPen(self.hovered_over_pen)
-
-    def hoverLeaveEvent(self, event):
-        if self.node_grip_items:
-            return
-        self.hovered = False
-        if not self.isSelected():
-            self.setPen(self.orig_pen)
-
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-
     def decorate(self):
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
@@ -892,6 +875,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def remove_hlevel_labels(self, node_num):
         return
 
+# mouse events
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closest_point_to_poly(event.pos())
@@ -900,6 +884,21 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
                 self.insert_point(index, pos)
                 return
         super().mousePressEvent(event)
+
+    def hoverEnterEvent(self, event):
+        if self.node_grip_items:
+            return
+        self.hovered = True
+        if not self.isSelected():
+            self.setPen(self.hovered_over_pen)
+
+    def hoverLeaveEvent(self, event):
+        if self.node_grip_items:
+            return
+        self.hovered = False
+        if not self.isSelected():
+            self.setPen(self.orig_pen)
+
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, projection, *args, **kwargs):
@@ -1116,15 +1115,18 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
         path = self.path()
         points_list = list()
+        points_offset = [0]
         for elem_num in range(path.elementCount()):
             point = QPointF(path.elementAt(elem_num))
             if path.elementAt(elem_num).isMoveTo():
                 points_list.append([point])
+                points_offset.append(points_offset[-1])
             else:
                 points_list[-1].append(point)
+                points_offset[-1] += 1
 
         intersections_for_separate_paths = list()
-        for points in points_list:
+        for path_num, points in enumerate(points_list):
             # iterate through pair of points, if the polygon is not "closed",
             # add the start to the end
             p1 = points.pop(0)
@@ -1146,7 +1148,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
                 # get the distance between the given pos and the found intersection
                 # point, then add it, the intersection and the insertion index to
                 # the intersection list
-                intersections.append((QLineF(event_pos, inters).length(), inters, i))
+                intersections.append((QLineF(event_pos, inters).length(), inters, i + points_offset[path_num]))
                 p1 = p2
             if intersections:
                 intersections_for_separate_paths.append(sorted(intersections)[0])
