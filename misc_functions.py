@@ -242,10 +242,10 @@ def closest_point_to_poly(event_pos, path, threshold):
         point = QPointF(path.elementAt(elem_num))
         if path.elementAt(elem_num).isMoveTo():
             points_list.append([point])
-            points_offset.append(points_offset[-1])
+            points_offset.append(points_offset[-1] + 1)
         else:
             points_list[-1].append(point)
-            points_offset[-1] += 1
+        points_offset[-1] += 1
 
     intersections_for_separate_paths = list()
     for path_num, points in enumerate(points_list):
@@ -277,5 +277,5 @@ def closest_point_to_poly(event_pos, path, threshold):
 
     if intersections_for_separate_paths:
         # return the result with the shortest distance
-        return sorted(intersections_for_separate_paths)[0]
+        return min(intersections_for_separate_paths, key=lambda item:item[0])
     return -1, QPointF(), -1

@@ -1120,7 +1120,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             point = QPointF(path.elementAt(elem_num))
             if path.elementAt(elem_num).isMoveTo():
                 points_list.append([point])
-                points_offset.append(points_offset[-1])
+                points_offset.append(points_offset[0])
             else:
                 points_list[-1].append(point)
                 points_offset[-1] += 1

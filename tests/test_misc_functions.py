@@ -136,14 +136,14 @@ def test_add_point1(target, answer):
     assert misc_functions.closest_point_to_poly(target, pp, treshold) == answer
 
 TEST_CLOSEST_POINT_TO_POLY_JOINT = (
-    # (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
-    # (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
-    # (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
-    # (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
-    (QPointF(5.0, 3.0), (0, QPointF(5.0, 3.0), 5),),
-    # (QPointF(3.0, 2.0), (0, QPointF(3.0, 2.0), 6),),
-    # (QPointF(2.0, 3.0), (0, QPointF(2.0, 3.0), 7),),
-    # (QPointF(3.0, 4.0), (0, QPointF(3.0, 4.0), 8),),
+    (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
+    (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
+    (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
+    (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
+    (QPointF(5.0, 3.0), (0, QPointF(5.0, 3.0), 6),),
+    (QPointF(3.0, 2.0), (0, QPointF(3.0, 2.0), 7),),
+    (QPointF(3.0, 3.0), (0, QPointF(3.0, 3.0), 8),),
+    (QPointF(4.0, 4.0), (0, QPointF(4.0, 4.0), 9),),
 )
 
 @pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_JOINT)
