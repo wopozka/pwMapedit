@@ -237,16 +237,20 @@ def closest_point_to_poly(event_pos, path, threshold, polygon=True):
     """
 
     points_list = list()
-    points_offset = [0]
+    points_offset = list()
     for elem_num in range(path.elementCount()):
         point = QPointF(path.elementAt(elem_num))
         if path.elementAt(elem_num).isMoveTo():
+            if points_offset:
+                points_offset.append(points_offset[-1] + len(points_list[-1]))
+            else:
+                points_offset = [0]
             points_list.append([point])
         else:
             points_list[-1].append(point)
 
-    for points in points_list:
-        points_offset.append(points_offset[-1] + len(points))
+    # for points in points_list:
+    #     points_offset.append(points_offset[-1] + len(points))
 
     intersections_for_separate_paths = list()
     for path_num, points in enumerate(points_list):
