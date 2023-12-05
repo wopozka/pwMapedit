@@ -222,7 +222,7 @@ def vincenty_distance(coord1, coord2):
     # self.yards=self.feet/3                      # output distance in yards
     return m
 
-def closest_point_to_poly(event_pos, path, threshold):
+def closest_point_to_poly(event_pos, path, threshold, polygon=True):
     """
     Get the position along the polyline/polygon sides that is the closest
         to the given point.
@@ -242,17 +242,18 @@ def closest_point_to_poly(event_pos, path, threshold):
         point = QPointF(path.elementAt(elem_num))
         if path.elementAt(elem_num).isMoveTo():
             points_list.append([point])
-            points_offset.append(points_offset[-1] + 1)
         else:
             points_list[-1].append(point)
-        points_offset[-1] += 1
+
+    for points in points_list:
+        points_offset.append(points_offset[-1] + len(points))
 
     intersections_for_separate_paths = list()
     for path_num, points in enumerate(points_list):
         # iterate through pair of points, if the polygon is not "closed",
         # add the start to the end
         p1 = points.pop(0)
-        if points[-1] != p1:  # identical to QPolygonF.isClosed()
+        if polygon and points[-1] != p1:  # identical to QPolygonF.isClosed()
             points.append(p1)
         intersections = []
         for i, p2 in enumerate(points, 1):

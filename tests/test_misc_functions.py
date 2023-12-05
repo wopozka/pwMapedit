@@ -97,65 +97,35 @@ TEST_DISTANCE = (
 def test_vincenty_distance(target, answer):
     assert misc_functions.vincenty_distance(target[0], target[1]) == answer
 
-TEST_CLOSEST_POINT_TO_POLY = (
-    (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
-    (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
-    (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
-    (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
-)
-
-@pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY)
-def test_add_point(target, answer):
-    poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
-    pp = QPainterPath()
-    pp.addPolygon(poly)
-    treshold = 1
-    assert misc_functions.closest_point_to_poly(target, pp, treshold) == answer
-
-TEST_CLOSEST_POINT_TO_POLY_WITH_HOLE = (
-    (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
-    (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
-    (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
-    (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
-    (QPointF(1.0, 0.0), (0, QPointF(1.0, 0.0), 5),),
-    (QPointF(0.0, -1.0), (0, QPointF(0.0, -1.0), 6),),
-    (QPointF(-1.0, 0.0), (0, QPointF(-1.0, 0.0), 7),),
-    (QPointF(0.0, 1.0), (0, QPointF(0.0, 1.0), 8),),
-)
-
-@pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_WITH_HOLE)
-def test_add_point1(target, answer):
-    poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
-    hole = QPolygonF([QPointF(1.0, 1.0), QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)])
-    pp = QPainterPath()
-    pp.addPolygon(poly)
-    pp1 = QPainterPath()
-    pp1.addPolygon(hole)
-    pp = pp.subtracted(pp1)
-    treshold = 1
-    assert misc_functions.closest_point_to_poly(target, pp, treshold) == answer
-
 TEST_CLOSEST_POINT_TO_POLY_JOINT = (
     (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
     (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
     (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
     (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
-    (QPointF(5.0, 3.0), (0, QPointF(5.0, 3.0), 6),),
-    (QPointF(3.0, 2.0), (0, QPointF(3.0, 2.0), 7),),
-    (QPointF(3.0, 3.0), (0, QPointF(3.0, 3.0), 8),),
-    (QPointF(4.0, 4.0), (0, QPointF(4.0, 4.0), 9),),
+    (QPointF(1.0, 0.0), (0, QPointF(1.0, 0.0), 6),),
+    (QPointF(0.0, -1.0), (0, QPointF(0.0, -1.0), 7),),
+    (QPointF(-1.0, 0.0), (0, QPointF(-1.0, 0.0), 8),),
+    (QPointF(0.0, 1.0), (0, QPointF(0.0, 1.0), 9),),
+    (QPointF(5.0, 3.0), (0, QPointF(5.0, 3.0), 11),),
+    (QPointF(3.0, 2.0), (0, QPointF(3.0, 2.0), 12),),
+    (QPointF(3.0, 3.0), (0, QPointF(3.0, 3.0), 13),),
+    (QPointF(4.0, 4.0), (0, QPointF(4.0, 4.0), 14),),
 )
 
 @pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_JOINT)
-def test_add_point2(target, answer):
+def test_closest_point_to_poly3(target, answer):
+    poly0 = QPolygonF([QPointF(1.0, 1.0), QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)])
     poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
     poly2 = QPolygonF([QPointF(5.0, 4.0), QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)])
+    pp0 = QPainterPath()
+    pp0.addPolygon(poly0)
     pp = QPainterPath()
     pp.addPolygon(poly)
+    pp = pp.subtracted(pp0)
     pp1 = QPainterPath()
     pp1.addPolygon(poly2)
     pp3 = QPainterPath()
     pp3.addPath(pp)
     pp3.addPath(pp1)
     treshold = 1
-    assert misc_functions.closest_point_to_poly(target, pp3, treshold) == answer
+    assert misc_functions.closest_point_to_poly(target, pp3, treshold, polygon=True) == answer
