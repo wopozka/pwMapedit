@@ -1112,51 +1112,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         tuple(distance from edge, qpointf within polygon edge, insertion index) in case of succes and
         tuple(-1, qpoinf, -1) in case of failure
         """
-
-        path = self.path()
-        points_list = list()
-        points_offset = [0]
-        for elem_num in range(path.elementCount()):
-            point = QPointF(path.elementAt(elem_num))
-            if path.elementAt(elem_num).isMoveTo():
-                points_list.append([point])
-                points_offset.append(points_offset[0])
-            else:
-                points_list[-1].append(point)
-                points_offset[-1] += 1
-
-        intersections_for_separate_paths = list()
-        for path_num, points in enumerate(points_list):
-            # iterate through pair of points, if the polygon is not "closed",
-            # add the start to the end
-            p1 = points.pop(0)
-            if points[-1] != p1:  # identical to QPolygonF.isClosed()
-                points.append(p1)
-            intersections = []
-            for i, p2 in enumerate(points, 1):
-                line = QLineF(p1, p2)
-                inters = QPointF()
-                # create a perpendicular line that starts at the given pos
-                perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(event_pos)
-                if line.intersect(perp, inters) != QLineF.BoundedIntersection:
-                    # no intersection, reverse the perpendicular line by 180°
-                    perp.setAngle(perp.angle() + 180)
-                    if line.intersect(perp, inters) != QLineF.BoundedIntersection:
-                        # the pos is not within the line extent, ignore it
-                        p1 = p2
-                        continue
-                # get the distance between the given pos and the found intersection
-                # point, then add it, the intersection and the insertion index to
-                # the intersection list
-                intersections.append((QLineF(event_pos, inters).length(), inters, i + points_offset[path_num]))
-                p1 = p2
-            if intersections:
-                intersections_for_separate_paths.append(sorted(intersections)[0])
-
-        if intersections_for_separate_paths:
-            # return the result with the shortest distance
-            return sorted(intersections_for_separate_paths)[0]
-        return -1, QPointF(), -1
+        return misc_functions.closest_point_to_poly(event_pos, self.path(), self.threshold(), polygon=True)
 
     def insert_point(self, index, pos):
         # index is always > 0, so the first element will always be moveTo
