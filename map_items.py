@@ -746,7 +746,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             self.scene().removeItem(self.label)
         self.label = None
 
-
     def move_grip(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
@@ -778,19 +777,8 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         super().setPen(pen)
 
     def decorate(self):
-        self.setZValue(self.zValue() + 100)
-        # elapsed = datetime.now()
-        path = self.path()
-        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
-            point = QPointF(path_elem)
-            elapsed = datetime.now()
-            square = GripItem(QPointF(point), self)
-            print(datetime.now() - elapsed)
-            self.node_grip_items.append(square)
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
-        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
-        #                         for elem_num in range(path.elementCount())]
-        # print(datetime.now() - elapsed)
+        # to be redefined in polyline and polygon classes
+        return
 
     def undecorate(self):
         print('usuwam dekoracje')
@@ -798,7 +786,8 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         scene = self.scene()
         for grip_item in self.node_grip_items:
-            scene.removeItem(grip_item)
+            if grip_item is not None:
+                scene.removeItem(grip_item)
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
 
@@ -1042,6 +1031,20 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             del self.hlevel_labels[hl]
         self.hlevel_labels = None
 
+    def decorate(self):
+        self.setZValue(self.zValue() + 100)
+        # elapsed = datetime.now()
+        path = self.path()
+        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
+            point = QPointF(path_elem)
+            elapsed = datetime.now()
+            square = GripItem(QPointF(point), self)
+            self.node_grip_items.append(square)
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
+        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
+        #                         for elem_num in range(path.elementCount())]
+        # print(datetime.now() - elapsed)
+
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
         return all(a >= 2 for a in num_elems_in_path)
@@ -1086,6 +1089,40 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_items_after_new_map_level_set(self):
         if self._mp_label:
             self.add_label()
+
+    def decorate(self):
+        print('dekoruje')
+        self.setZValue(self.zValue() + 100)
+        # elapsed = datetime.now()
+        separate_paths = None
+        sep_path = []
+        path = self.path()
+        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
+            if path_elem.isMoveTo():
+                if separate_paths is not None:
+                    if sep_path[0] == sep_path[-1]:
+                        sep_path[-1] = None
+                    separate_paths += sep_path
+                    sep_path = []
+                else:
+                    separate_paths = []
+            sep_path.append(QPointF(path_elem))
+        if sep_path[0] == sep_path[-1]:
+            sep_path[-1] = None
+        separate_paths += sep_path
+        print(separate_paths)
+        for path_elem in separate_paths:
+            # elapsed = datetime.now()
+            if path_elem is not None:
+                square = GripItem(path_elem, self)
+                self.node_grip_items.append(square)
+            else:
+                self.node_grip_items.append(None)
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
+        print('dekoruje: koniec')
+        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
+        #                         for elem_num in range(path.elementCount())]
+        # print(datetime.now() - elapsed)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
