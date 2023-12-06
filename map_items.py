@@ -1037,7 +1037,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         path = self.path()
         for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
             point = QPointF(path_elem)
-            elapsed = datetime.now()
+            # elapsed = datetime.now()
             square = GripItem(QPointF(point), self)
             self.node_grip_items.append(square)
         self.setFlags(QGraphicsItem.ItemIsSelectable)

@@ -1,6 +1,9 @@
 import pytest
 import sys
 import os.path
+
+import map_items
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 import misc_functions
 from PyQt5.QtGui import QPainterPath, QPolygonF
@@ -129,3 +132,17 @@ def test_closest_point_to_poly3(target, answer):
     pp3.addPath(pp1)
     treshold = 1
     assert misc_functions.closest_point_to_poly(target, pp3, treshold, polygon=True) == answer
+
+TEST_DECORATE_POLYLINE = (
+
+)
+@pytest.mark.parametrize('target, answer', TEST_DECORATE_POLYLINE)
+def test_decorate_polyline(target, answer):
+    polyline = map_items.PolylineQGraphicsPathItem(None)
+    polyline.moveTo(QPointF(1.0, 1.0))
+    for line_point in (QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)):
+        polyline.drawTo(line_point)
+    polyline.moveTo(QPointF(5.0, 4.0))
+    for line_point in (QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)):
+        polyline.drawTo(line_point)
+
