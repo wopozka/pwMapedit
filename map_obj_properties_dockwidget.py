@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox
-from PyQt5.QtWidgets import QTextEdit, QWidget
+from PyQt5.QtWidgets import QTextEdit, QWidget, QTableWidget, QTableWidgetItem
 
 
 class MapObjPropDock(QDockWidget):
@@ -59,6 +59,15 @@ class MapObjPropDock(QDockWidget):
         comment_box.addWidget(comment_label)
         comment_box.addWidget(self.comment_text_edit)
         dock_box.addLayout(comment_box)
+
+        extras_label = QLabel('Extras')
+        self.extras_table = QTableWidget(3, 2)
+        self.extras_table.setItem(0, 0, QTableWidgetItem('Key'))
+        self.extras_table.setItem(0, 1, QTableWidgetItem('Value'))
+        extras_box = QVBoxLayout()
+        extras_box.addWidget(extras_label)
+        extras_box.addWidget(self.extras_table)
+        dock_box.addLayout(extras_box)
 
 
 
