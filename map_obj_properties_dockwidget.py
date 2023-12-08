@@ -17,6 +17,7 @@ class MapObjPropDock(QDockWidget):
         type_label = QLabel('Type')
         self.type_selector = QComboBox()
         type_box.addWidget(type_label)
+        # type_box.addStretch(1)
         type_box.addWidget(self.type_selector)
         dock_box.addLayout(type_box)
 
@@ -24,6 +25,7 @@ class MapObjPropDock(QDockWidget):
         self.label1_entry = QLineEdit()
         label1_box = QHBoxLayout()
         label1_box.addWidget(label1)
+        # label1_box.addStretch(1)
         label1_box.addWidget(self.label1_entry)
         dock_box.addLayout(label1_box)
 
@@ -31,6 +33,7 @@ class MapObjPropDock(QDockWidget):
         self.label2_entry = QLineEdit()
         label2_box = QHBoxLayout()
         label2_box.addWidget(label2)
+        # label2_box.addStretch(1)
         label2_box.addWidget(self.label2_entry)
         dock_box.addLayout(label2_box)
 
@@ -38,6 +41,7 @@ class MapObjPropDock(QDockWidget):
         self.label3_entry = QLineEdit()
         label3_box = QHBoxLayout()
         label3_box.addWidget(label3)
+        # label3_box.addStretch(1)
         label3_box.addWidget(self.label3_entry)
         dock_box.addLayout(label3_box)
 
@@ -45,6 +49,7 @@ class MapObjPropDock(QDockWidget):
         self.poly_direction = QCheckBox()
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
+        # dir_box.addStretch(1)
         dir_box.addWidget(self.poly_direction)
         dock_box.addLayout(dir_box)
 
