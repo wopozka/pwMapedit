@@ -12,7 +12,7 @@ import mapRender
 import map_items
 import map_object_properties
 import projection
-import math
+import map_obj_properties_dockwidget
 
 class pwMapeditPy(QMainWindow):
     """main application window"""
@@ -38,10 +38,13 @@ class pwMapeditPy(QMainWindow):
         self.pw_mapedit_mode = ''
         self.initialize()
         self.generate_shortcuts()
+        self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
         self.map_ruler = None
         self.menu_tools_set_mode()
+
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -58,6 +61,7 @@ class pwMapeditPy(QMainWindow):
         self.map_ruler = map_items.MapRuler(self.view, self.projection)
         self.map_canvas.addItem(self.map_ruler)
         self.view.set_ruler(self.map_ruler)
+
 
 
         # ramkaglowna = tkinter.Frame(self)
