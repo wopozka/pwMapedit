@@ -88,26 +88,28 @@ class Node(object):
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
 class BasicMapItem(object):
-    def __init__(self, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+    def __init__(self, map_objects_properties=None, projection=None):
         """
         basic map items properties, derived map items inherit from it
         Parameters
         ----------
-        map_comment_data: comment to map item
-        map_elem_data: dict, key=tuple(elem_name, elem_position), value=value
         map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
+        projection = projection class
         """
         # super(BasicMapItem, self).__init__()
         self.projection = None
+        self.map_objects_properties = None
         if projection is not None:
             self.projection = projection
+        if map_objects_properties is not None:
+            self.map_objects_properties = map_objects_properties
         self.obj_comment = list()
         self.type = None
-        self.label = None
+        self.label1 = None
         self.label2 = None
         self.label3 = None
         self.dirindicator = None
-        self.endlevel = None
+        self.endlevel = 0
         self.streetdesc = None
         self.housenumber = None
         self.phone = None
@@ -132,12 +134,7 @@ class BasicMapItem(object):
         self.roadid = None
         self.zipcode = None
         self.others = OrderedDict()
-        self.map_objects_properties = None
-        if map_objects_properties is not None:
-            self.map_objects_properties = map_objects_properties
         self.obj_bounding_box = {}
-        if map_elem_data is not None:
-            self.set_data(map_comment_data, map_elem_data)
 
     def __repr__(self):
         return self.type
@@ -156,22 +153,37 @@ class BasicMapItem(object):
 
         """
         if comment_data is not None and comment_data:
-            self.obj_comment_set(comment_data)
+            self.set_comment(comment_data)
         for number_keyname in obj_data:
             _, key = number_keyname
             if number_keyname[1] == 'Type':
-                self.obj_param_set('Type', int(obj_data[number_keyname], 16))
-            elif number_keyname[1] in ('Label', 'Label2', 'Label3', 'DirIndicator', 'EndLevel', 'StreetDesc',
-                                       'HouseNumber', 'Phone', 'Highway', 'CityName', 'CountryName', 'RegionName',
+                self.set_param('Type', int(obj_data[number_keyname], 16))
+            elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
                                        'CountryCode', 'ZipCode'):
-                self.obj_param_set(key, obj_data[number_keyname])
+                self.set_param(key, obj_data[number_keyname])
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-                self.obj_datax_set(number_keyname[1], obj_data[number_keyname])
+                self.set_datax(number_keyname[1], obj_data[number_keyname])
             elif number_keyname[1] == 'RouteParam':
                 if self.routeparam is None:
                     self.routeparam = []
                 for single_param in obj_data[number_keyname].split(','):
                     self.routeparam.append(int(single_param))
+            elif number_keyname[1] == 'StreetDesc':
+                self.set_street_desc(obj_data[number_keyname])
+            elif number_keyname[1] == 'HouseNumber':
+                self.set_house_number(obj_data[number_keyname])
+            elif number_keyname[1] == 'Phone':
+                self.set_phone_number(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label':
+                self.set_label1(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label2':
+                self.set_label2(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label3':
+                self.set_label3(obj_data[number_keyname])
+            elif number_keyname[1] == 'DirIndicator':
+                self.set_dirindicator(obj_data[number_keyname])
+            elif number_keyname[1] == 'EndLevel':
+                self.set_endlevel(obj_data[number_keyname])
             elif number_keyname[1] == 'RoadID':
                 self.roadid = int(obj_data[number_keyname])
             elif number_keyname[1].startswith('Nod'):
@@ -180,28 +192,92 @@ class BasicMapItem(object):
                 pass
             elif number_keyname[1].startswith('HLevel'):
                 self.set_hlevels(obj_data[number_keyname])
-            elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
-                # temporary remove these from reporting
-                pass
+            # elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
+            #     # temporary remove these from reporting
+            #     pass
             else:
-                self.obj_others_set(number_keyname, obj_data[number_keyname])
+                self.set_others(number_keyname, obj_data[number_keyname])
                 # print('Unknown key value: %s.' % number_keyname[1])
 
-    def obj_comment_get(self):
+    def get_comment(self):
         return self.obj_comment
 
-    def obj_comment_set(self, _comments):
+    def set_comment(self, _comments):
         for _comment in _comments:
             self.obj_comment.append(_comment)
 
-    def obj_param_get(self, parameter):
+    def get_dirindicator(self):
+        if self.dirindicator is None:
+            return False
+        return self.dirindicator
+
+    def set_dirindicator(self, value):
+        self.dirindicator = value
+
+    def get_param(self, parameter):
         return getattr(self, parameter.lower())
 
-    def obj_param_set(self, parameter, value):
+    def set_param(self, parameter, value):
         setattr(self, parameter.lower(), value)
         # self.obj_data[parameter] = value
 
-    def obj_datax_get(self, dataX):
+    def set_endlevel(self, value):
+        if isinstance(value, str):
+            value = int(value)
+        self.endlevel = value
+
+    def get_endlevel(self):
+        return self.endlevel
+
+    def set_street_desc(self, value):
+        self.streetdesc = value
+
+    def get_street_desc(self):
+        if self.streetdesc is None:
+            return ''
+        return self.streetdesc
+
+    def set_house_number(self, value):
+        self.housenumber = value
+
+    def get_house_number(self):
+        if self.housenumber is None:
+            return ''
+        return self.housenumber
+
+    def set_phone_number(self, value):
+        self.phone = value
+
+    def get_phone_number(self):
+        if self.phone is None:
+            return ''
+        return self.phone
+
+    def set_label1(self, value):
+        self.label1 = value
+
+    def get_label1(self):
+        if self.label1 is not None:
+            return self.label1
+        return ''
+
+    def set_label2(self, value):
+        self.label2 = value
+
+    def get_label2(self):
+        if self.label2 is not None:
+            return self.label2
+        return ''
+
+    def set_label3(self, value):
+        self.label3 = value
+
+    def get_label3(self):
+        if self.label3 is not None:
+            return self.label3
+        return ''
+
+    def get_datax(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
         datax = dataX.lower()
@@ -216,7 +292,7 @@ class BasicMapItem(object):
         elif datax == 'data4':
             return self.data4.get_nodes() if self.data4 is not None else tuple()
 
-    def obj_datax_set(self, data012345, data012345_val):
+    def set_datax(self, data012345, data012345_val):
         datax = data012345.lower()
         if datax == 'data0':
             if self.data0 is None:
@@ -245,8 +321,15 @@ class BasicMapItem(object):
             self.last_data_level = self.data4
         return
 
-    def obj_others_set(self, key, value):
+    def set_others(self, key, value):
         self.others[key] = value
+
+    def get_others(self):
+        return_val = list()
+        for key_tuple, val in self.others.items():
+            key = key_tuple[1]
+            return_val.append((key, val,))
+        return return_val
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -321,110 +404,110 @@ class BasicMapItem(object):
             self.hlevels_other += _hlevel
 
 
-class Poi(BasicMapItem):
-    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Poi, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
-                                  map_objects_properties=map_objects_properties, projection=projection)
-        # self.object_type = '[POI]'
-        # self.create_object()
-        # modyfikacja sposobu wizaualizacji prostokata do podswietlania
-        # https://stackoverflow.com/questions/1604995/qt-4-5-changing-the-selection-marquee-for-qgraphicsitem
-        # https://www.qtcentre.org/threads/15089-QGraphicsView-change-selected-rectangle-style
-
-    def create_object(self):
-        nodes, inner_outer = self.obj_datax_get('Data0')[0]
-        x, y = nodes[0].get_canvas_coords()
-        if self.map_objects_properties is not None \
-                and self.map_objects_properties.poi_type_has_pixmap_icon(self.obj_param_get('Type')):
-            poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.obj_param_get('Type')))
-            poi.setPos(0, 0)
-        else:
-            # print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
-            poi = QGraphicsEllipseItem(0, 0, 20, 20)
-            brush = QBrush(Qt.black)
-            poi.setBrush(brush)
-            poi.show()
-        # poi.setParentItem(self)
-        # self.setPos(x, y)
-        # self.setZValue(20)
-        # self.addToGroup(poi)
-
-
-class Polyline(BasicMapItem):
-    # tutaj chyba lepiej byloby uzyc QPainterPath
-    # qpp = QPainterPath()
-    # qpp.addPolygon(your_polyline)
-    # item = QGraphicsPathItem(qpp)
-    # item.setPen(your_pen)
-    # self.your_scene.addItem(item)
-    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Polyline, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
-                                       map_objects_properties=map_objects_properties, projection=projection)
-        # self.object_type = '[POLYLINE]'
-        # self.create_object()
-
-    def create_object(self):
-        colour = Qt.black
-        width = 1
-        dash = Qt.SolidLine
-        if self.map_objects_properties is not None:
-            colour = self.map_objects_properties.get_polyline_colour(self.obj_param_get('Type'))
-            width = self.map_objects_properties.get_polyline_width(self.obj_param_get('Type'))
-            dash = self.map_objects_properties.get_polyline_dash(self.obj_param_get('Type'))
-        for nodes, inner_outer in self.obj_datax_get('Data0'):
-            polyline = QPainterPath()
-            graphics_path_item = QGraphicsPathItem()
-            the_first_node = True
-            for node in nodes:
-                # coordslist += points.return_canvas_coords()
-                coord_x, coord_y = node.get_canvas_coords()
-                if the_first_node:
-                    polyline.moveTo(coord_x, coord_y)
-                    the_first_node = False
-                else:
-                    polyline.lineTo(coord_x, coord_y)
-            pen = QPen(colour)
-            pen.setWidth(width)
-            pen.setStyle(dash)
-            graphics_path_item.setPath(polyline)
-            graphics_path_item.setPen(pen)
-            graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
-            graphics_path_item.setZValue(10)
-            # self.addItem(graphics_path_item)
-            # self.addToGroup(graphics_path_item)
+# class Poi(BasicMapItem):
+#     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+#         super(Poi, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+#                                   map_objects_properties=map_objects_properties, projection=projection)
+#         # self.object_type = '[POI]'
+#         # self.create_object()
+#         # modyfikacja sposobu wizaualizacji prostokata do podswietlania
+#         # https://stackoverflow.com/questions/1604995/qt-4-5-changing-the-selection-marquee-for-qgraphicsitem
+#         # https://www.qtcentre.org/threads/15089-QGraphicsView-change-selected-rectangle-style
+#
+#     def create_object(self):
+#         nodes, inner_outer = self.get_datax('Data0')[0]
+#         x, y = nodes[0].get_canvas_coords()
+#         if self.map_objects_properties is not None \
+#                 and self.map_objects_properties.poi_type_has_pixmap_icon(self.get_param('Type')):
+#             poi = QGraphicsPixmapItem(self.map_objects_properties.get_poi_pixmap(self.get_param('Type')))
+#             poi.setPos(0, 0)
+#         else:
+#             # print('Unknown icon for %s, using ellipse instead.' % self.obj_param_get('Type'))
+#             poi = QGraphicsEllipseItem(0, 0, 20, 20)
+#             brush = QBrush(Qt.black)
+#             poi.setBrush(brush)
+#             poi.show()
+#         # poi.setParentItem(self)
+#         # self.setPos(x, y)
+#         # self.setZValue(20)
+#         # self.addToGroup(poi)
 
 
-class Polygon(BasicMapItem):
-    def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
-        super(Polygon, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
-                                      map_objects_properties=map_objects_properties, projection=projection)
-        # self.object_type = '[POLYLGON]'
-        # self.polygon_transparent = False
-        # for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
-        #     self.obj_data[_data].set_polygon()
-        # self.create_objects()
-        # polygon z przesuwanymi rogami za ktore mozna lapac
-        # rysowanie przy pomocy myszy
-        # https://stackoverflow.com/questions/60413976/how-to-draw-polyline-with-pyqt5-in-python
+# class Polyline(BasicMapItem):
+#     # tutaj chyba lepiej byloby uzyc QPainterPath
+#     # qpp = QPainterPath()
+#     # qpp.addPolygon(your_polyline)
+#     # item = QGraphicsPathItem(qpp)
+#     # item.setPen(your_pen)
+#     # self.your_scene.addItem(item)
+#     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+#         super(Polyline, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+#                                        map_objects_properties=map_objects_properties, projection=projection)
+#         # self.object_type = '[POLYLINE]'
+#         # self.create_object()
+#
+#     def create_object(self):
+#         colour = Qt.black
+#         width = 1
+#         dash = Qt.SolidLine
+#         if self.map_objects_properties is not None:
+#             colour = self.map_objects_properties.get_polyline_colour(self.get_param('Type'))
+#             width = self.map_objects_properties.get_polyline_width(self.get_param('Type'))
+#             dash = self.map_objects_properties.get_polyline_dash(self.get_param('Type'))
+#         for nodes, inner_outer in self.get_datax('Data0'):
+#             polyline = QPainterPath()
+#             graphics_path_item = QGraphicsPathItem()
+#             the_first_node = True
+#             for node in nodes:
+#                 # coordslist += points.return_canvas_coords()
+#                 coord_x, coord_y = node.get_canvas_coords()
+#                 if the_first_node:
+#                     polyline.moveTo(coord_x, coord_y)
+#                     the_first_node = False
+#                 else:
+#                     polyline.lineTo(coord_x, coord_y)
+#             pen = QPen(colour)
+#             pen.setWidth(width)
+#             pen.setStyle(dash)
+#             graphics_path_item.setPath(polyline)
+#             graphics_path_item.setPen(pen)
+#             graphics_path_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
+#             graphics_path_item.setZValue(10)
+#             # self.addItem(graphics_path_item)
+#             # self.addToGroup(graphics_path_item)
 
-    def create_objects(self):
-        polygon_nodes = []
-        if self.map_objects_properties is not None:
-            fill_colour = self.map_objects_properties.get_polygon_fill_colour(self.obj_param_get('Type'))
-        if self.polygon_transparent == 'transparent':
-            fill_colour = ''
-        for nodes, inner_outer in self.obj_datax_get('Data0'):
-            for node in nodes:
-                x, y = node.get_canvas_coords()
-                # print('x: %s, y: %s' %(x, y))
-                polygon_nodes.append(QPointF(x, y))
-        q_polygon = QGraphicsPolygonItem(QPolygonF(polygon_nodes))
-        brush = QBrush(fill_colour)
-        q_polygon.setBrush(brush)
-        q_polygon.setZValue(0)
-        # self.addItem(q_polygon)
-        # self.addToGroup(q_polygon)
-        return
+
+# class Polygon(BasicMapItem):
+#     def __init__(self, parent, map_comment_data=None, map_elem_data=None, map_objects_properties=None, projection=None):
+#         super(Polygon, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data,
+#                                       map_objects_properties=map_objects_properties, projection=projection)
+#         # self.object_type = '[POLYLGON]'
+#         # self.polygon_transparent = False
+#         # for _data in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4',):
+#         #     self.obj_data[_data].set_polygon()
+#         # self.create_objects()
+#         # polygon z przesuwanymi rogami za ktore mozna lapac
+#         # rysowanie przy pomocy myszy
+#         # https://stackoverflow.com/questions/60413976/how-to-draw-polyline-with-pyqt5-in-python
+#
+#     def create_objects(self):
+#         polygon_nodes = []
+#         if self.map_objects_properties is not None:
+#             fill_colour = self.map_objects_properties.get_polygon_fill_colour(self.get_param('Type'))
+#         if self.polygon_transparent == 'transparent':
+#             fill_colour = ''
+#         for nodes, inner_outer in self.get_datax('Data0'):
+#             for node in nodes:
+#                 x, y = node.get_canvas_coords()
+#                 # print('x: %s, y: %s' %(x, y))
+#                 polygon_nodes.append(QPointF(x, y))
+#         q_polygon = QGraphicsPolygonItem(QPolygonF(polygon_nodes))
+#         brush = QBrush(fill_colour)
+#         q_polygon.setBrush(brush)
+#         q_polygon.setZValue(0)
+#         # self.addItem(q_polygon)
+#         # self.addToGroup(q_polygon)
+#         return
 
 
 class BasicSignRestrict(object):
@@ -458,21 +541,23 @@ class Restriction(object):
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
 
 
-class PoiAsPath(QGraphicsPathItem):
+class PoiAsPath(BasicMapItem, QGraphicsPathItem):
     # basic class for poi without pixmap icon
 
-    def __init__(self, projection, icon):
-        self.projection = projection
-        super(PoiAsPath, self).__init__()
+    def __init__(self, map_objects_properties=None, projection=None):
+        # super(PoiAsPath, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        QGraphicsPathItem.__init__(self)
         self.label = None
         self._mp_data = [None, None, None, None, None]
-        self._mp_end_level = 0
+        # self._mp_end_level = 0
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
-        self.icon = icon
+        # self.icon = icon
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.current_data_x = 4
+        self.set_brush()
 
     @staticmethod
     def accept_map_level_change():
@@ -483,34 +568,37 @@ class PoiAsPath(QGraphicsPathItem):
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
-        elif self._mp_data[level] is None and self._mp_end_level < level:
+        elif self._mp_data[level] is None and self.get_endlevel() < level:
             self.setVisible(False)
-        elif self._mp_data[level] is None and self._mp_end_level >= level:
+        elif self._mp_data[level] is None and self.get_endlevel() >= level:
             self.setVisible(True)
         return
 
-    def set_mp_data(self, given_level, data):
-        if self.path().isEmpty():
-            self.setPath(self.icon)
-        if isinstance(given_level, str):
+    def set_mp_data(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_datax(given_level)
+            if not data:
+                continue
+            if self.path().isEmpty():
+                self.setPath(self.map_objects_properties.get_poi_icon(self.get_param('Type')))
             level = int(given_level[-1])
-        else:
-            level = given_level
-        # creates qpainterpaths for polylines at given Data level
-        node = data[0]
-        x, y = node[0].get_canvas_coords()
-        self._mp_data[level] = QPointF(x, y)
-        if self.pos().isNull():
-            self.setPos(self._mp_data[level])
-            self.current_data_x = level
+            # creates qpainterpaths for polylines at given Data level
+            node = data[0]
+            x, y = node[0].get_canvas_coords()
+            self._mp_data[level] = QPointF(x, y)
+            if self.pos().isNull():
+                self.setPos(self._mp_data[level])
+                self.current_data_x = level
 
-    def add_label(self, label):
-        self.label = PoiLabel(label, self)
+    def add_label(self):
+        label = self.get_label1()
+        if label is not None and label:
+            self.label = PoiLabel(label, self)
 
-    def set_mp_end_level(self, end_level):
-        if isinstance(end_level, str):
-            end_level = int(end_level)
-        self._mp_end_level = end_level
+    def set_brush(self):
+        brush = self.map_objects_properties.get_nonpixmap_poi_brush(self.get_param('Type'))
+        if brush:
+            self.setBrush(brush)
 
     def decorate(self):
         pass
@@ -518,19 +606,21 @@ class PoiAsPath(QGraphicsPathItem):
     def undecorate(self):
         pass
 
-class PoiAsPixmap(QGraphicsPixmapItem):
+
+class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     # basic class for poi with pixmap icon
-    def __init__(self, projection, icon):
-        self.projection = projection
-        super(PoiAsPixmap, self).__init__()
+    def __init__(self, map_objects_properties=None, projection=None):
+        # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        QGraphicsPixmapItem.__init__(self)
         self.label = None
         self._mp_data = [None, None, None, None, None]
-        self._mp_end_level = 0
+        # self._mp_end_level = 0
         self._mp_label = None
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
-        self.icon = icon
+        # self.icon = self.map_objects_properties.get_poi_icon(self.get_param('Type'))
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.current_data_x = 4
@@ -559,36 +649,37 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
-        elif self._mp_data[level] is None and self._mp_end_level < level:
+        elif self._mp_data[level] is None and self.get_endlevel() < level:
             self.setVisible(False)
-        elif self._mp_data[level] is None and self._mp_end_level >= level:
+        elif self._mp_data[level] is None and self.get_endlevel() >= level:
             self.setVisible(True)
         self._current_map_level = level
         return
 
-    def set_mp_data(self, given_level, data):
-        if self.pixmap().isNull():
-            self.setPixmap(self.icon)
-        if isinstance(given_level, str):
+    def set_mp_data(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_datax(given_level)
+            if not data:
+                continue
+            if self.pixmap().isNull():
+                self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_param('Type')))
             level = int(given_level[-1])
-        else:
-            level = given_level
-        node = data[0]
-        x, y = node[0].get_canvas_coords()
-        self._mp_data[level] = QPointF(x, y)
-        if self.pos().isNull():
-            self.setPos(self._mp_data[level])
-            self.current_data_x = level
+            node = data[0]
+            x, y = node[0].get_canvas_coords()
+            self._mp_data[level] = QPointF(x, y)
+            if self.pos().isNull():
+                self.setPos(self._mp_data[level])
+                self.current_data_x = level
 
-    def add_label(self, label):
-        self.label = PoiLabel(label, self)
-        if self._mp_label is None:
-            self._mp_label = label
+    def add_label(self):
+        label = self.get_label1()
+        if label is not None and label:
+            self.label = PoiLabel(label, self)
+            if self._mp_label is None:
+                self._mp_label = label
 
-    def set_mp_end_level(self, end_level):
-        if isinstance(end_level, str):
-            end_level = int(end_level)
-        self._mp_end_level = end_level
+    def set_brush(self):
+        pass
 
     def decorate(self):
         pass
@@ -597,15 +688,16 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         pass
 
 
-class AddrLabel(QGraphicsSimpleTextItem):
+class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
 
-    def __init__(self, projection, text):
-        self.projection = projection
-        super(AddrLabel, self).__init__(text)
+    def __init__(self, map_objects_properties=None, projection=None):
+        # super(AddrLabel, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        QGraphicsSimpleTextItem.__init__(self)
         self.setZValue(20)
-        self.text = None
+        self.setText('__tmp__')
         self._mp_data = [None, None, None, None, None]
-        self._mp_end_level = 0
+        # self._mp_end_level = 0
         self._mp_label = ''
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
@@ -636,35 +728,34 @@ class AddrLabel(QGraphicsSimpleTextItem):
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
-        elif self._mp_data[level] is None and self._mp_end_level < level:
+        elif self._mp_data[level] is None and self.get_endlevel() < level:
             self.setVisible(False)
-        elif self._mp_data[level] is None and self._mp_end_level >= level:
+        elif self._mp_data[level] is None and self.get_endlevel() >= level:
             self.setVisible(True)
         self._current_map_level = level
         return
 
-    def set_mp_data(self, given_level, data):
-        # if not self.text() == '__tmp__' and self._mp_label:
-        #     self.setText(self._mp_label)
-        if isinstance(given_level, str):
+    def set_mp_data(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_datax(given_level)
+            if not data:
+                continue
             level = int(given_level[-1])
-        else:
-            level = given_level
-        node = data[0]
-        x, y = node[0].get_canvas_coords()
-        self._mp_data[level] = QPointF(x, y)
-        if self.pos().isNull():
-            self.setPos(self._mp_data[level])
-            self.current_data_x = level
+            node = data[0]
+            x, y = node[0].get_canvas_coords()
+            self._mp_data[level] = QPointF(x, y)
+            if self.pos().isNull():
+                self.setPos(self._mp_data[level])
+                self.current_data_x = level
 
-    def add_label(self, label):
-        self._mp_label = label
-        self.setText(label)
+    def add_label(self):
+        label = self.get_label1()
+        if label is not None and label:
+            self._mp_label = label
+            self.setText(label)
 
-    def set_mp_end_level(self, end_level):
-        if isinstance(end_level, str):
-            end_level = int(end_level)
-        self._mp_end_level = end_level
+    def set_brush(self):
+        pass
 
     def decorate(self):
         pass
@@ -674,7 +765,7 @@ class AddrLabel(QGraphicsSimpleTextItem):
 
 
 
-class PolyQGraphicsPathItem(QGraphicsPathItem):
+class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
     selected_pen = QPen(QColor("red"))
     selected_pen.setCosmetic(True)
@@ -685,16 +776,18 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     non_cosmetic_multiplicity = 4
     _threshold = None
 
-    def __init__(self, projection, *args, **kwargs):
+    def __init__(self, map_objects_properties=None, projection=None):
         self.hovered = False
-        self.projection = projection
-        super(PolyQGraphicsPathItem, self).__init__(*args, **kwargs)
+        # super(PolyQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
+        #                                             projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        QGraphicsPathItem.__init__(self)
         self.orig_pen = None
         self.node_grip_items = list()
         self.node_grip_hovered = False
         self.label = None
         self._mp_data = [None, None, None, None, None]
-        self._mp_end_level = 0
+        # self._mp_end_level = 0
         self._mp_label = None
         self.current_data_x = 0
 
@@ -710,7 +803,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
             self.add_items_after_new_map_level_set()
             self.setVisible(True)
             self.current_data_x = level
-        elif self._mp_end_level < level:
+        elif self.get_endlevel() < level:
             self.setVisible(False)
         else:
             if any(self._mp_data[a] is not None for a in range(level)):
@@ -728,15 +821,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def set_mp_data(self, level, data):
         # to be defined separately for polygon and polyline
         pass
-
-    def set_mp_end_level(self, end_level):
-        if isinstance(end_level, str):
-            end_level = int(end_level)
-        self._mp_end_level = end_level
-
-    def set_mp_label(self, label):
-        self._mp_label = label
-        self.add_label()
 
     def add_label(self):
         pass
@@ -890,8 +974,9 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
-    def __init__(self, projection, *args, **kwargs):
-        super(PolylineQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+    def __init__(self, map_objects_properties=None, projection=None):
+        super(PolylineQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
+                                                        projection=projection)
         self.arrow_head_items = []
         self.hlevel_labels = None
         self._mp_hlevels = [None, None, None, None, None]
@@ -901,31 +986,33 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
 
-    def set_mp_data(self, given_level, data):
-        if isinstance(given_level, str):
+    def set_mp_data(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_datax(given_level)
+            if not data:
+                continue
             level = int(given_level[-1])
-        else:
-            level = given_level
-        # creates qpainterpaths for polylines at given Data level
-        polyline = QPainterPath()
-        for nodes in data:
-            for node_num, node in enumerate(nodes):
-                x, y = node.get_canvas_coords()
-                if node_num == 0:
-                    polyline.moveTo(x, y)
-                else:
-                    polyline.lineTo(x, y)
-        self._mp_data[level] = polyline
-        if self.path().isEmpty():
-            self.setPath(polyline)
-            self.current_data_x = level
+            # creates qpainterpaths for polylines at given Data level
+            polyline = QPainterPath()
+            for nodes in data:
+                for node_num, node in enumerate(nodes):
+                    x, y = node.get_canvas_coords()
+                    if node_num == 0:
+                        polyline.moveTo(x, y)
+                    else:
+                        polyline.lineTo(x, y)
+            self._mp_data[level] = polyline
+            if self.path().isEmpty():
+                self.setPath(polyline)
+                self.current_data_x = level
 
-    def set_mp_hlevels(self, given_level, data):
-        if isinstance(given_level, str):
+    def set_mp_hlevels(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_hlevels(given_level)
+            if not data:
+                continue
             level = int(given_level[-1])
-        else:
-            level = given_level
-        self._mp_hlevels[level] = data
+            self._mp_hlevels[level] = data
 
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:
@@ -938,8 +1025,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_items_after_new_map_level_set(self):
         if self._mp_dir_indicator:
             self.add_arrow_heads()
-        if self._mp_label:
-            self.add_label()
+        self.add_label()
         self.add_hlevel_labels()
 
     def set_mp_dir_indicator(self, dir_indicator):
@@ -981,8 +1067,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.add_arrow_heads()
 
     def add_label(self):
-        if self._mp_label is not None and self._mp_label:
-            self.label = PolylineLabel(self._mp_label, self)
+        label = self.get_label1()
+        if label is not None and label:
+            self.label = PolylineLabel(label, self)
 
     def update_label_pos(self):
         if self.label is not None:
@@ -1052,43 +1139,44 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
-    def __init__(self, projection, *args, **kwargs):
-        super(PolygonQGraphicsPathItem, self).__init__(projection, *args, **kwargs)
+    def __init__(self, map_objects_properties=None, projection=None):
+        super(PolygonQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
+                                                       projection=projection)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
 
-    def set_mp_data(self, given_level, data):
-        if isinstance(given_level, str):
+    def set_mp_data(self):
+        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            data = self.get_datax(given_level)
+            if not data:
+                continue
             level = int(given_level[-1])
-        else:
-            level = given_level
-        qpainterpaths_to_add = []
-        for nodes in data:
-            nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
-            # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
-            # nodes_qpointfs.append(nodes_qpointfs[0])
-            qpp = QPainterPath()
-            qpp.addPolygon(QPolygonF(nodes_qpointfs))
-            if qpainterpaths_to_add and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
-                # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
-                qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
-            else:
-                qpainterpaths_to_add.append(qpp)
-        polygon = QPainterPath()
-        for poly in qpainterpaths_to_add:
-            polygon.addPath(poly)
-        self._mp_data[level] = polygon
-        if self.path().isEmpty():
-            self.setPath(polygon)
-            self.current_data_x = level
+            qpainterpaths_to_add = []
+            for nodes in data:
+                nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
+                # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
+                # nodes_qpointfs.append(nodes_qpointfs[0])
+                qpp = QPainterPath()
+                qpp.addPolygon(QPolygonF(nodes_qpointfs))
+                if qpainterpaths_to_add and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
+                    # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
+                    qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
+                else:
+                    qpainterpaths_to_add.append(qpp)
+            polygon = QPainterPath()
+            for poly in qpainterpaths_to_add:
+                polygon.addPath(poly)
+            self._mp_data[level] = polygon
+            if self.path().isEmpty():
+                self.setPath(polygon)
+                self.current_data_x = level
 
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:
             self.remove_label()
 
     def add_items_after_new_map_level_set(self):
-        if self._mp_label:
-            self.add_label()
+        self.add_label()
 
     def decorate(self):
         print('dekoruje')
@@ -1129,7 +1217,8 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         return all(a >= 3 for a in num_elems_in_path)
 
     def add_label(self):
-        if self._mp_label is not None and self._mp_label:
+        label = self.get_label1()
+        if label is not None and label:
             self.label = PolygonLabel(self._mp_label, self)
 
     def update_label_pos(self):
@@ -1168,6 +1257,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.undecorate()
         self.setPath(new_poly)
         self.decorate()
+
 
 class MapLabels(QGraphicsSimpleTextItem):
 

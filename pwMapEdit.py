@@ -36,9 +36,9 @@ class pwMapeditPy(QMainWindow):
         self.map_level_action_group = None
         self.map_level_actions = list()
         self.pw_mapedit_mode = ''
+        self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.initialize()
         self.generate_shortcuts()
-        self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()

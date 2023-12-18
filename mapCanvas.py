@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import calendar
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
@@ -21,6 +22,7 @@ class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
     def __init__(self, parent, *args, projection=None, map_viewer=None, **kwargs):
         self.parent = parent
+        self.properties_dock = self.parent.properties_dock
         super(mapCanvas, self).__init__(*args, **kwargs)
         self.map_viewer = map_viewer
         self.projection = None
@@ -64,67 +66,57 @@ class mapCanvas(QGraphicsScene):
         #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject):
-        mp_data_range = ('Data0', 'Data1', 'Data2', 'Data3', 'Data4')
-        if isinstance(mapobject, map_items.Poi):
+        if isinstance(mapobject, map_items.PoiAsPath) or isinstance(mapobject, map_items.PoiAsPixmap) \
+                or isinstance(mapobject, map_items.AddrLabel):
             # group_item = QGraphicsItemGroup()
             # nodes = mapobject.obj_datax_get('Data0')[0]
             # x, y = nodes[0].get_canvas_coords()
-            poi_icon = self.map_objects_properties.get_poi_icon(mapobject.obj_param_get('Type'))
+            poi_icon = self.map_objects_properties.get_poi_icon(mapobject.get_param('Type'))
             if isinstance(poi_icon, QPainterPath):
-                poi = map_items.PoiAsPath(projection, poi_icon)
-                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.obj_param_get('Type'))
+                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.get_param('Type'))
             elif isinstance(poi_icon, QPixmap):
-                poi = map_items.PoiAsPixmap(projection, poi_icon)
                 poi_icon_brush = False
             elif isinstance(poi_icon, str):
-                poi = map_items.AddrLabel(projection, '__tmp__')
                 poi_icon_brush = False
-            for data_x in mp_data_range:
-                if mapobject.obj_datax_get(data_x):
-                    poi.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
+            mapobject.set_mp_data()
             if isinstance(poi_icon_brush, QBrush):
-                poi.setBrush(poi_icon_brush)
-            self.addItem(poi)
-            if mapobject.obj_param_get('Label'):
-                poi.add_label(mapobject.obj_param_get('Label'))
-            if mapobject.obj_param_get('EndLevel'):
-                poi.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            poi.set_map_level()
-        elif isinstance(mapobject, map_items.Polyline):
+                mapobject.setBrush(poi_icon_brush)
+            self.addItem(mapobject)
+            mapobject.add_label()
+            mapobject.set_map_level()
+        elif isinstance(mapobject, map_items.PolylineQGraphicsPathItem):
             # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
             # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
-            polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
-            for data_x in mp_data_range:
-                if mapobject.obj_datax_get(data_x):
-                    polyline_path_item.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-                if mapobject.get_hlevels(data_x):
-                    polyline_path_item.set_mp_hlevels(data_x, mapobject.get_hlevels(data_x))
-            self.addItem(polyline_path_item)
-            if mapobject.obj_param_get('DirIndicator'):
-                polyline_path_item.set_mp_dir_indicator(True)
-            if mapobject.obj_param_get('Label'):
-                polyline_path_item.set_mp_label(mapobject.obj_param_get('Label'))
-            if mapobject.obj_param_get('EndLevel'):
-                polyline_path_item.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            polyline_path_item.set_map_level()
-            pen = self.map_objects_properties.get_polyline_qpen(mapobject.obj_param_get('Type'))
-            polyline_path_item.setPen(pen)
-            polyline_path_item.add_hlevel_labels()
-        elif isinstance(mapobject, map_items.Polygon):
-            polygon = map_items.PolygonQGraphicsPathItem(self.projection)
-            for data_x in mp_data_range:
-                if mapobject.obj_datax_get(data_x):
-                    polygon.set_mp_data(data_x, mapobject.obj_datax_get(data_x))
-            polygon.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.obj_param_get('Type')))
-            polygon.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.obj_param_get('Type')))
-            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.obj_param_get('Type'))
-            polygon.setBrush(QBrush(color))
-            self.addItem(polygon)
-            if mapobject.obj_param_get('Label'):
-                polygon.set_mp_label(mapobject.obj_param_get('Label'))
-            if mapobject.obj_param_get('EndLevel'):
-                polygon.set_mp_end_level(mapobject.obj_param_get('EndLevel'))
-            polygon.set_map_level()
+            # polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
+            # for data_x in mp_data_range:
+            #     if mapobject.get_datax(data_x):
+            mapobject.set_mp_data()
+            #    if mapobject.get_hlevels(data_x):
+            mapobject.set_mp_hlevels()
+            self.addItem(mapobject)
+            if mapobject.get_param('DirIndicator'):
+                mapobject.set_mp_dir_indicator(True)
+            mapobject.add_label()
+            # if mapobject.get_param('EndLevel'):
+            #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
+            mapobject.set_map_level()
+            pen = self.map_objects_properties.get_polyline_qpen(mapobject.get_param('Type'))
+            mapobject.setPen(pen)
+            mapobject.add_hlevel_labels()
+        elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
+            # polygon = map_items.PolygonQGraphicsPathItem(self.projection)
+            # for data_x in mp_data_range:
+            #     if mapobject.get_datax(data_x):
+            mapobject.set_mp_data()
+            mapobject.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.get_param('Type')))
+            mapobject.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.get_param('Type')))
+            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.get_param('Type'))
+            mapobject.setBrush(QBrush(color))
+            self.addItem(mapobject)
+            mapobject.add_label()
+            # if mapobject.get_param('EndLevel'):
+            #     polygon.set_mp_end_level(mapobject.get_param('EndLevel'))
+            mapobject.set_map_level()
         else:
             pass
 
@@ -249,7 +241,9 @@ class mapCanvas(QGraphicsScene):
     def selection_change_actions(self):
         mode = self.get_pw_mapedit_mode()
         if mode == 'select_objects':
-            pass
+            if len(self.selectedItems()) == 1:
+                self.properties_dock.set_map_object_id(self.selectedItems()[0])
+                self.properties_dock.fill_map_object_properties()
         elif mode == 'edit_nodes':
             if any(isinstance(a, QGraphicsPixmapItem) for a in self.selectedItems()):
                 return

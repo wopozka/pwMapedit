@@ -7,6 +7,7 @@ import sys
 import misc_functions
 import pwmapedit_constants
 import map_items
+from PyQt5.QtGui import QPainterPath, QPixmap
 from collections import OrderedDict
 import projection as coordinates_projection
 from singleton_store import Store
@@ -100,27 +101,32 @@ class mapData(object):
                 b += 1
                 mpfileline = zawartosc_pliku_mp[b]
 
-            poi_poly, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
+            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
             self.lastObjectId += 1
-            if poi_poly == pwmapedit_constants.MAP_OBJECT_POI:
-                map_object = map_items.Poi(None, map_comment_data=obj_comment, map_elem_data=obj_data,
-                                           map_objects_properties=self.map_objects_properties,
-                                           projection=self.projection)
-            elif poi_poly == pwmapedit_constants.MAP_OBJECT_POLYLINE:
-                map_object = map_items.Polyline(None, map_comment_data=obj_comment, map_elem_data=obj_data,
-                                                map_objects_properties=self.map_objects_properties,
-                                                projection=self.projection)
-            elif poi_poly == pwmapedit_constants.MAP_OBJECT_POLYGON:
-                map_object = map_items.Polygon(None, map_comment_data=obj_comment, map_elem_data=obj_data,
-                                               map_objects_properties=self.map_objects_properties,
-                                               projection=self.projection)
-            elif poi_poly == pwmapedit_constants.MAP_OBJECT_RESTRICT:
+            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+                poi_icon = self.map_objects_properties.get_poi_icon(poi_poly_type[1])
+                if isinstance(poi_icon, QPainterPath):
+                    map_object = map_items.PoiAsPath(map_objects_properties=self.map_objects_properties,
+                                                     projection=self.projection)
+                elif isinstance(poi_icon, QPixmap):
+                    map_object = map_items.PoiAsPixmap(map_objects_properties=self.map_objects_properties,
+                                                       projection=self.projection)
+                elif isinstance(poi_icon, str):
+                    map_object = map_items.AddrLabel(map_objects_properties=self.map_objects_properties,
+                                                     projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+                map_object = map_items.PolylineQGraphicsPathItem(map_objects_properties=self.map_objects_properties,
+                                                                 projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+                map_object = map_items.PolygonQGraphicsPathItem(map_objects_properties=self.map_objects_properties,
+                                                                projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
                 pass
-            elif poi_poly == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
                 pass
             else:
                 pass
-
+            map_object.set_data(obj_comment, obj_data)
             self.mapObjectsList.append(map_object)
             self.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
