@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
 
 
@@ -22,29 +23,15 @@ class MapObjPropDock(QDockWidget):
         type_box.addWidget(self.type_selector)
         dock_box.addLayout(type_box)
 
-        label1 = QLabel('Label')
+        labels_layout = QFormLayout()
         self.label1_entry = QLineEdit()
-        label1_box = QHBoxLayout()
-        label1_box.addWidget(label1)
-        # label1_box.addStretch(1)
-        label1_box.addWidget(self.label1_entry)
-        dock_box.addLayout(label1_box)
-
-        label2 = QLabel('Label2')
+        labels_layout.addRow('Label', self.label1_entry)
         self.label2_entry = QLineEdit()
-        label2_box = QHBoxLayout()
-        label2_box.addWidget(label2)
-        # label2_box.addStretch(1)
-        label2_box.addWidget(self.label2_entry)
-        dock_box.addLayout(label2_box)
-
-        label3 = QLabel('Label3')
+        labels_layout.addRow('Label2', self.label2_entry)
         self.label3_entry = QLineEdit()
-        label3_box = QHBoxLayout()
-        label3_box.addWidget(label3)
-        # label3_box.addStretch(1)
-        label3_box.addWidget(self.label3_entry)
-        dock_box.addLayout(label3_box)
+        labels_layout.addRow('Label3', self.label3_entry)
+
+        dock_box.addLayout(labels_layout)
 
         polyline_direction = QLabel('Polyline has direction')
         self.poly_direction = QCheckBox()
@@ -61,26 +48,14 @@ class MapObjPropDock(QDockWidget):
         comment_box.addWidget(self.comment_text_edit)
         dock_box.addLayout(comment_box)
 
-        poi_street_desc = QLabel('Street name')
+        address_phone_layout = QFormLayout()
         self.streetdesc = QLineEdit()
-        poi_street_desc_box = QHBoxLayout()
-        poi_street_desc_box.addWidget(poi_street_desc)
-        poi_street_desc_box.addWidget(self.streetdesc)
-        dock_box.addLayout(poi_street_desc_box)
-
-        poi_house_number = QLabel('House number')
+        address_phone_layout.addRow('Street name', self.streetdesc)
         self.housenumber = QLineEdit()
-        poi_house_number_box = QHBoxLayout()
-        poi_house_number_box.addWidget(poi_house_number)
-        poi_house_number_box.addWidget(self.housenumber)
-        dock_box.addLayout(poi_house_number_box)
-
-        poi_phone = QLabel('Phone number')
+        address_phone_layout.addRow('House number', self.housenumber)
         self.phone = QLineEdit()
-        poi_phone_box = QHBoxLayout()
-        poi_phone_box.addWidget(poi_phone)
-        poi_phone_box.addWidget(self.phone)
-        dock_box.addLayout(poi_phone_box)
+        address_phone_layout.addRow('Phone number', self.phone)
+        dock_box.addLayout(address_phone_layout)
 
         extras_label = QLabel('Extras')
         self.extras_table = QTableWidget(3, 2)
