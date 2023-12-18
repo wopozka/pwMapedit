@@ -134,7 +134,7 @@ class MapObjPropDock(QDockWidget):
                 self.extras_table.setItem(row + 1, 0, QTableWidgetItem(item[0]))
                 self.extras_table.setItem(row + 1, 1, QTableWidgetItem(item[1]))
         else:
-            for row in self.extras_table.rowCount():
+            for row in range(self.extras_table.rowCount()):
                 if row == 0:
                     continue
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
