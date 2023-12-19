@@ -1,0 +1,159 @@
+{
+  "1": {
+    "en": "City",
+    "pl": "miasto du\u017ce pow. 200tys"
+  },
+  "2": {
+    "en": "City",
+    "pl": "miasto ma\u0142e"
+  },
+  "4": {
+    "en": "Military base",
+    "pl": "baza wojskowa"
+  },
+  "5": {
+    "en": "Parking",
+    "pl": "parking odkryty"
+  },
+  "6": {
+    "en": "Parking garage",
+    "pl": "parking pod dachem"
+  },
+  "7": {
+    "en": "Airport",
+    "pl": "terminal lotniska lub hangar"
+  },
+  "8": {
+    "en": "Shop",
+    "pl": "sklep"
+  },
+  "9": {
+    "en": "Marina",
+    "pl": "porty przystanie terminale kontenerowe"
+  },
+  "10": {
+    "en": "School",
+    "pl": "szko\u0142a"
+  },
+  "11": {
+    "en": "Hospital",
+    "pl": "szpital"
+  },
+  "12": {
+    "en": "Industrial area",
+    "pl": "teren przemys\u0142owy"
+  },
+  "14": {
+    "en": "Airport runway",
+    "pl": "pasy startowe lotniska"
+  },
+  "19": {
+    "en": "Building",
+    "pl": "budynek"
+  },
+  "20": {
+    "en": "Forest",
+    "pl": "las"
+  },
+  "21": {
+    "en": "National park",
+    "pl": "park narodowy rezerwat"
+  },
+  "23": {
+    "en": "City park",
+    "pl": "park miejski"
+  },
+  "24": {
+    "en": "Golf course",
+    "pl": "pole golfowe"
+  },
+  "25": {
+    "en": "Sports complex",
+    "pl": "obiekty sportowe"
+  },
+  "26": {
+    "en": "Cemetery",
+    "pl": "cmentarz"
+  },
+  "50": {
+    "en": "Sea",
+    "pl": "morze"
+  },
+  "60": {
+    "en": "Large lake",
+    "pl": "du\u017ce jezioro"
+  },
+  "61": {
+    "en": "Large lake",
+    "pl": "du\u017ce jezioro"
+  },
+  "62": {
+    "en": "Medium lake",
+    "pl": "\u015brednie jezioro"
+  },
+  "63": {
+    "en": "Medium lake",
+    "pl": "\u015brednie jezioro"
+  },
+  "64": {
+    "en": "Small lake",
+    "pl": "ma\u0142e jezioro"
+  },
+  "65": {
+    "en": "Small lake",
+    "pl": "ma\u0142e jezioro"
+  },
+  "70": {
+    "en": "Major river",
+    "pl": "du\u017ca rzeka (rozlewisko)"
+  },
+  "71": {
+    "en": "Large river",
+    "pl": "du\u017ca rzeka"
+  },
+  "72": {
+    "en": "Medium river",
+    "pl": "\u015brednia rzeka"
+  },
+  "73": {
+    "en": "Small river",
+    "pl": "ma\u0142a rzeka"
+  },
+  "75": {},
+  "76": {
+    "en": "Drying or salt pan",
+    "pl": "osuch lub salina"
+  },
+  "77": {
+    "en": "Glacier",
+    "pl": "lodowiec"
+  },
+  "78": {
+    "en": "Orchard",
+    "pl": "sad i ogrody dzia\u0142kowe"
+  },
+  "79": {
+    "en": "Scrub",
+    "pl": "zaro\u015bla i nieu\u017cytki"
+  },
+  "80": {
+    "en": "Don't use! See 0x14...",
+    "pl": "Nie u\u017cywa\u0107! Las jest 0x14"
+  },
+  "81": {
+    "en": "Swamp",
+    "pl": "mokrad\u0142a"
+  },
+  "83": {
+    "en": "Sand",
+    "pl": "piach wydmy i wysypiska"
+  },
+  "69662": {
+    "en": "Separation zone",
+    "pl": "strefa rozgraniczenia"
+  },
+  "69663": {
+    "en": "Separation zone",
+    "pl": "strefa rozgraniczenia"
+  }
+}

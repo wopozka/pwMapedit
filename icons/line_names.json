@@ -1,0 +1,268 @@
+{
+  "1": {
+    "en": "Motorway",
+    "pl": "autostrada"
+  },
+  "2": {
+    "en": "Principal Highway",
+    "pl": "droga szybkiego ruchu"
+  },
+  "3": {
+    "en": "Principal Highway",
+    "pl": "droga ekspresowa"
+  },
+  "4": {
+    "en": "Arterial Road",
+    "pl": "droga g\u0142\u00f3wna"
+  },
+  "5": {
+    "en": "Collector Road",
+    "pl": "droga zbiorcza"
+  },
+  "6": {
+    "en": "Residential street",
+    "pl": "droga lokalna"
+  },
+  "7": {
+    "en": "Alleyway",
+    "pl": "alejka"
+  },
+  "8": {
+    "en": "Highway ramp, low-speed",
+    "pl": "rampa - wolna"
+  },
+  "9": {
+    "en": "Highway ramp, high-speed",
+    "pl": "rampa - szybka"
+  },
+  "10": {
+    "en": "Unpaved Road",
+    "pl": "droga gruntowa"
+  },
+  "11": {
+    "en": "Highway connector",
+    "pl": "\u0142\u0105cznik"
+  },
+  "12": {
+    "en": "Roundabout",
+    "pl": "rondo"
+  },
+  "13": {
+    "en": "Bike Route",
+    "pl": "droga dla rower\u00f3w"
+  },
+  "14": {
+    "en": "Tunnel",
+    "pl": "tunel"
+  },
+  "15": {
+    "en": "Unpaved Road 4x4",
+    "pl": "droga 4x4"
+  },
+  "20": {
+    "en": "Railroad",
+    "pl": "kolej"
+  },
+  "21": {
+    "en": "Coast line",
+    "pl": "brzeg"
+  },
+  "22": {
+    "en": "Walkway",
+    "pl": "chodnik albo szlak"
+  },
+  "24": {
+    "en": "Stream",
+    "pl": "strumie\u0144"
+  },
+  "25": {
+    "en": "Turn restriction",
+    "pl": "zakaz skr\u0119tu"
+  },
+  "26": {
+    "en": "Ferry",
+    "pl": "prom"
+  },
+  "28": {
+    "en": "Border",
+    "pl": "granica"
+  },
+  "29": {
+    "en": "Border",
+    "pl": "granica"
+  },
+  "30": {
+    "en": "International boundary",
+    "pl": "granica mi\u0119dzynarodowa"
+  },
+  "31": {
+    "en": "River",
+    "pl": "rzeka"
+  },
+  "32": {},
+  "33": {},
+  "34": {},
+  "42": {
+    "en": "Marine boundary",
+    "pl": "granica morska"
+  },
+  "43": {
+    "en": "Marine hazard",
+    "pl": "granica morska"
+  },
+  "47": {
+    "en": "Road Sign",
+    "pl": "podpowied\u017a"
+  },
+  "69120": {
+    "en": "Hiking Trial Red",
+    "pl": "Szlak pieszy czerwony"
+  },
+  "69121": {
+    "en": "Hiking Trial Yellow",
+    "pl": "Szlak pieszy \u017c\u00f3\u0142ty"
+  },
+  "69122": {
+    "en": "Hiking Trial Green",
+    "pl": "Szlak pieszy zielony"
+  },
+  "69123": {
+    "en": "Hiking Trail Blue",
+    "pl": "Szlak pieszy niebieski"
+  },
+  "69124": {
+    "en": "Hiking Trail Black",
+    "pl": "Szlak pieszy czarny"
+  },
+  "69125": {
+    "en": "DirIndicator",
+    "pl": "rezerwacja-bombel-nakladka"
+  },
+  "69126": {
+    "en": "noCar",
+    "pl": "rezerwacja-bombel-nakladka"
+  },
+  "69127": {
+    "en": "Hiking Trail Multi",
+    "pl": "Szlak pieszy kolorowy"
+  },
+  "69128": {
+    "en": "Bike Trial Red",
+    "pl": "Szlak rowerowy czerwony"
+  },
+  "69129": {
+    "en": "Bike Trial Yellow",
+    "pl": "Szlak rowerowy \u017c\u00f3\u0142ty"
+  },
+  "69130": {
+    "en": "Bike Trial Green",
+    "pl": "Szlak rowerowy zielony"
+  },
+  "69131": {
+    "en": "Bike Trial Blue",
+    "pl": "Szlak rowerowy niebieski"
+  },
+  "69132": {
+    "en": "Bike Trial Black",
+    "pl": "Szlak rowerowy czarny"
+  },
+  "69133": {
+    "pl": "Szlak rowerowy inny"
+  },
+  "69135": {
+    "en": "Trial other",
+    "pl": "Szlak ko\u0144ski - \u015bcie\u017cka dydaktyczna - inne"
+  },
+  "69136": {
+    "en": "Tram",
+    "pl": "tramwaj"
+  },
+  "69137": {
+    "en": "Planned",
+    "pl": "planowana ulica"
+  },
+  "69138": {
+    "en": "Planned",
+    "pl": "planowana"
+  },
+  "69139": {
+    "en": "Under construction",
+    "pl": "w budowie"
+  },
+  "69140": {
+    "en": "Railroad",
+    "pl": "kolej"
+  },
+  "69141": {
+    "en": "Underground",
+    "pl": "kolej podziemna albo rozebrana"
+  },
+  "69142": {
+    "en": "Ski lift",
+    "pl": "wyci\u0105g/kolejka"
+  },
+  "69143": {
+    "en": "Ski lift",
+    "pl": "wyciag/orczyk"
+  },
+  "69146": {
+    "en": "Floodbank",
+    "pl": "wa\u0142 przeciwpowodziowy"
+  },
+  "69147": {
+    "en": "Walls",
+    "pl": "mury"
+  },
+  "69148": {
+    "en": "Border PN/PK",
+    "pl": "Granica PN/PK"
+  },
+  "69396": {
+    "en": "Blue",
+    "pl": "niebieskie"
+  },
+  "69397": {
+    "en": "White",
+    "pl": "bia\u0142e"
+  },
+  "69398": {
+    "en": "Yellow",
+    "pl": "\u017c\u00f3\u0142te"
+  },
+  "69399": {
+    "en": "Red",
+    "pl": "czerwone"
+  },
+  "69400": {
+    "en": "Green",
+    "pl": "zielone"
+  },
+  "69401": {
+    "en": "Orange",
+    "pl": "pomara\u0144czowe"
+  },
+  "69402": {
+    "en": "Pier",
+    "pl": "pirs"
+  },
+  "69403": {
+    "en": "Submarine pipe",
+    "pl": "ruroci\u0105g podwodny"
+  },
+  "69404": {
+    "en": "Submarine cable",
+    "pl": "kabel podwodny"
+  },
+  "69405": {
+    "en": "Recommended track",
+    "pl": "zalecana trasa"
+  },
+  "69406": {
+    "en": "Leading line",
+    "pl": "linia nabie\u017cnika"
+  },
+  "69407": {
+    "en": "Separation line",
+    "pl": "linia rozgraniczenia"
+  }
+}
