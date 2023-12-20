@@ -1067,30 +1067,17 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.add_label()
 
     def decorate(self):
-        print('dekoruje')
+        print('dekoruje polygon')
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
-        separate_paths = None
-        sep_path = []
-        path = self.path()
-        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
-            if path_elem.isMoveTo():
-                if separate_paths is not None:
-                    if sep_path[0] == sep_path[-1]:
-                        sep_path[-1] = None
-                    separate_paths += sep_path
-                    sep_path = []
-                else:
-                    separate_paths = []
-            sep_path.append(QPointF(path_elem))
-        if sep_path[0] == sep_path[-1]:
-            sep_path[-1] = None
-        separate_paths += sep_path
-        print(separate_paths)
-        for path_elem in separate_paths:
+        polygons = self.path().toSubpathPolygons()
+        for polygon in polygons:
+            polygon_elems = list(polygon)
+            if polygon_elems[0] == polygon_elems[-1]:
+                polygon_elems.pop()
             # elapsed = datetime.now()
-            if path_elem is not None:
-                square = GripItem(path_elem, self)
+            for polygon_elem in polygon_elems:
+                square = GripItem(polygon_elem, self)
                 self.node_grip_items.append(square)
             else:
                 self.node_grip_items.append(None)
