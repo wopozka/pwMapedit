@@ -1041,25 +1041,19 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+            polygon = QPainterPath()
             data = self.get_datax(given_level)
             if not data:
                 continue
             level = int(given_level[-1])
-            qpainterpaths_to_add = []
             for nodes in data:
                 nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
-                # gdyby sie okazalo ze polygone musi byc zamkniety, ale chyba nie musi
-                # nodes_qpointfs.append(nodes_qpointfs[0])
+                # jest prosciej gdy polygony sa zamkniete, tzn poly[0] == poly[-1]
+                if nodes_qpointfs[0] != nodes_qpointfs[-1]:
+                    nodes_qpointfs.append(nodes_qpointfs[0])
                 qpp = QPainterPath()
                 qpp.addPolygon(QPolygonF(nodes_qpointfs))
-                if qpainterpaths_to_add and all(qpainterpaths_to_add[-1].contains(a) for a in nodes_qpointfs):
-                    # and all(outer_polygone.containsPoint(a, Qt.OddEvenFill) for a in nodes_qpointfs):
-                    qpainterpaths_to_add[-1] = qpainterpaths_to_add[-1].subtracted(qpp)
-                else:
-                    qpainterpaths_to_add.append(qpp)
-            polygon = QPainterPath()
-            for poly in qpainterpaths_to_add:
-                polygon.addPath(poly)
+                polygon.addPath(qpp)
             self._mp_data[level] = polygon
             if self.path().isEmpty():
                 self.setPath(polygon)
