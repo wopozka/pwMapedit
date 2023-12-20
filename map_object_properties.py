@@ -1,5 +1,6 @@
 import os.path
 import glob
+import json
 from PyQt5.QtGui import QPixmap, QColor, QPen, QFont, QBrush, QPainterPath
 from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
@@ -16,6 +17,7 @@ class MapObjectsProperties(object):
         self.non_pixmap_icons = self.create_nonpixmap_icons()
         self.non_pixmap_brushes = self.create_nonpixmap_brushes()
         self.question_mark_icon = self.create_question_mark_icon()
+        self.poi_type_vs_name = self.create_poi_type_vs_name()
 
         # polylines definitions
         #dictionary where key is Type
@@ -82,6 +84,8 @@ class MapObjectsProperties(object):
                                         0x10e15: Qt.DashLine
                                        }
 
+        self.polyline_type_vs_name = self.create_polyline_type_vs_name()
+
         #polygon definitions
         self.polygon_properties_fill_colour = {0x4: QColor('olive'),
                                                0x5: QColor('silver'),
@@ -145,6 +149,8 @@ class MapObjectsProperties(object):
                                            0x4f: 5,  # scrub
                                            }
 
+        self.polygon_type_vs_name = self.create_polygon_type_vs_name()
+
     @staticmethod
     def read_icons():
         icons_defs = dict()
@@ -158,6 +164,21 @@ class MapObjectsProperties(object):
                 if icons_defs[int('0x' + icon_type, 16)].isNull():
                     print('Problem z odczytaniem pliku ikony: %s' % icon_type_file_name)
         return icons_defs
+
+    @staticmethod
+    def create_poi_type_vs_name():
+        poi_type_name = dict()
+        icons_files = os.path.join('icons', '*.xpm')
+        for icon_type_file_name in glob.glob(icons_files):
+            icon_defs = os.path.basename(icon_type_file_name).split('_')
+            try:
+                icon_type = int(icon_defs[0], 16)
+                icon_name_en = icon_defs[1]
+                icon_name_pl = icon_defs[2]
+            except (ValueError, IndexError):
+                continue
+            poi_type_name[icon_type] = {'en': icon_name_en, 'pl': icon_name_pl}
+        return poi_type_name
 
     def get_poi_icon(self, poi_type):
         if self.poi_type_has_pixmap_icon(poi_type):
@@ -268,6 +289,16 @@ class MapObjectsProperties(object):
         non_pixmaps[0x1100] = False
         non_pixmaps[0x2800] = QBrush(Qt.black)
         return non_pixmaps
+
+    @staticmethod
+    def create_polyline_type_vs_name():
+        with open(os.path.join('icons', 'line_names.json'), 'r') as lines_names:
+            return json.load(lines_names)
+
+    @staticmethod
+    def create_polygon_type_vs_name():
+        with open(os.path.join('icons', 'polygon_names.json'), 'r') as lines_names:
+            return json.load(lines_names)
 
     @staticmethod
     def create_question_mark_icon():
