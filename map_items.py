@@ -1016,10 +1016,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
         path = self.path()
-        for path_elem in (path.elementAt(elem_num) for elem_num in range(path.elementCount())):
+        for elem_num in range(path.elementCount()):
+            path_elem = path.elementAt(elem_num)
             point = QPointF(path_elem)
             # elapsed = datetime.now()
-            square = GripItem(QPointF(point), self)
+            square = GripItem(QPointF(point), (0, elem_num,), self)
             self.node_grip_items.append(square)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
@@ -1071,16 +1072,16 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
         polygons = self.path().toSubpathPolygons()
-        for polygon in polygons:
+        for polygon_num, polygon in enumerate(polygons):
             polygon_elems = list(polygon)
             if polygon_elems[0] == polygon_elems[-1]:
                 polygon_elems.pop()
             # elapsed = datetime.now()
-            for polygon_elem in polygon_elems:
-                square = GripItem(polygon_elem, self)
+            for polygon_elem_num, polygon_elem in enumerate(polygon_elems):
+                square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
                 self.node_grip_items.append(square)
-            else:
-                self.node_grip_items.append(None)
+            # else:
+            #     self.node_grip_items.append(None)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         print('dekoruje: koniec')
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
@@ -1237,8 +1238,9 @@ class GripItem(QGraphicsPathItem):
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
 
-    def __init__(self, pos, parent):
+    def __init__(self, pos, grip_indexes, parent):
         super().__init__()
+        self.grip_indexes = grip_indexes
         self.parent = parent
         self.setPos(pos)
         self.setParentItem(parent)
