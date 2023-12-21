@@ -702,6 +702,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def set_map_level(self):
         level = self.scene().get_map_level()
+        # lets save the current path in case it's changed
         self._mp_data[self.current_data_x] = self.path()
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
@@ -710,12 +711,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setVisible(True)
             self.current_data_x = level
         elif self.get_endlevel() < level:
-            self.setVisible(False)
+            if self.isVisible():
+                self.setVisible(False)
         else:
             if any(self._mp_data[a] is not None for a in range(level)):
-                self.setVisible(True)
+                if not self.isVisible():
+                    self.setVisible(True)
             else:
-                self.setVisible(False)
+                if self.isVisible():
+                    self.setVisible(False)
         return
 
     def remove_items_before_new_map_level_set(self):
@@ -736,23 +740,35 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.scene().removeItem(self.label)
         self.label = None
 
-    def move_grip(self, grip):
-        # redefine in child classes
-        return
+    def _move_grip(self, grip, type_polygon=False):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
-        grip_index = self.node_grip_items.index(grip)
-        path = self.path()
-        path.setElementPositionAt(grip_index, grip.pos().x(), grip.pos().y())
-        self.setPath(path)
+        polygons = []
+        for poly in self.path().toSubpathPolygons():
+            poly_coords = list(poly)
+            if poly_coords[0] == poly_coords[-1] and type_polygon:
+                poly_coords.pop()
+            polygons.append(poly_coords)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num][grip_coord_num] = grip.pos()
+        except IndexError:
+            return
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
         self.refresh_arrow_heads()
         self.update_label_pos()
         self.update_hlevel_labels()
 
+    def move_grip(self, grip):
+        # do be defined in child classes
+        return
+
     def remove_grip(self, grip):
+        # to be redefined in subclasses
+        return
         if grip in self.node_grip_items:
-            self.remove_point(self.node_grip_items.index(grip))
+            self.remove_point(grip)
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
@@ -767,6 +783,24 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.orig_pen is None:
             self.orig_pen = pen
         super().setPen(pen)
+
+    def _decorate(self, type_polygon=False):
+        print('dekoruje polygon')
+        self.setZValue(self.zValue() + 100)
+        # elapsed = datetime.now()
+        polygons = self.path().toSubpathPolygons()
+        for polygon_num, polygon in enumerate(polygons):
+            polygon_elems = list(polygon)
+            if polygon_elems[0] == polygon_elems[-1] and type_polygon:
+                polygon_elems.pop()
+            # elapsed = datetime.now()
+            for polygon_elem_num, polygon_elem in enumerate(polygon_elems):
+                square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
+                self.node_grip_items.append(square)
+            # else:
+            #     self.node_grip_items.append(None)
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
+        print('dekoruje: koniec')
 
     def decorate(self):
         # to be redefined in polyline and polygon classes
@@ -786,47 +820,34 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def insert_point(self, index, pos):
         return
 
-    def remove_point(self, index):
+    def remove_point(self, grip, type_polygon=False):
         # if there are 2 grip items in a path, then removal is not possible do not even try
         # in another case decide later whether it is possible
         if len(self.node_grip_items) <= 2:
             return
-        path = self.path()
-        new_path = QPainterPath()
-        next_elem_type = ''
-        num_elems_in_path = []
-        for elem_num in range(path.elementCount()):
-            if elem_num == index:
-                if path.elementAt(elem_num).isMoveTo():
-                    next_elem_type = 'move_to'
-                else:
-                    next_elem_type = 'draw_to'
-            else:
-                if next_elem_type:
-                    if next_elem_type == 'move_to':
-                        num_elems_in_path.append(1)
-                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
-                    else:
-                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
-                        num_elems_in_path[-1] += 1
-                    next_elem_type = ''
-                else:
-                    if path.elementAt(elem_num).isMoveTo():
-                        new_path.moveTo(QPointF(path.elementAt(elem_num)))
-                        num_elems_in_path.append(1)
-                    else:
-                        new_path.lineTo(QPointF(path.elementAt(elem_num)))
-                        num_elems_in_path[-1] += 1
-        if not self.is_point_removal_possible(num_elems_in_path):
+        polygons = []
+        for poly in self.path().toSubpathPolygons():
+            poly_coords = list(poly)
+            if poly_coords[0] == poly_coords[-1] and type_polygon:
+                poly_coords.pop()
+            polygons.append(poly_coords)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num].pop(grip_coord_num)
+        except IndexError:
+            return
+        if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
             return
 
-        self.setPath(new_path)
-        grip = self.node_grip_items.pop(index)
-        if self.scene():
-            self.scene().removeItem(grip)
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        for grip_item in self.node_grip_items:
+            if grip_item is not None:
+                self.scene().removeItem(grip_item)
+        self.node_grip_items = []
+        self.decorate()
         self.refresh_arrow_heads()
         self.update_label_pos()
-        self.remove_hlevel_labels(index)
+        self.remove_hlevel_labels(grip_coord_num)
 
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
@@ -1021,23 +1042,18 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.hlevel_labels = None
 
     def decorate(self):
-        self.setZValue(self.zValue() + 100)
-        # elapsed = datetime.now()
-        path = self.path()
-        for elem_num in range(path.elementCount()):
-            path_elem = path.elementAt(elem_num)
-            point = QPointF(path_elem)
-            # elapsed = datetime.now()
-            square = GripItem(QPointF(point), (0, elem_num,), self)
-            self.node_grip_items.append(square)
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
-        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
-        #                         for elem_num in range(path.elementCount())]
-        # print(datetime.now() - elapsed)
+        self._decorate(type_polygon=False)
+
+    def move_grip(self, grip):
+        self._move_grip(grip, type_polygon=False)
+
+    def remove_grip(self, grip):
+        if grip in self.node_grip_items:
+            self.remove_point(grip, type_polygon=False)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
-        return all(a >= 2 for a in num_elems_in_path)
+        return num_elems_in_path >= 2
 
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
@@ -1071,49 +1087,18 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.add_label()
 
     def decorate(self):
-        print('dekoruje polygon')
-        self.setZValue(self.zValue() + 100)
-        # elapsed = datetime.now()
-        polygons = self.path().toSubpathPolygons()
-        for polygon_num, polygon in enumerate(polygons):
-            polygon_elems = list(polygon)
-            if polygon_elems[0] == polygon_elems[-1]:
-                polygon_elems.pop()
-            # elapsed = datetime.now()
-            for polygon_elem_num, polygon_elem in enumerate(polygon_elems):
-                square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
-                self.node_grip_items.append(square)
-            # else:
-            #     self.node_grip_items.append(None)
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
-        print('dekoruje: koniec')
-        # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
-        #                         for elem_num in range(path.elementCount())]
-        # print(datetime.now() - elapsed)
+        self._decorate(type_polygon=True)
 
     def move_grip(self, grip):
-        print('ruszam')
-        if grip not in self.node_grip_items:
-            return
-        polygons = []
-        for poly in self.path().toSubpathPolygons():
-            poly_coords = list(poly)
-            if poly_coords[0] == poly_coords[-1]:
-                poly_coords.pop()
-            polygons.append(poly_coords)
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        try:
-            polygons[grip_poly_num][grip_coord_num] = grip.pos()
-        except IndexError:
-            return
-        self.setPath(self.create_painter_path(polygons, type_polygon=True))
-        self.refresh_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
+        self._move_grip(grip, type_polygon=True)
+
+    def remove_grip(self, grip):
+        if grip in self.node_grip_items:
+            self.remove_point(grip, type_polygon=True)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
-        return all(a >= 3 for a in num_elems_in_path)
+        return num_elems_in_path >= 3
 
     def add_label(self):
         label = self.get_label1()
