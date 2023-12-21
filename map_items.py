@@ -689,8 +689,20 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def accept_map_level_change():
         return True
 
+    @staticmethod
+    def create_painter_path(poly_lists, type_polygon=False):
+        path = QPainterPath()
+        for poly in poly_lists:
+            if poly[0] != poly[-1] and type_polygon:
+                poly.append(poly[0])
+            qpp = QPainterPath()
+            qpp.addPolygon(QPolygonF(poly))
+            path.addPath(qpp)
+        return path
+
     def set_map_level(self):
         level = self.scene().get_map_level()
+        self._mp_data[self.current_data_x] = self.path()
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
@@ -725,6 +737,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.label = None
 
     def move_grip(self, grip):
+        # redefine in child classes
+        return
         print('ruszam')
         if grip not in self.node_grip_items:
             return
@@ -1047,17 +1061,12 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             if not data:
                 continue
             level = int(given_level[-1])
+            nodes_qpointfs = list()
             for nodes in data:
-                nodes_qpointfs = [a.get_canvas_coords_as_qpointf() for a in nodes]
-                # jest prosciej gdy polygony sa zamkniete, tzn poly[0] == poly[-1]
-                if nodes_qpointfs[0] != nodes_qpointfs[-1]:
-                    nodes_qpointfs.append(nodes_qpointfs[0])
-                qpp = QPainterPath()
-                qpp.addPolygon(QPolygonF(nodes_qpointfs))
-                polygon.addPath(qpp)
-            self._mp_data[level] = polygon
+                nodes_qpointfs.append([a.get_canvas_coords_as_qpointf() for a in nodes])
+            self._mp_data[level] = self.create_painter_path(nodes_qpointfs, type_polygon=True)
             if self.path().isEmpty():
-                self.setPath(polygon)
+                self.setPath(self._mp_data[level])
                 self.current_data_x = level
 
     def remove_items_before_new_map_level_set(self):
@@ -1087,6 +1096,26 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         # self.node_grip_items = [GripItem(QPointF(path.elementAt(elem_num)), self)
         #                         for elem_num in range(path.elementCount())]
         # print(datetime.now() - elapsed)
+
+    def move_grip(self, grip):
+        print('ruszam')
+        if grip not in self.node_grip_items:
+            return
+        polygons = []
+        for poly in self.path().toSubpathPolygons():
+            poly_coords = list(poly)
+            if poly_coords[0] == poly_coords[-1]:
+                poly_coords.pop()
+            polygons.append(poly_coords)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num][grip_coord_num] = grip.pos()
+        except IndexError:
+            return
+        self.setPath(self.create_painter_path(polygons, type_polygon=True))
+        self.refresh_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
