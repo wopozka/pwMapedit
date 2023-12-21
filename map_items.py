@@ -900,18 +900,12 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             if not data:
                 continue
             level = int(given_level[-1])
-            # creates qpainterpaths for polylines at given Data level
-            polyline = QPainterPath()
+            polylines_list = list()
             for nodes in data:
-                for node_num, node in enumerate(nodes):
-                    x, y = node.get_canvas_coords()
-                    if node_num == 0:
-                        polyline.moveTo(x, y)
-                    else:
-                        polyline.lineTo(x, y)
-            self._mp_data[level] = polyline
+                polylines_list.append([node.get_canvas_coords_as_qpointf() for node in nodes])
+            self._mp_data[level] = self.create_painter_path(polylines_list, type_polygon=False)
             if self.path().isEmpty():
-                self.setPath(polyline)
+                self.setPath(self._mp_data[level])
                 self.current_data_x = level
 
     def set_mp_hlevels(self):
