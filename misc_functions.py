@@ -225,7 +225,7 @@ def vincenty_distance(coord1, coord2):
     # self.yards=self.feet/3                      # output distance in yards
     return m
 
-def closest_point_to_poly(event_pos, path, threshold, polygon=True):
+def closest_point_to_poly(event_pos, polygons, threshold, type_polygon=True):
     """
     Get the position along the polyline/polygon sides that is the closest
         to the given point.
@@ -239,31 +239,15 @@ def closest_point_to_poly(event_pos, path, threshold, polygon=True):
     tuple(-1, qpoinf, -1) in case of failure
     """
 
-    points_list = list()
-    points_offset = list()
-    for elem_num in range(path.elementCount()):
-        point = QPointF(path.elementAt(elem_num))
-        if path.elementAt(elem_num).isMoveTo():
-            if points_offset:
-                points_offset.append(points_offset[-1] + len(points_list[-1]))
-            else:
-                points_offset = [0]
-            points_list.append([point])
-        else:
-            points_list[-1].append(point)
-
-    # for points in points_list:
-    #     points_offset.append(points_offset[-1] + len(points))
-
     intersections_for_separate_paths = list()
-    for path_num, points in enumerate(points_list):
+    for path_num, points in enumerate(polygons):
         # iterate through pair of points, if the polygon is not "closed",
         # add the start to the end
         p1 = points.pop(0)
-        if polygon and points[-1] != p1:  # identical to QPolygonF.isClosed()
+        if type_polygon and points[-1] != p1:  # identical to QPolygonF.isClosed()
             points.append(p1)
         intersections = []
-        for i, p2 in enumerate(points, 1):
+        for coord_index, p2 in enumerate(points, 1):
             line = QLineF(p1, p2)
             inters = QPointF()
             # create a perpendicular line that starts at the given pos
@@ -278,12 +262,12 @@ def closest_point_to_poly(event_pos, path, threshold, polygon=True):
             # get the distance between the given pos and the found intersection
             # point, then add it, the intersection and the insertion index to
             # the intersection list
-            intersections.append((QLineF(event_pos, inters).length(), inters, i + points_offset[path_num]))
+            intersections.append((QLineF(event_pos, inters).length(), inters, (path_num, coord_index,)))
             p1 = p2
         if intersections:
-            intersections_for_separate_paths.append(min(intersections, key=lambda item:item[0]))
+            intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
 
     if intersections_for_separate_paths:
         # return the result with the shortest distance
-        return min(intersections_for_separate_paths, key=lambda item:item[0])
+        return min(intersections_for_separate_paths, key=lambda item: item[0])
     return -1, QPointF(), -1

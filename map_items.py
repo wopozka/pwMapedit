@@ -700,6 +700,16 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             path.addPath(qpp)
         return path
 
+    @staticmethod
+    def get_polygons_from_path(path, type_polygon=False):
+        polygons = []
+        for poly in path().toSubpathPolygons():
+            poly_coords = list(poly)
+            if poly_coords[0] == poly_coords[-1] and type_polygon:
+                poly_coords.pop()
+            polygons.append(poly_coords)
+        return polygons
+
     def set_map_level(self):
         level = self.scene().get_map_level()
         # lets save the current path in case it's changed
@@ -767,8 +777,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def remove_grip(self, grip):
         # to be redefined in subclasses
         return
-        if grip in self.node_grip_items:
-            self.remove_point(grip)
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.State_Selected:
@@ -877,7 +885,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def remove_hlevel_labels(self, node_num):
         return
 
-# mouse events
+    # mouse events
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closest_point_to_poly(event.pos())
@@ -1066,7 +1074,6 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            polygon = QPainterPath()
             data = self.get_datax(given_level)
             if not data:
                 continue
@@ -1122,7 +1129,8 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         tuple(distance from edge, qpointf within polygon edge, insertion index) in case of succes and
         tuple(-1, qpoinf, -1) in case of failure
         """
-        return misc_functions.closest_point_to_poly(event_pos, self.path(), self.threshold(), polygon=True)
+        polygons = self.get_polygons_from_path(self.path, type_polygon=True)
+        return misc_functions.closest_point_to_poly(event_pos, polygons, self.threshold(), polygon=True)
 
     def insert_point(self, index, pos):
         # index is always > 0, so the first element will always be moveTo
