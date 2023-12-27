@@ -250,6 +250,7 @@ class mapCanvas(QGraphicsScene):
             if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in self.selectedItems()):
                 return
             if self.selected_objects:
+                print(self.selected_objects)
                 self.selected_objects[0].undecorate()
             self.selected_objects = self.selectedItems()
             for obj in self.selected_objects:
