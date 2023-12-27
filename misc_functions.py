@@ -225,6 +225,7 @@ def vincenty_distance(coord1, coord2):
     # self.yards=self.feet/3                      # output distance in yards
     return m
 
+
 def closest_point_to_poly(event_pos, polygons, threshold, type_polygon=True):
     """
     Get the position along the polyline/polygon sides that is the closest
@@ -232,6 +233,9 @@ def closest_point_to_poly(event_pos, polygons, threshold, type_polygon=True):
     Parameters
     ----------
     event_pos: event class position (event.pos)
+    polygons: [[poly_coords1], [poly_coords2], [poly_coords3]]
+    threshold: distance of mouse from line
+    type_polygon: whether we have polygon (True) or polyline (False)
 
     Returns
     -------
@@ -270,4 +274,4 @@ def closest_point_to_poly(event_pos, polygons, threshold, type_polygon=True):
     if intersections_for_separate_paths:
         # return the result with the shortest distance
         return min(intersections_for_separate_paths, key=lambda item: item[0])
-    return -1, QPointF(), -1
+    return -1, QPointF(), (0, -1)

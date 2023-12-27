@@ -693,7 +693,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def create_painter_path(poly_lists, type_polygon=False):
         path = QPainterPath()
         for poly in poly_lists:
-            if poly[0] != poly[-1] and type_polygon:
+            if type_polygon and poly[0] != poly[-1]:
                 poly.append(poly[0])
             qpp = QPainterPath()
             qpp.addPolygon(QPolygonF(poly))
@@ -703,7 +703,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     @staticmethod
     def get_polygons_from_path(path, type_polygon=False):
         polygons = []
-        for poly in path().toSubpathPolygons():
+        for poly in path.toSubpathPolygons():
             poly_coords = list(poly)
             if poly_coords[0] == poly_coords[-1] and type_polygon:
                 poly_coords.pop()
@@ -754,12 +754,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
-        polygons = []
-        for poly in self.path().toSubpathPolygons():
-            poly_coords = list(poly)
-            if poly_coords[0] == poly_coords[-1] and type_polygon:
-                poly_coords.pop()
-            polygons.append(poly_coords)
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         grip_poly_num, grip_coord_num = grip.grip_indexes
         try:
             polygons[grip_poly_num][grip_coord_num] = grip.pos()
@@ -825,20 +820,30 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
 
-    def insert_point(self, index, pos):
+    def _insert_point(self, index, pos, type_polygon=False):
+        # index is always > 0, so the first element will always be moveTo
+        path_num, coord_num = index
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        try:
+            polygon = polygons[path_num]
+            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
+            polygons[path_num] = polygon_modified
+        except IndexError:
+            return
+        self.undecorate()
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.decorate()
+
+    def insert_point(self, index, pos, type_polygon=False):
         return
+
 
     def remove_point(self, grip, type_polygon=False):
         # if there are 2 grip items in a path, then removal is not possible do not even try
         # in another case decide later whether it is possible
         if len(self.node_grip_items) <= 2:
             return
-        polygons = []
-        for poly in self.path().toSubpathPolygons():
-            poly_coords = list(poly)
-            if poly_coords[0] == poly_coords[-1] and type_polygon:
-                poly_coords.pop()
-            polygons.append(poly_coords)
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         grip_poly_num, grip_coord_num = grip.grip_indexes
         try:
             polygons[grip_poly_num].pop(grip_coord_num)
@@ -859,7 +864,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
-        return -1, QPointF(), -1
+        return -1, QPointF(), (0, -1)
 
     def threshold(self):
         if self._threshold is not None:
@@ -890,7 +895,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closest_point_to_poly(event.pos())
             print(dist, pos, index)
-            if index >= 0 and dist <= self.threshold():
+            if index[1] >= 0 and dist <= self.threshold():
                 self.insert_point(index, pos)
                 return
         super().mousePressEvent(event)
@@ -1049,6 +1054,22 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             del self.hlevel_labels[hl]
         self.hlevel_labels = None
 
+    def closest_point_to_poly(self, event_pos):
+        """
+        Get the position along the polyline/polygon sides that is the closest
+            to the given point.
+        Parameters
+        ----------
+        event_pos: event class position (event.pos)
+
+        Returns
+        -------
+        tuple(distance from edge, qpointf within polygon edge, insertion index) in case of succes and
+        tuple(-1, qpoinf, -1) in case of failure
+        """
+        polylines = self.get_polygons_from_path(self.path(), type_polygon=False)
+        return misc_functions.closest_point_to_poly(event_pos, polylines, self.threshold(), type_polygon=False)
+
     def decorate(self):
         self._decorate(type_polygon=False)
 
@@ -1058,6 +1079,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
             self.remove_point(grip, type_polygon=False)
+
+    def insert_point(self, index, pos):
+        self._insert_point(index, pos, type_polygon=False)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -1129,26 +1153,11 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         tuple(distance from edge, qpointf within polygon edge, insertion index) in case of succes and
         tuple(-1, qpoinf, -1) in case of failure
         """
-        polygons = self.get_polygons_from_path(self.path, type_polygon=True)
-        return misc_functions.closest_point_to_poly(event_pos, polygons, self.threshold(), polygon=True)
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=True)
+        return misc_functions.closest_point_to_poly(event_pos, polygons, self.threshold(), type_polygon=True)
 
     def insert_point(self, index, pos):
-        # index is always > 0, so the first element will always be moveTo
-        new_poly = QPainterPath()
-        path = self.path()
-        new_poly.moveTo(QPointF(path.elementAt(0)))
-        for node_num in range(1, path.elementCount()):
-            if node_num == index:
-                new_poly.lineTo(pos)
-            if path.elementAt(node_num).isMoveTo():
-                new_poly.moveTo(QPointF(path.elementAt(node_num)))
-            else:
-                new_poly.lineTo(QPointF(path.elementAt(node_num)))
-        if index == path.elementCount():
-            new_poly.lineTo(pos)
-        self.undecorate()
-        self.setPath(new_poly)
-        self.decorate()
+        self._insert_point(index, pos, type_polygon=True)
 
 
 class MapLabels(QGraphicsSimpleTextItem):
