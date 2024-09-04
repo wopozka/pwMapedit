@@ -689,6 +689,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def accept_map_level_change():
         return True
 
+    def higlight_when_hoverover(self):
+        if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
+            return False
+        return True
+
     @staticmethod
     def create_painter_path(poly_lists, type_polygon=False):
         path = QPainterPath()
@@ -950,7 +955,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().mousePressEvent(event)
 
     def hoverEnterEvent(self, event):
-        if self.node_grip_items:
+        if self.node_grip_items or not self.higlight_when_hoverover():
             return
         self.hovered = True
         if not self.isSelected():
