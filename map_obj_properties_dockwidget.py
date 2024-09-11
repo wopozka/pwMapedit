@@ -59,8 +59,7 @@ class MapObjPropDock(QDockWidget):
 
         extras_label = QLabel('Extras', dock_widget)
         self.extras_table = QTableWidget(3, 2, dock_widget)
-        self.extras_table.setItem(0, 0, QTableWidgetItem('Key'))
-        self.extras_table.setItem(0, 1, QTableWidgetItem('Value'))
+        self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
@@ -106,12 +105,10 @@ class MapObjPropDock(QDockWidget):
         if others:
             self.extras_table.setRowCount(len(others) + 1)
             for row, item in enumerate(others):
-                self.extras_table.setItem(row + 1, 0, QTableWidgetItem(item[0]))
-                self.extras_table.setItem(row + 1, 1, QTableWidgetItem(item[1]))
+                self.extras_table.setItem(row, 0, QTableWidgetItem(item[0]))
+                self.extras_table.setItem(row, 1, QTableWidgetItem(item[1]))
         else:
             for row in range(self.extras_table.rowCount()):
-                if row == 0:
-                    continue
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                 self.extras_table.setItem(row, 1, QTableWidgetItem(''))
 
