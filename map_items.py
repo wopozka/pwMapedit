@@ -713,6 +713,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if poly_coords[0] == poly_coords[-1] and type_polygon:
                 poly_coords.pop()
             polygons.append(poly_coords)
+        print('get_polygons_from_path:', polygons)
         return polygons
 
     def set_map_level(self):
@@ -849,6 +850,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         grip_poly_num, grip_coord_num = grip.grip_indexes
+        print(polygons)
+        print(grip_poly_num, grip_coord_num)
         try:
             polygons[grip_poly_num].pop(grip_coord_num)
         except IndexError:
@@ -1312,6 +1315,8 @@ class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _pen = QPen(QColor('green'), 2)
     _pen.setCosmetic(True)
+    _first_grip_pen = QPen(QColor('red'), 2)
+    _first_grip_pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     square = QPainterPath()
     square.addRect(-4, -4, 8, 8)
@@ -1330,7 +1335,10 @@ class GripItem(QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setPath(self.square)
-        self.setPen(self._pen)
+        if self.grip_indexes[1] == 0:
+            self.setPen(self._first_grip_pen)
+        else:
+            self.setPen(self._pen)
         self.setZValue(100)
         self._setHover(False)
         self.hover_drag_mode = False
