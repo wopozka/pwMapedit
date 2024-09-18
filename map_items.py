@@ -667,7 +667,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(1)
     # hovered_over_pen.setCosmetic(True)
-    non_cosmetic_multiplicity = 4
+    non_cosmetic_multiplicity = 2
     _threshold = None
 
     def __init__(self, map_objects_properties=None, projection=None):
@@ -975,10 +975,16 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     # when shape is hovered over, then around the shape is formed. Let's create it.
     def add_hovered_shape(self):
-        elem_shape = self.shape()
+        # elem_shape = self.shape()
+        elem_shape = QPainterPath(self.path())
         self.hovered_shape_id = self.scene().addPath(elem_shape)
         self.hovered_shape_id.setPos(self.pos())
-        self.hovered_shape_id.setZValue(self.zValue())
+        self.hovered_shape_id.setZValue(self.zValue() - 1)
+        hovered_color = QColor('red')
+        hovered_color.setAlpha(200)
+        hovered_over_pen = QPen(hovered_color)
+        hovered_over_pen.setWidth(self.pen().width() + 2)
+        self.hovered_shape_id.setPen(hovered_over_pen)
         self.setPen(self.hovered_over_pen)
 
     def remove_hovered_shape(self):
