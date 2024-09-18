@@ -959,6 +959,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().mousePressEvent(event)
 
     def hoverEnterEvent(self, event):
+        print('hoverEnter')
         if self.node_grip_items or not self.highlight_when_hoverover():
             return
         self.hovered = True
@@ -966,6 +967,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.add_hovered_shape()
 
     def hoverLeaveEvent(self, event):
+        print('hoverLeave')
         if self.node_grip_items:
             return
         self.hovered = False
@@ -981,7 +983,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.hovered_shape_id.setPos(self.pos())
         self.hovered_shape_id.setZValue(self.zValue() - 1)
         hovered_color = QColor('red')
-        hovered_color.setAlpha(200)
+        hovered_color.setAlpha(50)
         hovered_over_pen = QPen(hovered_color)
         hovered_over_pen.setWidth(self.pen().width() + 2)
         self.hovered_shape_id.setPen(hovered_over_pen)
@@ -1051,7 +1053,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     # redefine shape function from QGraphicsPathItem, to be used in hoverover etc.
     def shape(self):
         stroker = QPainterPathStroker()
-        stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
+        if self.hovered_shape_id is not None:
+            stroker.setWidth(self.hovered_shape_id.pen().width() * self.non_cosmetic_multiplicity)
+        else:
+            stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
         return stroker.createStroke(self.path())
 
     def add_arrow_heads(self):
