@@ -710,12 +710,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def get_polygons_from_path(path, type_polygon=False):
         polygons = []
         for poly in path.toSubpathPolygons():
-            poly_coords = list(poly)
-            print(poly, len(poly_coords))
-            if poly_coords[0] == poly_coords[-1] and type_polygon:
+            # kopiuje wspolrzedne punktow esplicite, bo przez jakas referencje qpointf z path sie zmienialy
+            poly_coords = [QPointF(p.x(), p.y()) for p in tuple(poly)]
+            if type_polygon and poly.isClosed():
                 poly_coords.pop()
-                print(len(poly_coords))
-            polygons.append(poly_coords)
+            polygons.append(tuple(poly_coords))
         return polygons
 
     def set_map_level(self):
@@ -802,8 +801,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
+            print(polygon)
             # elapsed = datetime.now()
             for polygon_elem_num, polygon_elem in enumerate(polygon):
+                print('dekoruje', polygon_elem)
                 square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
                 self.node_grip_items.append(square)
             # else:
@@ -850,11 +851,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         grip_poly_num, grip_coord_num = grip.grip_indexes
-        print(polygons)
+        print('remove_point')
         print(grip_poly_num, grip_coord_num)
         try:
+            print(polygons[grip_poly_num])
             polygons[grip_poly_num].pop(grip_coord_num)
+            print(polygons[grip_poly_num])
         except IndexError:
+            print('index error')
             return
         if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
             return
@@ -1371,6 +1375,9 @@ class GripItem(QGraphicsPathItem):
         self._setHover(False)
         self.hover_drag_mode = False
         self.set_transformation_flag()
+        text = QGraphicsSimpleTextItem(str(self.grip_indexes), self)
+        text.setPos(1, 1)
+
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
 
     def is_first_grip(self):
