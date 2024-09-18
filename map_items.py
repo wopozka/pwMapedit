@@ -710,10 +710,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = []
         for poly in path.toSubpathPolygons():
             poly_coords = list(poly)
+            print(poly, len(poly_coords))
             if poly_coords[0] == poly_coords[-1] and type_polygon:
                 poly_coords.pop()
+                print(len(poly_coords))
             polygons.append(poly_coords)
-        print('get_polygons_from_path:', polygons)
         return polygons
 
     def set_map_level(self):
@@ -794,22 +795,20 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().setPen(pen)
 
     def _decorate(self, type_polygon=False):
-        print('dekoruje polygon')
+        print('dekoruje polygon', 'type_polygon', type_polygon)
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
-        polygons = self.path().toSubpathPolygons()
+        # polygons = self.path().toSubpathPolygons()
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
-            polygon_elems = list(polygon)
-            if polygon_elems[0] == polygon_elems[-1] and type_polygon:
-                polygon_elems.pop()
             # elapsed = datetime.now()
-            for polygon_elem_num, polygon_elem in enumerate(polygon_elems):
+            for polygon_elem_num, polygon_elem in enumerate(polygon):
                 square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
-        print('dekoruje: koniec')
+        print('dekoruje: koniec', len(self.node_grip_items))
 
     def decorate(self):
         # to be redefined in polyline and polygon classes
