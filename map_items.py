@@ -665,8 +665,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     selected_pen.setCosmetic(True)
     selected_pen.setStyle(Qt.DotLine)
     hovered_over_pen = QPen(QColor('red'))
-    hovered_over_pen.setWidth(4)
-    hovered_over_pen.setCosmetic(True)
+    hovered_over_pen.setWidth(1)
+    # hovered_over_pen.setCosmetic(True)
     non_cosmetic_multiplicity = 4
     _threshold = None
 
@@ -679,6 +679,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.orig_pen = None
         self.node_grip_items = list()
         self.node_grip_hovered = False
+        self.hovered_shape_id = None
         self.label = None
         self._mp_data = [None, None, None, None, None]
         # self._mp_end_level = 0
@@ -948,6 +949,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     # mouse events
     def mousePressEvent(self, event):
+        self.remove_hovered_shape()
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closest_point_to_poly(event.pos())
             print(dist, pos, index)
@@ -961,7 +963,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         self.hovered = True
         if not self.isSelected():
-            self.setPen(self.hovered_over_pen)
+            self.add_hovered_shape()
 
     def hoverLeaveEvent(self, event):
         if self.node_grip_items:
@@ -969,7 +971,20 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.hovered = False
         if not self.isSelected():
             self.setPen(self.orig_pen)
+            self.remove_hovered_shape()
 
+    # when shape is hovered over, then around the shape is formed. Let's create it.
+    def add_hovered_shape(self):
+        elem_shape = self.shape()
+        self.hovered_shape_id = self.scene().addPath(elem_shape)
+        self.hovered_shape_id.setPos(self.pos())
+        self.hovered_shape_id.setZValue(self.zValue())
+        self.setPen(self.hovered_over_pen)
+
+    def remove_hovered_shape(self):
+        if self.hovered_shape_id is not None:
+            self.scene().removeItem(self.hovered_shape_id)
+            self.hovered_shape_id = None
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
@@ -1027,6 +1042,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         else:
             self.remove_arrow_heads()
 
+    # redefine shape function from QGraphicsPathItem, to be used in hoverover etc.
     def shape(self):
         stroker = QPainterPathStroker()
         stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
@@ -1317,9 +1333,11 @@ class GripItem(QGraphicsPathItem):
     _first_grip_pen = QPen(QColor('red'), 2)
     _first_grip_pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
+    _first_grip_inactive_brush = QBrush(QColor('red'))
     square = QPainterPath()
     square.addRect(-4, -4, 8, 8)
     active_brush = QBrush(QColor('red'))
+    _first_grip_active_brush = QBrush(QColor('green'))
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
 
@@ -1334,7 +1352,7 @@ class GripItem(QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setPath(self.square)
-        if self.grip_indexes[1] == 0:
+        if self.is_first_grip():
             self.setPen(self._first_grip_pen)
         else:
             self.setPen(self._pen)
@@ -1343,6 +1361,9 @@ class GripItem(QGraphicsPathItem):
         self.hover_drag_mode = False
         self.set_transformation_flag()
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
+
+    def is_first_grip(self):
+        return self.grip_indexes[1] == 0
 
     def accept_map_level_change(self):
         return False
@@ -1354,10 +1375,16 @@ class GripItem(QGraphicsPathItem):
 
     def _setHover(self, hover):
         if hover:
-            self.setBrush(self.active_brush)
+            if self.is_first_grip():
+                self.setBrush(self._first_grip_active_brush)
+            else:
+                self.setBrush(self.active_brush)
             self.hover_drag_mode = True
         else:
-            self.setBrush(self.inactive_brush)
+            if self.is_first_grip():
+                self.setBrush(self._first_grip_inactive_brush)
+            else:
+                self.setBrush(self.inactive_brush)
             self.hover_drag_mode = False
 
     def boundingRect(self):
@@ -1405,7 +1432,7 @@ class GripItem(QGraphicsPathItem):
         pass
 
 class DirectionArrowHead(QGraphicsPathItem):
-    pen = QPen(Qt.black, 3)
+    pen = QPen(Qt.black, 1)
     brush = QBrush(Qt.black)
     # pen.setCosmetic(True)
 
