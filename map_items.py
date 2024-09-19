@@ -714,7 +714,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             poly_coords = [QPointF(p.x(), p.y()) for p in tuple(poly)]
             if type_polygon and poly.isClosed():
                 poly_coords.pop()
-            polygons.append(tuple(poly_coords))
+            polygons.append(poly_coords)
         return polygons
 
     def set_map_level(self):
