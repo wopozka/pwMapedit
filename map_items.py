@@ -664,6 +664,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     selected_pen = QPen(QColor("red"))
     selected_pen.setCosmetic(True)
     selected_pen.setStyle(Qt.DotLine)
+    selected_pen.setWidth(4)
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(1)
     # hovered_over_pen.setCosmetic(True)
@@ -781,7 +782,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected:
+        if option.state & QStyle.State_Selected or self.node_grip_items:
             self.setPen(self.selected_pen)
         elif self.hovered and not self.node_grip_items:
             self.setPen(self.hovered_over_pen)
@@ -796,28 +797,27 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def _decorate(self, type_polygon=False):
         print('dekoruje polygon', 'type_polygon', type_polygon)
+        if self.node_grip_items:
+            self.undecorate()
         self.setZValue(self.zValue() + 100)
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
-            print(polygon)
             # elapsed = datetime.now()
             for polygon_elem_num, polygon_elem in enumerate(polygon):
-                print('dekoruje', polygon_elem)
                 square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
         self.setFlags(QGraphicsItem.ItemIsSelectable)
-        print('dekoruje: koniec', len(self.node_grip_items))
 
     def decorate(self):
         # to be redefined in polyline and polygon classes
         return
 
     def undecorate(self):
-        print('usuwam dekoracje')
+        print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
         self.setZValue(self.zValue() - 100)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         scene = self.scene()
@@ -855,9 +855,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         print('remove_point')
         print(grip_poly_num, grip_coord_num)
         try:
-            print(polygons[grip_poly_num])
             polygons[grip_poly_num].pop(grip_coord_num)
-            print(polygons[grip_poly_num])
         except IndexError:
             print('index error')
             return
@@ -1421,6 +1419,8 @@ class GripItem(QGraphicsPathItem):
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
             self.parent.remove_grip(self)
+        elif (event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier):
+            print('z shifterm')
         else:
             super().mousePressEvent(event)
 
