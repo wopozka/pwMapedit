@@ -841,6 +841,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
         self.decorate()
 
+    # to be override in other classes
     def insert_point(self, index, pos, type_polygon=False):
         return
 
@@ -1344,13 +1345,13 @@ class PolylineLevelNumber(MapLabels):
 class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _pen = QPen(QColor('green'), 2)
-    _pen.setCosmetic(True)
+    #_pen.setCosmetic(True)
     _first_grip_pen = QPen(QColor('red'), 2)
-    _first_grip_pen.setCosmetic(True)
+    #_first_grip_pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     _first_grip_inactive_brush = QBrush(QColor('red'))
     square = QPainterPath()
-    square.addRect(-4, -4, 8, 8)
+    square.addRect(-2, -2, 4, 4)
     active_brush = QBrush(QColor('red'))
     _first_grip_active_brush = QBrush(QColor('green'))
     # keep the bounding rect consistent
@@ -1374,7 +1375,8 @@ class GripItem(QGraphicsPathItem):
         self.setZValue(100)
         self._setHover(False)
         self.hover_drag_mode = False
-        self.set_transformation_flag()
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        # self.set_transformation_flag()
         text = QGraphicsSimpleTextItem(str(self.grip_indexes), self)
         text.setPos(1, 1)
 
@@ -1430,7 +1432,7 @@ class GripItem(QGraphicsPathItem):
             super().wheelEvent(event)
 
     def paint(self, painter, option, widget=None):
-        self.set_transformation_flag()
+        # self.set_transformation_flag()
         super().paint(painter, option, widget=widget)
 
     def set_transformation_flag(self):
