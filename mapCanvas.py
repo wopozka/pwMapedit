@@ -171,14 +171,24 @@ class mapCanvas(QGraphicsScene):
                 self.properties_dock.set_map_object_id(self.selectedItems()[0])
                 self.properties_dock.fill_map_object_properties()
         elif mode == 'edit_nodes':
-            if any(isinstance(a, QGraphicsPixmapItem) for a in self.selectedItems()):
+            selected_items = self.selectedItems()
+            print(selected_items, self.selected_objects)
+            if any(isinstance(a, QGraphicsPixmapItem) for a in selected_items):
+                for obj in self.selected_objects:
+                    obj.undecorate()
                 return
-            if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in self.selectedItems()):
+            if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in selected_items):
                 print('selekcja sie zmienila na uchwyty')
                 return
+            # przypadku gdy obiekt juz jest w trybie edycji wezlow nie rob nic. Zachodzi gdy mamy kliknięty uchwyt
+            # a potem klikniemy z shiftem na podswietlony obiekt tak aby dodac wezel. Wtedy zmienia sie selekcja na nowy
+            # obiekt ktory ma juz uchwyty. Nie rob nic w takim przypadku.
+            if selected_items and selected_items[0].is_in_node_edit_mode():
+                return
             if self.selected_objects:
-                print(self.selected_objects)
-                self.selected_objects[0].undecorate()
-            self.selected_objects = self.selectedItems()
+                print('usuwam dekoracje selection change', self.selected_objects)
+                for obj in self.selected_objects:
+                    obj.undecorate()
+            self.selected_objects = selected_items
             for obj in self.selected_objects:
                 obj.decorate()

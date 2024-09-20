@@ -970,7 +970,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.add_hovered_shape()
 
     def hoverLeaveEvent(self, event):
-        print('hoverLeave')
+        # print('hoverLeave')
         if self.node_grip_items:
             return
         self.hovered = False
@@ -996,6 +996,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.hovered_shape_id is not None:
             self.scene().removeItem(self.hovered_shape_id)
             self.hovered_shape_id = None
+
+    def is_in_node_edit_mode(self):
+        return True if self.node_grip_items else False
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
