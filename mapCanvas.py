@@ -164,80 +164,6 @@ class mapCanvas(QGraphicsScene):
     def get_map_level(self):
         return self.current_map_level
 
-    # # bindings and the binding functions
-    # def apply_bindings(self):
-    #
-    #     # bindings for magnifying: -, ctrl+roll up scalling down; =, ctrl+roll down scallling
-    #     self.bind_all("<equal>", self.scaleup)
-    #     self.bind_all("<minus>", self.scaledown)
-    #     self.bind_all("<Control-MouseWheel>", self.windows_scale)
-    #     self.bind_all("<Control-4>", self.scaledown)
-    #     self.bind_all("<Control-5>", self.scaleup)
-    #
-    #     # bindings for scrolling a map with mouse wheel - NS direction
-    #     self.bind_all("<MouseWheel>", self.scroll_map_NS)
-    #     self.bind_all("<4>", self.scroll_map_NS)
-    #     self.bind_all("<5>", self.scroll_map_NS)
-    #
-    #     # bindings for scrolling a map with mouse wheel - EW directions
-    #     self.bind_all("<Shift-MouseWheel>", self.scroll_map_EW)
-    #     self.bind_all("<Shift-4>", self.scroll_map_EW)
-    #     self.bind_all("<Shift-5>", self.scroll_map_EW)
-    #
-    #     # bindings for polygon render kit
-    #     self.bind_all('<t>', self.switch_plygon_render_kit)
-    #
-    #     # bindings for mode switching
-    #     self.bind_all('<s>', lambda e: self.change_mode(e, mode='select'))
-    #     self.bind_all('<m>', lambda e: self.change_mode(e, mode='edit'))
-    #     # lets try to bind selecting object
-    #     # self.bind_all("<Button-1>",self.mouse_1)
-    #     # self.bind_all("<ButtonRelease-1>",self.mouse_2)
-    #
-    # # def mouse_1(self,event):
-    #     # we have to register the object the mouse pointer is over. For further actions
-    #     # a=self.find_withtag('current')
-    #     # if a:
-    #     #   if self.object_clicked:
-    #     #        del(self.object_clicked[0])
-    #     #        self.object_clicked.append(a)
-    #     #    else:
-    #     #       self.object_clicked.append(a)
-    #
-    #
-    # # def mouse_2(self,event):
-    # #     if self.object_clicked:
-    # #        self.itemconfig(self.object_clicked[0],fill='blue',dash=(5,5))
-    #
-    # def change_mode(self, event, mode=None):
-    #
-    #     # if actual mode was selected, do nothing
-    #     if mode == self.mode_name:
-    #         return
-    #     print('zmieniam mode na %s' % mode)
-    #     self.mode.unregister_mode()
-    #     self.mode_name = mode
-    #     if mode == 'edit':
-    #         self.mode = modes.editNodeMode(self)
-    #     elif mode == 'select':
-    #         self.mode = modes.selectMode(self)
-    #     else:
-    #         pass
-
-    # def switch_plygon_render_kit(self, event):
-    #     if self.polygonFill == 'solid':
-    #         self.itemconfig('POLYGON', fill='')
-    #         self.polygonFill = 'transparent'
-    #     else:
-    #         self.polygonFill = 'solid'
-    #         for a in self.find_withtag('POLYGON'):
-    #             for b in [c for c in self.gettags(a) if c.startswith('Type=')]:
-    #                 d = b.split('=')[-1]
-    #                 if d in self.map_objects_properties.polygonePropertiesFillColour:
-    #                     self.itemconfig(a, fill=self.map_objects_properties.polygonePropertiesFillColour[d])
-    #                 else:
-    #                     self.itemconfig(a, fill='grey')
-
     def selection_change_actions(self):
         mode = self.get_pw_mapedit_mode()
         if mode == 'select_objects':
@@ -248,6 +174,7 @@ class mapCanvas(QGraphicsScene):
             if any(isinstance(a, QGraphicsPixmapItem) for a in self.selectedItems()):
                 return
             if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in self.selectedItems()):
+                print('selekcja sie zmienila na uchwyty')
                 return
             if self.selected_objects:
                 print(self.selected_objects)
