@@ -667,7 +667,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     selected_pen.setWidth(4)
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(1)
-    # hovered_over_pen.setCosmetic(True)
+    hovered_over_pen.setCosmetic(True)
     non_cosmetic_multiplicity = 2
     _threshold = None
 
@@ -1000,6 +1000,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         hovered_color = QColor('red')
         hovered_color.setAlpha(50)
         hovered_over_pen = QPen(hovered_color)
+        hovered_over_pen.setCosmetic(True)
         hovered_over_pen.setWidth(self.pen().width() + 2)
         self.hovered_shape_id.setPen(hovered_over_pen)
         self.setPen(self.hovered_over_pen)
@@ -1056,6 +1057,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_all_hlevel_labels()
 
     def add_items_after_new_map_level_set(self):
+        print('add_items_after_new_map_level_set')
         if self._mp_dir_indicator:
             self.add_arrow_heads()
         self.add_label()
@@ -1120,11 +1122,15 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             node_num, value = node_num_value
             position = QPointF(path.elementAt(node_num))
             # print(position)
-            self.hlevel_labels[node_num] = PolylineLevelNumber(value, self)
+            self.hlevel_labels[node_num] = PolylineLevelNumber(str(value) + ' ' + str(node_num), self)
             self.hlevel_labels[node_num].setPos(position)
 
     def update_hlevel_labels(self):
         # update numbers positions when nodes are moved around
+        self.remove_all_hlevel_labels()
+        self.add_hlevel_labels()
+        return
+        print('moving numbers')
         if self.hlevel_labels is None:
             return
         path = self.path()
@@ -1206,7 +1212,6 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             if self.path().isEmpty():
                 self.setPath(self._mp_data[level])
                 self.current_data_x = level
-
 
     def shape(self):
         if not self.node_grip_items:
@@ -1351,7 +1356,7 @@ class PolylineLevelNumber(MapLabels):
     def __init__(self, text, parent):
         self.parent = parent
         if not isinstance(text, str):
-            text = str(text)
+            text = str(text) + ' hlevel'
         super(PolylineLevelNumber, self).__init__(text, parent)
         self.set_transformation_flag()
 
