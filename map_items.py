@@ -687,6 +687,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self._mp_label = None
         self.current_data_x = 0
 
+    def _shape(self):
+        stroker = QPainterPathStroker()
+        if self.hovered_shape_id is not None:
+            stroker.setWidth(self.hovered_shape_id.pen().width() * self.non_cosmetic_multiplicity)
+        else:
+            stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
+        return stroker.createStroke(self.path())
+
     @staticmethod
     def accept_map_level_change():
         return True
@@ -1062,12 +1070,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     # redefine shape function from QGraphicsPathItem, to be used in hoverover etc.
     def shape(self):
-        stroker = QPainterPathStroker()
-        if self.hovered_shape_id is not None:
-            stroker.setWidth(self.hovered_shape_id.pen().width() * self.non_cosmetic_multiplicity)
-        else:
-            stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
-        return stroker.createStroke(self.path())
+        return self._shape()
 
     def add_arrow_heads(self):
         if not self._mp_dir_indicator:
@@ -1203,6 +1206,12 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             if self.path().isEmpty():
                 self.setPath(self._mp_data[level])
                 self.current_data_x = level
+
+
+    def shape(self):
+        if not self.node_grip_items:
+            return super().shape()
+        return self._shape()
 
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:
