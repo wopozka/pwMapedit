@@ -952,6 +952,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     # mouse events
     def mousePressEvent(self, event):
+        super().mousePressEvent(event)
         self.remove_hovered_shape()
         if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
             dist, pos, index = self.closest_point_to_poly(event.pos())
@@ -959,11 +960,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if index[1] >= 0 and dist <= self.threshold():
                 self.insert_point(index, pos)
                 return
-        super().mousePressEvent(event)
 
     def hoverEnterEvent(self, event):
-        print('hoverEnter')
-        if self.node_grip_items or not self.highlight_when_hoverover():
+        # print('hoverEnter')
+        if not self.highlight_when_hoverover():
+            return
+        if self.node_grip_items:
+            self.setCursor(QCursor(Qt.CrossCursor))
             return
         self.hovered = True
         if not self.isSelected():
@@ -972,6 +975,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def hoverLeaveEvent(self, event):
         # print('hoverLeave')
         if self.node_grip_items:
+            self.setCursor(QCursor(Qt.ArrowCursor))
             return
         self.hovered = False
         if not self.isSelected():
