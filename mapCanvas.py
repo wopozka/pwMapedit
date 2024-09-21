@@ -102,7 +102,7 @@ class mapCanvas(QGraphicsScene):
             mapobject.set_map_level()
             pen = self.map_objects_properties.get_polyline_qpen(mapobject.get_param('Type'))
             mapobject.setPen(pen)
-            mapobject.add_hlevel_labels()
+            # mapobject.add_hlevel_labels()
         elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
             # polygon = map_items.PolygonQGraphicsPathItem(self.projection)
             # for data_x in mp_data_range:

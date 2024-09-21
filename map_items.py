@@ -813,8 +813,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
             # elapsed = datetime.now()
-            for polygon_elem_num, polygon_elem in enumerate(polygon):
-                square = GripItem(polygon_elem, (polygon_num, polygon_elem_num,), self)
+            for polygon_node_num, polygon_node in enumerate(polygon):
+                square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
+                                  self.get_hlevel_for_node(polygon_node_num), self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
@@ -1013,6 +1014,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def is_in_node_edit_mode(self):
         return True if self.node_grip_items else False
 
+    def get_hlevel_for_node(self, node_num):
+        return None
+
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
         super(PolylineQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
@@ -1155,6 +1159,14 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(self.hlevel_labels[hl])
             del self.hlevel_labels[hl]
         self.hlevel_labels = None
+
+    def get_hlevel_for_node(self, node_num):
+        if self.hlevel_labels is None:
+            return None
+        if node_num in self.hlevel_labels:
+            return self.hlevel_labels[node_num].text()
+        return None
+
 
     def closest_point_to_poly(self, event_pos):
         """
@@ -1376,10 +1388,11 @@ class GripItem(QGraphicsPathItem):
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
 
-    def __init__(self, pos, grip_indexes, parent):
+    def __init__(self, pos, grip_indexes, hlevel, parent):
         super().__init__()
         self.grip_indexes = grip_indexes
         self.parent = parent
+        self.hlevel = hlevel
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
@@ -1396,7 +1409,10 @@ class GripItem(QGraphicsPathItem):
         self.hover_drag_mode = False
         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         # self.set_transformation_flag()
-        text = QGraphicsSimpleTextItem(str(self.grip_indexes), self)
+        _text = str(self.grip_indexes)
+        if self.hlevel is not None:
+            _text = _text + ' ' + str(self.hlevel)
+        text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
 
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
@@ -1647,7 +1663,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
 
         super().setPolygon(poly)
         for i, p in enumerate(poly):
-            self.gripItems.append(GripItem(p, self))
+            self.gripItems.append(GripItem(p, None, self))
 
     def addPoint(self, pos):
         self.insertPoint(len(self.gripItems), pos)
@@ -1655,7 +1671,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
     def insertPoint(self, index, pos):
         poly = list(self.polygon())
         poly.insert(index, pos)
-        self.gripItems.insert(index, GripItem(pos, self))
+        self.gripItems.insert(index, GripItem(pos, None, self))
         # just call the base implementation, not the override, as all required
         # items are already in place
         super().setPolygon(QPolygonF(poly))
