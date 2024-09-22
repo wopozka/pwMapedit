@@ -437,6 +437,7 @@ class Restriction(object):
 
 class PoiAsPath(BasicMapItem, QGraphicsPathItem):
     # basic class for poi without pixmap icon
+    _accept_map_level_change = True
 
     def __init__(self, map_objects_properties=None, projection=None):
         # super(PoiAsPath, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
@@ -502,6 +503,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
 
 
 class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
+    _accept_map_level_change = True
 
     # basic class for poi with pixmap icon
     def __init__(self, map_objects_properties=None, projection=None):
@@ -583,6 +585,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
 
 class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
+    _accept_map_level_change = True
 
     def __init__(self, map_objects_properties=None, projection=None):
         # super(AddrLabel, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
@@ -670,6 +673,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     hovered_over_pen.setCosmetic(True)
     non_cosmetic_multiplicity = 2
     _threshold = None
+    _accept_map_level_change = True
 
     def __init__(self, map_objects_properties=None, projection=None):
         self.hovered = False
@@ -1061,7 +1065,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_all_hlevel_labels()
 
     def add_items_after_new_map_level_set(self):
-        print('add_items_after_new_map_level_set')
+        # print('add_items_after_new_map_level_set')
         if self._mp_dir_indicator:
             self.add_arrow_heads()
         self.add_label()
@@ -1282,7 +1286,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
 
 class MapLabels(QGraphicsSimpleTextItem):
-
+    _accept_map_level_change = False
     def __init__(self, string_text, parent):
         super(MapLabels, self).__init__(string_text, parent)
 
@@ -1387,6 +1391,7 @@ class GripItem(QGraphicsPathItem):
     _first_grip_active_brush = QBrush(QColor('green'))
     # keep the bounding rect consistent
     _boundingRect = square.boundingRect()
+    _accept_map_level_change = False
 
     def __init__(self, pos, grip_indexes, hlevel, parent):
         super().__init__()
@@ -1492,6 +1497,7 @@ class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 1)
     brush = QBrush(Qt.black)
     # pen.setCosmetic(True)
+    _accept_map_level_change = False
 
     def __init__(self, pos, parent):
         super().__init__()
@@ -1527,6 +1533,7 @@ class DirectionArrowHead(QGraphicsPathItem):
 
 
 class MapRulerLabel(QGraphicsSimpleTextItem):
+    _accept_map_level_change = False
     def __init__(self, label, parent):
         self.parent = parent
         super(MapRulerLabel, self).__init__(label, parent)
@@ -1543,6 +1550,7 @@ class MapRuler(QGraphicsPathItem):
     ruler = QPainterPath()
     screen_coord_1 = QPoint(10, 10)
     screen_coord_2 = QPoint(50, 10)
+    _accept_map_level_change = False
 
     def __init__(self,  map_render, projection):
         self.map_render = map_render

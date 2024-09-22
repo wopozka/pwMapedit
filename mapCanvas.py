@@ -17,6 +17,7 @@ import os.path
 import map_items
 import map_object_properties
 from singleton_store import Store
+from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
@@ -155,11 +156,13 @@ class mapCanvas(QGraphicsScene):
         self.current_map_level = map_level
         self.clearSelection()
         num_screen_items = 0
+        start = datetime.now().replace(microsecond=0)
         for item in self.items():
             num_screen_items += 1
-            if item.accept_map_level_change():
+            if item._accept_map_level_change:
                 item.set_map_level()
         print('num screen items: %s' % num_screen_items)
+        print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
     def get_map_level(self):
         return self.current_map_level
