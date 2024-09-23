@@ -1,5 +1,5 @@
 import math
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import misc_functions
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
@@ -74,6 +74,11 @@ class Data_X1(object):
         self._bounding_box_W = None
         self._bounding_box_E = None
 
+        # dobrze wiedzieć ktory data byl ostatnio dodawany, na potrzeby numeracji, przechowujmy
+        # wiec te dane
+        self._last_data_level = 0
+        self._last_poly_data_index = 0
+
     def add_nodes_from_string(self, data_string):
         datax, values = data_string.strip().split('=', 1)
         data_level = int(datax[4:])
@@ -81,6 +86,8 @@ class Data_X1(object):
             self._data_levels.append(data_level)
         data_index = self._data_levels.index(data_level)
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
+        self._last_data_level = data_level
+        self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -123,9 +130,11 @@ class Data_X1(object):
                 returned_data.append(data_list)
         return returned_data
 
-    def get_data_levels(self, qpointsf):
+    def get_data_levels(self):
         return self._data_levels
 
+    def get_last_data_level_and_last_index(self):
+        return self._last_data_level, self._last_poly_data_index
 
 class Node(object):
     """Class used for storing coordinates of given map object point"""
@@ -158,6 +167,15 @@ class Node(object):
         return self.projection.canvas_to_geo()
 
 
+Numbers_Definition = namedtuple('N_Defs', ['index_of_point_in_the_polyline', 'left_side_numbering_style',
+                                     'first_number_on_left_ide', 'last_number_on_left_side',
+                                     'right_side_numbering_style', 'first_number_on_right_side',
+                                     'last_number_on_right_side', 'left_side_zip_code', 'right_side_zip_code',
+                                     'left_side_city', 'left_side_region', 'left_side_country', 'right_side_city',
+                                     'right_side_region', 'right_side_country']
+                          )
+
+
 class Numbers(object):
     # class for storing definitions of numbers along the roads
     even = 2
@@ -165,8 +183,53 @@ class Numbers(object):
     both = 0
 
     def __init__(self, numbers_defition):
-        # nody dla ktorych mamy definicje
-        self._node_num = []
+        # przechowuje informacje pod ktorym indeksem jest przechowywana jaki level
+        self._data_levels = []
+        # przechowuje informacje dla ktorego kolejnej polyline sa dane dla danego _data_levels
+        self._poly_num = []
+        # konkretne definicje - lista, list, list
+        self._numbers_definitions = []
+
+    def add_definitions_from_string(self, num_string, data_level, cur_poly_num):
+        _, definition = num_string.split('=', 1)
+        numbers_indexes = (0, 2, 3, 5, 6)
+        num_def = [None for _ in range(10)]
+        for no, elem in enumerate(definition.split(',')):
+            if elem == '-1' or not elem.isdigit():
+                continue
+            elif no in numbers_indexes:
+                num_def[no] = int(elem)
+            else:
+                num_def[no] = elem
+        if data_level in self._data_levels:
+            dl_index = self._data_levels.index(data_level)
+        else:
+            dl_index = len(self._data_levels)
+            self._data_levels.append(data_level)
+            self._poly_num.append([])
+            # self._numbers_definitions.append([[]])
+        if cur_poly_num in self._poly_num[dl_index]:
+            poly_index = self._poly_num[dl_index].index(cur_poly_num)
+        else:
+            poly_index = len(self._poly_num[dl_index])
+            self._poly_num[dl_index].append(cur_poly_num)
+            self._numbers_definitions[poly_index].append([])
+        self._numbers_definitions[dl_index][poly_index].append(Numbers_Definition(num_def[0], num_def[1], num_def[2],
+                                                                                  num_def[3], num_def[4], num_def[5],
+                                                                                  num_def[6], num_def[7], num_def[8],
+                                                                                  num_def[9], num_def[10], num_def[11],
+                                                                                  num_def[12], num_def[13], num_def[14]
+                                                                                  )
+                                                               )
+
+    def get_data_levels(self):
+        return self._data_levels
+
+    def get_poly_numbers(self, data_level):
+        return self._poly_num[data_level]
+
+    def get_number_definition(self, data_level, poly_num):
+        return self._numbers_definitions[data_level][poly_num]
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
