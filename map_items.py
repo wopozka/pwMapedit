@@ -75,7 +75,7 @@ class Data_X1(object):
         self._bounding_box_E = None
 
         # dobrze wiedzieć ktory data byl ostatnio dodawany, na potrzeby numeracji, przechowujmy
-        # wiec te dane
+        # wiec te dane. To sa istotne kwestie przy wczytywaniu
         self._last_data_level = 0
         self._last_poly_data_index = 0
 
@@ -84,6 +84,7 @@ class Data_X1(object):
         data_level = int(datax[4:])
         if data_level not in self._data_levels:
             self._data_levels.append(data_level)
+            self._poly_data_points.append([])
         data_index = self._data_levels.index(data_level)
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
         self._last_data_level = data_level
@@ -105,9 +106,9 @@ class Data_X1(object):
             self._bounding_box_E = longitude
             self._bounding_box_W = longitude
         else:
-            if latitude <= self._bounding_box_S :
+            if latitude <= self._bounding_box_S:
                 self._bounding_box_S = latitude
-            elif latitude >= self.obj_bounding_box['N']:
+            elif latitude >= self._bounding_box_N:
                 self._bounding_box_N = latitude
             if longitude <= self._bounding_box_W:
                 self._bounding_box_W = longitude
