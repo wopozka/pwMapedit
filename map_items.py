@@ -168,12 +168,12 @@ class Node(object):
 
 
 Numbers_Definition = namedtuple('N_Defs', ['index_of_point_in_the_polyline', 'left_side_numbering_style',
-                                     'first_number_on_left_ide', 'last_number_on_left_side',
-                                     'right_side_numbering_style', 'first_number_on_right_side',
-                                     'last_number_on_right_side', 'left_side_zip_code', 'right_side_zip_code',
-                                     'left_side_city', 'left_side_region', 'left_side_country', 'right_side_city',
-                                     'right_side_region', 'right_side_country']
-                          )
+                                           'first_number_on_left_ide', 'last_number_on_left_side',
+                                           'right_side_numbering_style', 'first_number_on_right_side',
+                                           'last_number_on_right_side', 'left_side_zip_code', 'right_side_zip_code',
+                                           'left_side_city', 'left_side_region', 'left_side_country', 'right_side_city',
+                                           'right_side_region', 'right_side_country']
+                                )
 
 
 class Numbers(object):
