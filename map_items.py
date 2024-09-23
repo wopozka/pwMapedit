@@ -54,6 +54,79 @@ class Data_X(object):
         return self.data_level
 
 
+class Data_X1(object):
+    def __init__(self, projection=None):
+        self.projection = projection
+        # dane mozna by przechowywac w slownikach, ale poniewaz jest ich duzo, dlatego pod wzgledem przechowywania
+        # uzycie list bedzie sporo bardziej efektywne pod wzgledem wielkosci pamieci. Jako ze mapy moga byc duze, moze
+        # miec to znaczenia.
+
+        # Data0, Data1, Data2, Data3, Data4...
+        # przechowuje informacje pod ktorym indeksem jest przechowywana jaki level
+        self._data_levels = []
+        # przechowuje wspolrzedne punktow dla Data0, Data1, Data2 ..., w postaci listy list. Pierwsza lista to
+        # dany Data, druga lista w tej liscie, to dany polyline, albo polygon
+        self._poly_data_points = []
+
+        # boundingbox dla danych data, tu latwiej i szybciej to obliczyc
+        self._bounding_box_N = None
+        self._bounding_box_S = None
+        self._bounding_box_W = None
+        self._bounding_box_E = None
+
+    def add_nodes_from_string(self, data_string):
+        datax, values = data_string.strip().split('=', 1)
+        data_level = int(datax[4:])
+        if data_level not in self._data_levels:
+            self._data_levels.append(data_level)
+        data_index = self._data_levels.index(data_level)
+        self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
+
+    def coords_from_data_to_nodes(self, data_line):
+        coords = []
+        coordlist = data_line.strip().lstrip('(').rstrip(')')
+        for a in coordlist.split('),('):
+            latitude, longitude = a.split(',')
+            self.set_obj_bounding_box(float(latitude), float(longitude))
+            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
+        return coords
+
+    def set_obj_bounding_box(self, latitude, longitude):
+        if self._bounding_box_N is None:
+            self._bounding_box_S = latitude
+            self._bounding_box_N = latitude
+            self._bounding_box_E = longitude
+            self._bounding_box_W = longitude
+        else:
+            if latitude <= self._bounding_box_S :
+                self._bounding_box_S = latitude
+            elif latitude >= self.obj_bounding_box['N']:
+                self._bounding_box_N = latitude
+            if longitude <= self._bounding_box_W:
+                self._bounding_box_W = longitude
+            elif longitude >= self._bounding_box_E:
+                self._bounding_box_E = longitude
+        return
+
+    def get_obj_bounding_box(self):
+        return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
+                'W': self._bounding_box_E}
+
+    def get_poly_nodes(self, data_level, qpointsf):
+        if data_level not in self._data_levels:
+            return None
+        returned_data = list()
+        for data_list in self._poly_data_points[self._data_levels.index(data_level)]:
+            if qpointsf:
+                returned_data.append([a.get_canvas_coords_as_qpointf() for a in data_list])
+            else:
+                returned_data.append(data_list)
+        return returned_data
+
+    def get_data_levels(self, qpointsf):
+        return self._data_levels
+
+
 class Node(object):
     """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude=None, longitude=None, projection=None):
@@ -83,6 +156,17 @@ class Node(object):
 
     def return_real_coords(self):
         return self.projection.canvas_to_geo()
+
+
+class Numbers(object):
+    # class for storing definitions of numbers along the roads
+    even = 2
+    odd = 1
+    both = 0
+
+    def __init__(self, numbers_defition):
+        # nody dla ktorych mamy definicje
+        self._node_num = []
 
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
