@@ -21,7 +21,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
 
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 
-class Node1(QPointF):
+class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude=None, longitude=None, x=None, y=None, projection=None):
         # self.acuracy = 10000
@@ -29,8 +29,7 @@ class Node1(QPointF):
         if projection is not None:
             self.projection = projection
         if latitude is not None and longitude is not None:
-            _x, _y = self.projection.geo_to_canvas(self.latitude, self.longitude)
-            self.set_coordinates(latitude, longitude)
+            _x, _y = self.projection.geo_to_canvas(latitude, longitude)
         elif x is not None and y is not None:
             _x = x
             _y = y
@@ -77,7 +76,7 @@ class Node1(QPointF):
         return QPointF(self.x(), self.y())
 
 
-class Node(object):
+class Node1(object):
     """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude=None, longitude=None, projection=None):
         # self.acuracy = 10000
@@ -181,7 +180,7 @@ class Data_X1(object):
             self._data_levels.append(_data_level)
             self._poly_data_points.append([])
         data_index = self._data_levels.index(_data_level)
-        self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
+        self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(data_string))
         self._last_data_level = _data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
 
@@ -265,6 +264,13 @@ class Data_X1(object):
 
     def get_last_data_level_and_last_index(self):
         return self._last_data_level, self._last_poly_data_index
+
+    def add_hlevels_from_string(self, hlevels_definition):
+        for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
+            node_num, level_val = hlevel_def.split(',')
+            self.add_hlevel_to_node(int(node_num), int(level_val))
+    def add_hlevel_to_node(self, node_num, level_val):
+        self._poly_data_points[self._last_data_level][self._last_poly_data_index][node_num].set_hlevel_definition(level_val)
 
 
 
@@ -521,25 +527,16 @@ class BasicMapItem(object):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
         data_level = int(dataX[4:])
-        return self.data0.get_polynodes(data_level, False)
-        if datax == 'data0':
-            return self.data0.get_nodes() if self.data0 is not None else tuple()
-        elif datax == 'data1':
-            return self.data1.get_nodes() if self.data1 is not None else tuple()
-        elif datax == 'data2':
-            return self.data2.get_nodes() if self.data2 is not None else tuple()
-        elif datax == 'data3':
-            return self.data3.get_nodes() if self.data3 is not None else tuple()
-        elif datax == 'data4':
-            return self.data4.get_nodes() if self.data4 is not None else tuple()
+        return self.data0.get_poly_nodes(data_level, False)
 
     def set_datax(self, data012345, data012345_val):
         if self.data0 is None:
             self.data0 = Data_X1(projection=self.projection)
         self.data0.add_nodes_from_string(data012345, data012345_val)
+        self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
         return
-        datax = data012345.lower()
 
+        datax = data012345.lower()
         if datax == 'data0':
             if self.data0 is None:
                 self.data0 = Data_X(data_level=0)
@@ -586,21 +583,18 @@ class BasicMapItem(object):
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
 
-    def set_obj_bounding_box(self, latitude, longitude):
+    def set_obj_bounding_box(self, obj_bb):
         if not self.obj_bounding_box:
-            self.obj_bounding_box['S'] = latitude
-            self.obj_bounding_box['N'] = latitude
-            self.obj_bounding_box['E'] = longitude
-            self.obj_bounding_box['W'] = longitude
+            self.obj_bounding_box['S'] = obj_bb['S']
+            self.obj_bounding_box['N'] = obj_bb['N']
+            self.obj_bounding_box['E'] = obj_bb['E']
+            self.obj_bounding_box['W'] = obj_bb['W']
         else:
-            if latitude <= self.obj_bounding_box['S']:
-                self.obj_bounding_box['S'] = latitude
-            elif latitude >= self.obj_bounding_box['N']:
-                self.obj_bounding_box['N'] = latitude
-            if longitude <= self.obj_bounding_box['W']:
-                self.obj_bounding_box['W'] = longitude
-            elif longitude >= self.obj_bounding_box['E']:
-                self.obj_bounding_box['E'] = longitude
+            self.obj_bounding_box['S'] = min(self.obj_bounding_box['S'], obj_bb['S'])
+            self.obj_bounding_box['N'] = max(self.obj_bounding_box['N'], obj_bb['N'])
+            self.obj_bounding_box['W'] = min(self.obj_bounding_box['W'], obj_bb['W'])
+            self.obj_bounding_box['E'] = max(self.obj_bounding_box['E'], obj_bb['E'])
+
         return
 
     def get_hlevels(self, level_for_data):
@@ -621,33 +615,10 @@ class BasicMapItem(object):
         return self.hlevels_other if self.hlevels_other is not None else tuple()
 
     def set_hlevels(self, hlevel_items):
-        _hlevel = []
         for hlevel_item in hlevel_items.lstrip('(').rstrip(')').split('),('):
-            _hlevel.append(self.last_data_level.get_translated_hlevels(hlevel_item.split(',')))
-        if self.last_data_level.get_data_level() == 0:
-            if self.hlevels0 is None:
-                self.hlevels0 = []
-            self.hlevels0 += _hlevel
-        elif self.last_data_level.get_data_level() == 1:
-            if self.hlevels1 is None:
-                self.hlevels1 = []
-            self.hlevels1 += _hlevel
-        elif self.last_data_level.get_data_level() == 2:
-            if self.hlevels2 is None:
-                self.hlevels2 = []
-            self.hlevels2 += _hlevel
-        elif self.last_data_level.get_data_level() == 3:
-            if self.hlevels3 is None:
-                self.hlevels3 = []
-            self.hlevels3 += _hlevel
-        elif self.last_data_level.get_data_level() == 4:
-            if self.hlevels4 is None:
-                self.hlevels4 = []
-            self.hlevels4 += _hlevel
-        else:
-            if self.hlevels_other is None:
-                self.hlevels_other = []
-            self.hlevels_other += _hlevel
+            self.data0.add_hlevels_from_string(hlevel_item)
+        return
+
 
 
 class BasicSignRestrict(object):
@@ -1294,6 +1265,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                 self.setPath(self._mp_data[level])
                 self.current_data_x = level
 
+    # niepotrzebne
     def set_mp_hlevels(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
             data = self.get_hlevels(given_level)

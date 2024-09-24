@@ -93,7 +93,7 @@ class mapCanvas(QGraphicsScene):
             #     if mapobject.get_datax(data_x):
             mapobject.set_mp_data()
             #    if mapobject.get_hlevels(data_x):
-            mapobject.set_mp_hlevels()
+            # mapobject.set_mp_hlevels()
             self.addItem(mapobject)
             if mapobject.get_param('DirIndicator'):
                 mapobject.set_mp_dir_indicator(True)
