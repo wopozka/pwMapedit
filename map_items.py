@@ -175,15 +175,14 @@ class Data_X1(object):
         # definicje numeracji
         self._numbers_definitions = None
 
-    def add_nodes_from_string(self, data_string):
-        datax, values = data_string.strip().split('=', 1)
-        data_level = int(datax[4:])
-        if data_level not in self._data_levels:
-            self._data_levels.append(data_level)
+    def add_nodes_from_string(self, data_level, data_string):
+        _data_level = int(data_level[4:])
+        if _data_level not in self._data_levels:
+            self._data_levels.append(_data_level)
             self._poly_data_points.append([])
-        data_index = self._data_levels.index(data_level)
+        data_index = self._data_levels.index(_data_level)
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
-        self._last_data_level = data_level
+        self._last_data_level = _data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
 
     def add_housenumbers_from_string(self, num_string, data_level, cur_poly_num):
@@ -356,17 +355,17 @@ class BasicMapItem(object):
         self.phone = None
         self.cityidx = None
         self.data0 = None
-        self.data1 = None
-        self.data2 = None
-        self.data3 = None
-        self.data4 = None
+        # self.data1 = None
+        # self.data2 = None
+        # self.data3 = None
+        # self.data4 = None
         self.last_data_level = None
-        self.hlevels0 = None
-        self.hlevels1 = None
-        self.hlevels2 = None
-        self.hlevels3 = None
-        self.hlevels4 = None
-        self.hlevels_other = None
+        # self.hlevels0 = None
+        # self.hlevels1 = None
+        # self.hlevels2 = None
+        # self.hlevels3 = None
+        # self.hlevels4 = None
+        # self.hlevels_other = None
         self.routeparam = None
         self.cityname = None
         self.countryname = None
@@ -521,7 +520,8 @@ class BasicMapItem(object):
     def get_datax(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
-        datax = dataX.lower()
+        data_level = int(dataX[4:])
+        return self.data0.get_polynodes(data_level, False)
         if datax == 'data0':
             return self.data0.get_nodes() if self.data0 is not None else tuple()
         elif datax == 'data1':
@@ -534,7 +534,12 @@ class BasicMapItem(object):
             return self.data4.get_nodes() if self.data4 is not None else tuple()
 
     def set_datax(self, data012345, data012345_val):
+        if self.data0 is None:
+            self.data0 = Data_X1(projection=self.projection)
+        self.data0.add_nodes_from_string(data012345, data012345_val)
+        return
         datax = data012345.lower()
+
         if datax == 'data0':
             if self.data0 is None:
                 self.data0 = Data_X(data_level=0)
