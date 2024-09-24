@@ -21,6 +21,82 @@ Numbers_Definition = namedtuple('Numbers_Definition',
 
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 
+class Node1(QPointF):
+    """Class used for storing coordinates of given map object point"""
+    def __init__(self, latitude=None, longitude=None, projection=None):
+        # self.acuracy = 10000
+        self.projection = None
+        self.latitude = None
+        self.longitude = None
+        if projection is not None:
+            self.projection = projection
+        if latitude is not None and longitude is not None:
+            self.set_coordinates(latitude, longitude)
+        self._numbers_definitions = None
+        self._hlevel_definition = None
+        x, y = self.get_canvas_coords()
+        super(Node, self).__init__(x, y)
+
+    def set_coordinates(self, latitude, longitude):
+        self.longitude = longitude
+        self.latitude = latitude
+
+    def set_numbers_definition(self, definition):
+        pass
+
+    def get_numbers_definition(self):
+        return self._numbers_definitions
+
+    def set_hlevel_definition(self, definition):
+        pass
+
+    def get_hlevel_definition(self):
+        return self._hlevel_definition
+
+    def get_coordinates(self):
+        return self.latitude, self.longitude
+
+    def get_canvas_coords(self):
+        # print(Store.projection.projectionName)
+        return self.x()
+        return self.projection.geo_to_canvas(self.latitude, self.longitude)
+
+    def get_canvas_coords_as_qpointf(self):
+        x, y = self.get_canvas_coords()
+        return QPointF(x, y)
+
+    def return_real_coords(self):
+        return self.projection.canvas_to_geo()
+
+
+class Node(object):
+    """Class used for storing coordinates of given map object point"""
+    def __init__(self, latitude=None, longitude=None, projection=None):
+        # self.acuracy = 10000
+        self.projection = None
+        self.latitude = None
+        self.longitude = None
+        if projection is not None:
+            self.projection = projection
+        if latitude is not None and longitude is not None:
+            self.set_coordinates(latitude, longitude)
+
+    def set_coordinates(self, latitude, longitude):
+        self.longitude = longitude
+        self.latitude = latitude
+
+    def get_coordinates(self):
+        return self.latitude, self.longitude
+
+    def get_canvas_coords(self):
+        # print(Store.projection.projectionName)
+        return self.projection.geo_to_canvas(self.latitude, self.longitude)
+
+    def get_canvas_coords_as_qpointf(self):
+        x, y = self.get_canvas_coords()
+        return QPointF(x, y)
+
+
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
     def __init__(self, data_level=0):
@@ -183,44 +259,7 @@ class Data_X1(object):
     def get_last_data_level_and_last_index(self):
         return self._last_data_level, self._last_poly_data_index
 
-class Node(object):
-    """Class used for storing coordinates of given map object point"""
-    def __init__(self, latitude=None, longitude=None, projection=None):
-        # self.acuracy = 10000
-        self.projection = None
-        self.latitude = None
-        self.longitude = None
-        if projection is not None:
-            self.projection = projection
-        if latitude is not None and longitude is not None:
-            self.set_coordinates(latitude, longitude)
 
-    def set_coordinates(self, latitude, longitude):
-        self.longitude = longitude
-        self.latitude = latitude
-
-    def get_coordinates(self):
-        return self.latitude, self.longitude
-
-    def get_canvas_coords(self):
-        # print(Store.projection.projectionName)
-        return self.projection.geo_to_canvas(self.latitude, self.longitude)
-
-    def get_canvas_coords_as_qpointf(self):
-        x, y = self.get_canvas_coords()
-        return QPointF(x, y)
-
-    def return_real_coords(self):
-        return self.projection.canvas_to_geo()
-
-
-Numbers_Definition = namedtuple('Numbers_Definition',
-                                ['left_side_numbering_style',
-                                 'first_number_on_left_ide', 'last_number_on_left_side', 'right_side_numbering_style',
-                                 'first_number_on_right_side', 'last_number_on_right_side', 'left_side_zip_code',
-                                 'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
-                                 'right_side_city', 'right_side_region', 'right_side_country']
-                                )
 
 
 class Numbers(object):
