@@ -11,6 +11,15 @@ from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterP
 from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
+Numbers_Definition = namedtuple('Numbers_Definition',
+                                ['left_side_numbering_style',
+                                 'first_number_on_left_ide', 'last_number_on_left_side', 'right_side_numbering_style',
+                                 'first_number_on_right_side', 'last_number_on_right_side', 'left_side_zip_code',
+                                 'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
+                                 'right_side_city', 'right_side_region', 'right_side_country']
+                                )
+
+Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 
 class Data_X(object):
     """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
@@ -79,6 +88,9 @@ class Data_X1(object):
         self._last_data_level = 0
         self._last_poly_data_index = 0
 
+        # definicje numeracji
+        self._numbers_definitions = None
+
     def add_nodes_from_string(self, data_string):
         datax, values = data_string.strip().split('=', 1)
         data_level = int(datax[4:])
@@ -89,6 +101,40 @@ class Data_X1(object):
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(values))
         self._last_data_level = data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
+
+    def add_housenumbers_from_string(self, num_string, data_level, cur_poly_num):
+        _, definition = num_string.split('=', 1)
+        numbers_indexes = (0, 2, 3, 5, 6)
+        num_def = [None for _ in range(10)]
+        index_of_point_in_the_polyline, definition = definition.split(',', 1)
+        index_of_point_in_the_polyline = int(index_of_point_in_the_polyline)
+        for no, elem in enumerate(definition.split(',')):
+            if elem == '-1' or not elem.isdigit():
+                continue
+            elif no in numbers_indexes:
+                num_def[no] = int(elem)
+            else:
+                num_def[no] = elem
+        if self._numbers_definitions is None:
+            self._numbers_definitions = OrderedDict()
+        n_index = Number_Index(data_level, cur_poly_num, index_of_point_in_the_polyline)
+        self._numbers_definitions[n_index] = Numbers_Definition(num_def[0], num_def[1], num_def[2], num_def[3],
+                                                                num_def[4], num_def[5], num_def[6], num_def[7],
+                                                                num_def[8], num_def[9], num_def[10], num_def[11],
+                                                                num_def[12], num_def[13])
+
+    def get_housenumbers_nodes_defs(self, data_level, cur_poly_num):
+        housenumbers = []
+        for node in self._numbers_definitions:
+            if node.data_level != data_level:
+                continue
+            if node.cur_poly_num == cur_poly_num:
+                housenumbers.append(self._numbers_definitions[node])
+        return housenumbers
+
+    def update_housenumbers_after_point_insert(self):
+        pass
+
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -169,7 +215,7 @@ class Node(object):
 
 
 Numbers_Definition = namedtuple('Numbers_Definition',
-                                ['index_of_point_in_the_polyline', 'left_side_numbering_style',
+                                ['left_side_numbering_style',
                                  'first_number_on_left_ide', 'last_number_on_left_side', 'right_side_numbering_style',
                                  'first_number_on_right_side', 'last_number_on_right_side', 'left_side_zip_code',
                                  'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
