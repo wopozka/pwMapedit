@@ -23,50 +23,58 @@ Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_p
 
 class Node1(QPointF):
     """Class used for storing coordinates of given map object point"""
-    def __init__(self, latitude=None, longitude=None, projection=None):
+    def __init__(self, latitude=None, longitude=None, x=None, y=None, projection=None):
         # self.acuracy = 10000
         self.projection = None
-        self.latitude = None
-        self.longitude = None
         if projection is not None:
             self.projection = projection
         if latitude is not None and longitude is not None:
+            _x, _y = self.projection.geo_to_canvas(self.latitude, self.longitude)
             self.set_coordinates(latitude, longitude)
+        elif x is not None and y is not None:
+            _x = x
+            _y = y
         self._numbers_definitions = None
         self._hlevel_definition = None
-        x, y = self.get_canvas_coords()
-        super(Node, self).__init__(x, y)
+        super(Node, self).__init__(_x, _y)
 
-    def set_coordinates(self, latitude, longitude):
-        self.longitude = longitude
-        self.latitude = latitude
+    # def set_coordinates(self, latitude, longitude):
+    #     self.longitude = longitude
+    #     self.latitude = latitude
 
     def set_numbers_definition(self, definition):
-        pass
+        numbers_indexes = (0, 2, 3, 5, 6)
+        num_def = [None for _ in range(13)]
+        for no, elem in enumerate(definition.split(',')):
+            if elem == '-1' or not elem.isdigit():
+                continue
+            elif no in numbers_indexes:
+                num_def[no] = int(elem)
+            else:
+                num_def[no] = elem
+        self._numbers_definitions = Numbers_Definition(num_def[0], num_def[1], num_def[2], num_def[3],
+                                                                num_def[4], num_def[5], num_def[6], num_def[7],
+                                                                num_def[8], num_def[9], num_def[10], num_def[11],
+                                                                num_def[12], num_def[13])
 
     def get_numbers_definition(self):
         return self._numbers_definitions
 
     def set_hlevel_definition(self, definition):
-        pass
+        self._hlevel_definition = definition
 
     def get_hlevel_definition(self):
         return self._hlevel_definition
 
-    def get_coordinates(self):
-        return self.latitude, self.longitude
+    def get_geo_coordinates(self):
+        return self.projection.geo_to_canvas(self.x(), self.y())
 
     def get_canvas_coords(self):
-        # print(Store.projection.projectionName)
-        return self.x()
+        return self.x(), self.y()
         return self.projection.geo_to_canvas(self.latitude, self.longitude)
 
     def get_canvas_coords_as_qpointf(self):
-        x, y = self.get_canvas_coords()
-        return QPointF(x, y)
-
-    def return_real_coords(self):
-        return self.projection.canvas_to_geo()
+        return QPointF(self.x(), self.y())
 
 
 class Node(object):
