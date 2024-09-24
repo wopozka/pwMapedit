@@ -73,7 +73,14 @@ class Node(QPointF):
         return self.projection.geo_to_canvas(self.latitude, self.longitude)
 
     def get_canvas_coords_as_qpointf(self):
+        return self
         return QPointF(self.x(), self.y())
+
+    def get_deep_copy(self):
+        node = Node(x=self.x(), y=self.y(), projection=self.projection)
+        node.set_hlevel_definition(self.get_hlevel_definition())
+        node.set_numbers_definition(self.get_numbers_definition())
+        return node
 
 
 class Node1(object):
@@ -536,34 +543,6 @@ class BasicMapItem(object):
         self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
         return
 
-        datax = data012345.lower()
-        if datax == 'data0':
-            if self.data0 is None:
-                self.data0 = Data_X(data_level=0)
-            self.data0.add_points(self.coords_from_data_to_nodes(data012345_val))
-            self.last_data_level = self.data0
-        elif datax == 'data1':
-            if self.data1 is None:
-                self.data1 = Data_X(data_level=1)
-            self.data1.add_points(self.coords_from_data_to_nodes(data012345_val))
-            self.last_data_level = self.data1
-        elif datax == 'data2':
-            if self.data2 is None:
-                self.data2 = Data_X(data_level=2)
-            self.data2.add_points(self.coords_from_data_to_nodes(data012345_val))
-            self.last_data_level = self.data2
-        elif datax == 'data3':
-            if self.data3 is None:
-                self.data3 = Data_X(data_level=3)
-            self.data3.add_points(self.coords_from_data_to_nodes(data012345_val))
-            self.last_data_level = self.data3
-        elif datax == 'data4':
-            if self.data4 is None:
-                self.data4 = Data_X(data_level=4)
-            self.data4.add_points(self.coords_from_data_to_nodes(data012345_val))
-            self.last_data_level = self.data4
-        return
-
     def set_others(self, key, value):
         self.others[key] = value
 
@@ -598,6 +577,7 @@ class BasicMapItem(object):
         return
 
     def get_hlevels(self, level_for_data):
+        # do redefinicji
         if isinstance(level_for_data, int):
             level = level_for_data
         else:
@@ -941,7 +921,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = []
         for poly in path.toSubpathPolygons():
             # kopiuje wspolrzedne punktow esplicite, bo przez jakas referencje qpointf z path sie zmienialy
-            poly_coords = [QPointF(p.x(), p.y()) for p in tuple(poly)]
+            poly_coords = [p.get_deep_copy() for p in tuple(poly)]
             if type_polygon and poly.isClosed():
                 poly_coords.pop()
             polygons.append(poly_coords)
@@ -1259,7 +1239,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             level = int(given_level[-1])
             polylines_list = list()
             for nodes in data:
-                polylines_list.append([node.get_canvas_coords_as_qpointf() for node in nodes])
+                polylines_list.append(nodes)
             self._mp_data[level] = self.create_painter_path(polylines_list, type_polygon=False)
             if self.path().isEmpty():
                 self.setPath(self._mp_data[level])
@@ -1441,7 +1421,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             level = int(given_level[-1])
             nodes_qpointfs = list()
             for nodes in data:
-                nodes_qpointfs.append([a.get_canvas_coords_as_qpointf() for a in nodes])
+                nodes_qpointfs.append(nodes)
             self._mp_data[level] = self.create_painter_path(nodes_qpointfs, type_polygon=True)
             if self.path().isEmpty():
                 self.setPath(self._mp_data[level])
