@@ -1274,7 +1274,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             for polygon_node_num, polygon_node in enumerate(polygon):
                 if hlevels[poly_num] is None:
                     continue
-                self.hlevel_labels.append(PolylineLevelNumber(hlevels[poly_num], self))
+                self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
                 self.hlevel_labels[-1].setPos(polygon_node)
 
     def update_hlevel_labels(self):
@@ -1505,11 +1505,11 @@ class PolylineAddressNumber(MapLabels):
 
 
 class PolylineLevelNumber(MapLabels):
-
+    arrow_up = '\u2191'
     def __init__(self, text, parent):
         self.parent = parent
         if not isinstance(text, str):
-            text = str(text) + ' hlevel'
+            text = self.arrow_up + str(text)
         super(PolylineLevelNumber, self).__init__(text, parent)
         self.set_transformation_flag()
 
