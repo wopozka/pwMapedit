@@ -1546,14 +1546,14 @@ class PolylineLevelNumber(MapLabels):
 
 class GripItem(QGraphicsPathItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
-    _pen = QPen(QColor('green'), 2)
+    _pen = QPen(QColor('green'), 1)
     #_pen.setCosmetic(True)
-    _first_grip_pen = QPen(QColor('red'), 2)
+    _first_grip_pen = QPen(QColor('red'), 1)
     #_first_grip_pen.setCosmetic(True)
     inactive_brush = QBrush(QColor('green'))
     _first_grip_inactive_brush = QBrush(QColor('red'))
     square = QPainterPath()
-    square.addRect(-2, -2, 4, 4)
+    square.addRect(-5, -5, 10, 10)
     active_brush = QBrush(QColor('red'))
     _first_grip_active_brush = QBrush(QColor('green'))
     # keep the bounding rect consistent
@@ -1569,7 +1569,7 @@ class GripItem(QGraphicsPathItem):
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
-                      | QGraphicsItem.ItemSendsGeometryChanges)
+                      | QGraphicsItem.ItemSendsGeometryChanges | QGraphicsItem.ItemIgnoresParentOpacity)
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setPath(self.square)
