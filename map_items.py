@@ -1303,9 +1303,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def remove_all_hlevel_labels(self):
         # called when map level is changed, for a new maplevel we need to remove old hlevels
-        for hl in tuple(self.hlevel_labels.keys()):
-            self.scene().removeItem(self.hlevel_labels[hl])
-            del self.hlevel_labels[hl]
+        for hl in tuple(self.hlevel_labels):
+            self.scene().removeItem(hl)
         self.hlevel_labels = None
 
 
@@ -1343,6 +1342,14 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def is_point_removal_possible(num_elems_in_path):
         return num_elems_in_path >= 2
 
+    def paint(self, painter, option, widget=None):
+        recreate_hlevel_labels = False
+        if self.hlevel_labels is not None and self.hlevel_labels:
+            self.remove_all_hlevel_labels()
+            recreate_hlevel_labels = True
+        super().paint(painter, option, widget=None)
+        if recreate_hlevel_labels:
+            self.add_hlevel_labels()
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
