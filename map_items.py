@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
 from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D
+from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
@@ -41,23 +41,18 @@ class Node(QPointF):
     #     self.longitude = longitude
     #     self.latitude = latitude
 
-    def set_numbers_definition(self, definition):
-        numbers_indexes = (0, 2, 3, 5, 6)
-        num_def = [None for _ in range(13)]
-        for no, elem in enumerate(definition.split(',')):
-            if elem == '-1' or not elem.isdigit():
-                continue
-            elif no in numbers_indexes:
-                num_def[no] = int(elem)
-            else:
-                num_def[no] = elem
-        self._numbers_definitions = Numbers_Definition(num_def[0], num_def[1], num_def[2], num_def[3],
-                                                                num_def[4], num_def[5], num_def[6], num_def[7],
-                                                                num_def[8], num_def[9], num_def[10], num_def[11],
-                                                                num_def[12], num_def[13])
+    def set_numbers_definition(self, position, definition):
+        if self._numbers_definitions is None:
+            self._numbers_definitions = Numbers_Definition(*[None for a in range(14)])
+        definitions = list(self._numbers_definitions)
+        definitions[position] = definition
+        self._numbers_definitions = Numbers_Definition(*definitions)
 
     def get_numbers_definition(self):
         return self._numbers_definitions
+
+    def clear_numbers_definiton(self):
+        self._numbers_definitions = None
 
     def set_hlevel_definition(self, definition):
         self._hlevel_definition = definition
@@ -209,8 +204,31 @@ class Data_X1(object):
         Returns: None
         -------
         """
-        node_num, definition = definition.split(',', 1)
-        self._poly_data_points[data_level][poly_num][int(node_num)].set_numbers_definition(definition)
+        num_data = definition.split(',')
+        node_num = int(num_data[0])
+        left_style = num_data[1]
+        left_start = int(num_data[2]) if left_style != 'N' else None
+        left_end = int(num_data[3]) if left_style != 'N' else None
+        right_style = num_data[4]
+        right_start = int(num_data[5]) if right_style != 'N' else None
+        right_end = int(num_data[6]) if right_style != 'N' else None
+
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(0, left_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(1, left_start)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(3, right_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(4, right_start)
+        last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
+        if last_node_def is not None:
+            last_left_end = last_node_def.last_number_on_left_side
+            last_right_end = last_node_def.last_number_on_right_side
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(2, last_left_end)
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(5, last_right_end)
+            self._poly_data_points[data_level][poly_num][node_num].clear_numbers_definiton()
+        if left_start is not None or right_start is not None:
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition(2, left_end)
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition(5, right_end)
+
+        # self._poly_data_points[data_level][poly_num][int(node_num)].set_numbers_definition(definition)
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
         return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
@@ -380,7 +398,7 @@ class BasicMapItem(object):
             elif number_keyname[1].startswith('Nod'):
                 pass
             elif number_keyname[1].startswith('Numbers'):
-                pass
+                self.set_housenumbers_along_road(obj_data[number_keyname])
             elif number_keyname[1].startswith('HLevel'):
                 self.set_hlevels(obj_data[number_keyname])
             # elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
@@ -1505,12 +1523,22 @@ class PolygonLabel(MapLabels):
     def get_label_pos(self):
         return self.parent.boundingRect().center()
 
-class PolylineAddressNumber(MapLabels):
+class PolylineAddressNumber(QPainterPath):
 
-    def __init__(self, text, parent):
+    def __init__(self, number_definition, position, vector_before_node, vector_after_node, parent):
         self.parent = parent
-        super(PolylineAddressNumber, self).__init__(text, parent)
-        self.set_transformation_flag()
+        super(PolylineAddressNumber, self).__init__(parent)
+        # self.set_transformation_flag()
+        self.setPos(position)
+        _font = QFont()
+        if number_definition.first_number_on_left_side is not None:
+            self.addText(position + vector_before_node, _font, number_definition.first_number_on_left_side)
+        if number_definition.last_number_on_left_side is not None:
+            self.addText(position + vector_after_node, _font, number_definition.last_number_on_left_side)
+        if number_definition.first_number_on_right_side is not None:
+            self.addText(position - vector_before_node, _font, number_definition.first_number_on_right_side)
+        if number_definition.last_number_on_left_side is not None:
+            self.addText(position - vector_after_node, _font, number_definition.last_number_on_right_side)
 
 
 class PolylineLevelNumber(MapLabels):
