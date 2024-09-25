@@ -952,6 +952,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.node_grip_items:
             self.undecorate()
         self.setZValue(self.zValue() + 100)
+        self.setOpacity(0.5)
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
@@ -974,6 +975,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def undecorate(self):
         print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
         self.setZValue(self.zValue() - 100)
+        self.setOpacity(1)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         scene = self.scene()
         for grip_item in self.node_grip_items:
@@ -1527,7 +1529,12 @@ class PolylineLevelNumber(MapLabels):
 
     def setPos(self, position):
         _, _, pheight, pwidth = self.boundingRect().getRect()
-        super().setPos(position + QPointF(-pwidth/2, -pheight/2))
+        scale = 1
+        # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
+        # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skali
+        if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+            scale = self.scene().get_viewer_scale()
+        super().setPos(position + QPointF(-pwidth/scale/2, -pheight/scale/2))
 
     def paint(self, painter, option, widget):
         brush = QBrush(Qt.yellow)
