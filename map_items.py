@@ -1272,7 +1272,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for poly_num, polygon in enumerate(self.get_polygons_from_path(self.path(), type_polygon=False)):
             hlevels = self.get_hlevels_for_poly(self.current_data_x, poly_num)
             for polygon_node_num, polygon_node in enumerate(polygon):
-                print(poly_num, hlevels[polygon_node_num])
                 if hlevels[polygon_node_num] is None:
                     continue
                 self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
@@ -1516,10 +1515,12 @@ class PolylineLevelNumber(MapLabels):
             text = self.arrow_up + text
         super(PolylineLevelNumber, self).__init__(text, parent)
         self.set_transformation_flag()
+        _, _, pheight, pwidth = self.boundingRect().getRect()
+        self.setTransformOriginPoint(pheight/2, pwidth/2)
 
     def setPos(self, position):
         _, _, pheight, pwidth = self.boundingRect().getRect()
-        super().setPos(position + QPointF(0, -pheight/2))
+        super().setPos(position + QPointF(-pwidth/2, -pheight/2))
 
     def paint(self, painter, option, widget):
         brush = QBrush(Qt.yellow)
