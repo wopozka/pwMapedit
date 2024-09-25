@@ -13,7 +13,7 @@ from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
 Numbers_Definition = namedtuple('Numbers_Definition',
                                 ['left_side_numbering_style',
-                                 'first_number_on_left_ide', 'last_number_on_left_side', 'right_side_numbering_style',
+                                 'first_number_on_left_side', 'last_number_on_left_side', 'right_side_numbering_style',
                                  'first_number_on_right_side', 'last_number_on_right_side', 'left_side_zip_code',
                                  'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
                                  'right_side_city', 'right_side_region', 'right_side_country']
@@ -191,39 +191,32 @@ class Data_X1(object):
         self._last_data_level = _data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
 
-    def add_housenumbers_from_string(self, num_string, data_level, cur_poly_num):
-        _, definition = num_string.split('=', 1)
-        numbers_indexes = (0, 2, 3, 5, 6)
-        num_def = [None for _ in range(10)]
-        index_of_point_in_the_polyline, definition = definition.split(',', 1)
-        index_of_point_in_the_polyline = int(index_of_point_in_the_polyline)
-        for no, elem in enumerate(definition.split(',')):
-            if elem == '-1' or not elem.isdigit():
-                continue
-            elif no in numbers_indexes:
-                num_def[no] = int(elem)
-            else:
-                num_def[no] = elem
-        if self._numbers_definitions is None:
-            self._numbers_definitions = OrderedDict()
-        n_index = Number_Index(data_level, cur_poly_num, index_of_point_in_the_polyline)
-        self._numbers_definitions[n_index] = Numbers_Definition(num_def[0], num_def[1], num_def[2], num_def[3],
-                                                                num_def[4], num_def[5], num_def[6], num_def[7],
-                                                                num_def[8], num_def[9], num_def[10], num_def[11],
-                                                                num_def[12], num_def[13])
+    def add_housenumbers_from_string(self, num_string):
+        data_level, poly_num = self.get_last_data_level_and_last_index()
+        if '=' in num_string:
+            _, definition = num_string.split('=', 1)
+        else:
+            definition = num_string
+        self.add_housenumbers_to_node(data_level, poly_num, definition)
 
-    def get_housenumbers_nodes_defs(self, data_level, cur_poly_num):
-        housenumbers = []
-        for node in self._numbers_definitions:
-            if node.data_level != data_level:
-                continue
-            if node.cur_poly_num == cur_poly_num:
-                housenumbers.append(self._numbers_definitions[node])
-        return housenumbers
+    def add_housenumbers_to_node(self, data_level, poly_num, definition):
+        """
+        Parameters
+        ----------
+        data_level: int, 0, 1, 2, 3, 4, odpowiada Data0, Data1, Data2, Data3, Data4
+        poly_num: int, 0, 1, 2, 3, 4..., kolejny numer polyline/polygon
+        definition: string: definicja Numbers w pliku mp
+        Returns: None
+        -------
+        """
+        node_num, definition = definition.split(',', 1)
+        self._poly_data_points[data_level][poly_num][int(node_num)].set_numbers_definition(definition)
+
+    def get_housenumbers_for_poly(self, data_level, poly_num):
+        return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
 
     def update_housenumbers_after_point_insert(self):
         pass
-
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -276,67 +269,12 @@ class Data_X1(object):
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
             node_num, level_val = hlevel_def.split(',')
             self.add_hlevel_to_node(int(node_num), int(level_val))
+
     def add_hlevel_to_node(self, node_num, level_val):
         self._poly_data_points[self._last_data_level][self._last_poly_data_index][node_num].set_hlevel_definition(level_val)
 
-
-
-
-class Numbers(object):
-    # class for storing definitions of numbers along the roads
-    even = 2
-    odd = 1
-    both = 0
-
-    def __init__(self, numbers_defition):
-        # przechowuje informacje pod ktorym indeksem jest przechowywana jaki level
-        self._data_levels = []
-        # przechowuje informacje dla ktorego kolejnej polyline sa dane dla danego _data_levels
-        self._poly_num = []
-        # konkretne definicje - lista, list, list
-        self._numbers_definitions = []
-
-    def add_definitions_from_string(self, num_string, data_level, cur_poly_num):
-        _, definition = num_string.split('=', 1)
-        numbers_indexes = (0, 2, 3, 5, 6)
-        num_def = [None for _ in range(10)]
-        for no, elem in enumerate(definition.split(',')):
-            if elem == '-1' or not elem.isdigit():
-                continue
-            elif no in numbers_indexes:
-                num_def[no] = int(elem)
-            else:
-                num_def[no] = elem
-        if data_level in self._data_levels:
-            dl_index = self._data_levels.index(data_level)
-        else:
-            dl_index = len(self._data_levels)
-            self._data_levels.append(data_level)
-            self._poly_num.append([])
-            # self._numbers_definitions.append([[]])
-        if cur_poly_num in self._poly_num[dl_index]:
-            poly_index = self._poly_num[dl_index].index(cur_poly_num)
-        else:
-            poly_index = len(self._poly_num[dl_index])
-            self._poly_num[dl_index].append(cur_poly_num)
-            self._numbers_definitions[poly_index].append([])
-        self._numbers_definitions[dl_index][poly_index].append(Numbers_Definition(num_def[0], num_def[1], num_def[2],
-                                                                                  num_def[3], num_def[4], num_def[5],
-                                                                                  num_def[6], num_def[7], num_def[8],
-                                                                                  num_def[9], num_def[10], num_def[11],
-                                                                                  num_def[12], num_def[13], num_def[14]
-                                                                                  )
-                                                               )
-
-    def get_data_levels(self):
-        return self._data_levels
-
-    def get_poly_numbers(self, data_level):
-        return self._poly_num[data_level]
-
-    def get_number_definition(self, data_level, poly_num):
-        return self._numbers_definitions[data_level][poly_num]
-
+    def get_hlevels_for_poly(self, data_level, poly_num):
+        return [node.get_hlevel_definition() for node in self._poly_data_points[data_level][poly_num]]
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
@@ -599,6 +537,11 @@ class BasicMapItem(object):
             self.data0.add_hlevels_from_string(hlevel_item)
         return
 
+    def set_housenumbers_along_road(self, numbers_definition):
+        self.data0.add_housenumbers_from_string(numbers_definition)
+
+    def get_housenumbers_along_road(self):
+        return self.data0.get_housenumbers_nodes_defs()
 
 
 class BasicSignRestrict(object):
@@ -921,7 +864,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = []
         for poly in path.toSubpathPolygons():
             # kopiuje wspolrzedne punktow esplicite, bo przez jakas referencje qpointf z path sie zmienialy
-            poly_coords = [p.get_deep_copy() for p in tuple(poly)]
+            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
             if type_polygon and poly.isClosed():
                 poly_coords.pop()
             polygons.append(poly_coords)
@@ -1014,9 +957,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
             # elapsed = datetime.now()
+            hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
+            numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
             for polygon_node_num, polygon_node in enumerate(polygon):
                 square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
-                                  self.get_hlevel_for_node(polygon_node_num), self)
+                                  hlevels[polygon_node_num], numbers[polygon_node_num], self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
@@ -1215,8 +1160,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def is_in_node_edit_mode(self):
         return True if self.node_grip_items else False
 
-    def get_hlevel_for_node(self, node_num):
-        return None
+    def get_hlevels_for_poly(self, data_level, poly_num):
+        return self.data0.get_hlevels_for_poly(data_level, poly_num)
+
+    def get_housenumbers_for_poly(self, data_level, poly_num):
+        return self.data0.get_housenumbers_for_poly(data_level, poly_num)
+
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
@@ -1318,18 +1267,15 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def add_hlevel_labels(self):
         # add hlevel numbers dependly on map level
-        level = self.scene().get_map_level()
-        if not self._mp_hlevels[level]:
-            return
         if self.hlevel_labels is None:
-            self.hlevel_labels = dict()
-        path = self.path()
-        for node_num_value in self._mp_hlevels[level]:
-            node_num, value = node_num_value
-            position = QPointF(path.elementAt(node_num))
-            # print(position)
-            self.hlevel_labels[node_num] = PolylineLevelNumber(str(value) + ' ' + str(node_num), self)
-            self.hlevel_labels[node_num].setPos(position)
+            self.hlevel_labels = []
+        for poly_num, polygon in enumerate(self.get_polygons_from_path(self.path(), type_polygon=False)):
+            hlevels = self.get_hlevels_for_poly(self.current_data_x, poly_num)
+            for polygon_node_num, polygon_node in enumerate(polygon):
+                if hlevels[poly_num] is None:
+                    continue
+                self.hlevel_labels.append(PolylineLevelNumber(hlevels[poly_num], self))
+                self.hlevel_labels[-1].setPos(polygon_node)
 
     def update_hlevel_labels(self):
         # update numbers positions when nodes are moved around
@@ -1361,13 +1307,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(self.hlevel_labels[hl])
             del self.hlevel_labels[hl]
         self.hlevel_labels = None
-
-    def get_hlevel_for_node(self, node_num):
-        if self.hlevel_labels is None:
-            return None
-        if node_num in self.hlevel_labels:
-            return self.hlevel_labels[node_num].text()
-        return None
 
 
     def closest_point_to_poly(self, event_pos):
@@ -1591,11 +1530,12 @@ class GripItem(QGraphicsPathItem):
     _boundingRect = square.boundingRect()
     _accept_map_level_change = False
 
-    def __init__(self, pos, grip_indexes, hlevel, parent):
+    def __init__(self, pos, grip_indexes, hlevel, house_numbers, parent):
         super().__init__()
         self.grip_indexes = grip_indexes
         self.parent = parent
         self.hlevel = hlevel
+        self.house_numbers = house_numbers
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
