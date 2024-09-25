@@ -1272,7 +1272,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for poly_num, polygon in enumerate(self.get_polygons_from_path(self.path(), type_polygon=False)):
             hlevels = self.get_hlevels_for_poly(self.current_data_x, poly_num)
             for polygon_node_num, polygon_node in enumerate(polygon):
-                if hlevels[poly_num] is None:
+                print(poly_num, hlevels[polygon_node_num])
+                if hlevels[polygon_node_num] is None:
                     continue
                 self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
                 self.hlevel_labels[-1].setPos(polygon_node)
@@ -1506,12 +1507,26 @@ class PolylineAddressNumber(MapLabels):
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
+
     def __init__(self, text, parent):
         self.parent = parent
         if not isinstance(text, str):
             text = self.arrow_up + str(text)
+        else:
+            text = self.arrow_up + text
         super(PolylineLevelNumber, self).__init__(text, parent)
         self.set_transformation_flag()
+
+    def setPos(self, position):
+        _, _, pheight, pwidth = self.boundingRect().getRect()
+        super().setPos(position + QPointF(0, -pheight/2))
+
+    def paint(self, painter, option, widget):
+        brush = QBrush(Qt.yellow)
+        painter.setBrush(brush);
+        a, b, c, d = self.boundingRect().getRect()
+        painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
+        super().paint(painter, option, widget)
 
 
 class GripItem(QGraphicsPathItem):
