@@ -13,8 +13,8 @@ from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
 Numbers_Definition = namedtuple('Numbers_Definition',
                                 ['left_side_numbering_style',
-                                 'first_number_on_left_side', 'last_number_on_left_side', 'right_side_numbering_style',
-                                 'first_number_on_right_side', 'last_number_on_right_side', 'left_side_zip_code',
+                                 'left_side_number_before', 'left_side_number_after', 'right_side_numbering_style',
+                                 'right_side_number_before', 'right_side_number_after', 'left_side_zip_code',
                                  'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
                                  'right_side_city', 'right_side_region', 'right_side_country']
                                 )
@@ -219,8 +219,8 @@ class Data_X1(object):
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(4, right_start)
         last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
         if last_node_def is not None:
-            last_left_end = last_node_def.last_number_on_left_side
-            last_right_end = last_node_def.last_number_on_right_side
+            last_left_end = last_node_def.left_side_number_after
+            last_right_end = last_node_def.right_side_number_after
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(2, last_left_end)
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(5, last_right_end)
             self._poly_data_points[data_level][poly_num][node_num].clear_numbers_definiton()
@@ -532,6 +532,7 @@ class BasicMapItem(object):
 
         return
 
+    # niepotrzebne
     def get_hlevels(self, level_for_data):
         # do redefinicji
         if isinstance(level_for_data, int):
@@ -888,6 +889,19 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons.append(poly_coords)
         return polygons
 
+    @staticmethod
+    def get_polygons_vectors(path, type_polygon=False):
+        polygon_vectors = []
+        for poly in path.toSubpathPolygons():
+            vectors = []
+            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
+            if type_polygon and poly.isClosed():
+                poly_coords.pop()
+            for coord_num in range(len(poly_coords)-1):
+                vectors.append(poly_coords[coord_num + 1] - poly_coords[coord_num])
+            polygon_vectors.append(vectors)
+        return polygon_vectors
+
     def set_map_level(self):
         level = self.scene().get_map_level()
         # lets save the current path in case it's changed
@@ -974,13 +988,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
             # elapsed = datetime.now()
             hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
             numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
             for polygon_node_num, polygon_node in enumerate(polygon):
                 square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
-                                  hlevels[polygon_node_num], numbers[polygon_node_num], self)
+                                  hlevels[polygon_node_num], numbers[polygon_node_num], polygons_vectors, self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
@@ -1531,14 +1546,14 @@ class PolylineAddressNumber(QPainterPath):
         # self.set_transformation_flag()
         self.setPos(position)
         _font = QFont()
-        if number_definition.first_number_on_left_side is not None:
-            self.addText(position + vector_before_node, _font, number_definition.first_number_on_left_side)
-        if number_definition.last_number_on_left_side is not None:
-            self.addText(position + vector_after_node, _font, number_definition.last_number_on_left_side)
-        if number_definition.first_number_on_right_side is not None:
-            self.addText(position - vector_before_node, _font, number_definition.first_number_on_right_side)
-        if number_definition.last_number_on_left_side is not None:
-            self.addText(position - vector_after_node, _font, number_definition.last_number_on_right_side)
+        if number_definition.left_side_number_before is not None:
+            self.addText(position + vector_before_node, _font, number_definition.left_side_number_before)
+        if number_definition.left_side_number_after is not None:
+            self.addText(position + vector_after_node, _font, number_definition.left_side_number_after)
+        if number_definition.right_side_number_before is not None:
+            self.addText(position - vector_before_node, _font, number_definition.right_side_number_before)
+        if number_definition.left_side_number_after is not None:
+            self.addText(position - vector_after_node, _font, number_definition.right_side_number_after)
 
 
 class PolylineLevelNumber(MapLabels):
@@ -1588,7 +1603,7 @@ class GripItem(QGraphicsPathItem):
     _boundingRect = square.boundingRect()
     _accept_map_level_change = False
 
-    def __init__(self, pos, grip_indexes, hlevel, house_numbers, parent):
+    def __init__(self, pos, grip_indexes, hlevel, house_numbers, polygons_vectors, parent):
         super().__init__()
         self.grip_indexes = grip_indexes
         self.parent = parent
@@ -1615,6 +1630,16 @@ class GripItem(QGraphicsPathItem):
             _text = _text + ' ' + str(self.hlevel)
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
+        if house_numbers is not None:
+            print(house_numbers)
+            if house_numbers.left_side_number_before is not None:
+                pass
+            if house_numbers.left_side_number_after is not None:
+                pass
+            if house_numbers.right_side_number_before is not None:
+                pass
+            if house_numbers.right_side_number_after is not None:
+                pass
 
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
 

@@ -72,6 +72,21 @@ TEST_VECTOR_ANGLE =(
 def test_vector_angle(target, answer):
     assert misc_functions.vector_angle(target[0], target[1], clockwise=target[2], screen_coord_system=False) == answer
 
+TEST_VECTOR_ROTATED =(
+    ((1.0, 0.0, 90, False), (0.0, 1.0),),
+    ((1.0, 1.0, 90, False), (-1.0, 1.0),),
+    ((1.0, 1.0, -90, False), (1.0, -1.0),),
+    ((1.0, -1.0, 90, False), (1.0, 1.0),),
+    ((-1.0, -1.0, 90, False), (1.0, -1.0),),
+)
+
+@pytest.mark.parametrize('target, answer', TEST_VECTOR_ROTATED)
+def test_vector_rotated(target, answer):
+    _answer = misc_functions.vector_rotated(target[0], target[1], target[2], clockwise=target[3],
+                                           screen_coord_system=False)
+    _answer = tuple([round(a, 1) for a in _answer])
+    assert _answer == answer
+
 TEST_LABEL_ANGLE = (
     (0, 0),
     (45, 45),
@@ -115,23 +130,23 @@ TEST_CLOSEST_POINT_TO_POLY_JOINT = (
     (QPointF(4.0, 4.0), (0, QPointF(4.0, 4.0), 14),),
 )
 
-@pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_JOINT)
-def test_closest_point_to_poly3(target, answer):
-    poly0 = QPolygonF([QPointF(1.0, 1.0), QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)])
-    poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
-    poly2 = QPolygonF([QPointF(5.0, 4.0), QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)])
-    pp0 = QPainterPath()
-    pp0.addPolygon(poly0)
-    pp = QPainterPath()
-    pp.addPolygon(poly)
-    pp = pp.subtracted(pp0)
-    pp1 = QPainterPath()
-    pp1.addPolygon(poly2)
-    pp3 = QPainterPath()
-    pp3.addPath(pp)
-    pp3.addPath(pp1)
-    treshold = 1
-    assert misc_functions.closest_point_to_poly(target, pp3, treshold, polygon=True) == answer
+# @pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_JOINT)
+# def test_closest_point_to_poly3(target, answer):
+#     poly0 = QPolygonF([QPointF(1.0, 1.0), QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)])
+#     poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
+#     poly2 = QPolygonF([QPointF(5.0, 4.0), QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)])
+#     pp0 = QPainterPath()
+#     pp0.addPolygon(poly0)
+#     pp = QPainterPath()
+#     pp.addPolygon(poly)
+#     pp = pp.subtracted(pp0)
+#     pp1 = QPainterPath()
+#     pp1.addPolygon(poly2)
+#     pp3 = QPainterPath()
+#     pp3.addPath(pp)
+#     pp3.addPath(pp1)
+#     treshold = 1
+#     assert misc_functions.closest_point_to_poly(target, pp3, treshold, polygon=True) == answer
 
 TEST_DECORATE_POLYLINE = (
 

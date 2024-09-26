@@ -126,6 +126,27 @@ def vector_angle(x, y, clockwise=False, screen_coord_system=False):
     return 180 - calc_degrees if clockwise else 180 + calc_degrees
 
 
+def vector_length(x, y):
+    return math.sqrt(x*x + y*y)
+
+
+def vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=False):
+    _vector_angle = vector_angle(x, y, clockwise=clockwise, screen_coord_system=screen_coord_system)
+    _vector_length = vector_length(x, y)
+    new_angle_radians = (_vector_angle + rotation_angle) / 180 * math.pi
+    _new_vector = (_vector_length * math.cos(new_angle_radians), _vector_length * math.sin(new_angle_radians))
+    return _new_vector
+
+
+def unit_vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=False, qpointf=False):
+    _vector_rotated = vector_rotated(x, y, rotation_angle, clockwise=clockwise, screen_coord_system=screen_coord_system)
+    vector_rotated_length = vector_length(vector_rotated[0], vector_rotated[1])
+    uni_v_rotated = vector_rotated[0] / vector_rotated_length, vector_rotated[1] / vector_rotated_length
+    if qpointf:
+        return QPointF(*uni_v_rotated)
+    return uni_v_rotated
+
+
 def calculate_label_angle(angle):
     if 0 <= angle <= 90:
         return angle
