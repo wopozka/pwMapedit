@@ -1540,10 +1540,12 @@ class PolylineAddressNumber(QGraphicsPathItem):
         self.parent = parent
         super(PolylineAddressNumber, self).__init__(parent)
         pp = QPainterPath()
-        # qm_font = QFont()
-        # pp.addText(position, qm_font, str(text))
-        pp.addEllipse(position, 10, 10)
+        qm_font = QFont()
+        pp.addText(self.mapFromScene(position), qm_font, str(text))
+        # pp.addEllipse(self.mapFromScene(position), 4, 4)
         self.setPath(pp)
+        self.setPen(QPen(QColor('green'), 1))
+        self.setBrush(QBrush(QColor('green')))
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
@@ -1657,8 +1659,8 @@ class GripItem(QGraphicsPathItem):
                                                                 screen_coord_system=True, qpointf=True)
 
         # return self.mapFromScene(rotated_vector + self.pos())
-        print(rotated_vector, self.pos())
-        return 10 * rotated_vector + self.pos()
+        # print(rotated_vector, self.pos())
+        return 50 * rotated_vector + self.pos()
 
 
     def is_first_grip(self):
