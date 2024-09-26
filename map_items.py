@@ -1547,6 +1547,8 @@ class PolylineAddressNumber(QGraphicsPathItem):
         self.setPath(pp)
         self.setPen(QPen(QColor('green'), 1))
         self.setBrush(QBrush(QColor('green')))
+        # _, _, pheight, pwidth = self.boundingRect().getRect()
+        # self.setTransformOriginPoint(pheight / 2, pwidth / 2)
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
@@ -1622,7 +1624,6 @@ class GripItem(QGraphicsPathItem):
             _text = _text + ' ' + str(self.hlevel)
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
-        print(house_numbers)
         if house_numbers is not None:
             if house_numbers.left_side_number_before is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
@@ -1656,17 +1657,18 @@ class GripItem(QGraphicsPathItem):
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
         elif subj_position == 'right_side_number_after':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, -90, clockwise=False,
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
         elif subj_position == 'right_side_number_before':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, -90, clockwise=False,
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
             vector_sign = -1
 
         # return self.mapFromScene(rotated_vector + self.pos())
         # print(rotated_vector, self.pos())
-        return (self.pos() + 10 * vector_sign * misc_functions.unit_vector(self.pos().x(), self.pos().y(), qpointf=True)
-                + 10 * rotated_vector)
+        return self.pos() + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
+        return self.pos() + 10 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
+
 
 
     def is_first_grip(self):
