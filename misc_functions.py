@@ -139,9 +139,9 @@ def vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=Fa
 
 
 def unit_vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=False, qpointf=False):
-    _vector_rotated = vector_rotated(x, y, rotation_angle, clockwise=clockwise, screen_coord_system=screen_coord_system)
-    vector_rotated_length = vector_length(vector_rotated[0], vector_rotated[1])
-    uni_v_rotated = vector_rotated[0] / vector_rotated_length, vector_rotated[1] / vector_rotated_length
+    vr = vector_rotated(x, y, rotation_angle, clockwise=clockwise, screen_coord_system=screen_coord_system)
+    vector_rotated_length = vector_length(vr[0], vr[1])
+    uni_v_rotated = vr[0] / vector_rotated_length, vr[1] / vector_rotated_length
     if qpointf:
         return QPointF(*uni_v_rotated)
     return uni_v_rotated

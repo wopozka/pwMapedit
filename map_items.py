@@ -41,12 +41,12 @@ class Node(QPointF):
     #     self.longitude = longitude
     #     self.latitude = latitude
 
-    def set_numbers_definition(self, position, definition):
+    def set_numbers_definition(self, field_name, definition):
         if self._numbers_definitions is None:
             self._numbers_definitions = Numbers_Definition(*[None for a in range(14)])
-        definitions = list(self._numbers_definitions)
-        definitions[position] = definition
-        self._numbers_definitions = Numbers_Definition(*definitions)
+        definitions = self._numbers_definitions._asdict()
+        definitions[field_name] = definition
+        self._numbers_definitions = Numbers_Definition(**definitions)
 
     def get_numbers_definition(self):
         return self._numbers_definitions
@@ -213,20 +213,19 @@ class Data_X1(object):
         right_start = int(num_data[5]) if right_style != 'N' else None
         right_end = int(num_data[6]) if right_style != 'N' else None
 
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(0, left_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(1, left_start)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(3, right_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(4, right_start)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_numbering_style', left_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_number_after', left_start)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_numbering_style', right_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_number_after', right_start)
         last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
         if last_node_def is not None:
-            last_left_end = last_node_def.left_side_number_after
-            last_right_end = last_node_def.right_side_number_after
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(2, last_left_end)
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition(5, last_right_end)
+
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_number_before', last_node_def.left_side_number_before)
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_number_before', last_node_def.right_side_number_before)
             self._poly_data_points[data_level][poly_num][node_num].clear_numbers_definiton()
         if left_start is not None or right_start is not None:
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition(2, left_end)
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition(5, right_end)
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('left_side_number_before', left_end)
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('right_side_number_before', right_end)
 
         # self._poly_data_points[data_level][poly_num][int(node_num)].set_numbers_definition(definition)
 
@@ -1538,23 +1537,14 @@ class PolygonLabel(MapLabels):
     def get_label_pos(self):
         return self.parent.boundingRect().center()
 
-class PolylineAddressNumber(QPainterPath):
-
-    def __init__(self, number_definition, position, vector_before_node, vector_after_node, parent):
+class PolylineAddressNumber(QGraphicsPathItem):
+    def __init__(self, position, text, parent):
         self.parent = parent
         super(PolylineAddressNumber, self).__init__(parent)
-        # self.set_transformation_flag()
-        self.setPos(position)
-        _font = QFont()
-        if number_definition.left_side_number_before is not None:
-            self.addText(position + vector_before_node, _font, number_definition.left_side_number_before)
-        if number_definition.left_side_number_after is not None:
-            self.addText(position + vector_after_node, _font, number_definition.left_side_number_after)
-        if number_definition.right_side_number_before is not None:
-            self.addText(position - vector_before_node, _font, number_definition.right_side_number_before)
-        if number_definition.left_side_number_after is not None:
-            self.addText(position - vector_after_node, _font, number_definition.right_side_number_after)
-
+        pp = QPainterPath()
+        qm_font = QFont()
+        pp.addText(position, qm_font, str(text))
+        self.setPath(pp)
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
@@ -1631,17 +1621,48 @@ class GripItem(QGraphicsPathItem):
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
         if house_numbers is not None:
+            print(grip_indexes)
+            print(polygons_vectors)
             print(house_numbers)
             if house_numbers.left_side_number_before is not None:
-                pass
+                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
+                position = self.get_numbers_position(line_segment_vector, 'NW')
+                adr = PolylineAddressNumber(position, house_numbers.left_side_number_before, self)
             if house_numbers.left_side_number_after is not None:
-                pass
+                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
+                position = self.get_numbers_position(line_segment_vector, 'NE')
+                adr = PolylineAddressNumber(position, house_numbers.left_side_number_after, self)
             if house_numbers.right_side_number_before is not None:
-                pass
+                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
+                position = self.get_numbers_position(line_segment_vector, 'SW')
+                adr = PolylineAddressNumber(position, house_numbers.right_side_number_before, self)
             if house_numbers.right_side_number_after is not None:
-                pass
+                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
+                position = self.get_numbers_position(line_segment_vector, 'SE')
+                adr = PolylineAddressNumber(position, house_numbers.right_side_number_after, self)
 
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
+
+    def get_numbers_position(self, line_segment_vector, subj_position):
+        x = self.pos().x()
+        y = self.pos().y()
+        if subj_position == 'NW':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 45, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+
+        elif subj_position == 'NE':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, -45, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+        elif subj_position == 'SE':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, -135, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+        elif subj_position == 'SW':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 135, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+
+        # return self.mapFromScene(rotated_vector + self.pos())
+        return rotated_vector + self.pos()
+
 
     def is_first_grip(self):
         return self.grip_indexes[1] == 0
