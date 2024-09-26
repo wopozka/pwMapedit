@@ -54,3 +54,25 @@ def test_data_levels(target, answer):
         data_obj.add_nodes_from_string(dataline)
     assert data_obj.get_last_data_level_and_last_index() == answer
 
+TEST_ADDRESS_ADDING = (
+    (('(51.43507,16.10151),(51.43477,16.10183),(51.43465,16.10206)', 'Numbers1=0,O,157,157,E,154,154', 'Numbers2=1,E,156,156,O,155,155'),
+     ({'left_side_numbering_style': 'O', 'left_side_number_after': 157, 'right_side_numbering_style': 'E', 'right_side_number_after': 154, 'n': 0},
+      {'left_side_numbering_style': 'E', 'left_side_number_before': 157, 'left_side_number_after': 156, 'right_side_numbering_style': 'O', 'right_side_number_before': 154, 'right_side_number_after': 155, 'n': 1},
+      {'left_side_number_before': 156, 'right_side_number_before': 155, 'n': 2},
+     ),
+    ),
+)
+
+@pytest.mark.parametrize('target, answer', TEST_ADDRESS_ADDING)
+def test_address_adding(target, answer):
+    proj = projection.Mercator(None)
+    data_obj = map_items.Data_X1(projection=proj)
+    data_obj.add_nodes_from_string('Data0', target[0])
+    data_obj.add_housenumbers_from_string(target[1])
+    data_obj.add_housenumbers_from_string(target[2])
+    for node_num, definition in enumerate(data_obj.get_housenumbers_for_poly(0, 0)):
+        def_ = {a: b for a, b in definition._asdict().items() if b is not None}
+        def_['n'] = node_num
+        assert def_ == answer[node_num]
+
+

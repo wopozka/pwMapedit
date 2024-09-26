@@ -222,12 +222,13 @@ class Data_X1(object):
 
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_number_before', last_node_def.left_side_number_before)
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_number_before', last_node_def.right_side_number_before)
-            self._poly_data_points[data_level][poly_num][node_num].clear_numbers_definiton()
+            self._poly_data_points[data_level][poly_num][-1].clear_numbers_definiton()
         if left_start is not None or right_start is not None:
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('left_side_number_before', left_end)
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('right_side_number_before', right_end)
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
+        # zwraca definicje wszystkich numerow domow przypisanych do danego noda
         return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
 
     def update_housenumbers_after_point_insert(self):
@@ -1621,46 +1622,51 @@ class GripItem(QGraphicsPathItem):
             _text = _text + ' ' + str(self.hlevel)
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
+        print(house_numbers)
         if house_numbers is not None:
             if house_numbers.left_side_number_before is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
-                position = self.get_numbers_position(line_segment_vector, 'NW')
+                position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
                 adr = PolylineAddressNumber(position, house_numbers.left_side_number_before, self)
             if house_numbers.left_side_number_after is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
-                position = self.get_numbers_position(line_segment_vector, 'NE')
+                position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
                 adr = PolylineAddressNumber(position, house_numbers.left_side_number_after, self)
             if house_numbers.right_side_number_before is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
-                position = self.get_numbers_position(line_segment_vector, 'SW')
+                position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
                 adr = PolylineAddressNumber(position, house_numbers.right_side_number_before, self)
             if house_numbers.right_side_number_after is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
-                position = self.get_numbers_position(line_segment_vector, 'SE')
+                position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
                 adr = PolylineAddressNumber(position, house_numbers.right_side_number_after, self)
 
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
 
     def get_numbers_position(self, line_segment_vector, subj_position):
-        x = self.pos().x()
-        y = self.pos().y()
-        if subj_position == 'NW':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 45, clockwise=False,
+        x = line_segment_vector.x()
+        y = line_segment_vector.y()
+        vector_sign = 1
+        if subj_position == 'left_side_number_before':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
+            vector_sign = -1
 
-        elif subj_position == 'NE':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, -45, clockwise=False,
+        elif subj_position == 'left_side_number_after':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
-        elif subj_position == 'SE':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, -135, clockwise=False,
+        elif subj_position == 'right_side_number_after':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, -90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
-        elif subj_position == 'SW':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 135, clockwise=False,
+        elif subj_position == 'right_side_number_before':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, -90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
+            vector_sign = -1
 
         # return self.mapFromScene(rotated_vector + self.pos())
         # print(rotated_vector, self.pos())
-        return 50 * rotated_vector + self.pos()
+        return (self.pos() + 10 * vector_sign * misc_functions.unit_vector(self.pos().x(), self.pos().y(), qpointf=True)
+                + 10 * rotated_vector)
 
 
     def is_first_grip(self):

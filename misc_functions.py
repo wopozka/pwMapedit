@@ -129,13 +129,22 @@ def vector_angle(x, y, clockwise=False, screen_coord_system=False):
 def vector_length(x, y):
     return math.sqrt(x*x + y*y)
 
+def unit_vector(x, y, qpointf=False):
+    vector_l = vector_length(x, y)
+    if qpointf:
+        return QPointF(x/vector_l, y/vector_l)
+    return x/vector_l, y/vector_l
+
 
 def vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=False):
     _vector_angle = vector_angle(x, y, clockwise=clockwise, screen_coord_system=screen_coord_system)
     _vector_length = vector_length(x, y)
     new_angle_radians = (_vector_angle + rotation_angle) / 180 * math.pi
     _new_vector = (_vector_length * math.cos(new_angle_radians), _vector_length * math.sin(new_angle_radians))
-    return _new_vector
+    if screen_coord_system:
+        _new_vector = list(_new_vector)
+        _new_vector[1] = - _new_vector[1]
+    return tuple(_new_vector)
 
 
 def unit_vector_rotated(x, y, rotation_angle, clockwise=False, screen_coord_system=False, qpointf=False):
