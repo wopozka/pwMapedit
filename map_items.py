@@ -227,8 +227,6 @@ class Data_X1(object):
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('left_side_number_before', left_end)
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('right_side_number_before', right_end)
 
-        # self._poly_data_points[data_level][poly_num][int(node_num)].set_numbers_definition(definition)
-
     def get_housenumbers_for_poly(self, data_level, poly_num):
         return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
 
@@ -1542,8 +1540,9 @@ class PolylineAddressNumber(QGraphicsPathItem):
         self.parent = parent
         super(PolylineAddressNumber, self).__init__(parent)
         pp = QPainterPath()
-        qm_font = QFont()
-        pp.addText(position, qm_font, str(text))
+        # qm_font = QFont()
+        # pp.addText(position, qm_font, str(text))
+        pp.addEllipse(position, 10, 10)
         self.setPath(pp)
 
 class PolylineLevelNumber(MapLabels):
@@ -1621,9 +1620,6 @@ class GripItem(QGraphicsPathItem):
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
         if house_numbers is not None:
-            print(grip_indexes)
-            print(polygons_vectors)
-            print(house_numbers)
             if house_numbers.left_side_number_before is not None:
                 line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
                 position = self.get_numbers_position(line_segment_vector, 'NW')
@@ -1661,7 +1657,8 @@ class GripItem(QGraphicsPathItem):
                                                                 screen_coord_system=True, qpointf=True)
 
         # return self.mapFromScene(rotated_vector + self.pos())
-        return rotated_vector + self.pos()
+        print(rotated_vector, self.pos())
+        return 10 * rotated_vector + self.pos()
 
 
     def is_first_grip(self):
