@@ -1,10 +1,10 @@
-import math
+import time
 from collections import OrderedDict, namedtuple
 import misc_functions
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsItem, \
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
 from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
@@ -905,9 +905,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
+            self.current_data_x = level
             self.add_items_after_new_map_level_set()
             self.setVisible(True)
-            self.current_data_x = level
         elif self.get_endlevel() < level:
             if self.isVisible():
                 self.setVisible(False)
@@ -1540,13 +1540,61 @@ class PolygonLabel(MapLabels):
 class PolylineAddressNumber(QGraphicsSimpleTextItem):
     def __init__(self, position, text, parent):
         self.parent = parent
+        self.grip_mode = False
         super(PolylineAddressNumber, self).__init__(parent)
+        if isinstance(parent, GripItem):
+            self.grip_mode = True
+            self.setAcceptHoverEvents(True)
         self.setText(str(text))
         qm_font = QFont()
         qm_font.setPointSize(6)
         self.setFont(qm_font)
         self.setBrush(QBrush(QColor('blue')))
         self.setPos(self.mapFromScene(position))
+        self.hovered_shape = None
+        self.last_keyboard_press_time = None
+
+    def add_hovered_shape(self):
+        self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
+        hovered_color = QColor('red')
+        # hovered_color.setAlpha(50)
+        hovered_over_pen = QPen(hovered_color)
+        hovered_over_pen.setCosmetic(True)
+        hovered_over_pen.setWidth(self.pen().width() + 1)
+        self.hovered_shape.setPen(hovered_over_pen)
+
+
+    def hoverEnterEvent(self, event):
+        self.setFocus(True)
+        self.grabKeyboard()
+        self.parent.hoverLeaveEvent(event)
+        super().hoverEnterEvent(event)
+        self.add_hovered_shape()
+        self.last_keyboard_press_time = 0
+        self.scene().disable_maplevel_shortcuts()
+
+
+    def hoverLeaveEvent(self, event):
+        self.clearFocus()
+        self.ungrabKeyboard()
+        self.scene().removeItem(self.hovered_shape)
+        self.hovered_shape = None
+        self.scene().enable_maplevel_shortcuts()
+        super().hoverLeaveEvent(event)
+        self.last_keyboard_press_time = None
+
+    def keyPressEvent(self, event):
+        _time = time.time()
+        if time.time() - self.last_keyboard_press_time > 1:
+            self.setText(event.text())
+        else:
+            self.setText(self.text() + event.text())
+        self.last_keyboard_press_time = time.time()
+        self.scene().removeItem(self.hovered_shape)
+        self.add_hovered_shape()
+
+    def keyReleaseEvent(self, event):
+        pass
 
 
 class PolylineLevelNumber(MapLabels):
@@ -1666,7 +1714,7 @@ class GripItem(QGraphicsPathItem):
         # return self.mapFromScene(rotated_vector + self.pos())
         # print(rotated_vector, self.pos())
         return self.pos() + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
-        return self.pos() + 10 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
+        # return self.pos() + 10 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
 
 
 

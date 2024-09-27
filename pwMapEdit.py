@@ -34,8 +34,8 @@ class pwMapeditPy(QMainWindow):
         self.projection = projection.Mercator({})
         self.tools_actions_group = None
         self.map_level_action_group = None
-        self.map_level_actions = list()
         self.pw_mapedit_mode = ''
+        self.map_level_actions = list()
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.initialize()
         self.generate_shortcuts()
@@ -266,17 +266,24 @@ class pwMapeditPy(QMainWindow):
         scale_up.activated.connect(self.menu_zoom_in_command)
         cancel_selection = QShortcut(QKeySequence('Escape'), self)
         cancel_selection.activated.connect(self.map_canvas.clearSelection)
-        set_maplevel_0 = QShortcut(QKeySequence('0'), self)
-        set_maplevel_0.activated.connect(self.menu_view_set_map_level_0)
-        set_maplevel_1 = QShortcut(QKeySequence('1'), self)
-        set_maplevel_1.activated.connect(self.menu_view_set_map_level_1)
-        set_maplevel_2 = QShortcut(QKeySequence('2'), self)
-        set_maplevel_2.activated.connect(self.menu_view_set_map_level_2)
-        set_maplevel_3 = QShortcut(QKeySequence('3'), self)
-        set_maplevel_3.activated.connect(self.menu_view_set_map_level_3)
-        set_maplevel_4 = QShortcut(QKeySequence('4'), self)
-        set_maplevel_4.activated.connect(self.menu_view_set_map_level_4)
+        self.map_level_actions.append(QShortcut(QKeySequence('0'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_0)
+        self.map_level_actions.append(QShortcut(QKeySequence('1'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_1)
+        self.map_level_actions.append(QShortcut(QKeySequence('2'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_2)
+        self.map_level_actions.append(QShortcut(QKeySequence('3'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_3)
+        self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
 
+    def disable_maplevel_shortcuts(self):
+        for shorcut in self.map_level_actions:
+            shorcut.setEnabled(False)
+
+    def enable_maplevel_shortcuts(self):
+        for shorcut in self.map_level_actions:
+            shorcut.setEnabled(True)
 
     def open_file(self):
         aaa = QFileDialog.getOpenFileName(self, 'File to open')

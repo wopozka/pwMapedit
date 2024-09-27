@@ -167,6 +167,12 @@ class mapCanvas(QGraphicsScene):
     def get_map_level(self):
         return self.current_map_level
 
+    def disable_maplevel_shortcuts(self):
+        self.parent.disable_maplevel_shortcuts()
+
+    def enable_maplevel_shortcuts(self):
+        self.parent.enable_maplevel_shortcuts()
+
     def selection_change_actions(self):
         mode = self.get_pw_mapedit_mode()
         if mode == 'select_objects':
