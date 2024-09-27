@@ -99,77 +99,8 @@ class Node(QPointF):
         definitions[field_name] = definition
         self._numbers_definitions = Numbers_Definition(**definitions)
 
-class Node1(object):
-    """Class used for storing coordinates of given map object point"""
-    def __init__(self, latitude=None, longitude=None, projection=None):
-        # self.acuracy = 10000
-        self.projection = None
-        self.latitude = None
-        self.longitude = None
-        if projection is not None:
-            self.projection = projection
-        if latitude is not None and longitude is not None:
-            self.set_coordinates(latitude, longitude)
-
-    def set_coordinates(self, latitude, longitude):
-        self.longitude = longitude
-        self.latitude = latitude
-
-    def get_coordinates(self):
-        return self.latitude, self.longitude
-
-    def get_canvas_coords(self):
-        # print(Store.projection.projectionName)
-        return self.projection.geo_to_canvas(self.latitude, self.longitude)
-
-    def get_canvas_coords_as_qpointf(self):
-        x, y = self.get_canvas_coords()
-        return QPointF(x, y)
-
 
 class Data_X(object):
-    """storing multiple data it is probably better to do it in the separate class, as some operations might be easier"""
-    def __init__(self, data_level=0):
-        self.nodes_list = []
-        self.outer_inner = []
-        self.last_outer_index = 0
-        self.polygon = False
-        self.hlevel_offset = None
-        self.data_level = data_level
-
-    def add_points(self, points_list):
-        self.nodes_list.append(points_list)
-        self.outer_inner.append('outer')
-        if self.hlevel_offset is None:
-            self.hlevel_offset = 0
-        else:
-            self.hlevel_offset += len(points_list)
-
-    def get_nodes(self):
-        returned_data = list()
-        for data_list in self.nodes_list:
-            returned_data.append(data_list)
-        return returned_data
-
-    def set_polygon(self):
-        self.polygon = True
-
-    def is_polygon(self):
-        return self.polygon
-
-    def get_translated_hlevels(self, orig_hlevels):
-        node_num, hlevel = orig_hlevels
-        if isinstance(node_num, str):
-            node_num = int(node_num)
-        if isinstance(hlevel, str):
-            hlevel = int(hlevel)
-        return node_num + self.hlevel_offset, hlevel
-
-    def get_data_level(self):
-        return self.data_level
-
-
-class Data_X1(object):
     def __init__(self, projection=None):
         self.projection = projection
         # dane mozna by przechowywac w slownikach, ale poniewaz jest ich duzo, dlatego pod wzgledem przechowywania
@@ -567,7 +498,7 @@ class BasicMapItem(object):
 
     def set_datax(self, data012345, data012345_val):
         if self.data0 is None:
-            self.data0 = Data_X1(projection=self.projection)
+            self.data0 = Data_X(projection=self.projection)
         self.data0.add_nodes_from_string(data012345, data012345_val)
         self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
         return

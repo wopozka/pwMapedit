@@ -23,7 +23,7 @@ DATA_TEST = (
 @pytest.mark.parametrize('target, answer', DATA_TEST)
 def test_data_levels(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X1(projection=proj)
+    data_obj = map_items.Data_X(projection=proj)
     for dataline in target:
         data_obj.add_nodes_from_string(dataline)
     assert data_obj.get_data_levels() == answer
@@ -49,7 +49,7 @@ DATA_TEST = (
 @pytest.mark.parametrize('target, answer', DATA_TEST)
 def test_data_levels(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X1(projection=proj)
+    data_obj = map_items.Data_X(projection=proj)
     for dataline in target:
         data_obj.add_nodes_from_string(dataline)
     assert data_obj.get_last_data_level_and_last_index() == answer
@@ -66,7 +66,7 @@ TEST_ADDRESS_ADDING = (
 @pytest.mark.parametrize('target, answer', TEST_ADDRESS_ADDING)
 def test_address_adding(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X1(projection=proj)
+    data_obj = map_items.Data_X(projection=proj)
     data_obj.add_nodes_from_string('Data0', target[0])
     data_obj.add_housenumbers_from_string(target[1])
     data_obj.add_housenumbers_from_string(target[2])
