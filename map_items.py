@@ -44,6 +44,9 @@ class Node(QPointF):
     def get_numbers_definition(self):
         return self._numbers_definitions
 
+    def get_specific_number_definition(self, fieldname):
+        return self._numbers_definitions._asdict()[fieldname]
+
     def clear_numbers_definiton(self):
         self._numbers_definitions = None
 
@@ -79,6 +82,13 @@ class Node(QPointF):
     def node_ends_numeration(self):
         if self._numbers_definitions.left_side_number_before is not None or \
                 self._numbers_definitions.right_side_number_before is not None:
+            return True
+        return False
+
+    def node_has_numeration(self):
+        if self.node_starts_numeration():
+            return True
+        if self.node_ends_numeration():
             return True
         return False
 
@@ -259,36 +269,52 @@ class Data_X1(object):
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
         del self._poly_data_points[data_level][polynum][index]
+
         # update numbers definitions for nodes
-        num_left_started = False
-        num_right_started = False
-        num_left_finished = False
-        num_right_finished = False
-        for node in self._poly_data_points[data_level][polynum][index]:
-            if node.node_ends_numeration():
-                if not num_left_started:
-                    num_left_finished = False
-                    self.node.set_numbers_definition('left_side_number_before', None)
+        # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
+        last_node = self._poly_data_points[data_level][polynum][-1]
+        self._poly_data_points[data_level][polynum][0].set_numbers_definition('left_side_number_before', None)
+        self._poly_data_points[data_level][polynum][0].set_numbers_definition('right_side_number_before', None)
+        last_node.set_numbers_definition('left_side_number_after', None)
+        last_node.set_numbers_definition('right_side_number_after', None)
+        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
+
+        # nie ma zadnych w wezlow z numeracja, nie rob nic
+        if len(nodes_with_numbers) == 0:
+            return
+        # mamy jeden wezel z numeracja, trzeba na ostatnim ustawic 0, o ile nie sa ustawione
+        if len(nodes_with_numbers) == 1:
+            if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
+                last_node.set_numbers_definition('left_side_number_before', None)
+            else:
+                if last_node.get_specific_number_definition('left_side_number_before') is None:
+                    last_node.set_numbers_definition('left_side_number_before', 0)
+            if nodes_with_numbers[0].get_specific_number_definition('right_side_number_after') is None:
+                last_node.set_numbers_definition('right_side_number_before', None)
+            else:
+                if last_node.get_specific_number_definition('right_side_number_before') is None:
+                    last_node.set_numbers_definition('right_side_number_before', 0)
+            return
+
+        # mamy wiele wezlow z numeracja przeorganizuj je
+        for node_num in range(len(nodes_with_numbers ) - 1):
+            node_start = nodes_with_numbers[node_num]
+            node_end = nodes_with_numbers[node_num + 1]
+            if node_start.node_starts_numeration():
+                if node_start.get_specific_number_definition('left_side_number_after') is None:
+                    node_end.set_numbers_definition('left_side_number_before', None)
                 else:
-                    num_left_finished = True
-                    if self.node.get_numbers_definition().left_side_number_before is None:
-                        self.node.set_numbers_definition('left_side_number_before', 0)
-                    if self.node.get_numbers_definition().right_side_number_before is None:
-                        self.node.set_numbers_definition('right_side_number_before', 0)
-                if not num_right_started:
-                    num_right_finished = False
-                    self.node.set_numbers_definition('right_side_number_before', None)
+                    if node_end.get_specific_number_definition('left_side_number_before') is None:
+                        node_end.set_numbers_definition('left_side_number_before', 0)
+                if node_start.get_specific_number_definition('right_side_number_after') is None:
+                    node_end.set_numbers_definition('right_side_number_before', None)
                 else:
-                    num_right_finished = True
-                    if self.node.get_numbers_definition().right_side_number_before is None:
-                        self.node.set_numbers_definition('right_side_number_before', 0)
-                    if self.node.get_numbers_definition().right_side_number_before is None:
-                        self.node.set_numbers_definition('right_side_number_before', 0)
-            if node.node_starts_numeration():
-                if node.get_numbers_definition().left_side_number_after is not None:
-                    num_left_started = True
-                if node.get_numbers_definition().right_side_number_after is not None:
-                    num_right_started = True
+                    if node_end.get_specific_number_definition('right_side_number_before') is None:
+                        node_end.set_numbers_definition('right_side_number_before', 0)
+            else:
+                node_end.set_numbers_definition('left_side_number_before', None)
+                node_end.set_numbers_definition('right_side_number_before', None)
+        return
 
     def get_data_levels(self):
         return self._data_levels
@@ -1100,6 +1126,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
             return
 
+        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
         # for grip_item in self.node_grip_items:
         #     if grip_item is not None:
