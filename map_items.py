@@ -41,13 +41,6 @@ class Node(QPointF):
     #     self.longitude = longitude
     #     self.latitude = latitude
 
-    def set_numbers_definition(self, field_name, definition):
-        if self._numbers_definitions is None:
-            self._numbers_definitions = Numbers_Definition(*[None for a in range(14)])
-        definitions = self._numbers_definitions._asdict()
-        definitions[field_name] = definition
-        self._numbers_definitions = Numbers_Definition(**definitions)
-
     def get_numbers_definition(self):
         return self._numbers_definitions
 
@@ -77,6 +70,24 @@ class Node(QPointF):
         node.set_numbers_definition(self.get_numbers_definition())
         return node
 
+    def node_starts_numeration(self):
+        if self._numbers_definitions.left_side_number_after is not None or \
+                self._numbers_definitions.left_side_number_after is not None:
+            return True
+        return False
+
+    def node_ends_numeration(self):
+        if self._numbers_definitions.left_side_number_before is not None or \
+                self._numbers_definitions.right_side_number_before is not None:
+            return True
+        return False
+
+    def set_numbers_definition(self, field_name, definition):
+        if self._numbers_definitions is None:
+            self._numbers_definitions = Numbers_Definition(*[None for a in range(14)])
+        definitions = self._numbers_definitions._asdict()
+        definitions[field_name] = definition
+        self._numbers_definitions = Numbers_Definition(**definitions)
 
 class Node1(object):
     """Class used for storing coordinates of given map object point"""
@@ -176,15 +187,14 @@ class Data_X1(object):
         # definicje numeracji
         self._numbers_definitions = None
 
-    def add_nodes_from_string(self, data_level, data_string):
-        _data_level = int(data_level[4:])
-        if _data_level not in self._data_levels:
-            self._data_levels.append(_data_level)
-            self._poly_data_points.append([])
-        data_index = self._data_levels.index(_data_level)
-        self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(data_string))
-        self._last_data_level = _data_level
-        self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
+    def add_hlevels_from_string(self, hlevels_definition):
+        for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
+            node_num, level_val = hlevel_def.split(',')
+            self.add_hlevel_to_node(int(node_num), int(level_val))
+
+    def add_hlevel_to_node(self, node_num, level_val):
+        self._poly_data_points[self._last_data_level][self._last_poly_data_index][node_num].set_hlevel_definition(
+            level_val)
 
     def add_housenumbers_from_string(self, num_string):
         data_level, poly_num = self.get_last_data_level_and_last_index()
@@ -227,12 +237,15 @@ class Data_X1(object):
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('left_side_number_before', left_end)
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('right_side_number_before', right_end)
 
-    def get_housenumbers_for_poly(self, data_level, poly_num):
-        # zwraca definicje wszystkich numerow domow przypisanych do danego noda
-        return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
-
-    def update_housenumbers_after_point_insert(self):
-        pass
+    def add_nodes_from_string(self, data_level, data_string):
+        _data_level = int(data_level[4:])
+        if _data_level not in self._data_levels:
+            self._data_levels.append(_data_level)
+            self._poly_data_points.append([])
+        data_index = self._data_levels.index(_data_level)
+        self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(data_string))
+        self._last_data_level = _data_level
+        self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -242,6 +255,73 @@ class Data_X1(object):
             self.set_obj_bounding_box(float(latitude), float(longitude))
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
+
+    def delete_node_at_position(self, data_level, polynum, index):
+        # remove point
+        del self._poly_data_points[data_level][polynum][index]
+        # update numbers definitions for nodes
+        num_left_started = False
+        num_right_started = False
+        num_left_finished = False
+        num_right_finished = False
+        for node in self._poly_data_points[data_level][polynum][index]:
+            if node.node_ends_numeration():
+                if not num_left_started:
+                    num_left_finished = False
+                    self.node.set_numbers_definition('left_side_number_before', None)
+                else:
+                    num_left_finished = True
+                    if self.node.get_numbers_definition().left_side_number_before is None:
+                        self.node.set_numbers_definition('left_side_number_before', 0)
+                    if self.node.get_numbers_definition().right_side_number_before is None:
+                        self.node.set_numbers_definition('right_side_number_before', 0)
+                if not num_right_started:
+                    num_right_finished = False
+                    self.node.set_numbers_definition('right_side_number_before', None)
+                else:
+                    num_right_finished = True
+                    if self.node.get_numbers_definition().right_side_number_before is None:
+                        self.node.set_numbers_definition('right_side_number_before', 0)
+                    if self.node.get_numbers_definition().right_side_number_before is None:
+                        self.node.set_numbers_definition('right_side_number_before', 0)
+            if node.node_starts_numeration():
+                if node.get_numbers_definition().left_side_number_after is not None:
+                    num_left_started = True
+                if node.get_numbers_definition().right_side_number_after is not None:
+                    num_right_started = True
+
+    def get_data_levels(self):
+        return self._data_levels
+
+    def get_housenumbers_for_poly(self, data_level, poly_num):
+        # zwraca definicje wszystkich numerow domow przypisanych do danego noda
+        return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
+
+    def get_hlevels_for_poly(self, data_level, poly_num):
+        return [node.get_hlevel_definition() for node in self._poly_data_points[data_level][poly_num]]
+
+    def get_last_data_level_and_last_index(self):
+        return self._last_data_level, self._last_poly_data_index
+
+    def get_obj_bounding_box(self):
+        return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
+                'W': self._bounding_box_E}
+
+    def get_poly_nodes(self, data_level, qpointsf):
+        if data_level not in self._data_levels:
+            return None
+        returned_data = list()
+        for data_list in self._poly_data_points[self._data_levels.index(data_level)]:
+            if qpointsf:
+                returned_data.append([a.get_canvas_coords_as_qpointf() for a in data_list])
+            else:
+                returned_data.append(data_list)
+        return returned_data
+
+    def insert_node_at_position(self, data_level, polynum, index, x, y):
+        polygon = self._poly_data_points[data_level][polynum]
+        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
+        self._poly_data_points[data_level][polynum] = polygon_mod
 
     def set_obj_bounding_box(self, latitude, longitude):
         if self._bounding_box_N is None:
@@ -260,42 +340,6 @@ class Data_X1(object):
                 self._bounding_box_E = longitude
         return
 
-    def get_obj_bounding_box(self):
-        return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
-                'W': self._bounding_box_E}
-
-    def get_poly_nodes(self, data_level, qpointsf):
-        if data_level not in self._data_levels:
-            return None
-        returned_data = list()
-        for data_list in self._poly_data_points[self._data_levels.index(data_level)]:
-            if qpointsf:
-                returned_data.append([a.get_canvas_coords_as_qpointf() for a in data_list])
-            else:
-                returned_data.append(data_list)
-        return returned_data
-
-    def get_data_levels(self):
-        return self._data_levels
-
-    def get_last_data_level_and_last_index(self):
-        return self._last_data_level, self._last_poly_data_index
-
-    def insert_node_at_position(self, data_level, polynum, index, x, y):
-        polygon = self._poly_data_points[data_level][polynum]
-        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
-        self._poly_data_points[data_level][polynum] = polygon_mod
-
-    def add_hlevels_from_string(self, hlevels_definition):
-        for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
-            node_num, level_val = hlevel_def.split(',')
-            self.add_hlevel_to_node(int(node_num), int(level_val))
-
-    def add_hlevel_to_node(self, node_num, level_val):
-        self._poly_data_points[self._last_data_level][self._last_poly_data_index][node_num].set_hlevel_definition(level_val)
-
-    def get_hlevels_for_poly(self, data_level, poly_num):
-        return [node.get_hlevel_definition() for node in self._poly_data_points[data_level][poly_num]]
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
