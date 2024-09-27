@@ -281,6 +281,11 @@ class Data_X1(object):
     def get_last_data_level_and_last_index(self):
         return self._last_data_level, self._last_poly_data_index
 
+    def insert_node_at_position(self, data_level, polynum, index, x, y):
+        polygon = self._poly_data_points[data_level][polynum]
+        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
+        self._poly_data_points[data_level][polynum] = polygon_mod
+
     def add_hlevels_from_string(self, hlevels_definition):
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
             node_num, level_val = hlevel_def.split(',')
@@ -1025,6 +1030,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[path_num] = polygon_modified
         except IndexError:
             return
+        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
         self.undecorate()
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
         self.decorate()
