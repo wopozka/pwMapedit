@@ -1613,19 +1613,18 @@ class PolygonLabel(MapLabels):
     def get_label_pos(self):
         return self.parent.boundingRect().center()
 
-class PolylineAddressNumber(QGraphicsPathItem):
+
+class PolylineAddressNumber(QGraphicsSimpleTextItem):
     def __init__(self, position, text, parent):
         self.parent = parent
         super(PolylineAddressNumber, self).__init__(parent)
-        pp = QPainterPath()
+        self.setText(str(text))
         qm_font = QFont()
-        pp.addText(self.mapFromScene(position), qm_font, str(text))
-        # pp.addEllipse(self.mapFromScene(position), 4, 4)
-        self.setPath(pp)
-        self.setPen(QPen(QColor('green'), 1))
-        self.setBrush(QBrush(QColor('green')))
-        # _, _, pheight, pwidth = self.boundingRect().getRect()
-        # self.setTransformOriginPoint(pheight / 2, pwidth / 2)
+        qm_font.setPointSize(6)
+        self.setFont(qm_font)
+        self.setBrush(QBrush(QColor('blue')))
+        self.setPos(self.mapFromScene(position))
+
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
