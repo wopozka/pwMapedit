@@ -328,17 +328,7 @@ class BasicMapItem(object):
         self.phone = None
         self.cityidx = None
         self.data0 = None
-        # self.data1 = None
-        # self.data2 = None
-        # self.data3 = None
-        # self.data4 = None
         self.last_data_level = None
-        # self.hlevels0 = None
-        # self.hlevels1 = None
-        # self.hlevels2 = None
-        # self.hlevels3 = None
-        # self.hlevels4 = None
-        # self.hlevels_other = None
         self.routeparam = None
         self.cityname = None
         self.countryname = None
@@ -354,6 +344,15 @@ class BasicMapItem(object):
 
     def __str__(self):
         return str(self.type)
+
+    def coords_from_data_to_nodes(self, data_line):
+        coords = []
+        coordlist = data_line.strip().lstrip('(').rstrip(')')
+        for a in coordlist.split('),('):
+            latitude, longitude = a.split(',')
+            self.set_obj_bounding_box(float(latitude), float(longitude))
+            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
+        return coords
 
     def set_data(self, comment_data, obj_data):
         """
@@ -415,96 +414,43 @@ class BasicMapItem(object):
     def get_comment(self):
         return self.obj_comment
 
-    def set_comment(self, _comments):
-        for _comment in _comments:
-            self.obj_comment.append(_comment)
-
-    def get_dirindicator(self):
-        if self.dirindicator is None:
-            return False
-        return self.dirindicator
-
-    def set_dirindicator(self, value):
-        self.dirindicator = value
-
-    def get_param(self, parameter):
-        return getattr(self, parameter.lower())
-
-    def set_param(self, parameter, value):
-        setattr(self, parameter.lower(), value)
-        # self.obj_data[parameter] = value
-
-    def set_endlevel(self, value):
-        if isinstance(value, str):
-            value = int(value)
-        self.endlevel = value
-
-    def get_endlevel(self):
-        return self.endlevel
-
-    def set_street_desc(self, value):
-        self.streetdesc = value
-
-    def get_street_desc(self):
-        if self.streetdesc is None:
-            return ''
-        return self.streetdesc
-
-    def set_house_number(self, value):
-        self.housenumber = value
-
-    def get_house_number(self):
-        if self.housenumber is None:
-            return ''
-        return self.housenumber
-
-    def set_phone_number(self, value):
-        self.phone = value
-
-    def get_phone_number(self):
-        if self.phone is None:
-            return ''
-        return self.phone
-
-    def set_label1(self, value):
-        self.label1 = value
-
-    def get_label1(self):
-        if self.label1 is not None:
-            return self.label1
-        return ''
-
-    def set_label2(self, value):
-        self.label2 = value
-
-    def get_label2(self):
-        if self.label2 is not None:
-            return self.label2
-        return ''
-
-    def set_label3(self, value):
-        self.label3 = value
-
-    def get_label3(self):
-        if self.label3 is not None:
-            return self.label3
-        return ''
-
     def get_datax(self, dataX):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
         data_level = int(dataX[4:])
         return self.data0.get_poly_nodes(data_level, False)
 
-    def set_datax(self, data012345, data012345_val):
-        if self.data0 is None:
-            self.data0 = Data_X(projection=self.projection)
-        self.data0.add_nodes_from_string(data012345, data012345_val)
-        self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
-        return
+    # getters
+    def get_dirindicator(self):
+        if self.dirindicator is None:
+            return False
+        return self.dirindicator
 
-    def set_others(self, key, value):
-        self.others[key] = value
+    def get_endlevel(self):
+        return self.endlevel
+
+    def get_house_number(self):
+        if self.housenumber is None:
+            return ''
+        return self.housenumber
+
+    def get_housenumbers_along_road(self):
+        return self.data0.get_housenumbers_nodes_defs()
+
+    def get_label1(self):
+        if self.label1 is not None:
+            return self.label1
+        return ''
+
+    def get_label2(self):
+        if self.label2 is not None:
+            return self.label2
+        return ''
+
+    def get_label3(self):
+        if self.label3 is not None:
+            return self.label3
+        return ''
 
     def get_others(self):
         return_val = list()
@@ -513,14 +459,67 @@ class BasicMapItem(object):
             return_val.append((key, val,))
         return return_val
 
-    def coords_from_data_to_nodes(self, data_line):
-        coords = []
-        coordlist = data_line.strip().lstrip('(').rstrip(')')
-        for a in coordlist.split('),('):
-            latitude, longitude = a.split(',')
-            self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
-        return coords
+    def get_param(self, parameter):
+        return getattr(self, parameter.lower())
+
+    def get_phone_number(self):
+        if self.phone is None:
+            return ''
+        return self.phone
+
+    def get_street_desc(self):
+        if self.streetdesc is None:
+            return ''
+        return self.streetdesc
+
+    # setters
+
+    def set_comment(self, _comments):
+        for _comment in _comments:
+            self.obj_comment.append(_comment)
+
+    def set_datax(self, data012345, data012345_val):
+        if self.data0 is None:
+            self.data0 = Data_X(projection=self.projection)
+        self.data0.add_nodes_from_string(data012345, data012345_val)
+        self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
+        return
+
+    def set_dirindicator(self, value):
+        self.dirindicator = value
+
+    def set_endlevel(self, value):
+        if isinstance(value, str):
+            value = int(value)
+        self.endlevel = value
+
+    def set_house_number(self, value):
+        self.housenumber = value
+
+    def set_housenumbers_along_road(self, numbers_definition):
+        self.data0.add_housenumbers_from_string(numbers_definition)
+
+    def set_label1(self, value):
+        self.label1 = value
+
+    def set_label2(self, value):
+        self.label2 = value
+
+    def set_label3(self, value):
+        self.label3 = value
+
+    def set_others(self, key, value):
+        self.others[key] = value
+
+    def set_param(self, parameter, value):
+        setattr(self, parameter.lower(), value)
+        # self.obj_data[parameter] = value
+
+    def set_phone_number(self, value):
+        self.phone = value
+
+    def set_street_desc(self, value):
+        self.streetdesc = value
 
     def set_obj_bounding_box(self, obj_bb):
         if not self.obj_bounding_box:
@@ -536,7 +535,7 @@ class BasicMapItem(object):
 
         return
 
-    # niepotrzebne
+    # niepotrzebne?
     def get_hlevels(self, level_for_data):
         # do redefinicji
         if isinstance(level_for_data, int):
@@ -559,12 +558,6 @@ class BasicMapItem(object):
         for hlevel_item in hlevel_items.lstrip('(').rstrip(')').split('),('):
             self.data0.add_hlevels_from_string(hlevel_item)
         return
-
-    def set_housenumbers_along_road(self, numbers_definition):
-        self.data0.add_housenumbers_from_string(numbers_definition)
-
-    def get_housenumbers_along_road(self):
-        return self.data0.get_housenumbers_nodes_defs()
 
 
 class BasicSignRestrict(object):
@@ -822,7 +815,6 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
 
     def undecorate(self):
         pass
-
 
 
 class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
