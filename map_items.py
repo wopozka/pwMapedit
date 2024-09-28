@@ -250,12 +250,20 @@ class Data_X(object):
     def get_data_levels(self):
         return self._data_levels
 
+    def get_polys_for_data_level(self, data_level):
+        if data_level not in self._data_levels:
+            return tuple()
+        data_level_index = self._data_levels.index(data_level)
+        return self._poly_data_points[data_level_index]
+
     def get_housenumbers_for_poly(self, data_level, poly_num):
         # zwraca definicje wszystkich numerow domow przypisanych do danego noda
-        return [node.get_numbers_definition() for node in self._poly_data_points[data_level][poly_num]]
+        polys = self.get_polys_for_data_level(data_level)
+        return [node.get_numbers_definition() for node in polys[poly_num]]
 
     def get_hlevels_for_poly(self, data_level, poly_num):
-        return [node.get_hlevel_definition() for node in self._poly_data_points[data_level][poly_num]]
+        polys = self.get_polys_for_data_level(data_level)
+        return [node.get_hlevel_definition() for node in polys[poly_num]]
 
     def get_last_data_level_and_last_index(self):
         return self._last_data_level, self._last_poly_data_index
@@ -1538,6 +1546,7 @@ class PolygonLabel(MapLabels):
 
 
 class PolylineAddressNumber(QGraphicsSimpleTextItem):
+    _accept_map_level_change = False
     def __init__(self, position, text, parent):
         self.parent = parent
         self.grip_mode = False
