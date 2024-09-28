@@ -825,6 +825,13 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
         pass
 
 
+class HoveredShapePainterPath(QGraphicsPathItem):
+    _accept_map_level_change = False
+
+    def __init__(self, path):
+        super(HoveredShapePainterPath, self).__init__(path)
+
+
 class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
     selected_pen = QPen(QColor("red"))
@@ -1181,17 +1188,20 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     # when shape is hovered over, then around the shape is formed. Let's create it.
     def add_hovered_shape(self):
         # elem_shape = self.shape()
-        elem_shape = QPainterPath(self.path())
-        self.hovered_shape_id = self.scene().addPath(elem_shape)
-        self.hovered_shape_id.setPos(self.pos())
+        self.hovered_shape_id = HoveredShapePainterPath(self.path())
+        self.scene().addItem(self.hovered_shape_id)
+        # self.hovered_shape_id.setPos(self.pos())
         self.hovered_shape_id.setZValue(self.zValue() - 1)
         hovered_color = QColor('red')
-        hovered_color.setAlpha(50)
+        # hovered_color.setAlpha(50)
         hovered_over_pen = QPen(hovered_color)
         hovered_over_pen.setCosmetic(True)
         hovered_over_pen.setWidth(self.pen().width() + 2)
         self.hovered_shape_id.setPen(hovered_over_pen)
+        # self.hovered_shape_id.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         self.setPen(self.hovered_over_pen)
+        self.hovered_shape_id.setParentItem(self)
+        self.hovered_shape_id.setOpacity(0.3)
 
     def remove_hovered_shape(self):
         if self.hovered_shape_id is not None:

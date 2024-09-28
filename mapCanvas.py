@@ -148,6 +148,7 @@ class mapCanvas(QGraphicsScene):
             return 0
 
     def set_map_level(self, map_level):
+        self.setFocus(False)
         if isinstance(map_level, str):
             map_level = int(map_level)
         if map_level == self.current_map_level:
