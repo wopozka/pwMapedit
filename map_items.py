@@ -1332,13 +1332,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         # update numbers positions when nodes are moved around
         self.remove_all_hlevel_labels()
         self.add_hlevel_labels()
-        return
-        print('moving numbers')
-        if self.hlevel_labels is None:
-            return
-        path = self.path()
-        for node_num in self.hlevel_labels:
-            self.hlevel_labels[node_num].setPos(QPointF(path.elementAt(node_num)))
 
     def remove_hlevel_labels(self, node_num):
         # remove hlevels labels when node is removed
