@@ -131,11 +131,13 @@ class Data_X(object):
     def add_hlevels_from_string(self, hlevels_definition):
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
             node_num, level_val = hlevel_def.split(',')
-            self.add_hlevel_to_node(int(node_num), int(level_val))
+            self.add_hlevel_to_node_from_string(int(node_num), int(level_val))
 
-    def add_hlevel_to_node(self, node_num, level_val):
-        self._poly_data_points[self._last_data_level][self._last_poly_data_index][node_num].set_hlevel_definition(
-            level_val)
+    def add_hlevel_to_node_from_string(self, node_num, level_val):
+        # dodawanie podczas wczytywania pliku
+        data_level = self._last_data_level
+        poly_num = self._last_poly_data_index
+        self.set_hlevel_to_node(data_level, poly_num, node_num, level_val)
 
     def add_housenumbers_from_string(self, num_string):
         data_level, poly_num = self.get_last_data_level_and_last_index()
@@ -228,7 +230,7 @@ class Data_X(object):
             return
 
         # mamy wiele wezlow z numeracja przeorganizuj je
-        for node_num in range(len(nodes_with_numbers ) - 1):
+        for node_num in range(len(nodes_with_numbers) - 1):
             node_start = nodes_with_numbers[node_num]
             node_end = nodes_with_numbers[node_num + 1]
             if node_start.node_starts_numeration():
@@ -249,6 +251,10 @@ class Data_X(object):
 
     def get_data_levels(self):
         return self._data_levels
+
+    def get_data_level_index(self, data_level):
+        if data_level in self._data_levels:
+            return self._data_levels.index(data_level)
 
     def get_polys_for_data_level(self, data_level):
         if data_level not in self._data_levels:
@@ -287,6 +293,10 @@ class Data_X(object):
         polygon = self._poly_data_points[data_level][polynum]
         polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
         self._poly_data_points[data_level][polynum] = polygon_mod
+
+    def set_hlevel_to_node(self, data_level, poly_num, node_num, level_val):
+        dl_index = self.get_data_level_index(data_level)
+        self._poly_data_points[dl_index][poly_num][node_num].set_hlevel_definition(level_val)
 
     def set_obj_bounding_box(self, latitude, longitude):
         if self._bounding_box_N is None:
@@ -1150,6 +1160,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def update_hlevel_labels(self):
         return
 
+    def remove_all_hlevel_labels(self):
+        pass
+
     def remove_hlevel_labels(self, node_num):
         return
 
@@ -1217,6 +1230,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def get_housenumbers_for_poly(self, data_level, poly_num):
         return self.data0.get_housenumbers_for_poly(data_level, poly_num)
 
+    def update_hlevel_in_node(self, grip, hlevel_value):
+        pass
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
@@ -1331,6 +1346,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         # update numbers positions when nodes are moved around
         self.remove_all_hlevel_labels()
         self.add_hlevel_labels()
+
+    def update_hlevel_in_node(self, grip, hlevel_value):
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        self.data0.set_hlevel_to_node(self.current_data_x, grip_poly_num, grip_coord_num, hlevel_value)
+        self.update_hlevel_labels()
 
     def remove_hlevel_labels(self, node_num):
         # remove hlevels labels when node is removed
@@ -1561,12 +1581,13 @@ class PolylineAddressNumber(QGraphicsSimpleTextItem):
             self.setAcceptHoverEvents(True)
         self.setText(str(text))
         qm_font = QFont()
-        qm_font.setPointSize(6)
+        qm_font.setPointSize(8)
         self.setFont(qm_font)
         self.setBrush(QBrush(QColor('blue')))
         self.setPos(self.mapFromScene(position))
         self.hovered_shape = None
         self.last_keyboard_press_time = None
+        self.cursor_before_hoverover = None
 
     def add_hovered_shape(self):
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
@@ -1577,16 +1598,16 @@ class PolylineAddressNumber(QGraphicsSimpleTextItem):
         hovered_over_pen.setWidth(self.pen().width() + 1)
         self.hovered_shape.setPen(hovered_over_pen)
 
-
     def hoverEnterEvent(self, event):
         self.setFocus(True)
         self.grabKeyboard()
         self.parent.hoverLeaveEvent(event)
+        self.cursor_before_hoverover = self.cursor()
+        self.setCursor(QCursor(Qt.IBeamCursor))
         super().hoverEnterEvent(event)
         self.add_hovered_shape()
         self.last_keyboard_press_time = 0
         self.scene().disable_maplevel_shortcuts()
-
 
     def hoverLeaveEvent(self, event):
         self.clearFocus()
@@ -1596,6 +1617,8 @@ class PolylineAddressNumber(QGraphicsSimpleTextItem):
         self.scene().enable_maplevel_shortcuts()
         super().hoverLeaveEvent(event)
         self.last_keyboard_press_time = None
+        self.setCursor(self.cursor_before_hoverover)
+        self.cursor_before_hoverover = None
 
     def keyPressEvent(self, event):
         _time = time.time()
@@ -1664,6 +1687,8 @@ class GripItem(QGraphicsPathItem):
         self.parent = parent
         self.hlevel = hlevel
         self.house_numbers = house_numbers
+        self.adr_labels = []
+        self.polygons_vectors = polygons_vectors
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
@@ -1685,25 +1710,33 @@ class GripItem(QGraphicsPathItem):
             _text = _text + ' ' + str(self.hlevel)
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
-        if house_numbers is not None:
-            if house_numbers.left_side_number_before is not None:
-                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
-                position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
-                adr = PolylineAddressNumber(position, house_numbers.left_side_number_before, self)
-            if house_numbers.left_side_number_after is not None:
-                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
-                position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
-                adr = PolylineAddressNumber(position, house_numbers.left_side_number_after, self)
-            if house_numbers.right_side_number_before is not None:
-                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1] - 1]
-                position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
-                adr = PolylineAddressNumber(position, house_numbers.right_side_number_before, self)
-            if house_numbers.right_side_number_after is not None:
-                line_segment_vector = polygons_vectors[grip_indexes[0]][grip_indexes[1]]
-                position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
-                adr = PolylineAddressNumber(position, house_numbers.right_side_number_after, self)
-
+        if self.house_numbers is not None:
+            self.add_housenumber_labels()
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
+
+    def add_housenumber_labels(self):
+        adr = list()
+        if self.house_numbers.left_side_number_before is not None:
+            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1] - 1]
+            position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
+            adr.append(PolylineAddressNumber(position, self.house_numbers.left_side_number_before, self))
+        if self.house_numbers.left_side_number_after is not None:
+            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1]]
+            position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
+            adr.append(PolylineAddressNumber(position, self.house_numbers.left_side_number_after, self))
+        if self.house_numbers.right_side_number_before is not None:
+            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1] - 1]
+            position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
+            adr.append(PolylineAddressNumber(position, self.house_numbers.right_side_number_before, self))
+        if self.house_numbers.right_side_number_after is not None:
+            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1]]
+            position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
+            adr.append(PolylineAddressNumber(position, self.house_numbers.right_side_number_after, self))
+        if adr:
+            self.adr_labels = adr
+        else:
+            self.adr_labels = None
+
 
     def get_numbers_position(self, line_segment_vector, subj_position):
         x = line_segment_vector.x()
@@ -1729,8 +1762,6 @@ class GripItem(QGraphicsPathItem):
         # print(rotated_vector, self.pos())
         return self.pos() + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
         # return self.pos() + 10 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
-
-
 
     def is_first_grip(self):
         return self.grip_indexes[1] == 0
@@ -1761,12 +1792,34 @@ class GripItem(QGraphicsPathItem):
         return self._boundingRect
 
     def hoverEnterEvent(self, event):
+        self.setFocus(True)
+        self.grabKeyboard()
+        self.scene().disable_maplevel_shortcuts()
         super().hoverEnterEvent(event)
         self._setHover(True)
 
     def hoverLeaveEvent(self, event):
+        self.clearFocus()
+        self.ungrabKeyboard()
+        self.scene().enable_maplevel_shortcuts()
         super().hoverLeaveEvent(event)
         self._setHover(False)
+
+    def keyPressEvent(self, event):
+        if event.text() == 'n':
+            print('wlaczam, wylaczam numeracje')
+        elif event.text() == 'h':
+            if self.hlevel is None:
+                self.parent.update_hlevel_in_node(self, 0)
+                self.hlevel = 0
+            else:
+                self.parent.update_hlevel_in_node(self, None)
+                self.hlevel = None
+        elif event.text().isdigit():
+            hl = int(event.text())
+            if self.hlevel is None:
+                self.hlevel = hl
+            self.parent.update_hlevel_in_node(self, hl)
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
