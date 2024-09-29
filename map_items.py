@@ -1313,8 +1313,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def update_label_pos(self):
         if self.label is not None:
-            self.label.setPos(self.label.get_label_pos())
-            self.label.setRotation(self.label.get_label_angle())
+            self.label.set_label_position()
 
     def add_hlevel_labels(self):
         # add hlevel numbers dependly on map level
@@ -1511,8 +1510,7 @@ class PolylineLabel(MapLabels):
     def __init__(self, string_text, parent):
         self.parent = parent
         super(PolylineLabel, self).__init__(string_text, parent)
-        self.setPos(self.get_label_pos())
-        self.setRotation(self.get_label_angle())
+        self.set_label_position()
         self.setZValue(20)
         self.set_transformation_flag()
 
@@ -1533,6 +1531,10 @@ class PolylineLabel(MapLabels):
         elif num_elem % 2 == 0:
             return QPointF(path.elementAt(num_elem // 2 - 1)), QPointF(path.elementAt(num_elem // 2))
         return QPointF(path.elementAt(num_elem // 2)), QPointF(path.elementAt(num_elem // 2 + 1))
+
+    def set_label_position(self):
+        self.setPos(self.get_label_pos())
+        self.setRotation(self.get_label_angle())
 
 
 class PolygonLabel(MapLabels):
