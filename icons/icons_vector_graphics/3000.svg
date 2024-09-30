@@ -2,17 +2,32 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="16"
+   height="16"
+   viewBox="0 0 4.2333333 4.2333333"
    version="1.1"
    id="svg1"
-   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
-   sodipodi:docname="3000.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="3000.svg">
+  <metadata
+     id="metadata8">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#ffffff"
@@ -23,35 +38,28 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="0.5697005"
-     inkscape:cx="-48.270977"
-     inkscape:cy="562.5763"
-     inkscape:window-width="1903"
-     inkscape:window-height="1266"
-     inkscape:window-x="3102"
-     inkscape:window-y="154"
-     inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:zoom="25.781701"
+     inkscape:cx="4.9876043"
+     inkscape:cy="4.6971564"
+     inkscape:window-width="1920"
+     inkscape:window-height="1055"
+     inkscape:window-x="1366"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px" />
   <defs
      id="defs1" />
   <g
      inkscape:label="Warstwa 1"
      inkscape:groupmode="layer"
-     id="layer1">
-    <rect
-       style="fill:none;stroke:#000000;stroke-width:0.522789;stroke-linecap:square;stroke-dasharray:none"
-       id="rect4"
-       width="159.47722"
-       height="159.47722"
-       x="24.416059"
-       y="30.235018" />
+     id="layer1"
+     transform="translate(0,-292.76667)">
     <path
-       d="M 71.822362,135.96659 V 61.592771 c 0,0 3.805685,-3.9145 15.222729,-3.9145 11.41705,0 19.028409,7.82883 30.445459,7.82883 11.41705,0 15.22273,-3.91442 15.22273,-3.91442 v 46.972989 c 0,0 -3.80568,3.91442 -15.22273,3.91442 -11.41705,0 -19.028409,-7.82883 -30.445459,-7.82883 -11.417044,0 -15.222729,3.91441 -15.222729,3.91441"
-       stroke="#000000"
-       stroke-width="8.69871"
-       stroke-linecap="round"
-       stroke-linejoin="round"
+       d="m 1.4437133,295.5871 v -1.50091 c 0,0 0.076801,-0.079 0.3072037,-0.079 0.230403,0 0.3840047,0.15799 0.6144077,0.15799 0.2304028,0 0.3072038,-0.079 0.3072038,-0.079 v 0.94795 c 0,0 -0.076801,0.079 -0.3072038,0.079 -0.230403,0 -0.3840047,-0.15799 -0.6144077,-0.15799 -0.2304027,0 -0.3072037,0.079 -0.3072037,0.079"
        id="path1"
-       style="fill:#ffffff" />
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.17554519;stroke-linecap:round;stroke-linejoin:round"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>
