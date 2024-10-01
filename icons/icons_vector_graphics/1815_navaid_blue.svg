@@ -2,17 +2,35 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="16"
+   height="16"
+   viewBox="0 0 4.2333333 4.2333333"
    version="1.1"
    id="svg1"
-   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
-   sodipodi:docname="1815.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="1815_navaid_blue.svg"
+   inkscape:export-filename="/home/piotr/projects/pwMapedit/icons/icons_vector_graphics/1912_navid_yellow.png"
+   inkscape:export-xdpi="200"
+   inkscape:export-ydpi="200">
+  <metadata
+     id="metadata9">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
   <sodipodi:namedview
      id="namedview1"
      pagecolor="#ffffff"
@@ -23,50 +41,48 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="1.139401"
-     inkscape:cx="324.2932"
-     inkscape:cy="484.02626"
-     inkscape:window-width="1903"
-     inkscape:window-height="1266"
-     inkscape:window-x="3372"
-     inkscape:window-y="199"
+     inkscape:zoom="25.781702"
+     inkscape:cx="2.4335284"
+     inkscape:cy="7.1978013"
+     inkscape:window-width="1366"
+     inkscape:window-height="768"
+     inkscape:window-x="1824"
+     inkscape:window-y="376"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px" />
   <defs
      id="defs1" />
   <g
      inkscape:label="Warstwa 1"
      inkscape:groupmode="layer"
-     id="layer1">
-    <rect
-       style="fill:none;stroke:#000000;stroke-width:0.522789;stroke-linecap:square;stroke-dasharray:none"
-       id="rect4"
-       width="159.47722"
-       height="159.47722"
-       x="24.416059"
-       y="30.235018" />
+     id="layer1"
+     transform="translate(0,-292.76667)">
     <path
        sodipodi:type="star"
-       style="fill:#000000;stroke:#000000;stroke-width:1.098;stroke-linecap:square"
+       style="fill:#ff6600;stroke:#000000;stroke-width:0.02194909;stroke-linecap:square;"
        id="path1"
        inkscape:flatsided="false"
        sodipodi:sides="6"
-       sodipodi:cx="83.364342"
-       sodipodi:cy="68.73494"
-       sodipodi:r1="57.532997"
-       sodipodi:r2="0.57532996"
+       sodipodi:cx="2.0681839"
+       sodipodi:cy="295.07611"
+       sodipodi:r1="1.1500883"
+       sodipodi:r2="0.011500882"
        sodipodi:arg1="0.52359878"
        sodipodi:arg2="1.0471976"
        inkscape:rounded="-3.469447e-18"
        inkscape:randomized="0"
-       d="M 133.18938,97.501438 83.652007,69.23319 83.364341,126.26794 83.076677,69.23319 33.539305,97.501438 82.789012,68.73494 33.539305,39.968441 83.076677,68.236689 83.364342,11.201942 83.652007,68.236689 133.18938,39.968441 83.939672,68.73494 Z"
-       inkscape:transform-center-x="1.0502594e-06"
-       transform="translate(20.790327,41.238688)" />
+       d="m 3.0641896,295.65115 -0.9902553,-0.56508 -0.00575,1.14013 -0.00575,-1.14013 -0.9902553,0.56508 0.9845048,-0.57504 -0.9845048,-0.57504 0.9902553,0.56508 0.00575,-1.14013 0.00575,1.14013 0.9902553,-0.56508 -0.9845048,0.57504 z"
+       inkscape:transform-center-x="-1.4736783e-06"
+       inkscape:transform-center-y="-4.6395183e-06"
+       transform="matrix(0.62753308,0,0,0.62753308,0.80249459,109.64994)" />
     <circle
-       style="fill:#0000ff;stroke:#000000;stroke-width:1.098;stroke-linecap:square"
+       style="fill:#0000ff;stroke:#000000;stroke-width:0.02194909;stroke-linecap:square"
        id="path2"
-       cx="104.15467"
-       cy="109.97363"
-       r="33.578724" />
+       cx="2.068182"
+       cy="295.07611"
+       r="0.67124081"
+       transform="matrix(0.62753308,0,0,0.62753308,0.80249459,109.64994)" />
   </g>
 </svg>
