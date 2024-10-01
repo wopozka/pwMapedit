@@ -871,220 +871,33 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self._mp_label = None
         self.current_data_x = 0
 
-    def _shape(self):
-        stroker = QPainterPathStroker()
-        if self.hovered_shape_id is not None:
-            stroker.setWidth(self.hovered_shape_id.pen().width() * self.non_cosmetic_multiplicity)
-        else:
-            stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
-        return stroker.createStroke(self.path())
-
     @staticmethod
     def accept_map_level_change():
         return True
 
-    def highlight_when_hoverover(self):
-        if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
-            return False
-        return True
-
-    @staticmethod
-    def create_painter_path(poly_lists, type_polygon=False):
-        path = QPainterPath()
-        for poly in poly_lists:
-            if type_polygon and poly[0] != poly[-1]:
-                poly.append(poly[0])
-            qpp = QPainterPath()
-            qpp.addPolygon(QPolygonF(poly))
-            path.addPath(qpp)
-        return path
-
-    @staticmethod
-    def get_polygons_from_path(path, type_polygon=False):
-        polygons = []
-        for poly in path.toSubpathPolygons():
-            # kopiuje wspolrzedne punktow esplicite, bo przez jakas referencje qpointf z path sie zmienialy
-            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
-            if type_polygon and poly.isClosed():
-                poly_coords.pop()
-            polygons.append(poly_coords)
-        return polygons
-
-    @staticmethod
-    def get_polygons_vectors(path, type_polygon=False):
-        polygon_vectors = []
-        for poly in path.toSubpathPolygons():
-            vectors = []
-            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
-            if type_polygon and poly.isClosed():
-                poly_coords.pop()
-            for coord_num in range(len(poly_coords)-1):
-                vectors.append(poly_coords[coord_num + 1] - poly_coords[coord_num])
-            polygon_vectors.append(vectors)
-        return polygon_vectors
-
-    def set_map_level(self):
-        level = self.scene().get_map_level()
-        # lets save the current path in case it's changed
-        self._mp_data[self.current_data_x] = self.path()
-        if self._mp_data[level] is not None:
-            self.remove_items_before_new_map_level_set()
-            self.setPath(self._mp_data[level])
-            self.current_data_x = level
-            self.add_items_after_new_map_level_set()
-            self.setVisible(True)
-        elif self.get_endlevel() < level:
-            if self.isVisible():
-                self.setVisible(False)
-        else:
-            if any(self._mp_data[a] is not None for a in range(level)):
-                if not self.isVisible():
-                    self.setVisible(True)
-            else:
-                if self.isVisible():
-                    self.setVisible(False)
-        return
-
-    def remove_items_before_new_map_level_set(self):
-        return
+    # when shape is hovered over, then around the shape is formed. Let's create it.
+    def add_hovered_shape(self):
+        # elem_shape = self.shape()
+        self.hovered_shape_id = HoveredShapePainterPath(self.path())
+        self.scene().addItem(self.hovered_shape_id)
+        # self.hovered_shape_id.setPos(self.pos())
+        self.hovered_shape_id.setZValue(self.zValue() - 1)
+        hovered_color = QColor('red')
+        # hovered_color.setAlpha(50)
+        hovered_over_pen = QPen(hovered_color)
+        hovered_over_pen.setCosmetic(True)
+        hovered_over_pen.setWidth(self.pen().width() + 2)
+        self.hovered_shape_id.setPen(hovered_over_pen)
+        # self.hovered_shape_id.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        self.setPen(self.hovered_over_pen)
+        self.hovered_shape_id.setParentItem(self)
+        self.hovered_shape_id.setOpacity(0.3)
 
     def add_items_after_new_map_level_set(self):
         return
 
-    def set_mp_data(self, level, data):
-        # to be defined separately for polygon and polyline
-        pass
-
     def add_label(self):
         pass
-
-    def remove_label(self):
-        if self.label is not None:
-            self.scene().removeItem(self.label)
-        self.label = None
-
-    def _move_grip(self, grip, type_polygon=False):
-        print('ruszam')
-        if grip not in self.node_grip_items:
-            return
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        try:
-            polygons[grip_poly_num][grip_coord_num] = grip.pos()
-        except IndexError:
-            return
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        self.refresh_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-
-    def move_grip(self, grip):
-        # do be defined in child classes
-        return
-
-    def remove_grip(self, grip):
-        # to be redefined in subclasses
-        return
-
-    def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected or self.node_grip_items:
-            self.setPen(self.selected_pen)
-        elif self.hovered and not self.node_grip_items:
-            self.setPen(self.hovered_over_pen)
-        else:
-            self.setPen(self.orig_pen)
-        super().paint(painter, option, widget=widget)
-
-    def setPen(self, pen):
-        if self.orig_pen is None:
-            self.orig_pen = pen
-        super().setPen(pen)
-
-    def _decorate(self, type_polygon=False):
-        print('dekoruje polygon', 'type_polygon', type_polygon)
-        if self.node_grip_items:
-            self.undecorate()
-        self.setZValue(self.zValue() + 100)
-        self.setOpacity(0.5)
-        # elapsed = datetime.now()
-        # polygons = self.path().toSubpathPolygons()
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=type_polygon)
-        for polygon_num, polygon in enumerate(polygons):
-            # elapsed = datetime.now()
-            hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
-            numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
-            for polygon_node_num, polygon_node in enumerate(polygon):
-                square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
-                                  hlevels[polygon_node_num], numbers[polygon_node_num], polygons_vectors, self)
-                self.node_grip_items.append(square)
-            # else:
-            #     self.node_grip_items.append(None)
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
-
-    def decorate(self):
-        # to be redefined in polyline and polygon classes
-        return
-
-    def undecorate(self):
-        print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
-        self.setZValue(self.zValue() - 100)
-        self.setOpacity(1)
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-        scene = self.scene()
-        for grip_item in self.node_grip_items:
-            if grip_item is not None:
-                scene.removeItem(grip_item)
-        self.node_grip_items = []
-        self.hoverLeaveEvent(None)
-
-    def _insert_point(self, index, pos, type_polygon=False):
-        # index is always > 0, so the first element will always be moveTo
-        path_num, coord_num = index
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        try:
-            polygon = polygons[path_num]
-            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
-            polygons[path_num] = polygon_modified
-        except IndexError:
-            return
-        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
-        self.undecorate()
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        self.decorate()
-
-    # to be override in other classes
-    def insert_point(self, index, pos, type_polygon=False):
-        return
-
-    def remove_point(self, grip, type_polygon=False):
-        # if there are 2 grip items in a path, then removal is not possible do not even try
-        # in another case decide later whether it is possible
-        if len(self.node_grip_items) <= 2:
-            return
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        print('remove_point')
-        print(grip_poly_num, grip_coord_num)
-        try:
-            polygons[grip_poly_num].pop(grip_coord_num)
-        except IndexError:
-            print('index error')
-            return
-        if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
-            return
-
-        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        # for grip_item in self.node_grip_items:
-        #     if grip_item is not None:
-        #         self.scene().removeItem(grip_item)
-        # self.node_grip_items = []
-        self.undecorate()
-        self.decorate()
-        self.refresh_arrow_heads()
-        self.update_label_pos()
-        self.remove_hlevel_labels(grip_coord_num)
 
     def _closest_point_to_poly(self, event_pos, type_polygon=False):
         """
@@ -1135,47 +948,82 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return min(intersections_for_separate_paths, key=lambda item: item[0])
         return -1, QPointF(), (0, -1)
 
+
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
         return -1, QPointF(), (0, -1)
 
-    def threshold(self):
-        if self._threshold is not None:
-            return self._threshold
-        return self.pen().width() or 1.
+    @staticmethod
+    def create_painter_path(poly_lists, type_polygon=False):
+        path = QPainterPath()
+        for poly in poly_lists:
+            if type_polygon and poly[0] != poly[-1]:
+                poly.append(poly[0])
+            qpp = QPainterPath()
+            qpp.addPolygon(QPolygonF(poly))
+            path.addPath(qpp)
+        return path
 
-    def set_threshold(self, threshold):
-        self._threshold = threshold
+    def _decorate(self, type_polygon=False):
+        print('dekoruje polygon', 'type_polygon', type_polygon)
+        if self.node_grip_items:
+            self.undecorate()
+        self.setZValue(self.zValue() + 100)
+        self.setOpacity(0.5)
+        # elapsed = datetime.now()
+        # polygons = self.path().toSubpathPolygons()
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=type_polygon)
+        for polygon_num, polygon in enumerate(polygons):
+            # elapsed = datetime.now()
+            hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
+            numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
+            for polygon_node_num, polygon_node in enumerate(polygon):
+                square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
+                                  hlevels[polygon_node_num], numbers[polygon_node_num], polygons_vectors, self)
+                self.node_grip_items.append(square)
+            # else:
+            #     self.node_grip_items.append(None)
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
+
+    def decorate(self):
+        # to be redefined in polyline and polygon classes
+        return
+
+    def get_hlevels_for_poly(self, data_level, poly_num):
+        return self.data0.get_hlevels_for_poly(data_level, poly_num)
+
+    def get_housenumbers_for_poly(self, data_level, poly_num):
+        return self.data0.get_housenumbers_for_poly(data_level, poly_num)
 
     @staticmethod
-    def is_point_removal_possible(num_elems_in_path):
-        return False
+    def get_polygons_from_path(path, type_polygon=False):
+        polygons = []
+        for poly in path.toSubpathPolygons():
+            # kopiuje wspolrzedne punktow esplicite, bo przez jakas referencje qpointf z path sie zmienialy
+            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
+            if type_polygon and poly.isClosed():
+                poly_coords.pop()
+            polygons.append(poly_coords)
+        return polygons
 
-    def refresh_arrow_heads(self):
-        return
+    @staticmethod
+    def get_polygons_vectors(path, type_polygon=False):
+        polygon_vectors = []
+        for poly in path.toSubpathPolygons():
+            vectors = []
+            poly_coords = [QPointF(p.x(), p.y()) for p in poly]
+            if type_polygon and poly.isClosed():
+                poly_coords.pop()
+            for coord_num in range(len(poly_coords)-1):
+                vectors.append(poly_coords[coord_num + 1] - poly_coords[coord_num])
+            polygon_vectors.append(vectors)
+        return polygon_vectors
 
-    def update_label_pos(self):
-        return
-
-    def update_hlevel_labels(self):
-        return
-
-    def remove_all_hlevel_labels(self):
-        pass
-
-    def remove_hlevel_labels(self, node_num):
-        return
-
-    # mouse events
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        self.remove_hovered_shape()
-        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
-            dist, pos, index = self.closest_point_to_poly(event.pos())
-            print(dist, pos, index)
-            if index[1] >= 0 and dist <= self.threshold():
-                self.insert_point(index, pos)
-                return
+    def highlight_when_hoverover(self):
+        if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
+            return False
+        return True
 
     def hoverEnterEvent(self, event):
         # print('hoverEnter')
@@ -1198,37 +1046,197 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
 
-    # when shape is hovered over, then around the shape is formed. Let's create it.
-    def add_hovered_shape(self):
-        # elem_shape = self.shape()
-        self.hovered_shape_id = HoveredShapePainterPath(self.path())
-        self.scene().addItem(self.hovered_shape_id)
-        # self.hovered_shape_id.setPos(self.pos())
-        self.hovered_shape_id.setZValue(self.zValue() - 1)
-        hovered_color = QColor('red')
-        # hovered_color.setAlpha(50)
-        hovered_over_pen = QPen(hovered_color)
-        hovered_over_pen.setCosmetic(True)
-        hovered_over_pen.setWidth(self.pen().width() + 2)
-        self.hovered_shape_id.setPen(hovered_over_pen)
-        # self.hovered_shape_id.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
-        self.setPen(self.hovered_over_pen)
-        self.hovered_shape_id.setParentItem(self)
-        self.hovered_shape_id.setOpacity(0.3)
+    def _insert_point(self, index, pos, type_polygon=False):
+        # index is always > 0, so the first element will always be moveTo
+        path_num, coord_num = index
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        try:
+            polygon = polygons[path_num]
+            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
+            polygons[path_num] = polygon_modified
+        except IndexError:
+            return
+        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
+        self.undecorate()
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.decorate()
+
+    # to be override in other classes
+    def insert_point(self, index, pos, type_polygon=False):
+        return
+
+    def is_in_node_edit_mode(self):
+        return True if self.node_grip_items else False
+
+    @staticmethod
+    def is_point_removal_possible(num_elems_in_path):
+        return False
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.remove_hovered_shape()
+        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
+            dist, pos, index = self.closest_point_to_poly(event.pos())
+            print(dist, pos, index)
+            if index[1] >= 0 and dist <= self.threshold():
+                self.insert_point(index, pos)
+                return
+
+    def _move_grip(self, grip, type_polygon=False):
+        print('ruszam')
+        if grip not in self.node_grip_items:
+            return
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num][grip_coord_num] = grip.pos()
+        except IndexError:
+            return
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.refresh_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+
+    def move_grip(self, grip):
+        # do be defined in child classes
+        return
+
+    def paint(self, painter, option, widget=None):
+        if option.state & QStyle.State_Selected or self.node_grip_items:
+            self.setPen(self.selected_pen)
+        elif self.hovered and not self.node_grip_items:
+            self.setPen(self.hovered_over_pen)
+        else:
+            self.setPen(self.orig_pen)
+        super().paint(painter, option, widget=widget)
+
+
+    def refresh_arrow_heads(self):
+        return
+
+    def remove_all_hlevel_labels(self):
+        pass
+
+    def remove_items_before_new_map_level_set(self):
+        return
+
+
+    def remove_hlevel_labels(self, node_num):
+        return
+
+    def remove_label(self):
+        if self.label is not None:
+            self.scene().removeItem(self.label)
+        self.label = None
+
+    def remove_grip(self, grip):
+        # to be redefined in subclasses
+        return
 
     def remove_hovered_shape(self):
         if self.hovered_shape_id is not None:
             self.scene().removeItem(self.hovered_shape_id)
             self.hovered_shape_id = None
 
-    def is_in_node_edit_mode(self):
-        return True if self.node_grip_items else False
+    def remove_point(self, grip, type_polygon=False):
+        # if there are 2 grip items in a path, then removal is not possible do not even try
+        # in another case decide later whether it is possible
+        if len(self.node_grip_items) <= 2:
+            return
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        print('remove_point')
+        print(grip_poly_num, grip_coord_num)
+        try:
+            polygons[grip_poly_num].pop(grip_coord_num)
+        except IndexError:
+            print('index error')
+            return
+        if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
+            return
 
-    def get_hlevels_for_poly(self, data_level, poly_num):
-        return self.data0.get_hlevels_for_poly(data_level, poly_num)
+        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        # for grip_item in self.node_grip_items:
+        #     if grip_item is not None:
+        #         self.scene().removeItem(grip_item)
+        # self.node_grip_items = []
+        self.undecorate()
+        self.decorate()
+        self.refresh_arrow_heads()
+        self.update_label_pos()
+        self.remove_hlevel_labels(grip_coord_num)
 
-    def get_housenumbers_for_poly(self, data_level, poly_num):
-        return self.data0.get_housenumbers_for_poly(data_level, poly_num)
+        def remove_all_hlevel_labels(self):
+            pass
+
+        def remove_hlevel_labels(self, node_num):
+            return
+
+    def set_mp_data(self, level, data):
+        # to be defined separately for polygon and polyline
+        pass
+
+    def set_map_level(self):
+        level = self.scene().get_map_level()
+        # lets save the current path in case it's changed
+        self._mp_data[self.current_data_x] = self.path()
+        if self._mp_data[level] is not None:
+            self.remove_items_before_new_map_level_set()
+            self.setPath(self._mp_data[level])
+            self.current_data_x = level
+            self.add_items_after_new_map_level_set()
+            self.setVisible(True)
+        elif self.get_endlevel() < level:
+            if self.isVisible():
+                self.setVisible(False)
+        else:
+            if any(self._mp_data[a] is not None for a in range(level)):
+                if not self.isVisible():
+                    self.setVisible(True)
+            else:
+                if self.isVisible():
+                    self.setVisible(False)
+        return
+
+    def setPen(self, pen):
+        if self.orig_pen is None:
+            self.orig_pen = pen
+        super().setPen(pen)
+
+    def _shape(self):
+        stroker = QPainterPathStroker()
+        if self.hovered_shape_id is not None:
+            stroker.setWidth(self.hovered_shape_id.pen().width() * self.non_cosmetic_multiplicity)
+        else:
+            stroker.setWidth(self.pen().width() * self.non_cosmetic_multiplicity)
+        return stroker.createStroke(self.path())
+
+    def set_threshold(self, threshold):
+        self._threshold = threshold
+
+    def threshold(self):
+        if self._threshold is not None:
+            return self._threshold
+        return self.pen().width() or 1.
+
+    def undecorate(self):
+        print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
+        self.setZValue(self.zValue() - 100)
+        self.setOpacity(1)
+        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        scene = self.scene()
+        for grip_item in self.node_grip_items:
+            if grip_item is not None:
+                scene.removeItem(grip_item)
+        self.node_grip_items = []
+        self.hoverLeaveEvent(None)
+
+    def update_label_pos(self):
+        return
+
+    def update_hlevel_labels(self):
+        return
 
     def update_hlevel_in_node(self, grip, hlevel_value):
         pass
