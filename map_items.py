@@ -1247,12 +1247,103 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                                                         projection=projection)
         self.arrow_head_items = []
         self.hlevel_labels = None
+        self.housenumber_labels = None
         self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
         self._mp_dir_indicator = False
         self.setZValue(10)
         self.setAcceptHoverEvents(True)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+
+
+    def add_arrow_heads(self):
+        if not self._mp_dir_indicator:
+            return
+        # lets add arrowhead every second segment
+        path = self.path()
+        for elem_num in range(0, path.elementCount() - 1, 2):
+            # QLineF could be used here, but due to the screen coordinates system, where y = -y, it is easier to
+            # create custom function to angle calculation
+            p1 = QPointF(path.elementAt(elem_num))
+            p2 = QPointF(path.elementAt(elem_num + 1))
+            position = p1 + (p2-p1) / 2
+            self.arrow_head_items.append(DirectionArrowHead(position, self))
+            angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
+                                                clockwise=True, screen_coord_system=True)
+            self.arrow_head_items[-1].setRotation(angle)
+
+    def add_hlevel_labels(self):
+        # add hlevel numbers dependly on map level
+        if self.hlevel_labels is None:
+            self.hlevel_labels = []
+        for poly_num, polygon in enumerate(self.get_polygons_from_path(self.path(), type_polygon=False)):
+            hlevels = self.get_hlevels_for_poly(self.current_data_x, poly_num)
+            for polygon_node_num, polygon_node in enumerate(polygon):
+                if hlevels[polygon_node_num] is None:
+                    continue
+                self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
+                self.hlevel_labels[-1].setPos(polygon_node)
+    def add_housenumber_labels(self):
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=False)
+        polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=False)
+        adr = list()
+        for polygon_num, polygon in enumerate(polygons):
+            numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
+            for polygon_node_num, polygon_node in enumerate(polygon):
+                house_numbers = numbers[polygon_node_num]
+                if house_numbers is None:
+                    continue
+                if house_numbers.left_side_number_before is not None:
+                    line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
+                    position = self.get_numbers_position(polygon_node, line_segment_vector,
+                                                         'left_side_number_before')
+                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
+                if house_numbers.left_side_number_after is not None:
+                    line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
+                    position = self.get_numbers_position(polygon_node, line_segment_vector,
+                                                         'left_side_number_after')
+                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
+                if house_numbers.right_side_number_before is not None:
+                    line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
+                    position = self.get_numbers_position(polygon_node, line_segment_vector,
+                                                         'right_side_number_before')
+                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self))
+                if house_numbers.right_side_number_after is not None:
+                    line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
+                    position = self.get_numbers_position(polygon_node, line_segment_vector,
+                                                         'right_side_number_after')
+                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self))
+        if adr:
+            self.housenumber_labels = adr
+        else:
+            self.housenumber_labels = None
+
+    def add_label(self):
+        label = self.get_label1()
+        if label is not None and label:
+            self.label = PolylineLabel(label, self)
+
+    def get_numbers_position(self, node_coords, line_segment_vector, subj_position):
+        x = line_segment_vector.x()
+        y = line_segment_vector.y()
+        vector_sign = 1
+        if subj_position == 'left_side_number_before':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+            vector_sign = -1
+
+        elif subj_position == 'left_side_number_after':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+        elif subj_position == 'right_side_number_after':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+        elif subj_position == 'right_side_number_before':
+            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
+                                                                screen_coord_system=True, qpointf=True)
+            vector_sign = -1
+        return node_coords + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
+
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
@@ -1284,6 +1375,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_label()
         if self.hlevel_labels is not None and self.hlevel_labels:
             self.remove_all_hlevel_labels()
+        if self.housenumber_labels is not None and self.housenumber_labels:
+            self.remove_housenumber_labels()
 
     def add_items_after_new_map_level_set(self):
         # print('add_items_after_new_map_level_set')
@@ -1291,6 +1384,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.add_arrow_heads()
         self.add_label()
         self.add_hlevel_labels()
+        self.add_housenumber_labels()
 
     def set_mp_dir_indicator(self, dir_indicator):
         self._mp_dir_indicator = dir_indicator
@@ -1302,53 +1396,26 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     # redefine shape function from QGraphicsPathItem, to be used in hoverover etc.
     def shape(self):
         return self._shape()
-
-    def add_arrow_heads(self):
-        if not self._mp_dir_indicator:
-            return
-        # lets add arrowhead every second segment
-        path = self.path()
-        for elem_num in range(0, path.elementCount() - 1, 2):
-            # QLineF could be used here, but due to the screen coordinates system, where y = -y, it is easier to
-            # create custom function to angle calculation
-            p1 = QPointF(path.elementAt(elem_num))
-            p2 = QPointF(path.elementAt(elem_num + 1))
-            position = p1 + (p2-p1) / 2
-            self.arrow_head_items.append(DirectionArrowHead(position, self))
-            angle = misc_functions.vector_angle(p2.x() - p1.x(), p2.y() - p1.y(),
-                                                clockwise=True, screen_coord_system=True)
-            self.arrow_head_items[-1].setRotation(angle)
-
+    
     def remove_arrow_heads(self):
         for arrow_head in self.arrow_head_items:
             self.scene().removeItem(arrow_head)
         self.arrow_head_items = []
 
     def refresh_arrow_heads(self):
+        # convinience function, instead call remove and add, just call one function
         if self.arrow_head_items:
             self.remove_arrow_heads()
             self.add_arrow_heads()
 
-    def add_label(self):
-        label = self.get_label1()
-        if label is not None and label:
-            self.label = PolylineLabel(label, self)
+    def remove_housenumber_labels(self):
+        for house_number in self.housenumber_labels:
+            self.scene().removeItem(house_number)
+        self.housenumber_labels = None
 
     def update_label_pos(self):
         if self.label is not None:
             self.label.set_label_position()
-
-    def add_hlevel_labels(self):
-        # add hlevel numbers dependly on map level
-        if self.hlevel_labels is None:
-            self.hlevel_labels = []
-        for poly_num, polygon in enumerate(self.get_polygons_from_path(self.path(), type_polygon=False)):
-            hlevels = self.get_hlevels_for_poly(self.current_data_x, poly_num)
-            for polygon_node_num, polygon_node in enumerate(polygon):
-                if hlevels[polygon_node_num] is None:
-                    continue
-                self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
-                self.hlevel_labels[-1].setPos(polygon_node)
 
     def update_hlevel_labels(self):
         # update numbers positions when nodes are moved around
