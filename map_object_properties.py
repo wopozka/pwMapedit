@@ -118,35 +118,57 @@ class MapObjectsProperties(object):
                                                0x4f: QColor('yellowgreen')
                                              }
 
-        self.polygon_properties_z_value = {0x4: 5,
-                                           0x5: 5,
-                                           0x13: 5,
-                                           0x14: 4,
-                                           0x15: 4,
-                                           0x16: 4,
-                                           0x17: 4,
-                                           0x19: 5,
-                                           0x1a: 5,
-                                           0x28: 1,
-                                           0x29: 1,
-                                           0x32: 1,
-                                           0x3b: 1,
-                                           0x3c: 1,  # large lake
-                                           0x3d: 5,  # large lake
-                                           0x3e: 5,  # medium lake
-                                           0x3f: 5,  # medium lake
-                                           0x40: 5,  # small lake
-                                           0x41: 5,  # small lake
-                                           0x42: 5,  # major lake
-                                           0x43: 5,  # major lake,
-                                           0x44: 5,  # large lake
-                                           0x45: 5,  # blue unknown
-                                           0x46: 5,  # major river
-                                           0x47: 5,  # large river
-                                           0x48: 5,  # medium river
-                                           0x49: 5,  # small river
-                                           0x4e: 5,  # orchard/plantation
-                                           0x4f: 5,  # scrub
+        self.polygon_properties_z_value = {0x1: 1, # Large urban area > 200K
+                                           0x2: 1, # small urban area < 200K
+                                           0x3: 1, # rural housing area
+                                           0x4: 1, # military base
+                                           0x5: 1, # parking lot
+                                           0x6: 1, # parking garage
+                                           0x7: 1, # airport
+                                           0x8: 3, # shopping center
+                                           0x9: 1, # marina
+                                           0xa: 2, # university/college
+                                           0xb: 2, # hospital
+                                           0xc: 2, # industrial complex
+                                           0xd: 2, # reservation
+                                           0xe: 2, # airport runway
+                                           0x13: 2, # building/man-made area
+                                           0x14: 2, # national park
+                                           0x15: 2, # national park
+                                           0x16: 2, # national park
+                                           0x17: 3, # city park
+                                           0x18: 3, # golf course
+                                           0x19: 3, # sport complex
+                                           0x1a: 4, # cemetery
+                                           0x1e: 2, # state park
+                                           0x1f: 2, # state park
+                                           0x20: 2, # state park
+                                           0x28: 1, # sea/ocean
+                                           0x29: 1, # blue-unknown
+                                           0x32: 1, # sea
+                                           0x3b: 1, # blue-unknown
+                                           0x3c: 8, # large lake 250-600 km2
+                                           0x3d: 8, # large lake 77-250 km2
+                                           0x3e: 8, # medium lake 25-77 km2
+                                           0x3f: 8, # medium lake 11-25 km2
+                                           0x40: 8, # small lake 0.25-11 km2
+                                           0x41: 8, # small lake < 0.25 km2
+                                           0x42: 8, # major lake > 3.3 tkm2
+                                           0x43: 8, # major lake, 1.1-3.3 tkm2
+                                           0x44: 4, # large lake 0.6-1.1 tkm2
+                                           0x45: 2, # blue unknown
+                                           0x46: 2, # major river > 1km
+                                           0x47: 2, # large river 200m-1km
+                                           0x48: 3, # medium river 20-200m
+                                           0x49: 4, # small river < 20 m
+                                           0x4c: 5, # intermittent water
+                                           0x4d: 5, # glacier
+                                           0x4e: 5, # orchard/plantation
+                                           0x4f: 5, # scrub
+                                           0x50: 3, # forest
+                                           0x51: 6, # wetland/swamp
+                                           0x52: 4, # tundra
+                                           0x53: 5, # sand/tidal/mud flat
                                            }
 
         self.polygon_type_vs_name = self.create_polygon_type_vs_name()
