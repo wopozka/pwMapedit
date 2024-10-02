@@ -1167,11 +1167,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.update_label_pos()
         self.remove_hlevel_labels(grip_coord_num)
 
-        def remove_all_hlevel_labels(self):
-            pass
+    def remove_all_hlevel_labels(self):
+        pass
 
-        def remove_hlevel_labels(self, node_num):
-            return
+    def remove_hlevel_labels(self, node_num):
+        return
 
     def set_mp_data(self, level, data):
         # to be defined separately for polygon and polyline
