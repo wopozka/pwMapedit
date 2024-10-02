@@ -73,12 +73,17 @@ def test_vector_angle(target, answer):
     assert misc_functions.vector_angle(target[0], target[1], clockwise=target[2], screen_coord_system=False) == answer
 
 TEST_VECTOR_ROTATED =(
-    ((1.0, 0.0, 90, False, False), (0.0, 1.0),),
+    ((1.0, 0.0, 90, False, False), (0.0, 1.0),), # x, y, obrót, clockwise, screen_coord_system
     ((1.0, 1.0, 90, False, False), (-1.0, 1.0),),
     ((1.0, 1.0, -90, False, False), (1.0, -1.0),),
     ((1.0, -1.0, 90, False, False), (1.0, 1.0),),
     ((-1.0, -1.0, 90, False, False), (1.0, -1.0),),
     ((1.0, 1.0, 90, False, True), (1.0, -1.0),),
+    ((100.0, 0.0, 90, False, False), (0.0, 100.0),),
+    ((100.0, 0.0, 270, False, False), (0.0, -100.0),),
+    # ((100.0, 0.0, 90, False, True), (0.0, 100.0),),
+    # ((100.0, 0.0, 270, False, True), (0.0, -100.0),),
+
 )
 
 @pytest.mark.parametrize('target, answer', TEST_VECTOR_ROTATED)

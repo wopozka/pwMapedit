@@ -76,3 +76,15 @@ def test_address_adding(target, answer):
         assert def_ == answer[node_num]
 
 
+TEST_ADRESS_NUMBER_POSITION = (
+# node_coords, line_segment_vector, subj_position
+#     ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'left_side_number_after',), QPointF(20.0, 20.0)),
+    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'right_side_number_after',), QPointF(20.0, -20.0)),
+    # ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'left_side_number_before',), QPointF(80, 20.0)),
+    # ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'right_side_number_before',), QPointF(80.0, -20.0)),
+
+)
+
+@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION)
+def test_get_numbers_position(target, answer):
+    assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], target[2]) == answer

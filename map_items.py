@@ -5,7 +5,7 @@ import misc_functions
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
-    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem
+    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsLineItem
 from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
@@ -125,8 +125,8 @@ class Data_X(object):
         self._last_data_level = 0
         self._last_poly_data_index = 0
 
-        # definicje numeracji
-        self._numbers_definitions = None
+        # definicje numeracji, odkąd numeracja jest w nodach, zbędne
+        # self._numbers_definitions = None
 
     def add_hlevels_from_string(self, hlevels_definition):
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
@@ -1323,10 +1323,12 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         if label is not None and label:
             self.label = PolylineLabel(label, self)
 
-    def get_numbers_position(self, node_coords, line_segment_vector, subj_position):
+    @staticmethod
+    def get_numbers_position(node_coords, line_segment_vector, subj_position):
         x = line_segment_vector.x()
         y = line_segment_vector.y()
         vector_sign = 1
+        rotated_vector = 0
         if subj_position == 'left_side_number_before':
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
@@ -1342,6 +1344,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
                                                                 screen_coord_system=True, qpointf=True)
             vector_sign = -1
+        aaa = misc_functions.unit_vector(x, y, qpointf=True)
+        bbb = node_coords + 20 * rotated_vector + 20 * vector_sign * aaa
         return node_coords + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
 
 
@@ -1650,7 +1654,7 @@ class PolylineAddressNumber(QGraphicsSimpleTextItem):
     def __init__(self, position, text, parent):
         self.parent = parent
         self.grip_mode = False
-        super(PolylineAddressNumber, self).__init__(parent)
+        super(PolylineAddressNumber, self).__init__(str(text), parent)
         if isinstance(parent, GripItem):
             self.grip_mode = True
             self.setAcceptHoverEvents(True)
