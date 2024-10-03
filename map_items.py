@@ -1666,7 +1666,7 @@ class PolygonLabel(MapLabels):
         return self.parent.boundingRect().center()
 
 
-class PolylineAddressNumber(QGraphicsSimpleTextItem):
+class PolylineAddressNumber(MapLabels):
     _accept_map_level_change = False
     def __init__(self, position, text, parent):
         self.parent = parent
