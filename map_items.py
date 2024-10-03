@@ -1016,7 +1016,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if type_polygon and poly.isClosed():
                 poly_coords.pop()
             for coord_num in range(len(poly_coords)-1):
-                vectors.append(poly_coords[coord_num + 1] - poly_coords[coord_num])
+                vectors.append(QLineF(poly_coords[coord_num + 1], poly_coords[coord_num]))
             polygon_vectors.append(vectors)
         return polygon_vectors
 
@@ -1296,23 +1296,19 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     continue
                 if house_numbers.left_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
-                    position = self.get_numbers_position(polygon_node, line_segment_vector,
-                                                         'left_side_number_before')
+                    position = self.get_numbers_position1(line_segment_vector, 'left_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
-                    position = self.get_numbers_position(polygon_node, line_segment_vector,
-                                                         'left_side_number_after')
+                    position = self.get_numbers_position1(line_segment_vector, 'left_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
                 if house_numbers.right_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
-                    position = self.get_numbers_position(polygon_node, line_segment_vector,
-                                                         'right_side_number_before')
+                    position = self.get_numbers_position1(line_segment_vector,'right_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self))
                 if house_numbers.right_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
-                    position = self.get_numbers_position(polygon_node, line_segment_vector,
-                                                         'right_side_number_after')
+                    position = self.get_numbers_position1(line_segment_vector,'right_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self))
         if adr:
             self.housenumber_labels = adr
@@ -1325,12 +1321,34 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.label = PolylineLabel(label, self)
 
     @staticmethod
+    def get_numbers_position1(line_segment_vector, subj_position):
+        # wartosci przy pointAt sa dobrane tak, aby zwracac poprawny wektor prostopadly, uwzgledniajac
+        # ze operujemy w ekranowych wspolrzednych.
+        if subj_position == 'left_side_number_before':
+            v_start = line_segment_vector.pointAt(0.8)
+            v_end = line_segment_vector.pointAt(0.6)
+        elif subj_position == 'left_side_number_after':
+            v_start = line_segment_vector.pointAt(0.2)
+            v_end = line_segment_vector.pointAt(0.0)
+        elif subj_position == 'right_side_number_after':
+            v_start = line_segment_vector.pointAt(0.2)
+            v_end = line_segment_vector.pointAt(0.4)
+        elif subj_position == 'right_side_number_before':
+            v_start = line_segment_vector.pointAt(0.8)
+            v_end = line_segment_vector.pointAt(1)
+        return QLineF(v_start, v_end).normalVector().p2()
+
+
+    @staticmethod
     def get_numbers_position(node_coords, line_segment_vector, subj_position):
         x = line_segment_vector.x()
         y = line_segment_vector.y()
         vector_sign = 1
         rotated_vector = 0
         if subj_position == 'left_side_number_before':
+            v_start = line_segment_vector.pointAt(0.8)
+            v_end = line_segment_vector.pointAt(0.6)
+            return QLineF(v_start, v_end).normalVector().p2()
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
                                                                 screen_coord_system=False, qpointf=True)
             vector_sign = -1

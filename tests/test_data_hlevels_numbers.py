@@ -100,3 +100,28 @@ TEST_ADRESS_NUMBER_POSITION = (
 @pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION)
 def test_get_numbers_position(target, answer):
     assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], target[2]) == answer
+
+TEST_ADRESS_NUMBER_POSITION1 = (
+# node_coords, line_segment_vector, subj_position
+    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_after',), QPointF(20.0, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_after',), QPointF(20.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_before',), QPointF(80, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_before',), QPointF(80.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'left_side_number_after',), QPointF(-20.0, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'right_side_number_after',), QPointF(20.0, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'left_side_number_before',), QPointF(-20, 80.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'right_side_number_before',), QPointF(20.0, 80.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'left_side_number_after',), QPointF(-20.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'right_side_number_after',), QPointF(-20.0, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'left_side_number_before',), QPointF(-80.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'right_side_number_before',), QPointF(-80.0, 20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'left_side_number_after',), QPointF(20.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'right_side_number_after',), QPointF(-20.0, -20.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'left_side_number_before',), QPointF(20, -80.0)),
+    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'right_side_number_before',), QPointF(-20.0, -80.0)),
+
+)
+
+@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION1)
+def test_get_numbers_position(target, answer):
+    assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1]) == answer
