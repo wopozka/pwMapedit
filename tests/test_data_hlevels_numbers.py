@@ -78,10 +78,22 @@ def test_address_adding(target, answer):
 
 TEST_ADRESS_NUMBER_POSITION = (
 # node_coords, line_segment_vector, subj_position
-#     ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'left_side_number_after',), QPointF(20.0, 20.0)),
-    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'right_side_number_after',), QPointF(20.0, -20.0)),
-    # ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'left_side_number_before',), QPointF(80, 20.0)),
-    # ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'right_side_number_before',), QPointF(80.0, -20.0)),
+    ((QPointF(0.0, 0.0), QPointF(100.0, 0.0), 'left_side_number_after',), QPointF(20.0, 20.0)),
+    ((QPointF(0.0, 0.0), QPointF(100.0, 0.0), 'right_side_number_after',), QPointF(20.0, -20.0)),
+    ((QPointF(100.0, 0.0), QPointF(100.0, 0.0), 'left_side_number_before',), QPointF(80, 20.0)),
+    ((QPointF(100.0, 0.0), QPointF(100.0, 0.0), 'right_side_number_before',), QPointF(80.0, -20.0)),
+    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'left_side_number_after',), QPointF(-20.0, 20.0)),
+    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'right_side_number_after',), QPointF(20.0, 20.0)),
+    ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'left_side_number_before',), QPointF(-20, 80.0)),
+    ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'right_side_number_before',), QPointF(20.0, 80.0)),
+    ((QPointF(0.0, 0.0), QPointF(-100.0, 0.0), 'left_side_number_after',), QPointF(-20.0, -20.0)),
+    ((QPointF(0.0, 0.0), QPointF(-100.0, 0.0), 'right_side_number_after',), QPointF(-20.0, 20.0)),
+    ((QPointF(-100.0, 0.0), QPointF(-100.0, 0.0), 'left_side_number_before',), QPointF(-80.0, -20.0)),
+    ((QPointF(-100.0, 0.0), QPointF(-100.0, 0.0), 'right_side_number_before',), QPointF(-80.0, 20.0)),
+    ((QPointF(0.0, 0.0), QPointF(0.0, -100.0), 'left_side_number_after',), QPointF(20.0, -20.0)),
+    ((QPointF(0.0, 0.0), QPointF(0.0, -100.0), 'right_side_number_after',), QPointF(-20.0, -20.0)),
+    ((QPointF(0.0, -100.0), QPointF(0.0, -100.0), 'left_side_number_before',), QPointF(20, -80.0)),
+    ((QPointF(0.0, -100.0), QPointF(0.0, -100.0), 'right_side_number_before',), QPointF(-20.0, -80.0)),
 
 )
 

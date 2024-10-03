@@ -1283,6 +1283,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     continue
                 self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
                 self.hlevel_labels[-1].setPos(polygon_node)
+
     def add_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=False)
         polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=False)
@@ -1331,21 +1332,19 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         rotated_vector = 0
         if subj_position == 'left_side_number_before':
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
+                                                                screen_coord_system=False, qpointf=True)
             vector_sign = -1
 
         elif subj_position == 'left_side_number_after':
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
+                                                                screen_coord_system=False, qpointf=True)
         elif subj_position == 'right_side_number_after':
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
+                                                                screen_coord_system=False, qpointf=True)
         elif subj_position == 'right_side_number_before':
             rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
+                                                                screen_coord_system=False, qpointf=True)
             vector_sign = -1
-        aaa = misc_functions.unit_vector(x, y, qpointf=True)
-        bbb = node_coords + 20 * rotated_vector + 20 * vector_sign * aaa
         return node_coords + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
 
 
