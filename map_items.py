@@ -1331,19 +1331,26 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         else:
             position_at_line_segment = 5 / line_segment_vector.length()
         if subj_position == 'left_side_number_before':
+            v_start_point = line_segment_vector.pointAt(1)
             v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1 - 2 * position_at_line_segment)
         elif subj_position == 'left_side_number_after':
+            v_start_point = line_segment_vector.pointAt(0)
             v_start = line_segment_vector.pointAt(position_at_line_segment)
             v_end = line_segment_vector.pointAt(0.0)
         elif subj_position == 'right_side_number_after':
+            v_start_point = line_segment_vector.pointAt(0)
             v_start = line_segment_vector.pointAt(position_at_line_segment)
             v_end = line_segment_vector.pointAt(2 * position_at_line_segment)
         elif subj_position == 'right_side_number_before':
+            v_start_point = line_segment_vector.pointAt(1)
             v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1)
-        return QLineF(v_start, v_end).normalVector().p2()
-
+        else:
+            v_start_point = None
+            v_start = None
+            v_end = None
+        return QLineF(v_start_point, QLineF(v_start, v_end).normalVector().p2())
 
     @staticmethod
     def get_numbers_position(node_coords, line_segment_vector, subj_position):
@@ -1509,12 +1516,18 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def paint(self, painter, option, widget=None):
         recreate_hlevel_labels = False
+        recreate_housenumber_labels = False
         if self.hlevel_labels is not None and self.hlevel_labels:
             self.remove_all_hlevel_labels()
             recreate_hlevel_labels = True
+        if self.housenumber_labels is not None and self.housenumber_labels:
+            self.remove_housenumber_labels()
+            recreate_housenumber_labels = True
         super().paint(painter, option, widget=None)
         if recreate_hlevel_labels:
             self.add_hlevel_labels()
+        if recreate_housenumber_labels:
+            self.add_housenumber_labels()
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
@@ -1686,13 +1699,18 @@ class PolylineAddressNumber(MapLabels):
         qm_font.setPointSize(8)
         self.setFont(qm_font)
         self.setBrush(QBrush(QColor('blue')))
-        self.setPos(self.mapFromScene(position))
+        _, _, pheight, pwidth = self.boundingRect().getRect()
+        self.setTransformOriginPoint(pheight / 2, pwidth / 2)
+        self.set_transformation_flag()
+        # # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
+        # # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skale
+        if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+            self.setPos(position.pointAt(1/self.scene().get_viewer_scale()))
+        else:
+            self.setPos(position.p2())
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
-        _, _, pheight, pwidth = self.boundingRect().getRect()
-        self.setTransformOriginPoint(pheight / 2, pwidth / 2)
-
 
     def add_hovered_shape(self):
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)

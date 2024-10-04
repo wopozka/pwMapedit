@@ -124,4 +124,4 @@ TEST_ADRESS_NUMBER_POSITION1 = (
 
 @pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION1)
 def test_get_numbers_position(target, answer):
-    assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True) == answer
+    assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True).p2() == answer
