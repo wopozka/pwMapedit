@@ -267,6 +267,25 @@ class Data_X(object):
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
+    def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
+        house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
+        nodes_with_nums = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a].node_has_numeration()]
+        if not nodes_with_nums:
+            return []
+        poly = self.get_polys_for_data_level(data_level)[poly_num]
+        poly_as_vectors = []
+        # create polyline elements as vectors
+        for node_num in range(len(poly -1)):
+            poly_as_vectors.append(QLineF(poly[node_num].x(), poly[node_num].y(),
+                                          poly[node_num + 1].x(), poly[node_num + 1].y()))
+
+        for elem_num in range(len(nodes_with_nums) - 1):
+            num_start = nodes_with_nums[elem_num]
+            num_end = nodes_with_nums[elem_num + 1]
+            lhs_interpolated = []
+
+
+
     def get_hlevels_for_poly(self, data_level, poly_num):
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_hlevel_definition() for node in polys[poly_num]]
