@@ -1329,7 +1329,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         if testing:
             position_at_line_segment = 0.2
         else:
-            position_at_line_segment = 10 / line_segment_vector.length()
+            position_at_line_segment = 5 / line_segment_vector.length()
         if subj_position == 'left_side_number_before':
             v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1 - 2 * position_at_line_segment)
@@ -1690,6 +1690,9 @@ class PolylineAddressNumber(MapLabels):
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
+        _, _, pheight, pwidth = self.boundingRect().getRect()
+        self.setTransformOriginPoint(pheight / 2, pwidth / 2)
+
 
     def add_hovered_shape(self):
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
