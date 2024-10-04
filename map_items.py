@@ -1764,7 +1764,7 @@ class PolylineLevelNumber(MapLabels):
 
     def paint(self, painter, option, widget):
         brush = QBrush(Qt.yellow)
-        painter.setBrush(brush);
+        painter.setBrush(brush)
         a, b, c, d = self.boundingRect().getRect()
         painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
         super().paint(painter, option, widget)
