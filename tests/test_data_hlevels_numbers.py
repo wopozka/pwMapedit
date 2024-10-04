@@ -125,3 +125,17 @@ TEST_ADRESS_NUMBER_POSITION1 = (
 @pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION1)
 def test_get_numbers_position(target, answer):
     assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True).p2() == answer
+
+INTERPOLATED_NUMBERS = (
+    ((1, 9, 'odd'),([3, 5, 7])),
+    ((9, 1, 'odd'),([7, 5, 3])),
+    ((2, 10, 'odd'),([3, 5, 7, 9])),
+    ((2, 10, 'even'),([4, 6, 8])),
+    ((10, 2, 'even'),([8, 6, 4])),
+    ((1, 11, 'even'),([2, 4, 6, 8, 10])),
+    ((11, 1, 'both'),([10, 9, 8, 7, 6, 5, 4, 3, 2])),
+
+)
+@pytest.mark.parametrize('target, answer', INTERPOLATED_NUMBERS)
+def test_get_numbers_position(target, answer):
+    assert map_items.Data_X.get_interpolated_numbers(target[0], target[1], target[2]) == answer

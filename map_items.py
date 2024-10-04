@@ -282,7 +282,31 @@ class Data_X(object):
         for elem_num in range(len(nodes_with_nums) - 1):
             num_start = nodes_with_nums[elem_num]
             num_end = nodes_with_nums[elem_num + 1]
-            lhs_interpolated = []
+
+
+
+    @staticmethod
+    def get_interpolated_numbers(start_point, end_point, even):
+        if (start_point - end_point) in (-1, 0, 1):
+            return []
+        if start_point > end_point:
+            step = -1
+            start_point -= 1
+        else:
+            step = 1
+            start_point += 1
+        numbers = []
+        for a in range(start_point, end_point, step):
+            if even == 'even':
+                if a % 2 == 0:
+                    numbers.append(a)
+            elif even == 'odd':
+                if a %2 == 1:
+                 numbers.append(a)
+            else:
+                numbers.append(a)
+        return numbers
+
 
 
 
