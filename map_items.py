@@ -1321,20 +1321,26 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.label = PolylineLabel(label, self)
 
     @staticmethod
-    def get_numbers_position1(line_segment_vector, subj_position):
+    def get_numbers_position1(line_segment_vector, subj_position, testing=False):
+        # testing=True is used or testing purposes, then values of for number position calculations are fixed
         # wartosci przy pointAt sa dobrane tak, aby zwracac poprawny wektor prostopadly, uwzgledniajac
         # ze operujemy w ekranowych wspolrzednych.
+
+        if testing:
+            position_at_line_segment = 0.2
+        else:
+            position_at_line_segment = 10 / line_segment_vector.length()
         if subj_position == 'left_side_number_before':
-            v_start = line_segment_vector.pointAt(0.8)
-            v_end = line_segment_vector.pointAt(0.6)
+            v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
+            v_end = line_segment_vector.pointAt(1 - 2 * position_at_line_segment)
         elif subj_position == 'left_side_number_after':
-            v_start = line_segment_vector.pointAt(0.2)
+            v_start = line_segment_vector.pointAt(position_at_line_segment)
             v_end = line_segment_vector.pointAt(0.0)
         elif subj_position == 'right_side_number_after':
-            v_start = line_segment_vector.pointAt(0.2)
-            v_end = line_segment_vector.pointAt(0.4)
+            v_start = line_segment_vector.pointAt(position_at_line_segment)
+            v_end = line_segment_vector.pointAt(2 * position_at_line_segment)
         elif subj_position == 'right_side_number_before':
-            v_start = line_segment_vector.pointAt(0.8)
+            v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1)
         return QLineF(v_start, v_end).normalVector().p2()
 
