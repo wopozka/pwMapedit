@@ -126,16 +126,27 @@ TEST_ADRESS_NUMBER_POSITION1 = (
 def test_get_numbers_position(target, answer):
     assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True).p2() == answer
 
-INTERPOLATED_NUMBERS = (
-    ((1, 9, 'odd'),([3, 5, 7])),
-    ((9, 1, 'odd'),([7, 5, 3])),
-    ((2, 10, 'odd'),([3, 5, 7, 9])),
-    ((2, 10, 'even'),([4, 6, 8])),
-    ((10, 2, 'even'),([8, 6, 4])),
-    ((1, 11, 'even'),([2, 4, 6, 8, 10])),
-    ((11, 1, 'both'),([10, 9, 8, 7, 6, 5, 4, 3, 2])),
+NUMBERS_BETWEEN = (
+    ((1, 9, 'odd'), ([3, 5, 7])),
+    ((9, 1, 'odd'), ([7, 5, 3])),
+    ((2, 10, 'odd'), ([3, 5, 7, 9])),
+    ((2, 10, 'even'), ([4, 6, 8])),
+    ((10, 2, 'even'), ([8, 6, 4])),
+    ((1, 11, 'even'), ([2, 4, 6, 8, 10])),
+    ((11, 1, 'both'), ([10, 9, 8, 7, 6, 5, 4, 3, 2])),
 
 )
-@pytest.mark.parametrize('target, answer', INTERPOLATED_NUMBERS)
+@pytest.mark.parametrize('target, answer', NUMBERS_BETWEEN)
 def test_get_numbers_position(target, answer):
-    assert map_items.Data_X.get_interpolated_numbers(target[0], target[1], target[2]) == answer
+    assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
+
+INTERPOLATED_NUMS_COORDS = (
+#     (([QLineF(0, 0, 0, 1)], [3]), [(QPointF(0, 0.5), 3)],),
+#     (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QPointF(0, 1), 1), (QPointF(0, 2), 2), (QPointF(0, 3), 3)],),
+    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QPointF(0, 1.5), 3)],),
+)
+
+@pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
+def test_get_numbers_position(target, answer):
+    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
+    assert answer_list == answer

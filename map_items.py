@@ -20,6 +20,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
                                 )
 
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
+Interpolated_Number = namedtuple('Interpolated_Number', ['coordinate', 'number'])
 
 class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
@@ -49,9 +50,6 @@ class Node(QPointF):
 
     def clear_numbers_definiton(self):
         self._numbers_definitions = None
-
-    def set_hlevel_definition(self, definition):
-        self._hlevel_definition = definition
 
     def get_hlevel_definition(self):
         return self._hlevel_definition
@@ -91,6 +89,9 @@ class Node(QPointF):
         if self.node_ends_numeration():
             return True
         return False
+
+    def set_hlevel_definition(self, definition):
+        self._hlevel_definition = definition
 
     def set_numbers_definition(self, field_name, definition):
         if self._numbers_definitions is None:
@@ -268,6 +269,7 @@ class Data_X(object):
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
+        interpolated_numbers = {'left': [], 'right': []}
         house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
         nodes_with_nums = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a].node_has_numeration()]
         if not nodes_with_nums:
@@ -275,18 +277,24 @@ class Data_X(object):
         poly = self.get_polys_for_data_level(data_level)[poly_num]
         poly_as_vectors = []
         # create polyline elements as vectors
-        for node_num in range(len(poly -1)):
-            poly_as_vectors.append(QLineF(poly[node_num].x(), poly[node_num].y(),
-                                          poly[node_num + 1].x(), poly[node_num + 1].y()))
-
         for elem_num in range(len(nodes_with_nums) - 1):
-            num_start = nodes_with_nums[elem_num]
-            num_end = nodes_with_nums[elem_num + 1]
+            left_num_style = house_numbers_defs[elem_num].get_specific_number_definition('left_side_numbering_style')
+            left_num_start = house_numbers_defs[elem_num].get_specific_number_definition('left_side_number_after')
+            left_num_end = house_numbers_defs[elem_num + 1].get_specific_number_definition('left_side_number_before')
+            right_num_style = house_numbers_defs[elem_num].get_specific_number_definition('right_side_numbering_style')
+            right_num_start = house_numbers_defs[elem_num].get_specific_number_definition('right_side_number_after')
+            right_num_end = house_numbers_defs[elem_num + 1].get_specific_number_definition('right_side_number_before')
+
+            on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
+            on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
+            poly_vectors = self.get_poly_vectors(data_level, poly_num, elem_num, elem_num + 1)
+            interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
+            interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
 
 
 
     @staticmethod
-    def get_interpolated_numbers(start_point, end_point, even):
+    def get_numbers_between(start_point, end_point, num_style):
         if (start_point - end_point) in (-1, 0, 1):
             return []
         if start_point > end_point:
@@ -297,15 +305,56 @@ class Data_X(object):
             start_point += 1
         numbers = []
         for a in range(start_point, end_point, step):
-            if even == 'even':
+            if num_style == 'even':
                 if a % 2 == 0:
                     numbers.append(a)
-            elif even == 'odd':
-                if a %2 == 1:
-                 numbers.append(a)
+            elif num_style == 'odd':
+                if a % 2 == 1:
+                    numbers.append(a)
             else:
                 numbers.append(a)
         return numbers
+
+    @staticmethod
+    def get_interpolated_numbers_coordinates(poly_vectors, numbers):
+        numbers_coords = list()
+        polys_lenght = 0
+        for p_vector in poly_vectors:
+            polys_lenght += p_vector.length()
+        lenght_per_num = polys_lenght/(len(numbers) + 1)
+
+        cur_vector = 0
+        vector_l_to_subtract = 0
+        for num in numbers:
+            coord_found = False
+            while not coord_found:
+                if vector_l_to_subtract:
+                    if vector_l_to_subtract > poly_vectors[cur_vector].length():
+                        vector_l_to_subtract += poly_vectors[cur_vector].length()
+                        cur_vector += 1
+                        continue
+                    else:
+                        coordinate = poly_vectors[cur_vector].pointAt(vector_l_to_subtract/vector_l_to_subtract)
+                        poly_vectors[cur_vector].setP1(coordinate)
+                        vector_l_to_subtract = 0
+                if poly_vectors[cur_vector].length() > lenght_per_num:
+                    coordinate = poly_vectors[cur_vector].pointAt(lenght_per_num/vector_l_to_subtract)
+                    numbers_coords.append(Interpolated_Number(coordinate, num))
+                    coord_found = True
+                    poly_vectors[cur_vector].setP1(coordinate)
+                    vector_l_to_subtract = 0
+                elif poly_vectors[cur_vector].length() == lenght_per_num:
+                    coordinate = poly_vectors[cur_vector].p2()
+                    numbers_coords.append(Interpolated_Number(coordinate, num))
+                    coord_found = True
+                    cur_vector += 1
+                    vector_l_to_subtract = 0
+                else:
+                    # poly_vectors[cur_vector].length() < lenght_per_num:
+                    vector_l_to_subtract = poly_vectors[cur_vector].length()
+                    cur_vector += 1
+
+        return numbers_coords
 
 
 
@@ -331,6 +380,17 @@ class Data_X(object):
             else:
                 returned_data.append(data_list)
         return returned_data
+
+    def get_poly_vectors(self, data_level, poly_num, start_node_num, end_node_num):
+        poly = self.get_polys_for_data_level(data_level)[poly_num]
+        poly_vectors = list()
+        for vector_num in range(len(end_node_num - start_node_num)):
+            x1 = poly[vector_num].x()
+            y1 = poly[vector_num].y()
+            x2 = poly[vector_num + 1].x()
+            y2 = poly[vector_num + 1].y()
+            poly_vectors.append(QLineF(x1, y1, x2, y2))
+        return poly_vectors
 
     def insert_node_at_position(self, data_level, polynum, index, x, y):
         polygon = self._poly_data_points[data_level][polynum]
