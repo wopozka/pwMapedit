@@ -290,7 +290,7 @@ class Data_X(object):
             poly_vectors = self.get_poly_vectors(data_level, poly_num, elem_num, elem_num + 1)
             interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
             interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
-
+        return interpolated_numbers
 
 
     @staticmethod
@@ -315,50 +315,10 @@ class Data_X(object):
                 numbers.append(a)
         return numbers
 
-    @staticmethod
-    def get_interpolated_numbers_coordinates(poly_vectors, numbers):
-        numbers_coords = list()
-        polys_lenght = 0
-        for p_vector in poly_vectors:
-            polys_lenght += p_vector.length()
-        lenght_per_num = polys_lenght/(len(numbers) + 1)
-
-        cur_vector = 0
-        vector_l_to_subtract = 0
-        for num in numbers:
-            coord_found = False
-            while not coord_found:
-                if vector_l_to_subtract:
-                    if vector_l_to_subtract > poly_vectors[cur_vector].length():
-                        vector_l_to_subtract += poly_vectors[cur_vector].length()
-                        cur_vector += 1
-                        continue
-                    else:
-                        coordinate = poly_vectors[cur_vector].pointAt(vector_l_to_subtract/vector_l_to_subtract)
-                        poly_vectors[cur_vector].setP1(coordinate)
-                        vector_l_to_subtract = 0
-                if poly_vectors[cur_vector].length() > lenght_per_num:
-                    coordinate = poly_vectors[cur_vector].pointAt(lenght_per_num/vector_l_to_subtract)
-                    numbers_coords.append(Interpolated_Number(coordinate, num))
-                    coord_found = True
-                    poly_vectors[cur_vector].setP1(coordinate)
-                    vector_l_to_subtract = 0
-                elif poly_vectors[cur_vector].length() == lenght_per_num:
-                    coordinate = poly_vectors[cur_vector].p2()
-                    numbers_coords.append(Interpolated_Number(coordinate, num))
-                    coord_found = True
-                    cur_vector += 1
-                    vector_l_to_subtract = 0
-                else:
-                    # poly_vectors[cur_vector].length() < lenght_per_num:
-                    vector_l_to_subtract = poly_vectors[cur_vector].length()
-                    cur_vector += 1
-
-        return numbers_coords
 
     @staticmethod
-    def get_interpolated_numbers_coordinates1(poly_vectors, numbers, current_num_distance=0,
-                                              default_num_distance=-1, poly_length=-1):
+    def get_interpolated_numbers_coordinates(poly_vectors, numbers, current_num_distance=0,
+                                             default_num_distance=-1, poly_length=-1):
         if not numbers:
             return []
         if poly_length == -1:
