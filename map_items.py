@@ -20,7 +20,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
                                 )
 
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
-Interpolated_Number = namedtuple('Interpolated_Number', ['coordinate', 'number'])
+Interpolated_Number = namedtuple('Interpolated_Number', ['vector', 'number'])
 
 class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
@@ -355,6 +355,57 @@ class Data_X(object):
                     cur_vector += 1
 
         return numbers_coords
+
+    @staticmethod
+    def get_interpolated_numbers_coordinates1(poly_vectors, numbers, current_num_distance=0,
+                                              default_num_distance=-1, poly_length=-1):
+        if not numbers:
+            return []
+        if poly_length == -1:
+            poly_length = 0
+            for p_vector in poly_vectors:
+                poly_length += p_vector.length()
+        if default_num_distance == -1:
+            default_num_distance = poly_length/(len(numbers) + 1)
+        if current_num_distance == 0:
+            current_num_distance = default_num_distance
+        poly_length = poly_vectors[0].length()
+        if poly_length > current_num_distance:
+            poly_vectors[0].setP1(poly_vectors[0].pointAt(current_num_distance/poly_length))
+            num = numbers[0]
+            unit_vector = poly_vectors[0].unitVector()
+            numbers = numbers[1:]
+            current_num_distance = 0
+            return ([Interpolated_Number(unit_vector, num)] +
+                    Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+                                                                 current_num_distance=current_num_distance,
+                                                                 default_num_distance=default_num_distance,
+                                                                 poly_length=poly_length))
+        elif poly_length == current_num_distance:
+            uv = poly_vectors[0].unitVector()
+            x = poly_vectors[0].x2()
+            y = poly_vectors[0].y2()
+            unit_vector = QLineF(x, y, x + uv.dx(), y + uv.dy())
+            poly_vectors = poly_vectors[1:]
+            num = numbers[0]
+            numbers = numbers[1:]
+            current_num_distance = 0
+            return ([Interpolated_Number(unit_vector, num)] +
+                    Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+                                                                 current_num_distance=current_num_distance,
+                                                                 default_num_distance=default_num_distance,
+                                                                 poly_length=poly_length))
+        else:
+            current_num_distance -= poly_length
+            poly_vectors = poly_vectors[1:]
+            return ([] + Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+                                                                      current_num_distance=current_num_distance,
+                                                                      default_num_distance=default_num_distance,
+                                                                      poly_length=poly_length))
+
+
+
+
 
 
 

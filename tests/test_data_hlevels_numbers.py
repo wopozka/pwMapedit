@@ -141,12 +141,12 @@ def test_get_numbers_position(target, answer):
     assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
 
 INTERPOLATED_NUMS_COORDS = (
-#     (([QLineF(0, 0, 0, 1)], [3]), [(QPointF(0, 0.5), 3)],),
-#     (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QPointF(0, 1), 1), (QPointF(0, 2), 2), (QPointF(0, 3), 3)],),
-    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QPointF(0, 1.5), 3)],),
+    (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0.5, 0, 1.5, 0), 3),],),
+    (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 1, 0, 2), 1), (QLineF(0, 2, 0, 3), 2), (QLineF(0, 3, 0, 4), 3)],),
+    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1.5, 0, 2.5), 3)],),
 )
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
 def test_get_numbers_position(target, answer):
-    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
+    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates1(target[0], target[1])]
     assert answer_list == answer
