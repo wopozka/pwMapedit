@@ -278,7 +278,7 @@ class Data_X(object):
         # indeksow numerow ktore zawieraja numeracje. Potem bedzie mozna sie posuwac o jeden w przod
         nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
         if not nodes_with_nums_idx:
-            return []
+            return interpolated_numbers
 
         for elem_num in range(len(nodes_with_nums_idx) - 1):
             # index noda w ktorym zaczyna sie numeracja
@@ -305,7 +305,6 @@ class Data_X(object):
                 on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
                 interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
         return interpolated_numbers
-
 
     @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
@@ -1126,7 +1125,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             # elapsed = datetime.now()
             hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
             interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
-            if interpolated_numbers:
+            if interpolated_numbers is not None:
                 self.interpolated_house_numbers_labels = []
                 for num_def in interpolated_numbers:
                     self.interpolated_house_numbers_labels.append(PolylineAddressNumber(num_def[0], num_def[1], self))
@@ -1152,7 +1151,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return self.data0.get_housenumbers_for_poly(data_level, poly_num)
 
     def get_interpolated_housenumbers(self, data_level, poly_num):
-        return []
+        return None
 
     @staticmethod
     def get_polygons_from_path(path, type_polygon=False):
@@ -1281,8 +1280,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def remove_items_before_new_map_level_set(self):
         return
 
-
     def remove_hlevel_labels(self, node_num):
+        return
+
+    def remove_interpolated_house_numbers(self):
         return
 
     def remove_label(self):
@@ -1386,13 +1387,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.setZValue(self.zValue() - 100)
         self.setOpacity(1)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-        scene = self.scene()
-        for interpolated_num in self.interpolated_house_numbers_labels:
-            scene.removeItem(interpolated_num)
-        self.interpolated_house_numbers_labels = None
+        self.remove_interpolated_house_numbers()
         for grip_item in self.node_grip_items:
             if grip_item is not None:
-                scene.removeItem(grip_item)
+                self.scene().removeItem(grip_item)
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
 
@@ -1597,6 +1595,12 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         for house_number in self.housenumber_labels:
             self.scene().removeItem(house_number)
         self.housenumber_labels = None
+
+    def remove_interpolated_house_numbers(self):
+        if self.interpolated_house_numbers_labels is not None:
+            for interpolated_num in self.interpolated_house_numbers_labels:
+                self.scene().removeItem(interpolated_num)
+            self.interpolated_house_numbers_labels = None
 
     def update_label_pos(self):
         if self.label is not None:
