@@ -90,6 +90,9 @@ class Node(QPointF):
             return True
         return False
 
+    def __str__(self):
+        return str(self._numbers_definitions)
+
     def set_hlevel_definition(self, definition):
         self._hlevel_definition = definition
 
@@ -271,25 +274,36 @@ class Data_X(object):
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}
         house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
-        nodes_with_nums = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a].node_has_numeration()]
-        if not nodes_with_nums:
+        # pozniej trzeba poruszac sie po nodzie z numerem i nodzie nastepnym, dlatego trzeba zbudowac liste
+        # indeksow numerow ktore zawieraja numeracje. Potem bedzie mozna sie posuwac o jeden w przod
+        nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
+        if not nodes_with_nums_idx:
             return []
-        poly = self.get_polys_for_data_level(data_level)[poly_num]
-        poly_as_vectors = []
-        # create polyline elements as vectors
-        for elem_num in range(len(nodes_with_nums) - 1):
-            left_num_style = house_numbers_defs[elem_num].get_specific_number_definition('left_side_numbering_style')
-            left_num_start = house_numbers_defs[elem_num].get_specific_number_definition('left_side_number_after')
-            left_num_end = house_numbers_defs[elem_num + 1].get_specific_number_definition('left_side_number_before')
-            right_num_style = house_numbers_defs[elem_num].get_specific_number_definition('right_side_numbering_style')
-            right_num_start = house_numbers_defs[elem_num].get_specific_number_definition('right_side_number_after')
-            right_num_end = house_numbers_defs[elem_num + 1].get_specific_number_definition('right_side_number_before')
 
-            on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
-            on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
+        for elem_num in range(len(nodes_with_nums_idx) - 1):
+            # index noda w ktorym zaczyna sie numeracja
+            start_node_idx = nodes_with_nums_idx[elem_num]
+            # index noda w ktorym konczy sie numeracja
+            end_node_idx = nodes_with_nums_idx[elem_num + 1]
+            node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
+            node_with_num_plus = self.get_poly_node(data_level, poly_num, end_node_idx, False)
+            # create polyline elements as vectors
             poly_vectors = self.get_poly_vectors(data_level, poly_num, elem_num, elem_num + 1)
-            interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
-            interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
+
+            left_num_style = node_with_num.get_specific_number_definition('left_side_numbering_style')
+            if left_num_style != 'N':
+                left_num_start = node_with_num.get_specific_number_definition('left_side_number_after')
+                left_num_end = node_with_num_plus.get_specific_number_definition('left_side_number_before')
+                on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
+                interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
+
+            right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
+
+            if right_num_style != 'N':
+                right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
+                right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
+                on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
+                interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
         return interpolated_numbers
 
 
@@ -305,10 +319,10 @@ class Data_X(object):
             start_point += 1
         numbers = []
         for a in range(start_point, end_point, step):
-            if num_style == 'even':
+            if num_style == 'E':
                 if a % 2 == 0:
                     numbers.append(a)
-            elif num_style == 'odd':
+            elif num_style == 'O':
                 if a % 2 == 1:
                     numbers.append(a)
             else:
@@ -376,6 +390,15 @@ class Data_X(object):
         return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
                 'W': self._bounding_box_E}
 
+    def get_poly_node(self, data_level, poly_num, node_num, qpointsf):
+        if data_level not in self._data_levels:
+            return None
+        data_list = self._poly_data_points[self._data_levels.index(data_level)]
+        nodes_list = data_list[poly_num]
+        if qpointsf:
+            return nodes_list[node_num].get_canvas_coords_as_qpointf()
+        return nodes_list[node_num]
+
     def get_poly_nodes(self, data_level, qpointsf):
         if data_level not in self._data_levels:
             return None
@@ -401,12 +424,13 @@ class Data_X(object):
 
         Returns
         -------
+
         list: list of QLineF vectors
 
         """
         poly = self.get_polys_for_data_level(data_level)[poly_num]
         poly_vectors = list()
-        for vector_num in range(len(end_node_num - start_node_num)):
+        for vector_num in range(end_node_num - start_node_num):
             x1 = poly[vector_num].x()
             y1 = poly[vector_num].y()
             x2 = poly[vector_num + 1].x()
@@ -1098,14 +1122,17 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
             # elapsed = datetime.now()
             hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
-            numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
+            interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
+            if interpolated_numbers:
+                self.interpolated_house_numbers_labels = []
+                for num_def in interpolated_numbers:
+                    self.interpolated_house_numbers_labels.append(PolylineAddressNumber(num_def[0], num_def[1], self))
             for polygon_node_num, polygon_node in enumerate(polygon):
                 square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
-                                  hlevels[polygon_node_num], numbers[polygon_node_num], polygons_vectors, self)
+                                  hlevels[polygon_node_num], self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
@@ -1115,11 +1142,17 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # to be redefined in polyline and polygon classes
         return
 
+    def decorated(self):
+        return True if self.node_grip_items else False
+
     def get_hlevels_for_poly(self, data_level, poly_num):
         return self.data0.get_hlevels_for_poly(data_level, poly_num)
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
         return self.data0.get_housenumbers_for_poly(data_level, poly_num)
+
+    def get_interpolated_housenumbers(self, data_level, poly_num):
+        return []
 
     @staticmethod
     def get_polygons_from_path(path, type_polygon=False):
@@ -1354,6 +1387,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.setOpacity(1)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         scene = self.scene()
+        for interpolated_num in self.interpolated_house_numbers_labels:
+            scene.removeItem(interpolated_num)
+        self.interpolated_house_numbers_labels = None
         for grip_item in self.node_grip_items:
             if grip_item is not None:
                 scene.removeItem(grip_item)
@@ -1376,6 +1412,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.arrow_head_items = []
         self.hlevel_labels = None
         self.housenumber_labels = None
+        self.interpolated_house_numbers_labels = None
         self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
         self._mp_dir_indicator = False
@@ -1480,6 +1517,18 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             v_end = None
         return QLineF(v_start_point, QLineF(v_start, v_end).normalVector().p2())
 
+    def get_interpolated_housenumbers(self, data_level, poly_num):
+        inter_num = self.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
+        numbers = []
+        for num_def in inter_num['left']:
+            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
+            h_num = num_def.number
+            numbers.append((vector.unitVector(), h_num,))
+        for num_def in inter_num['right']:
+            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
+            h_num = num_def.number
+            numbers.append((vector.unitVector(), h_num,))
+        return numbers
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
@@ -1619,12 +1668,13 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def paint(self, painter, option, widget=None):
         recreate_hlevel_labels = False
         recreate_housenumber_labels = False
-        if self.hlevel_labels is not None and self.hlevel_labels:
-            self.remove_all_hlevel_labels()
-            recreate_hlevel_labels = True
-        if self.housenumber_labels is not None and self.housenumber_labels:
-            self.remove_housenumber_labels()
-            recreate_housenumber_labels = True
+        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
+            if self.hlevel_labels is not None and self.hlevel_labels:
+                self.remove_all_hlevel_labels()
+                recreate_hlevel_labels = True
+            if self.housenumber_labels is not None and self.housenumber_labels:
+                self.remove_housenumber_labels()
+                recreate_housenumber_labels = True
         super().paint(painter, option, widget=None)
         if recreate_hlevel_labels:
             self.add_hlevel_labels()
@@ -1793,7 +1843,7 @@ class PolylineAddressNumber(MapLabels):
         self.parent = parent
         self.grip_mode = False
         super(PolylineAddressNumber, self).__init__(str(text), parent)
-        if isinstance(parent, GripItem):
+        if self.parent.decorated():
             self.grip_mode = True
             self.setAcceptHoverEvents(True)
         self.setText(str(text))
@@ -1906,14 +1956,12 @@ class GripItem(QGraphicsPathItem):
     _boundingRect = square.boundingRect()
     _accept_map_level_change = False
 
-    def __init__(self, pos, grip_indexes, hlevel, house_numbers, polygons_vectors, parent):
+    def __init__(self, pos, grip_indexes, hlevel, parent):
         super().__init__()
         self.grip_indexes = grip_indexes
         self.parent = parent
         self.hlevel = hlevel
-        self.house_numbers = house_numbers
         self.adr_labels = []
-        self.polygons_vectors = polygons_vectors
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
@@ -1931,62 +1979,9 @@ class GripItem(QGraphicsPathItem):
         self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
         # self.set_transformation_flag()
         _text = str(self.grip_indexes)
-        if self.hlevel is not None:
-            _text = _text + ' ' + str(self.hlevel)
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
-        if self.house_numbers is not None:
-            self.add_housenumber_labels()
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
-
-    def add_housenumber_labels(self):
-        adr = list()
-        if self.house_numbers.left_side_number_before is not None:
-            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1] - 1]
-            position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
-            adr.append(PolylineAddressNumber(position, self.house_numbers.left_side_number_before, self))
-        if self.house_numbers.left_side_number_after is not None:
-            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1]]
-            position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
-            adr.append(PolylineAddressNumber(position, self.house_numbers.left_side_number_after, self))
-        if self.house_numbers.right_side_number_before is not None:
-            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1] - 1]
-            position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
-            adr.append(PolylineAddressNumber(position, self.house_numbers.right_side_number_before, self))
-        if self.house_numbers.right_side_number_after is not None:
-            line_segment_vector = self.polygons_vectors[self.grip_indexes[0]][self.grip_indexes[1]]
-            position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
-            adr.append(PolylineAddressNumber(position, self.house_numbers.right_side_number_after, self))
-        if adr:
-            self.adr_labels = adr
-        else:
-            self.adr_labels = None
-
-
-    def get_numbers_position(self, line_segment_vector, subj_position):
-        x = line_segment_vector.x()
-        y = line_segment_vector.y()
-        vector_sign = 1
-        if subj_position == 'left_side_number_before':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
-            vector_sign = -1
-
-        elif subj_position == 'left_side_number_after':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
-        elif subj_position == 'right_side_number_after':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
-        elif subj_position == 'right_side_number_before':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=True, qpointf=True)
-            vector_sign = -1
-
-        # return self.mapFromScene(rotated_vector + self.pos())
-        # print(rotated_vector, self.pos())
-        return self.pos() + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
-        # return self.pos() + 10 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
 
     def is_first_grip(self):
         return self.grip_indexes[1] == 0
