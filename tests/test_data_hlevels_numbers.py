@@ -141,9 +141,9 @@ def test_get_numbers_position(target, answer):
     assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
 
 INTERPOLATED_NUMS_COORDS = (
-    (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0.5, 0, 1.5, 0), 3),],),
-    (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 1, 0, 2), 1), (QLineF(0, 2, 0, 3), 2), (QLineF(0, 3, 0, 4), 3)],),
-    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1.5, 0, 2.5), 3)],),
+    (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0, 0, 1, 0), QPointF(0.5, 0), 3),],),
+    (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
+    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
 )
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
