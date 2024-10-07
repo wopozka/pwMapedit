@@ -78,7 +78,7 @@ def test_address_adding(target, answer):
         assert def_ == answer[node_num]
 
 
-TEST_ADRESS_NUMBER_POSITION1 = (
+TEST_ADRESS_NUMBER_POSITION = (
 # node_coords, line_segment_vector, subj_position
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_after',), QPointF(20.0, 20.0)),
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_after',), QPointF(20.0, -20.0)),
@@ -99,9 +99,9 @@ TEST_ADRESS_NUMBER_POSITION1 = (
 
 )
 
-@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION1)
-def test_get_numbers_position1(target, answer):
-    assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True).p2() == answer
+@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION)
+def test_get_numbers_position(target, answer):
+    assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], testing=True).p2() == answer
 
 NUMBERS_BETWEEN = (
     ((1, 9, 'odd'), ([3, 5, 7])),

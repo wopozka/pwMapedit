@@ -1424,19 +1424,19 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     continue
                 if house_numbers.left_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
-                    position = self.get_numbers_position1(line_segment_vector, 'left_side_number_before')
+                    position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
-                    position = self.get_numbers_position1(line_segment_vector, 'left_side_number_after')
+                    position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
                 if house_numbers.right_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
-                    position = self.get_numbers_position1(line_segment_vector,'right_side_number_before')
+                    position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self))
                 if house_numbers.right_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
-                    position = self.get_numbers_position1(line_segment_vector,'right_side_number_after')
+                    position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self))
         if adr:
             self.housenumber_labels = adr
@@ -1449,7 +1449,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.label = PolylineLabel(label, self)
 
     @staticmethod
-    def get_numbers_position1(line_segment_vector, subj_position, testing=False):
+    def get_numbers_position(line_segment_vector, subj_position, testing=False):
         # testing=True is used or testing purposes, then values of for number position calculations are fixed
         # wartosci przy pointAt sa dobrane tak, aby zwracac poprawny wektor prostopadly, uwzgledniajac
         # ze operujemy w ekranowych wspolrzednych.
