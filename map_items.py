@@ -337,7 +337,7 @@ class Data_X(object):
             numbers = numbers[1:]
             current_num_distance = 0
             return ([Interpolated_Number(unit_vector, num)] +
-                    Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                  current_num_distance=current_num_distance,
                                                                  default_num_distance=default_num_distance,
                                                                  poly_length=poly_length))
@@ -351,23 +351,17 @@ class Data_X(object):
             numbers = numbers[1:]
             current_num_distance = 0
             return ([Interpolated_Number(unit_vector, num)] +
-                    Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                  current_num_distance=current_num_distance,
                                                                  default_num_distance=default_num_distance,
                                                                  poly_length=poly_length))
         else:
             current_num_distance -= poly_length
             poly_vectors = poly_vectors[1:]
-            return ([] + Data_X.get_interpolated_numbers_coordinates1(poly_vectors, numbers,
+            return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                       current_num_distance=current_num_distance,
                                                                       default_num_distance=default_num_distance,
                                                                       poly_length=poly_length))
-
-
-
-
-
-
 
 
     def get_hlevels_for_poly(self, data_level, poly_num):

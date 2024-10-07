@@ -148,5 +148,5 @@ INTERPOLATED_NUMS_COORDS = (
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
 def test_get_numbers_position(target, answer):
-    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates1(target[0], target[1])]
+    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer
