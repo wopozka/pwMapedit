@@ -388,6 +388,22 @@ class Data_X(object):
         return returned_data
 
     def get_poly_vectors(self, data_level, poly_num, start_node_num, end_node_num):
+        """
+        generating polygon vectors for each path. Each path is split to separate polygons and then each polygon
+        is converted to single vectors. In Poly class there is similar function, but those one creates
+        vectors from path, it creates vectors for all path, not separate points.
+        Parameters
+        ----------
+        data_level: int, data level
+        poly_num: int, number of polygon
+        start_node_num: int, start node number
+        end_node_num: int, end node number
+
+        Returns
+        -------
+        list: list of QLineF vectors
+
+        """
         poly = self.get_polys_for_data_level(data_level)[poly_num]
         poly_vectors = list()
         for vector_num in range(len(end_node_num - start_node_num)):
@@ -1118,6 +1134,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     @staticmethod
     def get_polygons_vectors(path, type_polygon=False):
+        # generating polygon vectors from path. Each path is split to separate polygons and then each polygon
+        # is converted to single vectors. In data_x class there is similar function, but those one creates
+        # vectors from Data data, and additionally one can get vectors between given path points.
         polygon_vectors = []
         for poly in path.toSubpathPolygons():
             vectors = []
