@@ -25,11 +25,12 @@ def test_data_levels(target, answer):
     proj = projection.Mercator(None)
     data_obj = map_items.Data_X(projection=proj)
     for dataline in target:
-        data_obj.add_nodes_from_string(dataline)
+        data_level, data_string = dataline.split('=', 1)
+        data_obj.add_nodes_from_string(data_level, data_string)
     assert data_obj.get_data_levels() == answer
 
 
-DATA_TEST = (
+DATA_TEST1 = (
     (('Data0=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',
       'Data0=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',
       'Data1=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',
@@ -46,12 +47,13 @@ DATA_TEST = (
       'Data4=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)'), (4, 0)),
 
 )
-@pytest.mark.parametrize('target, answer', DATA_TEST)
+@pytest.mark.parametrize('target, answer', DATA_TEST1)
 def test_data_levels(target, answer):
     proj = projection.Mercator(None)
     data_obj = map_items.Data_X(projection=proj)
     for dataline in target:
-        data_obj.add_nodes_from_string(dataline)
+        data_level, data_string = dataline.split('=', 1)
+        data_obj.add_nodes_from_string(data_level, data_string)
     assert data_obj.get_last_data_level_and_last_index() == answer
 
 TEST_ADDRESS_ADDING = (
@@ -76,31 +78,6 @@ def test_address_adding(target, answer):
         assert def_ == answer[node_num]
 
 
-TEST_ADRESS_NUMBER_POSITION = (
-# node_coords, line_segment_vector, subj_position
-    ((QPointF(0.0, 0.0), QPointF(100.0, 0.0), 'left_side_number_after',), QPointF(20.0, 20.0)),
-    ((QPointF(0.0, 0.0), QPointF(100.0, 0.0), 'right_side_number_after',), QPointF(20.0, -20.0)),
-    ((QPointF(100.0, 0.0), QPointF(100.0, 0.0), 'left_side_number_before',), QPointF(80, 20.0)),
-    ((QPointF(100.0, 0.0), QPointF(100.0, 0.0), 'right_side_number_before',), QPointF(80.0, -20.0)),
-    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'left_side_number_after',), QPointF(-20.0, 20.0)),
-    ((QPointF(0.0, 0.0), QPointF(0.0, 100.0), 'right_side_number_after',), QPointF(20.0, 20.0)),
-    ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'left_side_number_before',), QPointF(-20, 80.0)),
-    ((QPointF(0.0, 100.0), QPointF(0.0, 100.0), 'right_side_number_before',), QPointF(20.0, 80.0)),
-    ((QPointF(0.0, 0.0), QPointF(-100.0, 0.0), 'left_side_number_after',), QPointF(-20.0, -20.0)),
-    ((QPointF(0.0, 0.0), QPointF(-100.0, 0.0), 'right_side_number_after',), QPointF(-20.0, 20.0)),
-    ((QPointF(-100.0, 0.0), QPointF(-100.0, 0.0), 'left_side_number_before',), QPointF(-80.0, -20.0)),
-    ((QPointF(-100.0, 0.0), QPointF(-100.0, 0.0), 'right_side_number_before',), QPointF(-80.0, 20.0)),
-    ((QPointF(0.0, 0.0), QPointF(0.0, -100.0), 'left_side_number_after',), QPointF(20.0, -20.0)),
-    ((QPointF(0.0, 0.0), QPointF(0.0, -100.0), 'right_side_number_after',), QPointF(-20.0, -20.0)),
-    ((QPointF(0.0, -100.0), QPointF(0.0, -100.0), 'left_side_number_before',), QPointF(20, -80.0)),
-    ((QPointF(0.0, -100.0), QPointF(0.0, -100.0), 'right_side_number_before',), QPointF(-20.0, -80.0)),
-
-)
-
-@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION)
-def test_get_numbers_position(target, answer):
-    assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], target[2]) == answer
-
 TEST_ADRESS_NUMBER_POSITION1 = (
 # node_coords, line_segment_vector, subj_position
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_after',), QPointF(20.0, 20.0)),
@@ -123,7 +100,7 @@ TEST_ADRESS_NUMBER_POSITION1 = (
 )
 
 @pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION1)
-def test_get_numbers_position(target, answer):
+def test_get_numbers_position1(target, answer):
     assert map_items.PolylineQGraphicsPathItem.get_numbers_position1(target[0], target[1], testing=True).p2() == answer
 
 NUMBERS_BETWEEN = (
@@ -137,7 +114,7 @@ NUMBERS_BETWEEN = (
 
 )
 @pytest.mark.parametrize('target, answer', NUMBERS_BETWEEN)
-def test_get_numbers_position(target, answer):
+def test_get_numbers_between(target, answer):
     assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
 
 INTERPOLATED_NUMS_COORDS = (
@@ -148,6 +125,6 @@ INTERPOLATED_NUMS_COORDS = (
 )
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
-def test_get_numbers_position(target, answer):
+def test_interpolated_number_coordinates(target, answer):
     answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer

@@ -1480,32 +1480,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             v_end = None
         return QLineF(v_start_point, QLineF(v_start, v_end).normalVector().p2())
 
-    @staticmethod
-    def get_numbers_position(node_coords, line_segment_vector, subj_position):
-        x = line_segment_vector.x()
-        y = line_segment_vector.y()
-        vector_sign = 1
-        rotated_vector = 0
-        if subj_position == 'left_side_number_before':
-            v_start = line_segment_vector.pointAt(0.8)
-            v_end = line_segment_vector.pointAt(0.6)
-            return QLineF(v_start, v_end).normalVector().p2()
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=False, qpointf=True)
-            vector_sign = -1
-
-        elif subj_position == 'left_side_number_after':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 90, clockwise=False,
-                                                                screen_coord_system=False, qpointf=True)
-        elif subj_position == 'right_side_number_after':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=False, qpointf=True)
-        elif subj_position == 'right_side_number_before':
-            rotated_vector = misc_functions.unit_vector_rotated(x, y, 270, clockwise=False,
-                                                                screen_coord_system=False, qpointf=True)
-            vector_sign = -1
-        return node_coords + 20 * rotated_vector + 20 * vector_sign * misc_functions.unit_vector(x, y, qpointf=True)
-
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
