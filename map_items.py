@@ -1138,17 +1138,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.decorated_poly_nums.append(polygon_num)
             # elapsed = datetime.now()
             hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
-            # interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
-            # if interpolated_numbers is not None:
-            #     self.interpolated_house_numbers_labels = []
-            #     for num_def in interpolated_numbers:
-            #         self.interpolated_house_numbers_labels.append(PolylineAddressNumber(num_def[0], num_def[1], self))
             for polygon_node_num, polygon_node in enumerate(polygon):
                 square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
                                   hlevels[polygon_node_num], self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
+        self.set_hover_over_for_address_labels(True)
         self.add_interpolated_housenumber_labels()
         self.setFlags(QGraphicsItem.ItemIsSelectable)
 
@@ -1353,6 +1349,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def remove_hlevel_labels(self, node_num):
         return
 
+    def set_hover_over_for_address_labels(self, value):
+        return
+
     def set_mp_data(self, level, data):
         # to be defined separately for polygon and polyline
         pass
@@ -1410,6 +1409,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if grip_item is not None:
                 self.scene().removeItem(grip_item)
         self.node_grip_items = []
+        self.set_hover_over_for_address_labels(False)
         self.hoverLeaveEvent(None)
         self.decorated_poly_nums = None
 
@@ -1604,6 +1604,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.add_label()
         self.add_hlevel_labels()
         self.add_housenumber_labels()
+
+    def set_hover_over_for_address_labels(self, value):
+        for house_num in self.housenumber_labels:
+            house_num.setAcceptHoverEvents(value)
 
     def set_mp_dir_indicator(self, dir_indicator):
         self._mp_dir_indicator = dir_indicator
@@ -1879,9 +1883,9 @@ class PolylineAddressNumber(MapLabels):
         self.grip_mode = False
         self.position = position
         super(PolylineAddressNumber, self).__init__(str(text), parent)
-        if self.parent.decorated():
-            self.grip_mode = True
-            self.setAcceptHoverEvents(True)
+        # if self.parent.decorated():
+        #     self.grip_mode = True
+        #     self.setAcceptHoverEvents(True)
         self.setText(str(text))
         qm_font = QFont()
         qm_font.setPointSize(8)
