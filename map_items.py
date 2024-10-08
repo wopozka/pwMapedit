@@ -333,8 +333,10 @@ class Data_X(object):
 
 
     @staticmethod
-    def get_interpolated_numbers_coordinates(poly_vectors, numbers, current_num_distance=0,
+    def get_interpolated_numbers_coordinates(poly_vectors1, numbers1, current_num_distance=0,
                                              default_num_distance=-1, poly_length=-1):
+        poly_vectors = [QLineF(a.p1(), a.p2()) for a in poly_vectors1]
+        numbers = [a for a in numbers1]
         if not numbers:
             return []
         if poly_length == -1:
@@ -1884,16 +1886,13 @@ class PolylineAddressNumber(MapLabels):
         self.grip_mode = False
         self.position = position
         super(PolylineAddressNumber, self).__init__(str(text), parent)
-        # if self.parent.decorated():
-        #     self.grip_mode = True
-        #     self.setAcceptHoverEvents(True)
         self.setText(str(text))
         qm_font = QFont()
-        qm_font.setPointSize(8)
+        qm_font.setPointSize(6)
         self.setFont(qm_font)
         self.setBrush(QBrush(QColor('blue')))
-        _, _, pheight, pwidth = self.boundingRect().getRect()
-        self.setTransformOriginPoint(pheight / 2, pwidth / 2)
+        # _, _, pheight, pwidth = self.boundingRect().getRect()
+        # self.setTransformOriginPoint(pheight / 2, pwidth / 2)
         self.set_transformation_flag()
         self.set_pos(self.position)
         self.hovered_shape = None
