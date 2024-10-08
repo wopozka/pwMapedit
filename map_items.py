@@ -1189,7 +1189,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if type_polygon and poly.isClosed():
                 poly_coords.pop()
             for coord_num in range(len(poly_coords)-1):
-                vectors.append(QLineF(poly_coords[coord_num + 1], poly_coords[coord_num]))
+                vectors.append(QLineF(poly_coords[coord_num], poly_coords[coord_num + 1]))
             polygon_vectors.append(vectors)
         return polygon_vectors
 
@@ -1478,6 +1478,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=False)
         polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=False)
+        print(polygons_vectors)
         adr = list()
         for polygon_num, polygon in enumerate(polygons):
             numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
@@ -1491,6 +1492,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
+                    print(line_segment_vector)
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
                 if house_numbers.right_side_number_before is not None:
