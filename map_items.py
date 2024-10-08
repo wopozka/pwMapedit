@@ -1606,8 +1606,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.add_housenumber_labels()
 
     def set_hover_over_for_address_labels(self, value):
-        for house_num in self.housenumber_labels:
-            house_num.setAcceptHoverEvents(value)
+        if self.housenumber_labels is not None and self.housenumber_labels:
+            for house_num in self.housenumber_labels:
+                house_num.setAcceptHoverEvents(value)
 
     def set_mp_dir_indicator(self, dir_indicator):
         self._mp_dir_indicator = dir_indicator

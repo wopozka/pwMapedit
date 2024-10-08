@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import (QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
+                             QPushButton)
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
 
@@ -38,7 +39,10 @@ class MapObjPropDock(QDockWidget):
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
+        reverse_direction_button = QPushButton('Invert direction', dock_widget)
+        reverse_direction_button.clicked.connect(self.reverse_polyline)
         dir_box.addWidget(self.poly_direction)
+        dir_box.addWidget(reverse_direction_button)
         dock_box.addLayout(dir_box)
 
         comment_label = QLabel("Comment (mapper's private note stored in MP file only)", dock_widget)
@@ -64,6 +68,9 @@ class MapObjPropDock(QDockWidget):
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
         dock_box.addLayout(extras_box)
+
+    def reverse_polyline(self, event):
+        print('reversing polyline')
 
     def set_map_object_id(self, obj_id):
         self.map_object_id = obj_id
