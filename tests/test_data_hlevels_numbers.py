@@ -122,10 +122,36 @@ INTERPOLATED_NUMS_COORDS = (
     (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
     (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
     (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(99, 0), 1), (QLineF(100, 0, 200, 0), QPointF(199, 0), 2), (QLineF(200, 0, 300, 0), QPointF(299, 0), 3), (QLineF(300, 0, 400, 0), QPointF(399, 0), 4)],),
-    (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(99, 0), 1), (QLineF(100, 0, 200, 0), QPointF(199, 0), 2), (QLineF(200, 0, 300, 0), QPointF(299, 0), 3), (QLineF(300, 0, 400, 0), QPointF(399, 0), 4)],),
 )
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
 def test_interpolated_number_coordinates(target, answer):
     answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer
+
+INTERPOLATED_ADDRESSES = (
+        (('(53.14643,16.72784),(53.14661,16.72864),(53.14683,16.72958),(53.14712,16.73131),(53.14735,16.73287),(53.14748,16.73392),(53.14758,16.73477),(53.14766,16.73534)',
+          'Numbers1=0,E,50,48,O,31,29',
+          'Numbers2=1,E,46,46,O,27,21',
+          'Numbers3=2,E,44,32,N,-1,-1',
+          'Numbers4=3,E,30,20,O,13,11',
+          'Numbers5=4,E,18,14,O,9,7',
+          'Numbers6=5,E,12,6,O,5,1',
+          'Numbers7=6,E,4,2,N,-1,-1',),([])),
+)
+
+
+@pytest.mark.parametrize('target, answer', INTERPOLATED_ADDRESSES)
+def test_address_adding_from_str(target, answer):
+    proj = projection.Mercator(None)
+    data_obj = map_items.Data_X(projection=proj)
+    data_obj.add_nodes_from_string('Data0', target[0])
+    data_obj.add_housenumbers_from_string(target[1])
+    data_obj.add_housenumbers_from_string(target[2])
+    data_obj.add_housenumbers_from_string(target[3])
+    data_obj.add_housenumbers_from_string(target[4])
+    data_obj.add_housenumbers_from_string(target[5])
+    data_obj.add_housenumbers_from_string(target[6])
+    data_obj.add_housenumbers_from_string(target[7])
+
+    assert data_obj.get_interpolated_housenumbers_for_poly(0, 0) == answer
