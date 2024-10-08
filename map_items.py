@@ -1520,12 +1520,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         numbers = []
         for num_def in inter_num['left']:
             vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
-            h_num = num_def.number
-            numbers.append((vector.unitVector(), h_num,))
+            numbers.append((vector.unitVector(), num_def.number,))
         for num_def in inter_num['right']:
-            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
-            h_num = num_def.number
-            numbers.append((vector.unitVector(), h_num,))
+            vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
+            numbers.append((vector.unitVector(), num_def.number,))
         return numbers
 
     def set_mp_data(self):
