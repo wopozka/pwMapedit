@@ -298,7 +298,6 @@ class Data_X(object):
                 interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
 
             right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
-
             if right_num_style != 'N':
                 right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
                 right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
@@ -1519,11 +1518,13 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         inter_num = self.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
         numbers = []
         for num_def in inter_num['left']:
+            print(num_def.position)
             vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
             numbers.append((vector.unitVector(), num_def.number,))
-        for num_def in inter_num['right']:
-            vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
-            numbers.append((vector.unitVector(), num_def.number,))
+        # for num_def in inter_num['right']:
+        #     vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
+        #     numbers.append((vector.unitVector(), num_def.number,))
+        print(numbers)
         return numbers
 
     def set_mp_data(self):
