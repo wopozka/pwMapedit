@@ -93,6 +93,10 @@ class Node(QPointF):
     def __str__(self):
         return str(self._numbers_definitions)
 
+    def set_coordinates_from_qpointf(self, position):
+        self.setX(position.x())
+        self.setY(position.y())
+
     def set_hlevel_definition(self, definition):
         self._hlevel_definition = definition
 
@@ -428,7 +432,7 @@ class Data_X(object):
         """
         poly = self.get_polys_for_data_level(data_level)[poly_num]
         poly_vectors = list()
-        for vector_num in range(end_node_num - start_node_num):
+        for vector_num in range(start_node_num, end_node_num):
             x1 = poly[vector_num].x()
             y1 = poly[vector_num].y()
             x2 = poly[vector_num + 1].x()
@@ -462,6 +466,10 @@ class Data_X(object):
                 self._bounding_box_E = longitude
         return
 
+    def update_node_coordinates(self, data_level, polynum, index, position):
+        polygon = self.get_polys_for_data_level(data_level)[polynum]
+        polygon_nod = polygon[index]
+        polygon_nod.set_coordinates_from_qpointf(position)
 
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
@@ -1017,6 +1025,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # self._mp_end_level = 0
         self._mp_label = None
         self.current_data_x = 0
+        self.decorated_poly_nums = None
 
     @staticmethod
     def accept_map_level_change():
@@ -1039,6 +1048,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.setPen(self.hovered_over_pen)
         self.hovered_shape_id.setParentItem(self)
         self.hovered_shape_id.setOpacity(0.3)
+
+    def add_interpolated_housenumber_labels(self):
+        return
 
     def add_items_after_new_map_level_set(self):
         return
@@ -1121,19 +1133,23 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
         for polygon_num, polygon in enumerate(polygons):
+            if self.decorated_poly_nums is None:
+                self.decorated_poly_nums = []
+            self.decorated_poly_nums.append(polygon_num)
             # elapsed = datetime.now()
             hlevels = self.get_hlevels_for_poly(self.current_data_x, polygon_num)
-            interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
-            if interpolated_numbers is not None:
-                self.interpolated_house_numbers_labels = []
-                for num_def in interpolated_numbers:
-                    self.interpolated_house_numbers_labels.append(PolylineAddressNumber(num_def[0], num_def[1], self))
+            # interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
+            # if interpolated_numbers is not None:
+            #     self.interpolated_house_numbers_labels = []
+            #     for num_def in interpolated_numbers:
+            #         self.interpolated_house_numbers_labels.append(PolylineAddressNumber(num_def[0], num_def[1], self))
             for polygon_node_num, polygon_node in enumerate(polygon):
                 square = GripItem(polygon_node, (polygon_num, polygon_node_num,),
                                   hlevels[polygon_node_num], self)
                 self.node_grip_items.append(square)
             # else:
             #     self.node_grip_items.append(None)
+        self.add_interpolated_housenumber_labels()
         self.setFlags(QGraphicsItem.ItemIsSelectable)
 
     def decorate(self):
@@ -1252,9 +1268,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         except IndexError:
             return
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.data0.update_node_coordinates(self.current_data_x, grip_poly_num, grip_coord_num, grip.pos())
         self.refresh_arrow_heads()
         self.update_label_pos()
         self.update_hlevel_labels()
+        self.update_housenumber_labels()
+        self.update_interpolated_housenumber_labels()
 
     def move_grip(self, grip):
         # do be defined in child classes
@@ -1392,6 +1411,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self.scene().removeItem(grip_item)
         self.node_grip_items = []
         self.hoverLeaveEvent(None)
+        self.decorated_poly_nums = None
 
     def update_label_pos(self):
         return
@@ -1400,7 +1420,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def update_hlevel_in_node(self, grip, hlevel_value):
-        pass
+        return
+
+    def update_housenumber_labels(self):
+        return
+
+    def update_interpolated_housenumber_labels(self):
+        return
+
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_objects_properties=None, projection=None):
@@ -1443,8 +1470,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             for polygon_node_num, polygon_node in enumerate(polygon):
                 if hlevels[polygon_node_num] is None:
                     continue
-                self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], self))
-                self.hlevel_labels[-1].setPos(polygon_node)
+                self.hlevel_labels.append(PolylineLevelNumber(hlevels[polygon_node_num], polygon_node, self))
+                # self.hlevel_labels[-1].setPos(polygon_node)
 
     def add_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=False)
@@ -1476,6 +1503,18 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.housenumber_labels = adr
         else:
             self.housenumber_labels = None
+
+    def add_interpolated_housenumber_labels(self):
+        ihn = []
+        for polygon_num in self.decorated_poly_nums:
+            interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
+            if interpolated_numbers is not None:
+                for num_def in interpolated_numbers:
+                    ihn.append(PolylineAddressNumber(num_def[0], num_def[1], self))
+        if ihn:
+            self.interpolated_house_numbers_labels = ihn
+        else:
+            self.interpolated_house_numbers_labels = None
 
     def add_label(self):
         label = self.get_label1()
@@ -1518,13 +1557,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         inter_num = self.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
         numbers = []
         for num_def in inter_num['left']:
-            print(num_def.position)
             vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
             numbers.append((vector.unitVector(), num_def.number,))
-        # for num_def in inter_num['right']:
-        #     vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
-        #     numbers.append((vector.unitVector(), num_def.number,))
-        print(numbers)
+        for num_def in inter_num['right']:
+            vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
+            numbers.append((vector.unitVector(), num_def.number,))
         return numbers
 
     def set_mp_data(self):
@@ -1610,6 +1647,14 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.remove_all_hlevel_labels()
         self.add_hlevel_labels()
 
+    def update_housenumber_labels(self):
+        self.remove_housenumber_labels()
+        self.add_housenumber_labels()
+
+    def update_interpolated_housenumber_labels(self):
+        self.remove_interpolated_house_numbers()
+        self.add_interpolated_housenumber_labels()
+
     def update_hlevel_in_node(self, grip, hlevel_value):
         grip_poly_num, grip_coord_num = grip.grip_indexes
         self.data0.set_hlevel_to_node(self.current_data_x, grip_poly_num, grip_coord_num, hlevel_value)
@@ -1669,20 +1714,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         return num_elems_in_path >= 2
 
     def paint(self, painter, option, widget=None):
-        recreate_hlevel_labels = False
-        recreate_housenumber_labels = False
-        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if self.hlevel_labels is not None and self.hlevel_labels:
-                self.remove_all_hlevel_labels()
-                recreate_hlevel_labels = True
-            if self.housenumber_labels is not None and self.housenumber_labels:
-                self.remove_housenumber_labels()
-                recreate_housenumber_labels = True
-        super().paint(painter, option, widget=None)
-        if recreate_hlevel_labels:
-            self.add_hlevel_labels()
-        if recreate_housenumber_labels:
-            self.add_housenumber_labels()
+        super().paint(painter, option, widget=widget)
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
@@ -1845,6 +1877,7 @@ class PolylineAddressNumber(MapLabels):
     def __init__(self, position, text, parent):
         self.parent = parent
         self.grip_mode = False
+        self.position = position
         super(PolylineAddressNumber, self).__init__(str(text), parent)
         if self.parent.decorated():
             self.grip_mode = True
@@ -1857,12 +1890,7 @@ class PolylineAddressNumber(MapLabels):
         _, _, pheight, pwidth = self.boundingRect().getRect()
         self.setTransformOriginPoint(pheight / 2, pwidth / 2)
         self.set_transformation_flag()
-        # # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
-        # # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skale
-        if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-            self.setPos(position.pointAt(1/self.scene().get_viewer_scale()))
-        else:
-            self.setPos(position.p2())
+        self.set_pos(self.position)
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
@@ -1911,12 +1939,26 @@ class PolylineAddressNumber(MapLabels):
     def keyReleaseEvent(self, event):
         pass
 
+    def paint(self, painter, option, widget):
+        self.set_pos(self.position)
+        super().paint(painter, option, widget)
+
+    def set_pos(self, position):
+        # workoround dla setPos, tak aby mozna wykorzystac wektor jako wspolrzedna, a nie tylko sam punkt
+        # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
+        # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skale
+        if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+            self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()))
+        else:
+            self.setPos(position.p2())
+
 
 class PolylineLevelNumber(MapLabels):
     arrow_up = '\u2191'
 
-    def __init__(self, text, parent):
+    def __init__(self, text, position, parent):
         self.parent = parent
+        self.position = position
         if not isinstance(text, str):
             text = self.arrow_up + str(text)
         else:
@@ -1925,17 +1967,20 @@ class PolylineLevelNumber(MapLabels):
         self.set_transformation_flag()
         _, _, pheight, pwidth = self.boundingRect().getRect()
         self.setTransformOriginPoint(pheight/2, pwidth/2)
+        self.set_pos(self.position)
 
-    def setPos(self, position):
+    def set_pos(self, position):
+        # alternatywa dla setPos, tak aby moc wykorzystac wektor jak pozycje i nie mylic z oryginalnym setPos
         _, _, pheight, pwidth = self.boundingRect().getRect()
         scale = 1
         # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
         # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skali
         if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
             scale = self.scene().get_viewer_scale()
-        super().setPos(position + QPointF(-pwidth/scale/2, -pheight/scale/2))
+        self.setPos(position + QPointF(-pwidth/scale/2, -pheight/scale/2))
 
     def paint(self, painter, option, widget):
+        self.setPos(self.position)
         brush = QBrush(Qt.yellow)
         painter.setBrush(brush)
         a, b, c, d = self.boundingRect().getRect()
