@@ -79,7 +79,8 @@ def test_address_adding(target, answer):
 
 
 TEST_ADRESS_NUMBER_POSITION = (
-# node_coords, line_segment_vector, subj_position
+    # node_coords, line_segment_vector,
+    # subj_position
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_after',), QPointF(20.0, 20.0)),
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_after',), QPointF(20.0, -20.0)),
     ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_before',), QPointF(80, 20.0)),
@@ -119,6 +120,7 @@ def test_get_numbers_between(target, answer):
 
 INTERPOLATED_NUMS_COORDS = (
     (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0, 0, 1, 0), QPointF(0.5, 0), 3),],),
+    (([QLineF(0, 0, 0, 3)], [1, 2]), [(QLineF(0, 0, 0, 3), QPointF(0, 1), 1), (QLineF(0, 0, 0, 3), QPointF(0, 2), 2),],),
     (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
     (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
     (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(99, 0), 1), (QLineF(100, 0, 200, 0), QPointF(199, 0), 2), (QLineF(200, 0, 300, 0), QPointF(299, 0), 3), (QLineF(300, 0, 400, 0), QPointF(399, 0), 4)],),
@@ -130,14 +132,24 @@ def test_interpolated_number_coordinates(target, answer):
     assert answer_list == answer
 
 INTERPOLATED_ADDRESSES = (
-        (('(53.14643,16.72784),(53.14661,16.72864),(53.14683,16.72958),(53.14712,16.73131),(53.14735,16.73287),(53.14748,16.73392),(53.14758,16.73477),(53.14766,16.73534)',
-          'Numbers1=0,E,50,48,O,31,29',
-          'Numbers2=1,E,46,46,O,27,21',
-          'Numbers3=2,E,44,32,N,-1,-1',
-          'Numbers4=3,E,30,20,O,13,11',
-          'Numbers5=4,E,18,14,O,9,7',
-          'Numbers6=5,E,12,6,O,5,1',
-          'Numbers7=6,E,4,2,N,-1,-1',),([])),
+        (('(52.85431,16.02645),(52.85454,16.02758),(52.85465,16.02808),(52.85470,16.02828),(52.85482,16.02884),(52.85490,16.02918),(52.85515,16.03006),(52.85520,16.03026),(52.85534,16.03117),(52.85545,16.03166),(52.85556,16.03215),(52.85570,16.03275),(52.85576,16.03302),(52.85585,16.03341),(52.85600,16.03417),(52.85610,16.03462),(52.85636,16.03508)',
+          'Numbers1=0,O,45,41,E,46,40',
+          'Numbers2=1,B,39,39,N,-1,-1',
+          'Numbers3=2,B,38,38,B,37,37',
+          'Numbers4=3,O,35,33,E,36,32',
+          'Numbers5=4,B,30,30,B,31,31',
+          'Numbers6=5,B,29,28,N,-1,-1',
+          'Numbers7=6,B,26,26,B,25,25',
+          'Numbers8=7,B,23,23,N,-1,-1',
+          'Numbers9=8,B,20,20,B,22,22',
+          'Numbers10=9,B,19,19,B,18,17',
+          'Numbers11=10,B,15,13,B,16,16',
+          'Numbers12=11,B,13,12,B,11,11',
+          'Numbers13=12,B,9,8,B,10,10',
+          'Numbers14=13,B,6,6,O,7,5',
+          'Numbers15=14,B,3,3,B,4,4',
+          'Numbers16=15,N,-1,-1,B,2,2',),
+         ([])),
 )
 
 
@@ -146,12 +158,7 @@ def test_address_adding_from_str(target, answer):
     proj = projection.Mercator(None)
     data_obj = map_items.Data_X(projection=proj)
     data_obj.add_nodes_from_string('Data0', target[0])
-    data_obj.add_housenumbers_from_string(target[1])
-    data_obj.add_housenumbers_from_string(target[2])
-    data_obj.add_housenumbers_from_string(target[3])
-    data_obj.add_housenumbers_from_string(target[4])
-    data_obj.add_housenumbers_from_string(target[5])
-    data_obj.add_housenumbers_from_string(target[6])
-    data_obj.add_housenumbers_from_string(target[7])
+    for num_num in range(1, 17):
+        data_obj.add_housenumbers_from_string(target[num_num])
 
     assert data_obj.get_interpolated_housenumbers_for_poly(0, 0) == answer

@@ -324,6 +324,56 @@ class Data_X(object):
         return interpolated_numbers
 
     @staticmethod
+    def get_interpolated_numbers_coordinates(poly_vectors1, numbers1, current_num_distance=0,
+                                             default_num_distance=-1, all_polys_length=-1):
+        poly_vectors = [QLineF(a.p1(), a.p2()) for a in poly_vectors1]
+        numbers = [a for a in numbers1]
+        if not numbers:
+            return []
+        if all_polys_length == -1:
+            all_polys_length = 0
+            for p_vector in poly_vectors:
+                all_polys_length += p_vector.length()
+        if default_num_distance == -1:
+            default_num_distance = all_polys_length/(len(numbers) + 1)
+        if current_num_distance == 0:
+            current_num_distance = default_num_distance
+        poly_length = poly_vectors[0].length()
+        if poly_length > current_num_distance:
+            position = poly_vectors[0].pointAt(current_num_distance/poly_length)
+            num = numbers[0]
+            vector = poly_vectors[0]
+            numbers = numbers[1:]
+            if current_num_distance + default_num_distance < poly_length:
+                current_num_distance += default_num_distance
+            else:
+                current_num_distance = 0
+            return ([Interpolated_Number(vector, position, num)] +
+                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
+                                                                 current_num_distance=current_num_distance,
+                                                                 default_num_distance=default_num_distance,
+                                                                 all_polys_length=all_polys_length))
+        elif poly_length == current_num_distance:
+            position = poly_vectors[0].pointAt(0.99)
+            vector = poly_vectors[0]
+            num = numbers[0]
+            numbers = numbers[1:]
+            poly_vectors = poly_vectors[1:]
+            current_num_distance = 0
+            return ([Interpolated_Number(vector, position, num)] +
+                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
+                                                                 current_num_distance=current_num_distance,
+                                                                 default_num_distance=default_num_distance,
+                                                                 all_polys_length=all_polys_length))
+        else:
+            current_num_distance -= poly_length
+            poly_vectors = poly_vectors[1:]
+            return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
+                                                                      current_num_distance=current_num_distance,
+                                                                      default_num_distance=default_num_distance,
+                                                                      all_polys_length=all_polys_length))
+
+    @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
         if (start_point - end_point) in (-1, 0, 1):
             return []
@@ -344,58 +394,6 @@ class Data_X(object):
             else:
                 numbers.append(a)
         return numbers
-
-
-    @staticmethod
-    def get_interpolated_numbers_coordinates(poly_vectors1, numbers1, current_num_distance=0,
-                                             default_num_distance=-1, poly_length=-1):
-        poly_vectors = [QLineF(a.p1(), a.p2()) for a in poly_vectors1]
-        numbers = [a for a in numbers1]
-        if not numbers:
-            return []
-        if poly_length == -1:
-            poly_length = 0
-            for p_vector in poly_vectors:
-                poly_length += p_vector.length()
-        if default_num_distance == -1:
-            default_num_distance = poly_length/(len(numbers) + 1)
-        if current_num_distance == 0:
-            current_num_distance = default_num_distance
-        poly_length = poly_vectors[0].length()
-        if poly_length > current_num_distance:
-            position = poly_vectors[0].pointAt(current_num_distance/poly_length)
-            num = numbers[0]
-            vector = poly_vectors[0]
-            numbers = numbers[1:]
-            if current_num_distance + default_num_distance < poly_length:
-                current_num_distance += default_num_distance
-            else:
-                current_num_distance = 0
-            return ([Interpolated_Number(vector, position, num)] +
-                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                 current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance,
-                                                                 poly_length=poly_length))
-        elif poly_length == current_num_distance:
-            position = poly_vectors[0].pointAt(0.99)
-            vector = poly_vectors[0]
-            num = numbers[0]
-            numbers = numbers[1:]
-            poly_vectors = poly_vectors[1:]
-            current_num_distance = 0
-            return ([Interpolated_Number(vector, position, num)] +
-                    Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                 current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance,
-                                                                 poly_length=poly_length))
-        else:
-            current_num_distance -= poly_length
-            poly_vectors = poly_vectors[1:]
-            return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                      current_num_distance=current_num_distance,
-                                                                      default_num_distance=default_num_distance,
-                                                                      poly_length=poly_length))
-
 
     def get_hlevels_for_poly(self, data_level, poly_num):
         polys = self.get_polys_for_data_level(data_level)
@@ -1492,7 +1490,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def add_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path(), type_polygon=False)
         polygons_vectors = self.get_polygons_vectors(self.path(), type_polygon=False)
-        print(polygons_vectors)
         adr = list()
         for polygon_num, polygon in enumerate(polygons):
             numbers = self.get_housenumbers_for_poly(self.current_data_x, polygon_num)
@@ -1506,7 +1503,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
-                    print(line_segment_vector)
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
                 if house_numbers.right_side_number_before is not None:
@@ -1547,21 +1543,29 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
         if testing:
             position_at_line_segment = 0.2
+            left_side_number_before = 'left_side_number_before'
+            left_side_number_after = 'left_side_number_after'
+            right_side_number_after = 'right_side_number_after'
+            right_side_number_before = 'right_side_number_before'
         else:
             position_at_line_segment = 5 / line_segment_vector.length()
-        if subj_position == 'left_side_number_before':
+            left_side_number_before = 'right_side_number_before'
+            left_side_number_after = 'right_side_number_after'
+            right_side_number_after = 'left_side_number_after'
+            right_side_number_before = 'left_side_number_before'
+        if subj_position == left_side_number_before:
             v_start_point = line_segment_vector.pointAt(1)
             v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1 - 2 * position_at_line_segment)
-        elif subj_position == 'left_side_number_after':
+        elif subj_position == left_side_number_after:
             v_start_point = line_segment_vector.pointAt(0)
             v_start = line_segment_vector.pointAt(position_at_line_segment)
             v_end = line_segment_vector.pointAt(0.0)
-        elif subj_position == 'right_side_number_after':
+        elif subj_position == right_side_number_after:
             v_start_point = line_segment_vector.pointAt(0)
             v_start = line_segment_vector.pointAt(position_at_line_segment)
             v_end = line_segment_vector.pointAt(2 * position_at_line_segment)
-        elif subj_position == 'right_side_number_before':
+        elif subj_position == right_side_number_before:
             v_start_point = line_segment_vector.pointAt(1)
             v_start = line_segment_vector.pointAt(1 - position_at_line_segment)
             v_end = line_segment_vector.pointAt(1)
@@ -1578,7 +1582,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
             numbers.append((vector.unitVector(), num_def.number,))
         for num_def in inter_num['right']:
-            vector = QLineF(num_def.vector.p2(), num_def.position).normalVector()
+            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
             numbers.append((vector.unitVector(), num_def.number,))
         return numbers
 
@@ -1914,6 +1918,7 @@ class PolylineAddressNumber(MapLabels):
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
+        self.setFlag(QGraphicsItem.ItemIgnoresParentOpacity, True)
 
     def add_hovered_shape(self):
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
