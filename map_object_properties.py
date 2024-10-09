@@ -13,7 +13,8 @@ class MapObjectsProperties(object):
     def __init__(self):
         # couple if definitions
         # points definitions
-        self.poi_pixmap_icons = self.read_icons()
+        self.poi_pixmap_icons = self.read_icons('xpm')
+        self.poi_png_icons = self.read_icons('png')
         self.non_pixmap_icons = self.create_nonpixmap_icons()
         self.non_pixmap_brushes = self.create_nonpixmap_brushes()
         self.question_mark_icon = self.create_question_mark_icon()
@@ -87,36 +88,56 @@ class MapObjectsProperties(object):
         self.polyline_type_vs_name = self.create_polyline_type_vs_name()
 
         #polygon definitions
-        self.polygon_properties_fill_colour = {0x4: QColor('olive'),
-                                               0x5: QColor('silver'),
+        self.polygon_properties_fill_colour = {0x1: QColor('#d5d5d5'),
+                                               0x2: QColor('#e6e6e6'),
+                                               0x3: QColor('#ac9d93'),
+                                               0x4: QColor('#bdca6a'),
+                                               0x5: QColor('#d5d5d5'),
+                                               0x6: QColor('#ce9a00'),
                                                0x7: QColor('#ffba84'),
-                                               0x13: QColor('brown'),
-                                               0x14: Qt.green,
-                                               0x15: Qt.green,
+                                               0x8: QColor('#bdcab4'),
+                                               0x9: QColor('#ffba84'),
+                                               0xa: QColor('#ffcab4'),
+                                               0xb: QColor('#dd858a'),
+                                               0xc: QColor('#dddddd'),
+                                               0xd: QColor('#ff9955'),
+                                               0xe: QColor('#e7e3e7'),
+                                               0x13: QColor('#bd656a'),
+                                               0x14: QColor('#7bff00'),
+                                               0x15: QColor('#7bff00'),
                                                0x16: Qt.green,
-                                               0x17: Qt.green,
-                                               0x19: QColor('mistyrose'),
-                                               0x1a: QColor('gray'),
+                                               0x17: QColor('#39ff00'),
+                                               0x18: QColor('#39ca20'),
+                                               0x19: QColor('#ffba84'),
+                                               0x1a: QColor('#C5C5C5'),
                                                0x28: Qt.blue,
                                                0x29: Qt.blue,
-                                               0x32: Qt.blue,
-                                               0x3b: Qt.blue,
-                                               0x3c: Qt.blue,
-                                               0x3d: Qt.blue,
-                                               0x3e: Qt.blue,
-                                               0x3f: Qt.blue,
-                                               0x40: Qt.blue,
-                                               0x41: Qt.blue,
-                                               0x42: Qt.blue,
-                                               0x43: Qt.blue,
-                                               0x44: Qt.blue,
-                                               0x45: Qt.blue,
-                                               0x46: Qt.blue,
-                                               0x47: Qt.blue,
-                                               0x48: Qt.blue,
-                                               0x49: Qt.blue,
-                                               0x4e: QColor('limegreen'),
-                                               0x4f: QColor('yellowgreen')
+                                               0x32: QColor('#3995ff'),
+                                               0x3b: QColor('#3995ff'),
+                                               0x3c: QColor('#3995ff'),
+                                               0x3d: QColor('#3995ff'),
+                                               0x3e: QColor('#3995ff'),
+                                               0x3f: QColor('#3995ff'),
+                                               0x40: QColor('#3995ff'),
+                                               0x41: QColor('#3995ff'),
+                                               0x42: QColor('#3995ff'),
+                                               0x43: QColor('#3995ff'),
+                                               0x44: QColor('#3995ff'),
+                                               0x45: QColor('#3995ff'),
+                                               0x46: QColor('#3995ff'),
+                                               0x47: QColor('#3995ff'),
+                                               0x48: QColor('#3995ff'),
+                                               0x49: QColor('#3995ff'),
+                                               0x4b: QColor('#ffffff'),
+                                               0x4c: QColor('#aeecb8'),
+                                               0x4d: QColor('#88ffff'),
+                                               0x4e: QColor('#39ff00'),
+                                               0x4f: QColor('#00CA00'),
+                                               0x50: QColor('#ee0000'),
+                                               0x51: QColor('#a9e6ec'),
+                                               0x53: QColor('#ffffd5'),
+                                               0x01101e: QColor('#3995ff'),
+                                               0x01101f: QColor('#3995ff'),
                                              }
 
         self.polygon_properties_z_value = {0x1: 1, # Large urban area > 200K
@@ -175,14 +196,20 @@ class MapObjectsProperties(object):
         self.polygon_type_vs_name = self.create_polygon_type_vs_name()
 
     @staticmethod
-    def read_icons():
+    def read_icons(icon_type):
         icons_defs = dict()
-        icons_files = os.path.join('icons', '*.xpm')
+        if icon_type == 'xpm':
+            icons_files = os.path.join('icons', '*.xpm')
+        else:
+            icons_files = os.path.join('icons/icons_png', '*.png')
         for icon_type_file_name in glob.glob(icons_files):
             if 'question_mark' in icon_type_file_name:
                 icons_defs['question_mark'] = QPixmap(icon_type_file_name)
             else:
-                icon_type, icon_file_name = os.path.basename(icon_type_file_name).split('_', 1)
+                if '_' in os.path.basename(icon_type_file_name):
+                    icon_type, icon_file_name = os.path.basename(icon_type_file_name).split('_', 1)
+                else:
+                    icon_type = os.path.splitext(os.path.basename(icon_type_file_name))[0]
                 icons_defs[int('0x' + icon_type, 16)] = QPixmap(icon_type_file_name)
                 if icons_defs[int('0x' + icon_type, 16)].isNull():
                     print('Problem z odczytaniem pliku ikony: %s' % icon_type_file_name)
@@ -208,6 +235,8 @@ class MapObjectsProperties(object):
             return self.poi_pixmap_icons[poi_type]
             # px0, py0, pheight, pwidth = qpi.boundingRect().getRect()
             # qpi.setOffset(px0 - pheight/2, py0 - pwidth)
+        elif self.poi_type_has_png_icon(poi_type):
+            return self.poi_png_icons[poi_type]
         elif self.poi_type_has_nonpixmap_icon(poi_type):
             return self.non_pixmap_icons[poi_type]()
         else:
@@ -265,6 +294,9 @@ class MapObjectsProperties(object):
 
     def poi_type_has_pixmap_icon(self, poi_type):
         return poi_type in self.poi_pixmap_icons
+
+    def poi_type_has_png_icon(self, poi_type):
+        return poi_type in self.poi_png_icons
 
     def poi_type_has_nonpixmap_icon(self, poi_type):
         return poi_type in self.non_pixmap_icons
