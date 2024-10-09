@@ -89,6 +89,7 @@ class MapObjectsProperties(object):
         #polygon definitions
         self.polygon_properties_fill_colour = {0x4: QColor('olive'),
                                                0x5: QColor('silver'),
+                                               0x7: QColor('#ffba84'),
                                                0x13: QColor('brown'),
                                                0x14: Qt.green,
                                                0x15: Qt.green,
