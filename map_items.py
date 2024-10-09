@@ -262,7 +262,7 @@ class Data_X(object):
             else:
                 # przypadek gdy dany nod zaczyna dalej numeracje. wtedy numer przed nie będzie już potrzebny
                 # jesli nod nie ma numeracji
-                if node_end.hode_has_numeration() and node_end.node_starts_numeration():
+                if node_end.node_has_numeration() and node_end.node_starts_numeration():
                     node_end.set_numbers_definition('left_side_number_before', None)
                     node_end.set_numbers_definition('right_side_number_before', None)
                 else:
@@ -306,7 +306,7 @@ class Data_X(object):
             node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
             node_with_num_plus = self.get_poly_node(data_level, poly_num, end_node_idx, False)
             # create polyline elements as vectors
-            poly_vectors = self.get_poly_vectors(data_level, poly_num, elem_num, elem_num + 1)
+            poly_vectors = self.get_poly_vectors(data_level, poly_num, start_node_idx, end_node_idx)
 
             left_num_style = node_with_num.get_specific_number_definition('left_side_numbering_style')
             if left_num_style != 'N':
@@ -407,6 +407,7 @@ class Data_X(object):
                 'W': self._bounding_box_E}
 
     def get_poly_node(self, data_level, poly_num, node_num, qpointsf):
+        # zwraca nody dla konkretnego polygonu
         if data_level not in self._data_levels:
             return None
         data_list = self._poly_data_points[self._data_levels.index(data_level)]
@@ -416,6 +417,7 @@ class Data_X(object):
         return nodes_list[node_num]
 
     def get_poly_nodes(self, data_level, qpointsf):
+        # zwraca nody dla wszystkich polygonow danego data_level
         if data_level not in self._data_levels:
             return None
         returned_data = list()

@@ -11,7 +11,7 @@ from PyQt5.QtGui import QPainterPath, QPixmap
 from collections import OrderedDict
 import projection as coordinates_projection
 from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem
+# from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 
 
