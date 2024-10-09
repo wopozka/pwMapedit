@@ -73,7 +73,7 @@ class Node(QPointF):
 
     def node_starts_numeration(self):
         if self._numbers_definitions.left_side_number_after is not None or \
-                self._numbers_definitions.left_side_number_after is not None:
+                self._numbers_definitions.right_side_number_after is not None:
             return True
         return False
 
@@ -84,9 +84,9 @@ class Node(QPointF):
         return False
 
     def node_has_numeration(self):
-        if self.node_starts_numeration():
-            return True
-        if self.node_ends_numeration():
+        if self._numbers_definitions is None:
+            return False
+        if self.node_starts_numeration() or self.node_ends_numeration():
             return True
         return False
 
@@ -99,6 +99,9 @@ class Node(QPointF):
 
     def set_hlevel_definition(self, definition):
         self._hlevel_definition = definition
+
+    def set_node_has_no_numeration(self):
+        self._numbers_definitions = None
 
     def set_numbers_definition(self, field_name, definition):
         if self._numbers_definitions is None:
@@ -210,14 +213,17 @@ class Data_X(object):
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
         del self._poly_data_points[data_level][polynum][index]
-
         # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
-        last_node = self._poly_data_points[data_level][polynum][-1]
-        self._poly_data_points[data_level][polynum][0].set_numbers_definition('left_side_number_before', None)
-        self._poly_data_points[data_level][polynum][0].set_numbers_definition('right_side_number_before', None)
-        last_node.set_numbers_definition('left_side_number_after', None)
-        last_node.set_numbers_definition('right_side_number_after', None)
+        # pierwszy nod
+        if self._poly_data_points[data_level][polynum][0].node_has_numeration():
+            self._poly_data_points[data_level][polynum][0].set_numbers_definition('left_side_number_before', None)
+            self._poly_data_points[data_level][polynum][0].set_numbers_definition('right_side_number_before', None)
+        # ostatni nod
+        if self._poly_data_points[data_level][polynum][-1].node_has_numeration():
+            last = self._poly_data_points[data_level][polynum][-1]
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition('left_side_number_after', None)
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition('right_side_number_after', None)
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
 
         # nie ma zadnych w wezlow z numeracja, nie rob nic
@@ -225,6 +231,7 @@ class Data_X(object):
             return
         # mamy jeden wezel z numeracja, trzeba na ostatnim ustawic 0, o ile nie sa ustawione
         if len(nodes_with_numbers) == 1:
+            last_node = self._poly_data_points[data_level][polynum][-1]
             if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
                 last_node.set_numbers_definition('left_side_number_before', None)
             else:
@@ -253,8 +260,15 @@ class Data_X(object):
                     if node_end.get_specific_number_definition('right_side_number_before') is None:
                         node_end.set_numbers_definition('right_side_number_before', 0)
             else:
-                node_end.set_numbers_definition('left_side_number_before', None)
-                node_end.set_numbers_definition('right_side_number_before', None)
+                # przypadek gdy dany nod zaczyna dalej numeracje. wtedy numer przed nie będzie już potrzebny
+                # jesli nod nie ma numeracji
+                if node_end.hode_has_numeration() and node_end.node_starts_numeration():
+                    node_end.set_numbers_definition('left_side_number_before', None)
+                    node_end.set_numbers_definition('right_side_number_before', None)
+                else:
+                    # jesli nod nie zaczyna numeracji wyzeruj jego numeracje
+                    node_end.set_node_has_no_numeration()
+
         return
 
     def get_data_levels(self):
