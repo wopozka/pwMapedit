@@ -346,8 +346,12 @@ class Data_X(object):
             numbers = numbers[1:]
             if current_num_distance + default_num_distance < poly_length:
                 current_num_distance += default_num_distance
-            else:
+            elif current_num_distance + default_num_distance == poly_length:
                 current_num_distance = 0
+                poly_vectors = poly_vectors[1:]
+            else:
+                current_num_distance = poly_length - current_num_distance
+                poly_vectors = poly_vectors[1:]
             return ([Interpolated_Number(vector, position, num)] +
                     Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                  current_num_distance=current_num_distance,
@@ -1243,10 +1247,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[path_num] = polygon_modified
         except IndexError:
             return
-        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
         self.undecorate()
+        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.update_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+        self.update_housenumber_labels
         self.decorate()
+
 
     # to be override in other classes
     def insert_point(self, index, pos, type_polygon=False):
@@ -1281,7 +1290,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
         self.data0.update_node_coordinates(self.current_data_x, grip_poly_num, grip_coord_num, grip.pos())
-        self.refresh_arrow_heads()
+        self.update_arrow_heads()
         self.update_label_pos()
         self.update_hlevel_labels()
         self.update_housenumber_labels()
@@ -1301,11 +1310,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().paint(painter, option, widget=widget)
 
 
-    def refresh_arrow_heads(self):
+    def update_arrow_heads(self):
         return
 
     def remove_all_hlevel_labels(self):
-        pass
+        return
 
     def remove_items_before_new_map_level_set(self):
         return
@@ -1354,10 +1363,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         #         self.scene().removeItem(grip_item)
         # self.node_grip_items = []
         self.undecorate()
-        self.decorate()
-        self.refresh_arrow_heads()
+        self.update_arrow_heads()
         self.update_label_pos()
-        self.remove_hlevel_labels(grip_coord_num)
+        self.update_hlevel_labels()
+        self.update_housenumber_labels()
+        self.decorate()
+        #self.remove_hlevel_labels(grip_coord_num)
 
     def remove_all_hlevel_labels(self):
         pass
@@ -1650,13 +1661,15 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(arrow_head)
         self.arrow_head_items = []
 
-    def refresh_arrow_heads(self):
+    def update_arrow_heads(self):
         # convinience function, instead call remove and add, just call one function
         if self.arrow_head_items:
             self.remove_arrow_heads()
             self.add_arrow_heads()
 
     def remove_housenumber_labels(self):
+        if self.housenumber_labels is None:
+            return
         for house_number in self.housenumber_labels:
             self.scene().removeItem(house_number)
         self.housenumber_labels = None
