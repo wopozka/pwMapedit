@@ -35,6 +35,7 @@ class MapObjectsProperties(object):
                                           0xa: QColor('lightgrey'),
                                           0xc: QColor('darkorange'),
                                           0xd: QColor('brown'),
+                                          0xe: QColor('#A4A4A4'),
                                           0x1a: QColor('gray'),
                                           0x14: Qt.black,
                                           0x16: QColor('chocolate'),
@@ -42,7 +43,20 @@ class MapObjectsProperties(object):
                                           0x19: Qt.green,  # timezone
                                           0x1c: QColor('gray'),
                                           0x1f: Qt.blue,
+                                          0x2f: Qt.blue,
                                           0x4b: Qt.red,
+                                          0x10e00: QColor('#ff0000'),  # hiking trial red
+                                          0x10e01: QColor('#ffff41'),  # hiking trial yellow
+                                          0x10e02: QColor('#399520'),  # hiking trial green
+                                          0x10e03: QColor('#3965ff'),  # hiking trial blue
+                                          0x10e04: Qt.black        ,   # hiking trial czarny
+                                          0x10e07: QColor('#a959a9"'), # hiking trial multicolor
+                                          0x10e08: Qt.red,             # rowerowy czerwony
+                                          0x10e09: QColor('#ffff41'),  # rowerowy zolty
+                                          0x10e0a: QColor('#ffff41'),  # rowerowy zielony
+                                          0x10e0b: QColor('#3965ff'),  # rowerowy niebieski
+                                          0x10e0c: Qt.black,           # rowerowy czarny
+                                          0x10e0d: QColor('#a959a9'),  # rowerowy inny
                                           0x10e11: QColor('cyan'),
                                           0x10e12: QColor('cyan'),
                                           0x10e13: QColor('darkred'),
@@ -65,6 +79,18 @@ class MapObjectsProperties(object):
                                           0x14: 3,
                                           0x15: 2,
                                           0x1f: 3,
+                                          0x10e00: 2,
+                                          0x10e01: 2,
+                                          0x10e02: 2,
+                                          0x10e03: 2,
+                                          0x10e04: 2,
+                                          0x10e07: 2,
+                                          0x10e08: 3,
+                                          0x10e09: 3,
+                                          0x10e0a: 3,
+                                          0x10e0b: 3,
+                                          0x10e0c: 3,
+                                          0x10e0d: 3,
                                           0x10e11: 2,
                                           0x10e12: 3,
                                           0x10e13: 3,
@@ -78,6 +104,18 @@ class MapObjectsProperties(object):
                                         0x1c: Qt.DashDotLine,
                                         0x18: Qt.DashLine,
                                         0x4b: Qt.DashLine,
+                                        0x10e00: Qt.DashLine,
+                                        0x10e01: Qt.DashLine,
+                                        0x10e02: Qt.DashLine,
+                                        0x10e03: Qt.DashLine,
+                                        0x10e04: Qt.DashLine,
+                                        0x10e07: Qt.DashLine,
+                                        0x10e08: Qt.DotLine,
+                                        0x10e09: Qt.DotLine,
+                                        0x10e0a: Qt.DotLine,
+                                        0x10e0b: Qt.DotLine,
+                                        0x10e0c: Qt.DotLine,
+                                        0x10e0d: Qt.DotLine,
                                         0x10e11: Qt.DashLine,
                                         0x10e12: Qt.DashLine,
                                         0x10e13: Qt.DashLine,
