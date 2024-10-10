@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import (QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
+from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
                              QPushButton)
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
+from PyQt5.QtCore import Qt
 
 
 class MapObjPropDock(QDockWidget):
@@ -62,8 +63,11 @@ class MapObjPropDock(QDockWidget):
         dock_box.addLayout(address_phone_layout)
 
         extras_label = QLabel('Extras', dock_widget)
-        self.extras_table = QTableWidget(3, 2, dock_widget)
+        self.extras_table = ExtrasTable(3, 4, dock_widget)
         self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
+        for row in range(3):
+            self.extras_table.setCellWidget(row, 2, QPushButton('Usuń'))
+            self.extras_table.setCellWidget(row, 3, QPushButton('dodaj'))
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
@@ -118,4 +122,19 @@ class MapObjPropDock(QDockWidget):
             for row in range(self.extras_table.rowCount()):
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                 self.extras_table.setItem(row, 1, QTableWidgetItem(''))
+
+
+class ExtrasTable(QTableWidget):
+    def __init__(self, rows, columns, parent):
+        super(ExtrasTable, self).__init__(rows, columns, parent)
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+    # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
+    def contextMenuEvent(self, event):
+        menu = QMenu()
+        index = self.indexAt(event.pos())
+        add_row_action = menu.addAction('Dodaj wiersz')
+        delete_row_action = menu.addAction('Usun wiersz')
+        res = menu.exec_(event.globalPos())
+        print('context_menu')
 
