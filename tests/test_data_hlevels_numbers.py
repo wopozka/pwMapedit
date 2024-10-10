@@ -119,12 +119,21 @@ def test_get_numbers_between(target, answer):
     assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
 
 INTERPOLATED_NUMS_COORDS = (
-    # (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0, 0, 1, 0), QPointF(0.5, 0), 3),],),
-    # (([QLineF(0, 0, 0, 3)], [1, 2]), [(QLineF(0, 0, 0, 3), QPointF(0, 1), 1), (QLineF(0, 0, 0, 3), QPointF(0, 2), 2),],),
-    # (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
-    # (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
-    (([QLineF(0, 0, 10, 0), QLineF(10, 0, 20, 0)], [1, 2, 3, 4, 5, 6, 7, 8, 9]), [(QLineF(0, 0, 10, 0), QPointF(0, 1), 1)],),
-    # (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(99, 0), 1), (QLineF(100, 0, 200, 0), QPointF(199, 0), 2), (QLineF(200, 0, 300, 0), QPointF(299, 0), 3), (QLineF(300, 0, 400, 0), QPointF(399, 0), 4)],),
+    (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0, 0, 1, 0), QPointF(0.5, 0), 3),],),
+    (([QLineF(0, 0, 0, 3)], [1, 2]), [(QLineF(0, 0, 0, 3), QPointF(0, 1), 1), (QLineF(0, 0, 0, 3), QPointF(0, 2), 2),],),
+    (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
+    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
+    (([QLineF(0, 0, 5, 0), QLineF(5, 0, 10, 0)], [1, 2, 3, 4, 5, 6, 7, 8, 9]),
+     [(QLineF(0, 0, 5, 0), QPointF(1, 0), 1), (QLineF(0, 0, 5, 0), QPointF(2, 0), 2),
+      (QLineF(0, 0, 5, 0), QPointF(3, 0), 3), (QLineF(0, 0, 5, 0), QPointF(4, 0), 4),
+      (QLineF(0, 0, 5, 0), QPointF(5, 0), 5),
+      (QLineF(5, 0, 10, 0), QPointF(6, 0), 6), (QLineF(5, 0, 10, 0), QPointF(7, 0), 7),
+      (QLineF(5, 0, 10, 0), QPointF(8, 0), 8), (QLineF(5, 0, 10, 0), QPointF(9, 0), 9)],
+     ),
+    (([QLineF(0, 0, 4, 0), QLineF(4, 0, 5, 0), QLineF(5, 0, 6, 0), QLineF(6, 0, 9, 0)], [1, 2]),
+     [(QLineF(0, 0, 4, 0), QPointF(3, 0), 1), (QLineF(5, 0, 6, 0), QPointF(6, 0), 2),]
+     ),
+    (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(100, 0), 1), (QLineF(100, 0, 200, 0), QPointF(200, 0), 2), (QLineF(200, 0, 300, 0), QPointF(300, 0), 3), (QLineF(300, 0, 400, 0), QPointF(400, 0), 4)],),
 
 )
 

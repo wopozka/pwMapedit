@@ -313,69 +313,59 @@ class Data_X(object):
                 left_num_start = node_with_num.get_specific_number_definition('left_side_number_after')
                 left_num_end = node_with_num_plus.get_specific_number_definition('left_side_number_before')
                 on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
-                interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_left)
+                # poly vectors will be changed during get_interpolated_numbers_coordinates,
+                # therefore we work on a copy: list(poly_vectors)
+                interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_left)
 
             right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
             if right_num_style != 'N':
                 right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
                 right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
                 on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
-                interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(poly_vectors, on_right)
+                # poly vectors will be changed during get_interpolated_numbers_coordinates,
+                # therefore we work on a copy: list(poly_vectors)
+                interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_right)
         return interpolated_numbers
 
     @staticmethod
-    def get_interpolated_numbers_coordinates(poly_vectors1, numbers1, current_num_distance=0,
-                                             default_num_distance=-1, all_polys_length=-1):
-        poly_vectors = [QLineF(a.p1(), a.p2()) for a in poly_vectors1]
-        numbers = [a for a in numbers1]
+    def get_interpolated_numbers_coordinates(poly_vectors, numbers, current_num_distance=None,
+                                             default_num_distance=None):
         if not numbers:
             return []
-        if all_polys_length == -1:
-            all_polys_length = 0
-            for p_vector in poly_vectors:
-                all_polys_length += p_vector.length()
-        if default_num_distance == -1:
+        if default_num_distance is None:
+            all_polys_length = sum([p.length() for p in poly_vectors])
             default_num_distance = all_polys_length/(len(numbers) + 1)
-        if current_num_distance == 0:
+        if current_num_distance is None:
             current_num_distance = default_num_distance
         poly_length = poly_vectors[0].length()
         if poly_length > current_num_distance:
             position = poly_vectors[0].pointAt(current_num_distance/poly_length)
-            num = numbers[0]
-            vector = poly_vectors[0]
-            numbers = numbers[1:]
-            if current_num_distance + default_num_distance < poly_length:
+            num = numbers.pop(0)
+            if current_num_distance + default_num_distance <= poly_length:
                 current_num_distance += default_num_distance
-            elif current_num_distance + default_num_distance == poly_length:
-                current_num_distance = 0
-                poly_vectors = poly_vectors[1:]
+                vector = poly_vectors[0]
             else:
-                current_num_distance = poly_length - current_num_distance
-                poly_vectors = poly_vectors[1:]
+                current_num_distance = default_num_distance - (poly_length - current_num_distance)
+                vector = poly_vectors.pop(0)
             return ([Interpolated_Number(vector, position, num)] +
                     Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                  current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance,
-                                                                 all_polys_length=all_polys_length))
+                                                                 default_num_distance=default_num_distance))
         elif poly_length == current_num_distance:
-            position = poly_vectors[0].pointAt(0.99)
-            vector = poly_vectors[0]
-            num = numbers[0]
-            numbers = numbers[1:]
-            poly_vectors = poly_vectors[1:]
-            current_num_distance = 0
+            position = poly_vectors[0].p2()
+            vector = poly_vectors.pop(0)
+            num = numbers.pop(0)
+            current_num_distance = default_num_distance
             return ([Interpolated_Number(vector, position, num)] +
                     Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                  current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance,
-                                                                 all_polys_length=all_polys_length))
+                                                                 default_num_distance=default_num_distance))
         else:
-            current_num_distance -= poly_length
+            current_num_distance = current_num_distance - poly_length
             poly_vectors = poly_vectors[1:]
             return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                       current_num_distance=current_num_distance,
-                                                                      default_num_distance=default_num_distance,
-                                                                      all_polys_length=all_polys_length))
+                                                                      default_num_distance=default_num_distance))
 
     @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
