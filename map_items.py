@@ -10,6 +10,7 @@ from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
+import commands
 
 Numbers_Definition = namedtuple('Numbers_Definition',
                                 ['left_side_numbering_style',
@@ -1132,12 +1133,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         except IndexError:
             return
         self.undecorate()
-        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
+        # self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
+        # self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        # self.update_arrow_heads()
+        # self.update_label_pos()
+        # self.update_hlevel_labels()
+        # self.update_housenumber_labels()
+        command = commands.InsertNodeCmd(self, index, pos, 'Usuń nod', polygons, type_polygon=type_polygon)
+        self.scene().undo_redo_stack.push(command)
         self.decorate()
 
     def command_remove_point(self, grip, type_polygon=False):
