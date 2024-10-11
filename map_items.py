@@ -1117,10 +1117,54 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return min(intersections_for_separate_paths, key=lambda item: item[0])
         return -1, QPointF(), (0, -1)
 
-
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
         return -1, QPointF(), (0, -1)
+
+    def command_insert_point(self, index, pos, type_polygon=False):
+        # index is always > 0, so the first element will always be moveTo
+        path_num, coord_num = index
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        try:
+            polygon = polygons[path_num]
+            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
+            polygons[path_num] = polygon_modified
+        except IndexError:
+            return
+        self.undecorate()
+        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.update_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+        self.update_housenumber_labels()
+        self.decorate()
+
+    def command_remove_point(self, grip, type_polygon=False):
+        # if there are 2 grip items in a path, then removal is not possible do not even try
+        # in another case decide later whether it is possible
+        if len(self.node_grip_items) <= 2:
+            return
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        print('remove_point')
+        print(grip_poly_num, grip_coord_num)
+        try:
+            polygons[grip_poly_num].pop(grip_coord_num)
+        except IndexError:
+            print('index error')
+            return
+        if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
+            return
+
+        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
+        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        self.undecorate()
+        self.update_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+        self.update_housenumber_labels()
+        self.decorate()
 
     @staticmethod
     def create_painter_path(poly_lists, type_polygon=False):
@@ -1227,26 +1271,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
 
-    def _insert_point(self, index, pos, type_polygon=False):
-        # index is always > 0, so the first element will always be moveTo
-        path_num, coord_num = index
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        try:
-            polygon = polygons[path_num]
-            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
-            polygons[path_num] = polygon_modified
-        except IndexError:
-            return
-        self.undecorate()
-        self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
-        self.decorate()
-
-
     # to be override in other classes
     def insert_point(self, index, pos, type_polygon=False):
         return
@@ -1328,37 +1352,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.hovered_shape_id is not None:
             self.scene().removeItem(self.hovered_shape_id)
             self.hovered_shape_id = None
-
-    def remove_point(self, grip, type_polygon=False):
-        # if there are 2 grip items in a path, then removal is not possible do not even try
-        # in another case decide later whether it is possible
-        if len(self.node_grip_items) <= 2:
-            return
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        print('remove_point')
-        print(grip_poly_num, grip_coord_num)
-        try:
-            polygons[grip_poly_num].pop(grip_coord_num)
-        except IndexError:
-            print('index error')
-            return
-        if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
-            return
-
-        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        # for grip_item in self.node_grip_items:
-        #     if grip_item is not None:
-        #         self.scene().removeItem(grip_item)
-        # self.node_grip_items = []
-        self.undecorate()
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
-        self.decorate()
-        #self.remove_hlevel_labels(grip_coord_num)
 
     def remove_all_hlevel_labels(self):
         pass
@@ -1736,10 +1729,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
-            self.remove_point(grip, type_polygon=False)
+            self.command_remove_point(grip, type_polygon=False)
 
     def insert_point(self, index, pos):
-        self._insert_point(index, pos, type_polygon=False)
+        self.command_insert_point(index, pos, type_polygon=False)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -1790,7 +1783,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
-            self.remove_point(grip, type_polygon=True)
+            self.command_remove_point(grip, type_polygon=True)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -1823,7 +1816,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         return self._closest_point_to_poly(event_pos, type_polygon=True)
 
     def insert_point(self, index, pos):
-        self._insert_point(index, pos, type_polygon=True)
+        self.command_insert_point(index, pos, type_polygon=True)
 
 
 class MapLabels(QGraphicsSimpleTextItem):
