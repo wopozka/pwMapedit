@@ -20,11 +20,11 @@ from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, parent, *args, projection=None, map_viewer=None, **kwargs):
+    def __init__(self, parent, *args, projection=None, undo_redo_stack=None, **kwargs):
         self.parent = parent
         self.properties_dock = self.parent.properties_dock
         super(mapCanvas, self).__init__(*args, **kwargs)
-        self.map_viewer = map_viewer
+        self.undo_redo_stack = undo_redo_stack
         self.projection = None
         if projection is not None:
             self.projection = projection

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 import sys
@@ -31,6 +31,7 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
+        self.undo_redo_stack = QUndoStack(self)
         self.projection = projection.Mercator({})
         self.tools_actions_group = None
         self.map_level_action_group = None
@@ -53,7 +54,8 @@ class pwMapeditPy(QMainWindow):
         self.addToolBar(toolbar)
         self.setStatusBar(self.status_bar)
         self.generate_menus()
-        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection, map_viewer=None)
+        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
+                                              undo_redo_stack=self.undo_redo_stack)
         self.view = mapRender.mapRender(self.map_canvas, projection=self.projection)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
@@ -61,31 +63,6 @@ class pwMapeditPy(QMainWindow):
         self.map_ruler = map_items.MapRuler(self.view, self.projection)
         self.map_canvas.addItem(self.map_ruler)
         self.view.set_ruler(self.map_ruler)
-
-
-
-        # ramkaglowna = tkinter.Frame(self)
-        # ramkaglowna.pack(expand=1, fill='both')
-        # canvasScrollFrame=tkinter.Frame(ramkaglowna)
-        # canvasScrollFrame.pack(side='top',fill='both',expand=1)
-        # rightScroll=tkinter.Scrollbar(canvasScrollFrame)
-        # bottomScroll=tkinter.Scrollbar(ramkaglowna,orient='horizontal')
-        # self.mapa = mapCanvas.mapCanvas(canvasScrollFrame,yscrollcommand=rightScroll.set,
-        #                                 xscrollcommand=bottomScroll.set, background='white',
-        #                                 width=800, height=500)
-        # self.mapa.pack(expand=1, fill='both',side='left')
-        # rightScroll.config(command=self.mapa.yview)
-        # bottomScroll.config(command=self.mapa.xview)
-        # rightScroll.pack(side='right',fill='y')
-        # bottomScroll.pack(side='bottom',fill='x')
-        #
-        # #if the filename was added as a run parameter, then open a file here
-        # if self.filename:
-        #     map_objects=mapData.mapData(self.filename)
-        #     map_objects.wczytaj_rekordy()
-        #     self.mapa.MapData = map_objects
-        #     self.mapa.draw_all_objects_on_map()
-        # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def generate_menus(self):
         menu = self.menuBar()
