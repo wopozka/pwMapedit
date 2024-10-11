@@ -63,11 +63,8 @@ class MapObjPropDock(QDockWidget):
         dock_box.addLayout(address_phone_layout)
 
         extras_label = QLabel('Extras', dock_widget)
-        self.extras_table = ExtrasTable(3, 4, dock_widget)
+        self.extras_table = ExtrasTable(3, 2, dock_widget)
         self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
-        for row in range(3):
-            self.extras_table.setCellWidget(row, 2, QPushButton('Usuń'))
-            self.extras_table.setCellWidget(row, 3, QPushButton('dodaj'))
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
