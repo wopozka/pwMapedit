@@ -1243,7 +1243,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.update_arrow_heads()
         self.update_label_pos()
         self.update_hlevel_labels()
-        self.update_housenumber_labels
+        self.update_housenumber_labels()
         self.decorate()
 
 
