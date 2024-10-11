@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QUndoCommand
+from PyQt5.QtWidgets import QUndoCommand, QUndoStack
 import copy
 
 class InsertNodeCmd(QUndoCommand):

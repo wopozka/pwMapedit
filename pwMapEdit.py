@@ -14,6 +14,23 @@ import map_object_properties
 import projection
 import map_obj_properties_dockwidget
 
+class MapUndoStack(QUndoStack):
+    def __init__(self, parent):
+        self.parent = parent
+        self.undo_button = None
+        self.redo_button = None
+        super(MapUndoStack, self).__init__(parent)
+
+    def set_undo_button(self, undo_button):
+        self.undo_button = undo_button
+
+    def set_redo_button(self, redo_button):
+        self.redo_button = redo_button
+
+    def push(self, command, q_undo_command=None):
+        super().push(command)
+        self.undo_button.setToolTip(self.undoText())
+
 class pwMapeditPy(QMainWindow):
     """main application window"""
     map_scale_km = (3000, 2500, 2100, 1800, 1500, 1300, 1100, 920, 770, 650, 550, 460, 390, 330, 280, 240,
@@ -31,7 +48,7 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
-        self.undo_redo_stack = QUndoStack(self)
+        self.undo_redo_stack = MapUndoStack(self)
         self.projection = projection.Mercator({})
         self.tools_actions_group = None
         self.map_level_action_group = None
@@ -77,6 +94,7 @@ class pwMapeditPy(QMainWindow):
 
         # Edit menu
         edit_menu = menu.addMenu("&Edit")
+        edit_menu.setToolTipsVisible(True)
         for action in self._create_edit_actions():
             if action is not None:
                 edit_menu.addAction(action)
@@ -161,7 +179,9 @@ class pwMapeditPy(QMainWindow):
     def _create_edit_actions(self):
         edit_actions = list()
         edit_actions.append(QAction('&Undo', self))
+        self.undo_redo_stack.set_undo_button(edit_actions[-1])
         edit_actions.append(QAction('&Redo', self))
+        self.undo_redo_stack.set_redo_button(edit_actions[-1])
         edit_actions.append(None)
         edit_actions.append(QAction('&Cut', self))
         edit_actions.append(QAction('&Copy', self))
