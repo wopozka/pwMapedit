@@ -1,6 +1,7 @@
 import time
 from collections import OrderedDict, namedtuple
 import misc_functions
+import copy
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
@@ -43,6 +44,14 @@ class Node(QPointF):
     #     self.longitude = longitude
     #     self.latitude = latitude
 
+    def get_copy(self):
+        aaa = Node(x=self.x(), y=self.y(), projection = self.projection)
+        if self._numbers_definitions is not None:
+            aaa.set_numbers_definition(copy.copy(self._numbers_definitions))
+        if self._hlevel_definition is not None:
+            aaa.set_hlevel_definition(copy.copy(self._hlevel_definition))
+        return aaa
+
     def get_numbers_definition(self):
         return self._numbers_definitions
 
@@ -65,12 +74,6 @@ class Node(QPointF):
     def get_canvas_coords_as_qpointf(self):
         return self
         return QPointF(self.x(), self.y())
-
-    def get_deep_copy(self):
-        node = Node(x=self.x(), y=self.y(), projection=self.projection)
-        node.set_hlevel_definition(self.get_hlevel_definition())
-        node.set_numbers_definition(self.get_numbers_definition())
-        return node
 
     def node_starts_numeration(self):
         if self._numbers_definitions.left_side_number_after is not None or \
@@ -101,15 +104,39 @@ class Node(QPointF):
     def set_hlevel_definition(self, definition):
         self._hlevel_definition = definition
 
+    def set_node_has_no_hlevel(self):
+        self._hlevel_definition = None
+
     def set_node_has_no_numeration(self):
         self._numbers_definitions = None
 
-    def set_numbers_definition(self, field_name, definition):
+    def set_numbers_definition(self, definition):
+        self._numbers_definitions = definition
+
+    def set_numbers_definition_field_name(self, field_name, definition):
         if self._numbers_definitions is None:
             self._numbers_definitions = Numbers_Definition(*[None for a in range(14)])
         definitions = self._numbers_definitions._asdict()
         definitions[field_name] = definition
         self._numbers_definitions = Numbers_Definition(**definitions)
+
+    def update_numbers_after_poly_reverting(self):
+        if self._numbers_definitions is None:
+            return
+        definitions = self._numbers_definitions._asdict()
+        new_defs = {}
+        for key, value in self._numbers_definitions._asdict().items():
+            if key.startswith('right'):
+                key.replace('right', 'left')
+            elif key.startswith('left'):
+                key.replace('left', 'right')
+            if key.endswith('before'):
+                key.replace('before', 'after')
+            elif key.enswith('after'):
+                key.replace('after', 'before')
+            new_defs[key] = value
+        self._numbers_definitions = Numbers_Definition(**new_defs)
+
 
 
 class Data_X(object):
@@ -178,19 +205,19 @@ class Data_X(object):
         right_start = int(num_data[5]) if right_style != 'N' else None
         right_end = int(num_data[6]) if right_style != 'N' else None
 
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_numbering_style', left_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_number_after', left_start)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_numbering_style', right_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_number_after', right_start)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_numbering_style', right_style)
+        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_after', right_start)
         last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
         if last_node_def is not None:
 
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('left_side_number_before', last_node_def.left_side_number_before)
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition('right_side_number_before', last_node_def.right_side_number_before)
-            self._poly_data_points[data_level][poly_num][-1].clear_numbers_definiton()
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_before', last_node_def.left_side_number_before)
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_before', last_node_def.right_side_number_before)
+            self._poly_data_points[data_level][poly_num][-1].set_node_has_no_numeration()
         if left_start is not None or right_start is not None:
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('left_side_number_before', left_end)
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition('right_side_number_before', right_end)
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('left_side_number_before', left_end)
+            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('right_side_number_before', right_end)
 
     def add_nodes_from_string(self, data_level, data_string):
         _data_level = int(data_level[4:])
@@ -214,17 +241,20 @@ class Data_X(object):
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
         del self._poly_data_points[data_level][polynum][index]
+        self.clean_numbers_definitions(data_level, polynum)
+
+    def clean_numbers_definitions(self, data_level, polynum):
         # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
         # pierwszy nod
         if self._poly_data_points[data_level][polynum][0].node_has_numeration():
-            self._poly_data_points[data_level][polynum][0].set_numbers_definition('left_side_number_before', None)
-            self._poly_data_points[data_level][polynum][0].set_numbers_definition('right_side_number_before', None)
+            self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name('left_side_number_before', None)
+            self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name('right_side_number_before', None)
         # ostatni nod
         if self._poly_data_points[data_level][polynum][-1].node_has_numeration():
             last = self._poly_data_points[data_level][polynum][-1]
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition('left_side_number_after', None)
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition('right_side_number_after', None)
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('left_side_number_after', None)
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('right_side_number_after', None)
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
 
         # nie ma zadnych w wezlow z numeracja, nie rob nic
@@ -234,15 +264,15 @@ class Data_X(object):
         if len(nodes_with_numbers) == 1:
             last_node = self._poly_data_points[data_level][polynum][-1]
             if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
-                last_node.set_numbers_definition('left_side_number_before', None)
+                last_node.set_numbers_definition_field_name('left_side_number_before', None)
             else:
                 if last_node.get_specific_number_definition('left_side_number_before') is None:
-                    last_node.set_numbers_definition('left_side_number_before', 0)
+                    last_node.set_numbers_definition_field_name('left_side_number_before', 0)
             if nodes_with_numbers[0].get_specific_number_definition('right_side_number_after') is None:
-                last_node.set_numbers_definition('right_side_number_before', None)
+                last_node.set_numbers_definition_field_name('right_side_number_before', None)
             else:
                 if last_node.get_specific_number_definition('right_side_number_before') is None:
-                    last_node.set_numbers_definition('right_side_number_before', 0)
+                    last_node.set_numbers_definition_field_name('right_side_number_before', 0)
             return
 
         # mamy wiele wezlow z numeracja przeorganizuj je
@@ -251,21 +281,21 @@ class Data_X(object):
             node_end = nodes_with_numbers[node_num + 1]
             if node_start.node_starts_numeration():
                 if node_start.get_specific_number_definition('left_side_number_after') is None:
-                    node_end.set_numbers_definition('left_side_number_before', None)
+                    node_end.set_numbers_definition_field_name('left_side_number_before', None)
                 else:
                     if node_end.get_specific_number_definition('left_side_number_before') is None:
-                        node_end.set_numbers_definition('left_side_number_before', 0)
+                        node_end.set_numbers_definition_field_name('left_side_number_before', 0)
                 if node_start.get_specific_number_definition('right_side_number_after') is None:
-                    node_end.set_numbers_definition('right_side_number_before', None)
+                    node_end.set_numbers_definition_field_name('right_side_number_before', None)
                 else:
                     if node_end.get_specific_number_definition('right_side_number_before') is None:
-                        node_end.set_numbers_definition('right_side_number_before', 0)
+                        node_end.set_numbers_definition_field_name('right_side_number_before', 0)
             else:
                 # przypadek gdy dany nod zaczyna dalej numeracje. wtedy numer przed nie będzie już potrzebny
                 # jesli nod nie ma numeracji
                 if node_end.node_has_numeration() and node_end.node_starts_numeration():
-                    node_end.set_numbers_definition('left_side_number_before', None)
-                    node_end.set_numbers_definition('right_side_number_before', None)
+                    node_end.set_numbers_definition_field_name('left_side_number_before', None)
+                    node_end.set_numbers_definition_field_name('right_side_number_before', None)
                 else:
                     # jesli nod nie zaczyna numeracji wyzeruj jego numeracje
                     node_end.set_node_has_no_numeration()
@@ -282,7 +312,7 @@ class Data_X(object):
     def get_polys_for_data_level(self, data_level):
         if data_level not in self._data_levels:
             return tuple()
-        data_level_index = self._data_levels.index(data_level)
+        data_level_index = self.get_data_level_index(data_level)
         return self._poly_data_points[data_level_index]
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
@@ -455,6 +485,37 @@ class Data_X(object):
         polygon = self._poly_data_points[data_level][polynum]
         polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
         self._poly_data_points[data_level][polynum] = polygon_mod
+
+    def reverse_poly(self, data_level):
+        # inverting order of nodes, which gives eg road oposite direction
+        polys = self.get_polys_for_data_level(data_level)
+        for polynum in range(len(polys)):
+            poly_copy = [a.get_copy() for a in (polys[polynum])]
+            polys[polynum].reverse()
+            for num in range(len(poly_copy)):
+                polys[polynum][-num - 1].set_node_has_no_hlevel()
+                polys[polynum][-num - 1].set_node_has_no_numeration()
+                polys[polynum][-num - 1].set_hlevel_definition(poly_copy[num].get_hlevel_definition())
+                polys[polynum][-num - 1].set_numbers_definition(poly_copy[num].get_numbers_definition())
+
+            house_numbers_defs = self.get_housenumbers_for_poly(data_level, polynum)
+            nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
+            if not nodes_with_nums_idx:
+                return
+            # now lets fix the numeration
+            for num in range(len(nodes_with_nums_idx)):
+                node_start = nodes_with_nums_idx[num]
+                polys[polynum][node_start].update_numbers_after_poly_reverting()
+            for num in range(range(len(nodes_with_nums_idx) - 1)):
+                node_start_idx = nodes_with_nums_idx[num]
+                node_start = polys[polynum][node_start_idx]
+                node_end_idx = nodes_with_nums_idx[num+1]
+                node_end = polys[polynum][node_end_idx]
+                left_side_numbering_style = node_end.get_specific_number_definition('left_side_numbering_style')
+                right_side_numbering_style = node_end.get_specific_number_definition('right_side_numbering_style')
+                node_start.set_numbers_definition_field_name('left_side_numbering_style', left_side_numbering_style)
+                node_start.set_numbers_definition_field_name('right_side_numbering_style', right_side_numbering_style)
+            self.clean_numbers_definitions(data_level, polynum)
 
     def set_hlevel_to_node(self, data_level, poly_num, node_num, level_val):
         dl_index = self.get_data_level_index(data_level)
@@ -1169,6 +1230,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.update_housenumber_labels()
         self.decorate()
 
+    def command_reverse_poly(self):
+        return
+
     @staticmethod
     def create_painter_path(poly_lists, type_polygon=False):
         path = QPainterPath()
@@ -1533,6 +1597,14 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         label = self.get_label1()
         if label is not None and label:
             self.label = PolylineLabel(label, self)
+
+    def command_reverse_poly(self):
+        print('reversing polyline')
+        self.data0.reverse_poly(self.current_data_x)
+        self.update_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+        self.update_housenumber_labels()
 
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):

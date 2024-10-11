@@ -40,7 +40,7 @@ class MapObjPropDock(QDockWidget):
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
-        reverse_direction_button = QPushButton('Invert direction', dock_widget)
+        reverse_direction_button = QPushButton('Revert direction', dock_widget)
         reverse_direction_button.clicked.connect(self.reverse_polyline)
         dir_box.addWidget(self.poly_direction)
         dir_box.addWidget(reverse_direction_button)
@@ -71,7 +71,9 @@ class MapObjPropDock(QDockWidget):
         dock_box.addLayout(extras_box)
 
     def reverse_polyline(self, event):
-        print('reversing polyline')
+        print(self.map_object_id)
+        if self.map_object_id is not None:
+            self.map_object_id.command_reverse_poly()
 
     def set_map_object_id(self, obj_id):
         self.map_object_id = obj_id
