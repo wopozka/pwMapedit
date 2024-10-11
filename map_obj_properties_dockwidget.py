@@ -132,9 +132,17 @@ class ExtrasTable(QTableWidget):
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
     def contextMenuEvent(self, event):
         menu = QMenu()
-        index = self.indexAt(event.pos())
         add_row_action = menu.addAction('Dodaj wiersz')
+        add_row_action.triggered.connect(self.add_row)
         delete_row_action = menu.addAction('Usun wiersz')
+        delete_row_action.triggered.connect(self.remove_row)
         res = menu.exec_(event.globalPos())
-        print('context_menu')
+
+
+    def remove_row(self, event):
+        self.removeRow(self.currentRow())
+
+    def add_row(self, event):
+        self.insertRow(self.currentRow())
+
 
