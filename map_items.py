@@ -24,6 +24,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 Interpolated_Number = namedtuple('Interpolated_Number', ['vector', 'position', 'number'])
 
+
 class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude=None, longitude=None, x=None, y=None, projection=None):
@@ -45,7 +46,7 @@ class Node(QPointF):
     #     self.latitude = latitude
 
     def get_copy(self):
-        aaa = Node(x=self.x(), y=self.y(), projection = self.projection)
+        aaa = Node(x=self.x(), y=self.y(), projection=self.projection)
         if self._numbers_definitions is not None:
             aaa.set_numbers_definition(copy.copy(self._numbers_definitions))
         if self._hlevel_definition is not None:
@@ -135,7 +136,6 @@ class Node(QPointF):
                 key = key.replace('after', 'before')
             new_defs[key] = value
         self._numbers_definitions = Numbers_Definition(**new_defs)
-
 
 
 class Data_X(object):
@@ -381,8 +381,8 @@ class Data_X(object):
                 vector = poly_vectors.pop(0)
             return ([Interpolated_Number(vector, position, num)] +
                     Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                 current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance))
+                                                                current_num_distance=current_num_distance,
+                                                                default_num_distance=default_num_distance))
         elif poly_length == current_num_distance:
             position = poly_vectors[0].p2()
             vector = poly_vectors.pop(0)
@@ -390,14 +390,14 @@ class Data_X(object):
             current_num_distance = default_num_distance
             return ([Interpolated_Number(vector, position, num)] +
                     Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                 current_num_distance=current_num_distance,
-                                                                 default_num_distance=default_num_distance))
+                                                                current_num_distance=current_num_distance,
+                                                                default_num_distance=default_num_distance))
         else:
             current_num_distance = current_num_distance - poly_length
             poly_vectors = poly_vectors[1:]
             return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
-                                                                      current_num_distance=current_num_distance,
-                                                                      default_num_distance=default_num_distance))
+                                                                     current_num_distance=current_num_distance,
+                                                                     default_num_distance=default_num_distance))
 
     @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
@@ -1385,7 +1385,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setPen(self.orig_pen)
         super().paint(painter, option, widget=widget)
 
-
     def update_arrow_heads(self):
         return
 
@@ -1515,7 +1514,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setZValue(10)
         self.setAcceptHoverEvents(True)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
-
 
     def add_arrow_heads(self):
         if not self._mp_dir_indicator:
@@ -1778,7 +1776,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().removeItem(hl)
         self.hlevel_labels = None
 
-
     def closest_point_to_poly(self, event_pos):
         """
         Get the position along the polyline/polygon sides that is the closest
@@ -1815,6 +1812,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def paint(self, painter, option, widget=None):
         super().paint(painter, option, widget=widget)
+
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
@@ -1896,6 +1894,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
 class MapLabels(QGraphicsSimpleTextItem):
     _accept_map_level_change = False
+
     def __init__(self, string_text, parent):
         super(MapLabels, self).__init__(string_text, parent)
 
@@ -1974,6 +1973,7 @@ class PolygonLabel(MapLabels):
 
 class PolylineAddressNumber(MapLabels):
     _accept_map_level_change = False
+
     def __init__(self, position, text, parent):
         self.parent = parent
         self.grip_mode = False
@@ -2222,6 +2222,7 @@ class GripItem(QGraphicsPathItem):
         # simulate undecorate, we can do it here, or design in future what to do
         pass
 
+
 class DirectionArrowHead(QGraphicsPathItem):
     pen = QPen(Qt.black, 1)
     brush = QBrush(Qt.black)
@@ -2263,6 +2264,7 @@ class DirectionArrowHead(QGraphicsPathItem):
 
 class MapRulerLabel(QGraphicsSimpleTextItem):
     _accept_map_level_change = False
+
     def __init__(self, label, parent):
         self.parent = parent
         super(MapRulerLabel, self).__init__(label, parent)
@@ -2442,7 +2444,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         # iterate through pair of points, if the polygon is not "closed",
         # add the start to the end
         p1 = points.pop(0)
-        if points[-1] != p1: # identical to QPolygonF.isClosed()
+        if points[-1] != p1:  # identical to QPolygonF.isClosed()
             points.append(p1)
         intersections = []
         for i, p2 in enumerate(points, 1):
