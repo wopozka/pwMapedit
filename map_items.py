@@ -124,15 +124,16 @@ class Node(QPointF):
         if self._numbers_definitions is None:
             return
         new_defs = {}
+        old_defs = self._numbers_definitions._asdict()
         for key, value in self._numbers_definitions._asdict().items():
             if key.startswith('right'):
-                key.replace('right', 'left')
+                key = key.replace('right', 'left')
             elif key.startswith('left'):
-                key.replace('left', 'right')
+                key = key.replace('left', 'right')
             if key.endswith('before'):
-                key.replace('before', 'after')
+                key = key.replace('before', 'after')
             elif key.endswith('after'):
-                key.replace('after', 'before')
+                key = key.replace('after', 'before')
             new_defs[key] = value
         self._numbers_definitions = Numbers_Definition(**new_defs)
 
@@ -254,6 +255,8 @@ class Data_X(object):
             last = self._poly_data_points[data_level][polynum][-1]
             self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('left_side_number_after', None)
             self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('right_side_number_after', None)
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('left_side_numbering_style', None)
+            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('right_side_numbering_style', None)
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
 
         # nie ma zadnych w wezlow z numeracja, nie rob nic
