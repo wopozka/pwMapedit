@@ -179,9 +179,13 @@ class pwMapeditPy(QMainWindow):
     def _create_edit_actions(self):
         edit_actions = list()
         edit_actions.append(QAction('&Undo', self))
+        # dajemy znać undo-redo stack aby ustawial w tooltipie ostatnia komende ktora moze odwolac
         self.undo_redo_stack.set_undo_button(edit_actions[-1])
+        edit_actions[-1].triggered.connect(self.undo_redo_stack.undo)
         edit_actions.append(QAction('&Redo', self))
+        # dajemy znać undo-redo stack aby ustawial w tooltipie ostatnia komende ktora moze powtorzyc
         self.undo_redo_stack.set_redo_button(edit_actions[-1])
+        edit_actions[-1].triggered.connect(self.undo_redo_stack.redo)
         edit_actions.append(None)
         edit_actions.append(QAction('&Cut', self))
         edit_actions.append(QAction('&Copy', self))

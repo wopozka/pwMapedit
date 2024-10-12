@@ -120,11 +120,10 @@ class Node(QPointF):
         definitions[field_name] = definition
         self._numbers_definitions = Numbers_Definition(**definitions)
 
-    def update_numbers_after_poly_reverting(self):
+    def update_numbers_after_poly_reversing(self):
         if self._numbers_definitions is None:
             return
         new_defs = {}
-        old_defs = self._numbers_definitions._asdict()
         for key, value in self._numbers_definitions._asdict().items():
             if key.startswith('right'):
                 key = key.replace('right', 'left')
@@ -248,15 +247,15 @@ class Data_X(object):
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
         # pierwszy nod
         if self._poly_data_points[data_level][polynum][0].node_has_numeration():
-            self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name('left_side_number_before', None)
-            self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name('right_side_number_before', None)
+            for key in ('left_side_number_before', 'right_side_number_before'):
+                self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name(key, None)
         # ostatni nod
         if self._poly_data_points[data_level][polynum][-1].node_has_numeration():
-            last = self._poly_data_points[data_level][polynum][-1]
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('left_side_number_after', None)
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('right_side_number_after', None)
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('left_side_numbering_style', None)
-            self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name('right_side_numbering_style', None)
+            for key in ('left_side_numbering_style', 'left_side_number_after', 'right_side_numbering_style',
+                        'right_side_number_after', 'left_side_zip_code',
+                        'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
+                        'right_side_city', 'right_side_region', 'right_side_country'):
+                self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name(key, None)
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
 
         # nie ma zadnych w wezlow z numeracja, nie rob nic
@@ -507,7 +506,7 @@ class Data_X(object):
             # now lets fix the numeration
             for num in range(len(nodes_with_nums_idx)):
                 node_start = nodes_with_nums_idx[num]
-                polys[polynum][node_start].update_numbers_after_poly_reverting()
+                polys[polynum][node_start].update_numbers_after_poly_reversing()
             for num in range(len(nodes_with_nums_idx) - 1):
                 node_start_idx = nodes_with_nums_idx[num]
                 node_start = polys[polynum][node_start_idx]
@@ -1196,13 +1195,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         except IndexError:
             return
         self.undecorate()
-        # self.data0.insert_node_at_position(self.current_data_x, path_num, coord_num, pos.x(), pos.y())
-        # self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        # self.update_arrow_heads()
-        # self.update_label_pos()
-        # self.update_hlevel_labels()
-        # self.update_housenumber_labels()
-        command = commands.InsertNodeCmd(self, index, pos, 'Usuń nod', polygons, type_polygon=type_polygon)
+        command = commands.InsertNodeCmd(self, index, pos, 'Dodaj nod', polygons, type_polygon=type_polygon)
         self.scene().undo_redo_stack.push(command)
         self.decorate()
 
@@ -1602,13 +1595,16 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_reverse_poly(self):
         print('reversing polyline')
-        self.data0.reverse_poly(self.current_data_x)
-        polygons = self.data0.get_polys_for_data_level(self.current_data_x)
-        self.setPath(self.create_painter_path(polygons, type_polygon=False))
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
+        command = commands.ReversePolylineCmd(self, 'Odwróć polyline')
+        self.scene().undo_redo_stack.push(command)
+
+        # self.data0.reverse_poly(self.current_data_x)
+        # polygons = self.data0.get_polys_for_data_level(self.current_data_x)
+        # self.setPath(self.create_painter_path(polygons, type_polygon=False))
+        # self.update_arrow_heads()
+        # self.update_label_pos()
+        # self.update_hlevel_labels()
+        # self.update_housenumber_labels()
 
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):
