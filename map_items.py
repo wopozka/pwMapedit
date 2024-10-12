@@ -123,7 +123,6 @@ class Node(QPointF):
     def update_numbers_after_poly_reverting(self):
         if self._numbers_definitions is None:
             return
-        definitions = self._numbers_definitions._asdict()
         new_defs = {}
         for key, value in self._numbers_definitions._asdict().items():
             if key.startswith('right'):
@@ -132,7 +131,7 @@ class Node(QPointF):
                 key.replace('left', 'right')
             if key.endswith('before'):
                 key.replace('before', 'after')
-            elif key.enswith('after'):
+            elif key.endswith('after'):
                 key.replace('after', 'before')
             new_defs[key] = value
         self._numbers_definitions = Numbers_Definition(**new_defs)
@@ -506,7 +505,7 @@ class Data_X(object):
             for num in range(len(nodes_with_nums_idx)):
                 node_start = nodes_with_nums_idx[num]
                 polys[polynum][node_start].update_numbers_after_poly_reverting()
-            for num in range(range(len(nodes_with_nums_idx) - 1)):
+            for num in range(len(nodes_with_nums_idx) - 1):
                 node_start_idx = nodes_with_nums_idx[num]
                 node_start = polys[polynum][node_start_idx]
                 node_end_idx = nodes_with_nums_idx[num+1]
@@ -1601,6 +1600,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def command_reverse_poly(self):
         print('reversing polyline')
         self.data0.reverse_poly(self.current_data_x)
+        polygons = self.data0.get_polys_for_data_level(self.current_data_x)
+        self.setPath(self.create_painter_path(polygons, type_polygon=False))
         self.update_arrow_heads()
         self.update_label_pos()
         self.update_hlevel_labels()
