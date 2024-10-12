@@ -142,34 +142,42 @@ def test_interpolated_number_coordinates(target, answer):
     answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer
 
-INTERPOLATED_ADDRESSES = (
-        (('(52.85431,16.02645),(52.85454,16.02758),(52.85465,16.02808),(52.85470,16.02828),(52.85482,16.02884),(52.85490,16.02918),(52.85515,16.03006),(52.85520,16.03026),(52.85534,16.03117),(52.85545,16.03166),(52.85556,16.03215),(52.85570,16.03275),(52.85576,16.03302),(52.85585,16.03341),(52.85600,16.03417),(52.85610,16.03462),(52.85636,16.03508)',
-          'Numbers1=0,O,45,41,E,46,40',
-          'Numbers2=1,B,39,39,N,-1,-1',
-          'Numbers3=2,B,38,38,B,37,37',
-          'Numbers4=3,O,35,33,E,36,32',
-          'Numbers5=4,B,30,30,B,31,31',
-          'Numbers6=5,B,29,28,N,-1,-1',
-          'Numbers7=6,B,26,26,B,25,25',
-          'Numbers8=7,B,23,23,N,-1,-1',
-          'Numbers9=8,B,20,20,B,22,22',
-          'Numbers10=9,B,19,19,B,18,17',
-          'Numbers11=10,B,15,13,B,16,16',
-          'Numbers12=11,B,13,12,B,11,11',
-          'Numbers13=12,B,9,8,B,10,10',
-          'Numbers14=13,B,6,6,O,7,5',
-          'Numbers15=14,B,3,3,B,4,4',
-          'Numbers16=15,N,-1,-1,B,2,2',),
-         ([])),
+IVERTED_ADDRESSES = (
+        (('(52.85431,16.02645),(52.85454,16.02758)', 'Numbers1=0,O,1,9,E,2,10',), ([{'left_side_number_after': 10,
+          'left_side_numbering_style': 'E', 'right_side_number_after': 9, 'right_side_numbering_style': 'O'},
+          {'left_side_number_before': 2, 'right_side_number_before': 1}]),),
+        # (('(52.85431,16.02645),(52.85454,16.02758),(52.85465,16.02808),(52.85470,16.02828),(52.85482,16.02884),(52.85490,16.02918),(52.85515,16.03006),(52.85520,16.03026),(52.85534,16.03117),(52.85545,16.03166),(52.85556,16.03215),(52.85570,16.03275),(52.85576,16.03302),(52.85585,16.03341),(52.85600,16.03417),(52.85610,16.03462),(52.85636,16.03508)',
+        #   'Numbers1=0,O,45,41,E,46,40',
+        #   'Numbers2=1,B,39,39,N,-1,-1',
+        #   'Numbers3=2,B,38,38,B,37,37',
+        #   'Numbers4=3,O,35,33,E,36,32',
+        #   'Numbers5=4,B,30,30,B,31,31',
+        #   'Numbers6=5,B,29,28,N,-1,-1',
+        #   'Numbers7=6,B,26,26,B,25,25',
+        #   'Numbers8=7,B,23,23,N,-1,-1',
+        #   'Numbers9=8,B,20,20,B,22,22',
+        #   'Numbers10=9,B,19,19,B,18,17',
+        #   'Numbers11=10,B,15,13,B,16,16',
+        #   'Numbers12=11,B,13,12,B,11,11',
+        #   'Numbers13=12,B,9,8,B,10,10',
+        #   'Numbers14=13,B,6,6,O,7,5',
+        #   'Numbers15=14,B,3,3,B,4,4',
+        #   'Numbers16=15,N,-1,-1,B,2,2',),
+        #  ([])),
 )
 
 
-@pytest.mark.parametrize('target, answer', INTERPOLATED_ADDRESSES)
-def test_address_adding_from_str(target, answer):
+@pytest.mark.parametrize('target, answer', IVERTED_ADDRESSES)
+def test_invert_poly_addresses(target, answer):
     proj = projection.Mercator(None)
     data_obj = map_items.Data_X(projection=proj)
     data_obj.add_nodes_from_string('Data0', target[0])
-    for num_num in range(1, 17):
+    for num_num in range(1, 2):
         data_obj.add_housenumbers_from_string(target[num_num])
 
-    assert data_obj.get_interpolated_housenumbers_for_poly(0, 0) == answer
+    adr_ans = []
+    data_obj.reverse_poly(0)
+    for adr in data_obj.get_housenumbers_for_poly(0, 0):
+        adr_ans.append({a: b for a, b in adr._asdict().items() if b is not None})
+
+    assert adr_ans == answer
