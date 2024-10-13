@@ -1373,16 +1373,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         if mode == 'select_objects':
             super().mouseMoveEvent(event)
-            # print(self.pos())
-            # print([self.mapToScene(p) for p in polygons[0]])
-            polygons = []
-            for polygroup1 in self.get_polygons_from_path(self.path(), type_polygon=False):
-                polygon = []
-                for coord in polygroup1:
-                    polygon.append(self.mapToScene(coord))
-                polygons.append(polygon)
-            print(polygons)
-            self.setPath(self.create_painter_path(polygons, type_polygon=False))
+            # # print(self.pos())
+            # # print([self.mapToScene(p) for p in polygons[0]])
+            #
+            # path = self.mapToScene(self.path())
+            # self.setPos(0, 0)
+            # self.setPath(path)
 
 
     def mousePressEvent(self, event):
