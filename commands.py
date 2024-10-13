@@ -20,10 +20,12 @@ class InsertNodeCmd(QUndoCommand):
         return
 
     def undo(self):
+        self.map_object.scene().clearSelection()
         self.map_object.undecorate()
         self.map_object.data0 = self.data0_copy
         self.map_object.setPath(self.path_copy)
         self.update_children()
+        self.map_object.setSelected(True)
         self.map_object.decorate()
         return
 
