@@ -1194,10 +1194,31 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[path_num] = polygon_modified
         except IndexError:
             return
-        self.undecorate()
         command = commands.InsertNodeCmd(self, index, pos, 'Dodaj nod', polygons, type_polygon=type_polygon)
         self.scene().undo_redo_stack.push(command)
-        self.decorate()
+
+    def command_move_grip(self, grip, type_polygon=False):
+        print('ruszam')
+        if grip not in self.node_grip_items:
+            return
+        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num][grip_coord_num] = grip.pos()
+        except IndexError:
+            return
+        command = commands.MoveGripCmd(self, grip, 'przesun wezel', type_polygon=type_polygon)
+        self.scene().undo_redo_stack.push(command)
+        # self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
+        # self.data0.update_node_coordinates(self.current_data_x, grip_poly_num, grip_coord_num, grip.pos())
+        # self.update_arrow_heads()
+        # self.update_label_pos()
+        # self.update_hlevel_labels()
+        # self.update_housenumber_labels()
+        # self.update_interpolated_housenumber_labels()
+
+    def command_move_item(self, event):
+        return
 
     def command_remove_point(self, grip, type_polygon=False):
         # if there are 2 grip items in a path, then removal is not possible do not even try
@@ -1344,6 +1365,26 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def is_point_removal_possible(num_elems_in_path):
         return False
 
+    def mouseMoveEvent(self, event):
+        mode = self.scene().get_pw_mapedit_mode()
+        # trybie edytuj nody zachowuj sie standardowo
+        if mode == 'edit_nodes':
+            super().mouseMoveEvent(event)
+            return
+        if mode == 'select_objects':
+            super().mouseMoveEvent(event)
+            # print(self.pos())
+            # print([self.mapToScene(p) for p in polygons[0]])
+            polygons = []
+            for polygroup1 in self.get_polygons_from_path(self.path(), type_polygon=False):
+                polygon = []
+                for coord in polygroup1:
+                    polygon.append(self.mapToScene(coord))
+                polygons.append(polygon)
+            print(polygons)
+            self.setPath(self.create_painter_path(polygons, type_polygon=False))
+
+
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.remove_hovered_shape()
@@ -1354,23 +1395,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self.insert_point(index, pos)
                 return
 
-    def _move_grip(self, grip, type_polygon=False):
-        print('ruszam')
-        if grip not in self.node_grip_items:
-            return
-        polygons = self.get_polygons_from_path(self.path(), type_polygon=type_polygon)
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        try:
-            polygons[grip_poly_num][grip_coord_num] = grip.pos()
-        except IndexError:
-            return
-        self.setPath(self.create_painter_path(polygons, type_polygon=type_polygon))
-        self.data0.update_node_coordinates(self.current_data_x, grip_poly_num, grip_coord_num, grip.pos())
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
-        self.update_interpolated_housenumber_labels()
 
     def move_grip(self, grip):
         # do be defined in child classes
@@ -1575,6 +1599,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.housenumber_labels = None
 
     def add_interpolated_housenumber_labels(self):
+        if self.decorated_poly_nums is None:
+            return
         ihn = []
         for polygon_num in self.decorated_poly_nums:
             interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
@@ -1797,7 +1823,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self._decorate(type_polygon=False)
 
     def move_grip(self, grip):
-        self._move_grip(grip, type_polygon=False)
+        self.command_move_grip(grip, type_polygon=False)
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
@@ -1852,7 +1878,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self._decorate(type_polygon=True)
 
     def move_grip(self, grip):
-        self._move_grip(grip, type_polygon=True)
+        self.command_move_grip(grip, type_polygon=True)
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
