@@ -540,6 +540,19 @@ class Data_X(object):
         return
 
     def update_node_coordinates(self, data_level, polynum, index, position):
+        """
+        Ustaw wsplorzedne noda w poly
+        Parameters
+        ----------
+        data_level: (int) 0, 1, 2, 3, 4, w zależności od Data
+        polynum: (int) numer polygonu
+        index: (int) indeks noda
+        position: (QPointF), wspolrzedne jako QPointF
+
+        Returns
+        -------
+
+        """
         polygon = self.get_polys_for_data_level(data_level)[polynum]
         polygon_nod = polygon[index]
         polygon_nod.set_coordinates_from_qpointf(position)
@@ -1394,10 +1407,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         mode = self.scene().get_pw_mapedit_mode()
         if mode == 'select_objects':
             if self.pos() != self._obj_pos_in_select_objects_mode:
-                polygons = self.get_polygons_from_path(self.mapToScene(self.path()))
-                self.setPath(self.create_painter_path(polygons))
-                self.setPos(0, 0)
-                self.update_items_after_obj_move()
+                command = commands.SelectModeMoveItem(self, 'Przesun poly', self.pos())
+                self.scene().undo_redo_stack.push(command)
         self._obj_pos_in_select_objects_mode = None
         super().mouseReleaseEvent(event)
 
