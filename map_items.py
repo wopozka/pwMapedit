@@ -934,11 +934,27 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         # self.icon = self.map_objects_properties.get_poi_icon(self.get_param('Type'))
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setAcceptHoverEvents(True)
         self.current_data_x = 4
         self.set_transformation_flag()
+        self.hovered_shape = None
 
     @staticmethod
     def accept_map_level_change():
+        return True
+
+    def add_hovered_shape(self):
+        self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
+        hovered_color = QColor('red')
+        # hovered_color.setAlpha(50)
+        hovered_over_pen = QPen(hovered_color)
+        hovered_over_pen.setCosmetic(True)
+        hovered_over_pen.setWidth(1)
+        self.hovered_shape.setPen(hovered_over_pen)
+
+    def highlight_when_hoverover(self):
+        if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
+            return False
         return True
 
     def paint(self, painter, option, widget):
@@ -998,6 +1014,24 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def undecorate(self):
         pass
 
+    def hoverEnterEvent(self, event):
+        mode = self.scene().get_pw_mapedit_mode()
+        if mode == 'select_objects' and not self.isSelected() and self.highlight_when_hoverover():
+            self.add_hovered_shape()
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.remove_hovered_shape()
+        super().hoverLeaveEvent(event)
+
+    def mousePressEvent(self, event):
+        self.remove_hovered_shape()
+        super().mouseReleaseEvent(event)
+
+    def remove_hovered_shape(self):
+        if self.hovered_shape is not None:
+            self.scene().removeItem(self.hovered_shape)
+            self.hovered_shape = None
 
 class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
     _accept_map_level_change = True
@@ -1955,15 +1989,16 @@ class MapLabels(QGraphicsSimpleTextItem):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
 
 
-class PoiLabel(MapLabels):
-
+class PoiLabel(QGraphicsSimpleTextItem):
+    # poi label nie musi byc typem maplabels bo jako dziecko poi, bedzie mialo jego flagi
+    _accept_map_level_change = False
     def __init__(self, string_text, parent):
         self.parent = parent
         super(PoiLabel, self).__init__(string_text, parent)
         px0, py0, pheight, pwidth = parent.boundingRect().getRect()
         self.setPos(pheight, pwidth/2)
         self.setZValue(20)
-        self.set_transformation_flag()
+        # self.set_transformation_flag()
 
 
 class PolylineLabel(MapLabels):

@@ -218,8 +218,8 @@ class pwMapeditPy(QMainWindow):
 
     def _create_tools_actions(self):
         tools_action = list()
-        tools_action.append(QAction('&Drag map', self))
-        tools_action[-1].setData('drag_map')
+        # tools_action.append(QAction('&Drag map', self))
+        # tools_action[-1].setData('drag_map')
         tools_action.append(QAction('&Zoom map', self))
         tools_action[-1].setData('zoom_map')
         tools_action.append(QAction('&Select objects', self))
@@ -230,7 +230,7 @@ class pwMapeditPy(QMainWindow):
         tools_action[-1].setData('edit_nodes')
         for act in tools_action:
             act.setCheckable(True)
-            if act.data() == 'drag_map':
+            if act.data() == 'select_objects':
                 act.setChecked(True)
             act.triggered.connect(self.menu_tools_set_mode)
         return tuple(tools_action)
