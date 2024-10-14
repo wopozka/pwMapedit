@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsView
-from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtCore import QPointF, Qt, QEvent
+from PyQt5.QtGui import QMouseEvent
 import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 
@@ -24,6 +25,8 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
+
+        self._right_mouse_button_event_position = None
 
     def get_item_ignores_transformations(self):
         return self.item_ignores_transformations
@@ -71,8 +74,34 @@ class mapRender(QGraphicsView):
 
     # new events definitions:
     def mouseMoveEvent(self, event):
-        super(mapRender, self).mouseMoveEvent(event)
-        self.set_status_bar(event=event)
+        if event.buttons() == Qt.RightButton:
+            super(mapRender, self).mouseMoveEvent(event)
+        else:
+            super(mapRender, self).mouseMoveEvent(event)
+            self.set_status_bar(event=event)
+
+    def mousePressEvent(self, event):
+        # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
+        if event.button() == Qt.RightButton:
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
+            self._right_mouse_button_event_position = event.pos()
+            handmade_event = QMouseEvent(QEvent.MouseButtonPress, QPointF(event.pos()), Qt.LeftButton,
+                                         event.buttons(), Qt.KeyboardModifiers())
+            self.setInteractive(False)
+            self.mousePressEvent(handmade_event)
+
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
+        if event.button() == Qt.RightButton:
+            self._right_mouse_button_event_position = None
+            self.setDragMode(QGraphicsView.NoDrag)
+            self.setInteractive(True)
+            handmade_event = QMouseEvent(QEvent.MouseButtonRelease, QPointF(event.pos()), Qt.LeftButton,
+                                         event.buttons(), Qt.KeyboardModifiers())
+            self.mouseReleaseEvent(handmade_event)
+        super().mouseReleaseEvent(event)
 
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:

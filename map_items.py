@@ -1113,6 +1113,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.current_data_x = 0
         self.decorated_poly_nums = None
         self._obj_pos_in_select_objects_mode = None
+        self._mouse_press_timestamp = None
 
     @staticmethod
     def accept_map_level_change():
@@ -1374,22 +1375,27 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return False
 
     def mouseMoveEvent(self, event):
-        mode = self.scene().get_pw_mapedit_mode()
-        # trybie edytuj nody zachowuj sie standardowo
-        if mode == 'edit_nodes':
-            super().mouseMoveEvent(event)
-            return
-        if mode == 'select_objects':
-            super().mouseMoveEvent(event)
-            # # print(self.pos())
-            # # print([self.mapToScene(p) for p in polygons[0]])
-            #
-            # path = self.mapToScene(self.path())
-            # self.setPos(0, 0)
-            # self.setPath(path)
+        if event.buttons() == Qt.RightButton:
+            print('mouse move')
+            self.view().mouseMoveEvent(event)
+        else:
+            mode = self.scene().get_pw_mapedit_mode()
+            # trybie edytuj nody zachowuj sie standardowo
+            if mode == 'edit_nodes':
+                super().mouseMoveEvent(event)
+                return
+            if mode == 'select_objects':
+                super().mouseMoveEvent(event)
+                # # print(self.pos())
+                # # print([self.mapToScene(p) for p in polygons[0]])
+                #
+                # path = self.mapToScene(self.path())
+                # self.setPos(0, 0)
+                # self.setPath(path)
 
 
     def mousePressEvent(self, event):
+        self._mouse_press_timestamp = time.time()
         super().mousePressEvent(event)
         self.remove_hovered_shape()
         mode = self.scene().get_pw_mapedit_mode()
@@ -1404,6 +1410,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self._obj_pos_in_select_objects_mode = self.pos()
 
     def mouseReleaseEvent(self, event):
+        self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
         if mode == 'select_objects':
             if self.pos() != self._obj_pos_in_select_objects_mode:
