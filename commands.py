@@ -28,7 +28,8 @@ class InsertNodeCmd(QUndoCommand):
         self.map_object.setPath(self.path_copy)
         self.update_children()
         self.map_object.setSelected(True)
-        self.map_object.decorate()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
         return
 
     def update_children(self):
@@ -96,7 +97,8 @@ class MoveGripCmd(QUndoCommand):
         self.map_object.setPath(self.path_copy)
         self.update_children()
         self.map_object.setSelected(True)
-        self.map_object.decorate()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
         return
 
     def update_children(self):
@@ -135,10 +137,14 @@ class SelectModeMoveItem(QUndoCommand):
 
     def undo(self):
         self.map_object.scene().clearSelection()
+        self.map_object.undecorate()
         self.map_object.data0 = self.data0_copy
         self.map_object.setPath(self.path_copy)
         self.update_children()
         self.map_object.setSelected(True)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
+
         return
 
     def update_children(self):
