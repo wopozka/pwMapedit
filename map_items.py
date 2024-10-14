@@ -958,18 +958,23 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         return True
 
     def paint(self, painter, option, widget):
-        self.set_transformation_flag()
+        if self.set_transformation_flag():
+            self.update()
+            return
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
         if self.scene() is None:
-            return
+            return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                return True
         else:
             if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+                return True
+        return False
 
     def set_map_level(self):
         level = self.scene().get_map_level()
@@ -1056,18 +1061,22 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
         return True
 
     def paint(self, painter, option, widget):
-        self.set_transformation_flag()
+        if self.set_transformation_flag():
+            return
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
         if self.scene() is None:
-            return
+            return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                return True
         else:
             if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+                return True
+        return False
 
     def set_map_level(self):
         level = self.scene().get_map_level()
@@ -1242,7 +1251,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[path_num] = polygon_modified
         except IndexError:
             return
-        command = commands.InsertNodeCmd(self, index, pos, 'Dodaj nod', polygons)
+        command = commands.InsertNodeCmd(self, index, pos, polygons, 'Dodaj nod')
         self.scene().undo_redo_stack.push(command)
 
     def command_move_grip(self, grip):
@@ -1277,6 +1286,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
             return
+
+        command = commands.RemoveNodeCmd(self, grip.grip_indexes, polygons, 'Usuń węzeł')
+        self.scene().undo_redo_stack.push(command)
 
         self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
         self.setPath(self.create_painter_path(polygons))
@@ -1672,13 +1684,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         command = commands.ReversePolylineCmd(self, 'Odwróć polyline')
         self.scene().undo_redo_stack.push(command)
 
-        # self.data0.reverse_poly(self.current_data_x)
-        # polygons = self.data0.get_polys_for_data_level(self.current_data_x)
-        # self.update_arrow_heads()
-        # self.update_label_pos()
-        # self.update_hlevel_labels()
-        # self.update_housenumber_labels()
-
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):
         # testing=True is used or testing purposes, then values of for number position calculations are fixed
@@ -1977,16 +1982,23 @@ class MapLabels(QGraphicsSimpleTextItem):
         return False
 
     def paint(self, painter, option, widget):
-        self.set_transformation_flag()
+        if self.set_transformation_flag():
+            self.update()
+            return
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
+        if self.scene() is None:
+            return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                return True
         else:
             if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+                return True
+        return False
 
 
 class PoiLabel(QGraphicsSimpleTextItem):
@@ -2282,12 +2294,17 @@ class GripItem(QGraphicsPathItem):
         super().paint(painter, option, widget=widget)
 
     def set_transformation_flag(self):
+        if self.scene() is None:
+            return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                return True
         else:
             if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+                return True
+        return False
 
     def decorate(self):
         # simulate decorate, we can do it here, or design in future what to do
@@ -2325,15 +2342,22 @@ class DirectionArrowHead(QGraphicsPathItem):
         return False
 
     def set_transformation_flag(self):
+        if self.scene() is None:
+            return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
             if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+                return True
         else:
             if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
                 self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+                return True
+        return False
 
     def paint(self, painter, option, widget=None):
-        self.set_transformation_flag()
+        if self.set_transformation_flag():
+            self.update()
+            return
         super().paint(painter, option, widget=widget)
 
 

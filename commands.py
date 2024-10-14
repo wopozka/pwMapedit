@@ -3,7 +3,7 @@ import copy
 import time
 
 class InsertNodeCmd(QUndoCommand):
-    def __init__(self, map_object, index, pos, description, polygons):
+    def __init__(self, map_object, index, pos, polygons, description):
         super(InsertNodeCmd, self).__init__(description)
         self.data0_copy = copy.copy(map_object.data0)
         self.path_copy = map_object.path()
@@ -11,14 +11,16 @@ class InsertNodeCmd(QUndoCommand):
         self.path_num, self.coord_num = index
         self.pos = pos
         self.polygons = polygons
+        self.data_level = self.map_object.current_data_x
 
     def redo(self):
         self.map_object.undecorate()
-        self.map_object.data0.insert_node_at_position(self.map_object.current_data_x, self.path_num, self.coord_num,
+        self.map_object.data0.insert_node_at_position(self.data_level, self.path_num, self.coord_num,
                                                       self.pos.x(), self.pos.y())
         self.map_object.setPath(self.map_object.create_painter_path(self.polygons))
         self.update_children()
-        self.map_object.decorate()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
         return
 
     def undo(self):
@@ -38,6 +40,42 @@ class InsertNodeCmd(QUndoCommand):
         self.map_object.update_hlevel_labels()
         self.map_object.update_housenumber_labels()
 
+
+class RemoveNodeCmd(QUndoCommand):
+    def __init(self, map_object, index, polygons, description):
+        super(RemoveNodeCmd, self).__init__(description)
+        self.data0_copy = copy.copy(map_object.data0)
+        self.path_copy = map_object.path()
+        self.map_object = map_object
+        self.path_num, self.coord_num = index
+        self.data_level = self.map_object.current_data_x
+        self.polygons = polygons
+        self.data_level = self.map_object.current_data_x
+
+    def redo(self):
+        self.map_object.data0.delete_node_at_position(self.data_level, self.path_num, self.coord_num)
+        self.map_objec.tsetPath(self.map_object.create_painter_path(self.polygons))
+        self.mapobject.undecorate()
+        self.update_children()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
+
+    def undo(self):
+        self.map_object.scene().clearSelection()
+        self.map_object.undecorate()
+        self.map_object.data0 = self.data0_copy
+        self.map_object.setPath(self.path_copy)
+        self.update_children()
+        self.map_object.setSelected(True)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.decorate()
+        return
+
+    def update_children(self):
+        self.map_object.update_arrow_heads()
+        self.map_object.update_label_pos()
+        self.map_object.update_hlevel_labels()
+        self.map_object.update_housenumber_labels()
 
 class ReversePolylineCmd(QUndoCommand):
     def __init__(self, map_object, description):
