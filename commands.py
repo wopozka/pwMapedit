@@ -3,7 +3,7 @@ import copy
 import time
 
 class InsertNodeCmd(QUndoCommand):
-    def __init__(self, map_object, index, pos, description, polygons, type_polygon=None):
+    def __init__(self, map_object, index, pos, description, polygons):
         super(InsertNodeCmd, self).__init__(description)
         self.data0_copy = copy.copy(map_object.data0)
         self.path_copy = map_object.path()
@@ -11,13 +11,12 @@ class InsertNodeCmd(QUndoCommand):
         self.path_num, self.coord_num = index
         self.pos = pos
         self.polygons = polygons
-        self.type_polygon = type_polygon
 
     def redo(self):
         self.map_object.undecorate()
         self.map_object.data0.insert_node_at_position(self.map_object.current_data_x, self.path_num, self.coord_num,
                                                       self.pos.x(), self.pos.y())
-        self.map_object.setPath(self.map_object.create_painter_path(self.polygons, type_polygon=self.type_polygon))
+        self.map_object.setPath(self.map_object.create_painter_path(self.polygons))
         self.update_children()
         self.map_object.decorate()
         return
@@ -50,7 +49,7 @@ class ReversePolylineCmd(QUndoCommand):
     def redo(self):
         self.map_object.data0.reverse_poly(self.data_level)
         polygons = self.map_object.data0.get_polys_for_data_level(self.data_level)
-        self.map_object.setPath(self.map_object.create_painter_path(polygons, type_polygon=False))
+        self.map_object.setPath(self.map_object.create_painter_path(polygons))
         self.update_children()
         return
 
@@ -69,11 +68,10 @@ class ReversePolylineCmd(QUndoCommand):
 
 class MoveGripCmd(QUndoCommand):
     command_id = 1
-    def __init__(self, map_object, grip, description, type_polygon=None):
+    def __init__(self, map_object, grip, description,):
         super(MoveGripCmd, self).__init__(description)
         self.index = grip.grip_indexes
         self.pos = grip.pos()
-        self.type_polygon = type_polygon
         self.data0_copy = copy.copy(map_object.data0)
         self.path_copy = map_object.path()
         self.map_object = map_object
@@ -84,10 +82,10 @@ class MoveGripCmd(QUndoCommand):
         return self.command_id
 
     def redo(self):
-        polygons = self.map_object.get_polygons_from_path(self.map_object.path(), type_polygon=self.type_polygon)
+        polygons = self.map_object.get_polygons_from_path(self.map_object.path())
         grip_poly_num, grip_coord_num = self.index
         polygons[grip_poly_num][grip_coord_num] = self.pos
-        self.map_object.setPath(self.map_object.create_painter_path(polygons, type_polygon=self.type_polygon))
+        self.map_object.setPath(self.map_object.create_painter_path(polygons))
         self.map_object.data0.update_node_coordinates(self.data_level, grip_poly_num, grip_coord_num, self.pos)
         self.update_children()
 
@@ -99,7 +97,6 @@ class MoveGripCmd(QUndoCommand):
         self.update_children()
         self.map_object.setSelected(True)
         self.map_object.decorate()
-        self.map_object.update_interpolated_housenumber_labels()
         return
 
     def update_children(self):
@@ -107,6 +104,7 @@ class MoveGripCmd(QUndoCommand):
         self.map_object.update_label_pos()
         self.map_object.update_hlevel_labels()
         self.map_object.update_housenumber_labels()
+        self.map_object.update_interpolated_housenumber_labels()
 
     def mergeWith(self, other):
         if other.id() != self.id():
@@ -132,10 +130,10 @@ class SelectModeMoveItem(QUndoCommand):
         return self.command_id
 
     def redo(self):
-        polygons = self.map_object.get_polygons_from_path(self.map_object.path(), type_polygon=self.type_polygon)
+        polygons = self.map_object.get_polygons_from_path(self.map_object.path())
         grip_poly_num, grip_coord_num = self.index
         polygons[grip_poly_num][grip_coord_num] = self.pos
-        self.map_object.setPath(self.map_object.create_painter_path(polygons, type_polygon=self.type_polygon))
+        self.map_object.setPath(self.map_object.create_painter_path(polygons))
         self.map_object.data0.update_node_coordinates(self.data_level, grip_poly_num, grip_coord_num, self.pos)
         self.update_children()
 
