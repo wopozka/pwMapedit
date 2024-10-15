@@ -24,7 +24,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -39,7 +39,7 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="12.890851"
-     inkscape:cx="17.518431"
+     inkscape:cx="-4.6678467"
      inkscape:cy="19.342896"
      inkscape:window-width="1920"
      inkscape:window-height="1055"
@@ -58,8 +58,11 @@
      transform="translate(0,-292.76667)">
     <g
        id="g821"
-       transform="matrix(0.01254336,0,0,0.01254336,0.76520487,293.47333)"
-       style="fill:#ffffff">
+       transform="matrix(0.01340905,0,0,0.01340905,0.71841192,293.32832)"
+       style="fill:#ffffff"
+       inkscape:export-filename="/home/piotr/projects/pwMapedit/icons/icons_png/1b0f_navaid_white.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
       <path
          transform="translate(20.790327,41.238688)"
          inkscape:transform-center-x="1.0502594e-06"
