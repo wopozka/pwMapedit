@@ -106,6 +106,7 @@ class mapData(object):
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 poi_icon = self.map_objects_properties.get_poi_icon(poi_poly_type[1])
                 if isinstance(poi_icon, QPainterPath):
+                    print(mp_record)
                     map_object = map_items.PoiAsPath(map_objects_properties=self.map_objects_properties,
                                                      projection=self.projection)
                 elif isinstance(poi_icon, QPixmap):

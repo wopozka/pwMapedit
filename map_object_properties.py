@@ -15,7 +15,7 @@ class MapObjectsProperties(object):
         # points definitions
         self.poi_pixmap_icons = self.read_icons('xpm')
         self.poi_png_icons = self.read_icons('png')
-        self.non_pixmap_icons = self.create_nonpixmap_icons()
+        # self.non_pixmap_icons = self.create_nonpixmap_icons()
         self.non_pixmap_brushes = self.create_nonpixmap_brushes()
         self.question_mark_icon = self.create_question_mark_icon()
         self.poi_type_vs_name = self.create_poi_type_vs_name()
@@ -276,8 +276,8 @@ class MapObjectsProperties(object):
             # qpi.setOffset(px0 - pheight/2, py0 - pwidth)
         elif self.poi_type_has_png_icon(poi_type):
             return self.poi_png_icons[poi_type]
-        elif self.poi_type_has_nonpixmap_icon(poi_type):
-            return self.non_pixmap_icons[poi_type]()
+        # elif self.poi_type_has_nonpixmap_icon(poi_type):
+        #     return self.non_pixmap_icons[poi_type]()
         else:
             return self.create_question_mark_icon()
 

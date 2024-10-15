@@ -2,13 +2,6 @@
 <!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="Layer_1"
    viewBox="0 0 16 16"
@@ -17,13 +10,20 @@
    sodipodi:docname="2f17_transit_services.svg"
    width="16"
    height="16"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   inkscape:export-filename="/home/piotr/projects/pwMapedit/icons/icons_png/2f13_repair_services.png"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   inkscape:export-filename="..\icons_png\2f17_transit_services.png"
    inkscape:export-xdpi="300"
-   inkscape:export-ydpi="300"><metadata
+   inkscape:export-ydpi="300"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata
    id="metadata43"><rdf:RDF><cc:Work
        rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
    id="defs41" /><sodipodi:namedview
    pagecolor="#ffffff"
    bordercolor="#666666"
@@ -33,37 +33,24 @@
    guidetolerance="10"
    inkscape:pageopacity="0"
    inkscape:pageshadow="2"
-   inkscape:window-width="1920"
-   inkscape:window-height="1055"
+   inkscape:window-width="2880"
+   inkscape:window-height="1514"
    id="namedview39"
    showgrid="false"
    inkscape:zoom="10.429825"
-   inkscape:cx="21.154969"
-   inkscape:cy="6.0198652"
-   inkscape:window-x="1366"
-   inkscape:window-y="0"
+   inkscape:cx="21.189234"
+   inkscape:cy="6.0883092"
+   inkscape:window-x="2871"
+   inkscape:window-y="-11"
    inkscape:window-maximized="1"
-   inkscape:current-layer="Layer_1" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<path
+   inkscape:current-layer="Layer_1"
+   inkscape:showpageshadow="2"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1" />&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;&#10;<path
    id="path1065"
-   d="m 6.3826902,9.621226 c 0.2465583,0 0.4464486,0.1998772 0.4464486,0.446438 0,0.246572 -0.1998784,0.44645 -0.4464486,0.44645 -0.2465606,0 -0.446439,-0.199878 -0.446439,-0.44645 0,-0.2465608 0.1998784,-0.446438 0.446439,-0.446438 z m 3.0358086,0 c 0.246563,0 0.44644,0.1998772 0.44644,0.446438 0,0.246572 -0.199877,0.44645 -0.44644,0.44645 -0.2465704,0 -0.4464473,-0.199878 -0.4464473,-0.44645 0,-0.2465608 0.1998769,-0.446438 0.4464473,-0.446438 z M 10.757827,9.9783842 H 10.037184 C 9.9938641,9.675487 9.7333738,9.442652 9.4184988,9.442652 c -0.3148726,0 -0.5753608,0.232835 -0.6186922,0.5357322 H 7.0013846 C 6.9580556,9.675487 6.6975642,9.442652 6.3826902,9.442652 c -0.3148747,0 -0.5753645,0.232835 -0.6186848,0.5357322 H 5.4005192 V 8.0140348 c 0,-0.1972515 0.159909,-0.3571589 0.3571589,-0.3571589 H 10.31139 c 0.197249,0 0.357146,0.1599074 0.357146,0.3571589 z M 10.534604,8.0140348 H 10.222096 V 9.264069 h 0.357146 z M 9.8649388,8.7283382 V 8.0140348 H 8.9720611 V 8.7283382 Z M 8.7934761,8.0140348 h -0.892875 v 0.7143034 h 0.892875 z m -1.07146,0 H 6.8291388 v 0.7143034 h 0.8928773 z m -1.0714607,0 H 5.7576781 V 8.7283382 H 6.6505554 Z M 9.061342,6.2282683 8.5256125,5.6925379 H 9.2399167 L 9.8649388,6.2481068 V 5.6925379 H 10.222096 V 7.1211456 H 9.8649388 V 6.5655759 L 9.2399167,7.1211456 H 8.5256125 L 9.061342,6.5854152 H 7.3423576 c -0.079284,0.308085 -0.3589618,0.5357304 -0.6918022,0.5357304 -0.3945022,0 -0.7143042,-0.3198036 -0.7143042,-0.7143035 0,-0.3945014 0.319802,-0.7143042 0.7143042,-0.7143042 0.3328404,0 0.6125148,0.2276462 0.6918022,0.5357304 z"
+   d="m 6.4516666,9.8971317 c 0.2638736,0 0.4778019,0.2139143 0.4778019,0.4777903 0,0.263889 -0.2139156,0.477804 -0.4778019,0.477804 -0.2638763,0 -0.4777919,-0.213915 -0.4777919,-0.477804 0,-0.263876 0.2139156,-0.4777903 0.4777919,-0.4777903 z m 3.2490083,0 c 0.2638788,0 0.4777931,0.2139143 0.4777931,0.4777903 0,0.263889 -0.2139143,0.477804 -0.4777931,0.477804 -0.2638865,0 -0.4778005,-0.213915 -0.4778005,-0.477804 0,-0.263876 0.213914,-0.4777903 0.4778005,-0.4777903 z M 11.134063,10.279373 H 10.36281 C 10.316448,9.9552034 10.037664,9.7060168 9.7006749,9.7060168 c -0.3369855,0 -0.6157674,0.2491866 -0.6621419,0.5733562 H 7.1138107 C 7.0674389,9.9552034 6.7886536,9.7060168 6.4516666,9.7060168 c -0.336988,0 -0.6157715,0.2491866 -0.6621341,0.5733562 H 5.4005192 V 8.17707 c 0,-0.2111042 0.1711392,-0.3822417 0.3822415,-0.3822417 h 4.8735123 c 0.2111,0 0.382228,0.1711375 0.382228,0.3822417 z m -0.2389,-2.102303 h -0.334455 v 1.3378221 h 0.382228 z M 10.178468,8.9415378 V 8.17707 H 9.2228847 V 8.9415378 Z M 9.0317579,8.17707 H 8.0761778 v 0.7644678 h 0.9555801 z m -1.1467068,0 H 6.9294685 v 0.7644678 h 0.9555826 z m -1.1467077,0 H 5.7827607 V 8.9415378 H 6.7383434 Z M 9.3184356,6.2658918 8.7450827,5.6925379 H 9.5095514 L 10.178468,6.2871236 V 5.6925379 h 0.38224 v 1.5289366 h -0.38224 V 6.626888 L 9.5095514,7.2214745 H 8.7450827 L 9.3184356,6.6481206 H 7.4787297 c -0.084852,0.3297213 -0.384171,0.5733539 -0.7403863,0.5733539 -0.4222075,0 -0.7644687,-0.3422629 -0.7644687,-0.7644679 0,-0.4222066 0.3422612,-0.7644687 0.7644687,-0.7644687 0.3562153,0 0.6555307,0.2436334 0.7403863,0.5733539 z"
    inkscape:connector-curvature="0"
-   style="fill:#000000;fill-opacity:1;stroke-width:0.02255709;stroke-linejoin:round" /></svg>
+   style="fill:#000000;fill-opacity:1;stroke-width:0.0241413;stroke-linejoin:round"
+   inkscape:export-filename="..\icons_png\2f17_transit_services.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300" /></svg>

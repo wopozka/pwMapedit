@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="16"
+   height="16"
+   viewBox="0 0 4.2333333 4.2333333"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="2d04_casino.svg"
+   xml:space="preserve"
+   inkscape:export-filename="..\icons_png\640b_military.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="18.230416"
+     inkscape:cx="5.3207781"
+     inkscape:cy="21.036272"
+     inkscape:window-width="2880"
+     inkscape:window-height="1514"
+     inkscape:window-x="2871"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px" /><defs
+     id="defs1" /><g
+     inkscape:label="Warstwa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-292.76667)"><g
+       style="fill:#000000"
+       id="g8"
+       transform="matrix(0.04830305,0,0,0.04830305,1.3345833,294.22033)"><g
+         id="ace">&#10;	<path
+   d="m 11.939,6 c 0,0 -5.275,2.729 -6.636,6.834 -0.693,2.455 -0.064,3.951 0.563,4.76 0.75,0.971 1.979,1.549 3.288,1.549 0.635,0 1.243,-0.195 1.779,-0.498 l -0.314,2.777 c -0.021,0.131 0.02,0.293 0.109,0.393 0.087,0.1 0.217,0.186 0.352,0.186 h 1.95 c 0.135,0 0.264,-0.086 0.352,-0.186 0.089,-0.1 0.129,-0.247 0.109,-0.378 l -0.299,-2.681 c 0.518,0.244 1.088,0.391 1.647,0.391 1.308,0 2.538,-0.581 3.289,-1.552 0.626,-0.807 1.255,-2.306 0.562,-4.761 C 17.333,8.729 11.939,6 11.939,6 Z"
+   id="path1" />&#10;	<path
+   d="M 30.559,4.104 24,2.14 V 2 C 24,0.896 23.104,0 22,0 H 2 C 0.896,0 0,0.896 0,2 v 25 c 0,1.104 0.896,2 2,2 h 10.611 l 9.627,2.884 c 1.058,0.317 2.173,-0.284 2.489,-1.342 L 31.901,6.594 C 32.218,5.536 31.616,4.421 30.559,4.104 Z M 2,2 H 22 V 27 H 2 Z"
+   id="path2" />&#10;</g><g
+         id="Layer_1">&#10;</g></g></g><style
+     type="text/css"
+     id="style1">&#10;	.st0{fill-rule:evenodd;clip-rule:evenodd;}&#10;</style><style
+     type="text/css"
+     id="style1-9">&#10;<![CDATA[
+	.st0{fill:#D1D1D1;}
+	.st1{fill:#454545;}
+]]>&#10;</style></svg>
