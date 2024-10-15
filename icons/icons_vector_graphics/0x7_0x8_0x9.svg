@@ -2,23 +2,23 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="16"
    height="16"
    viewBox="0 0 4.2333333 4.2333333"
    version="1.1"
    id="svg1"
    sodipodi:docname="0x7_0x8_0x9.svg"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
    inkscape:export-filename="/home/piotr/projects/pwMapedit/icons/icons_png/7.png"
    inkscape:export-xdpi="300"
-   inkscape:export-ydpi="300">
+   inkscape:export-ydpi="300"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <metadata
      id="metadata8">
     <rdf:RDF>
@@ -27,7 +27,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -42,12 +42,12 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="25.781701"
-     inkscape:cx="10.665488"
-     inkscape:cy="5.7327199"
-     inkscape:window-width="1920"
-     inkscape:window-height="1055"
-     inkscape:window-x="1366"
-     inkscape:window-y="0"
+     inkscape:cx="10.66648"
+     inkscape:cy="5.7598992"
+     inkscape:window-width="2880"
+     inkscape:window-height="1514"
+     inkscape:window-x="2871"
+     inkscape:window-y="-11"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -60,10 +60,10 @@
      id="layer1"
      transform="translate(0,-292.76667)">
     <circle
-       style="fill:none;stroke:#000000;stroke-width:0.10434583;stroke-linecap:square;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:0.0814242;stroke-linecap:square;stroke-miterlimit:4;stroke-dasharray:none"
        id="path4-8"
-       cx="2.136657"
-       cy="294.93045"
-       r="0.62958992" />
+       cx="1.9868944"
+       cy="294.7807"
+       r="0.49128792" />
   </g>
 </svg>

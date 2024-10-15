@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
-   sodipodi:docname="1b0b_daybeacon_green_square.svg"
+   sodipodi:docname="1b05_daybeacon_green_square.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -56,18 +56,18 @@
      id="layer1"
      transform="translate(0,-292.76667)">
     <rect
-       style="fill:#000000;stroke:#000000;stroke-width:0.264999;stroke-linecap:square"
+       style="fill:#000000;stroke:#000000;stroke-width:0.133665;stroke-linecap:square"
        id="rect1"
-       width="0.010262446"
-       height="1.5855479"
-       x="2.2115571"
-       y="294.69601" />
+       width="0.005176371"
+       height="0.79974949"
+       x="2.048202"
+       y="294.72528" />
     <rect
-       style="fill:#008000;stroke:#008000;stroke-width:0.264999;stroke-linecap:square"
+       style="fill:#008000;stroke:#008000;stroke-width:0.133665;stroke-linecap:square"
        id="rect2"
-       width="1.0878193"
-       height="1.0878193"
-       x="1.6727787"
-       y="293.52097" />
+       width="0.54869539"
+       height="0.54869539"
+       x="1.7764423"
+       y="294.13272" />
   </g>
 </svg>
