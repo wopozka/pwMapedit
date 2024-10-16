@@ -78,12 +78,16 @@ class Node(QPointF):
         return QPointF(self.x(), self.y())
 
     def node_starts_numeration(self):
+        if self._numbers_definitions is None:
+            return False
         if self._numbers_definitions.left_side_number_after is not None or \
                 self._numbers_definitions.right_side_number_after is not None:
             return True
         return False
 
     def node_ends_numeration(self):
+        if self._numbers_definitions is None:
+            return False
         if self._numbers_definitions.left_side_number_before is not None or \
                 self._numbers_definitions.right_side_number_before is not None:
             return True
