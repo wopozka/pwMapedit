@@ -105,13 +105,13 @@ def test_get_numbers_position(target, answer):
     assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], testing=True).p2() == answer
 
 NUMBERS_BETWEEN = (
-    ((1, 9, 'odd'), ([3, 5, 7])),
-    ((9, 1, 'odd'), ([7, 5, 3])),
-    ((2, 10, 'odd'), ([3, 5, 7, 9])),
-    ((2, 10, 'even'), ([4, 6, 8])),
-    ((10, 2, 'even'), ([8, 6, 4])),
-    ((1, 11, 'even'), ([2, 4, 6, 8, 10])),
-    ((11, 1, 'both'), ([10, 9, 8, 7, 6, 5, 4, 3, 2])),
+    ((1, 9, 'O'), ([3, 5, 7])),
+    ((9, 1, 'O'), ([7, 5, 3])),
+    ((2, 10, 'O'), ([3, 5, 7, 9])),
+    ((2, 10, 'E'), ([4, 6, 8])),
+    ((10, 2, 'E'), ([8, 6, 4])),
+    ((1, 11, 'E'), ([2, 4, 6, 8, 10])),
+    ((11, 1, 'B'), ([10, 9, 8, 7, 6, 5, 4, 3, 2])),
 
 )
 @pytest.mark.parametrize('target, answer', NUMBERS_BETWEEN)
