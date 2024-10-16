@@ -45,7 +45,10 @@ class Node(QPointF):
     #     self.longitude = longitude
     #     self.latitude = latitude
 
-    def get_copy(self):
+    def clear_numbers_definiton(self):
+        self._numbers_definitions = None
+
+    def copy(self):
         aaa = Node(x=self.x(), y=self.y(), projection=self.projection)
         if self._numbers_definitions is not None:
             aaa.set_numbers_definition(copy.copy(self._numbers_definitions))
@@ -59,8 +62,6 @@ class Node(QPointF):
     def get_specific_number_definition(self, fieldname):
         return self._numbers_definitions._asdict()[fieldname]
 
-    def clear_numbers_definiton(self):
-        self._numbers_definitions = None
 
     def get_hlevel_definition(self):
         return self._hlevel_definition
@@ -149,7 +150,7 @@ class Data_X(object):
         # przechowuje informacje pod ktorym indeksem jest przechowywana jaki level
         self._data_levels = []
         # przechowuje wspolrzedne punktow dla Data0, Data1, Data2 ..., w postaci listy list. Pierwsza lista to
-        # dany Data, druga lista w tej liscie, to dany polyline, albo polygon
+        # dany Data, druga lista w tej liscie, to dany polyline, albo polygon jako klasa Node
         self._poly_data_points = []
 
         # boundingbox dla danych data, tu latwiej i szybciej to obliczyc
@@ -237,6 +238,26 @@ class Data_X(object):
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
 
+    def copy(self):
+        d_copy = Data_X(self.projection)
+        d_copy._bounding_box_N = self._bounding_box_N
+        d_copy._bounding_box_S = self._bounding_box_S
+        d_copy.bounding_box_W = self._bounding_box_W
+        d_copy._bounding_box_E = self._bounding_box_E
+        d_copy._data_levels = copy.copy(self._data_levels)
+        d_copy._last_data_level = self._last_data_level
+        d_copy._last_poly_data_index = self._last_poly_data_index
+        d_copy._poly_data_points = list()
+        # iterujemy po wszystkich data_level
+        for dl_num in range(len(self._poly_data_points)):
+            polys_points = []
+            # iterujemy po polygonach dla danego data_level
+            for poly in self._poly_data_points[dl_num]:
+                polys_points.append([node.copy() for node in poly])
+            d_copy._poly_data_points.append(polys_points)
+        return d_copy
+
+
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
         del self._poly_data_points[data_level][polynum][index]
@@ -250,14 +271,15 @@ class Data_X(object):
             for key in ('left_side_number_before', 'right_side_number_before'):
                 self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name(key, None)
         # ostatni nod
-        if self._poly_data_points[data_level][polynum][-1].node_has_numeration():
+        last_node = self._poly_data_points[data_level][polynum][-1]
+        if last_node.node_has_numeration():
             for key in ('left_side_numbering_style', 'left_side_number_after', 'right_side_numbering_style',
                         'right_side_number_after', 'left_side_zip_code',
                         'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
                         'right_side_city', 'right_side_region', 'right_side_country'):
-                self._poly_data_points[data_level][polynum][-1].set_numbers_definition_field_name(key, None)
-        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
+                last_node.set_numbers_definition_field_name(key, None)
 
+        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
         # nie ma zadnych w wezlow z numeracja, nie rob nic
         if len(nodes_with_numbers) == 0:
             return
@@ -275,6 +297,16 @@ class Data_X(object):
                 if last_node.get_specific_number_definition('right_side_number_before') is None:
                     last_node.set_numbers_definition_field_name('right_side_number_before', 0)
             return
+
+
+        # jesli ostatni wezel nie ma ustawionej zadnej numeracji to ja ustaw, pomoze to porzadkowac wezly
+        if not last_node.node_has_numeration():
+            last_node.set_numbers_definition_field_name('left_side_number_before', 0)
+            last_node.set_numbers_definition_field_name('right_side_number_before', 0)
+
+        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
+        for a in nodes_with_numbers:
+            print(a.get_numbers_definition())
 
         # mamy wiele wezlow z numeracja przeorganizuj je
         for node_num in range(len(nodes_with_numbers) - 1):
@@ -491,7 +523,7 @@ class Data_X(object):
         # inverting order of nodes, which gives eg road oposite direction
         polys = self.get_polys_for_data_level(data_level)
         for polynum in range(len(polys)):
-            poly_copy = [a.get_copy() for a in (polys[polynum])]
+            poly_copy = [a.copy() for a in (polys[polynum])]
             polys[polynum].reverse()
             for num in range(len(poly_copy)):
                 polys[polynum][-num - 1].set_node_has_no_hlevel()
@@ -1280,7 +1312,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         print('remove_point')
         print(grip_poly_num, grip_coord_num)
         try:
-            polygons[grip_poly_num].pop(grip_coord_num)
+            polygons[grip_poly_num][grip_coord_num]
         except IndexError:
             print('index error')
             return
@@ -1290,14 +1322,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.RemoveNodeCmd(self, grip.grip_indexes, polygons, 'Usuń węzeł')
         self.scene().undo_redo_stack.push(command)
 
-        self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
-        self.setPath(self.create_painter_path(polygons))
-        self.undecorate()
-        self.update_arrow_heads()
-        self.update_label_pos()
-        self.update_hlevel_labels()
-        self.update_housenumber_labels()
-        self.decorate()
+        # self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
+        # self.setPath(self.create_painter_path(polygons))
+        # self.undecorate()
+        # self.update_arrow_heads()
+        # self.update_label_pos()
+        # self.update_hlevel_labels()
+        # self.update_housenumber_labels()
+        # self.decorate()
 
     def command_reverse_poly(self):
         return

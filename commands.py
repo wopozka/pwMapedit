@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import QUndoCommand, QUndoStack
+from PyQt5.QtGui import QPainterPath
 import copy
 import time
 
 class InsertNodeCmd(QUndoCommand):
     def __init__(self, map_object, index, pos, polygons, description):
         super(InsertNodeCmd, self).__init__(description)
-        self.data0_copy = copy.copy(map_object.data0)
-        self.path_copy = map_object.path()
+        self.data0_copy = map_object.data0.copy()
+        self.path_copy = QPainterPath(map_object.path())
         self.map_object = map_object
         self.path_num, self.coord_num = index
         self.pos = pos
@@ -26,8 +27,8 @@ class InsertNodeCmd(QUndoCommand):
     def undo(self):
         self.map_object.scene().clearSelection()
         self.map_object.undecorate()
-        self.map_object.data0 = self.data0_copy
-        self.map_object.setPath(self.path_copy)
+        self.map_object.data0 = self.data0_copy.copy()
+        self.map_object.setPath(QPainterPath(self.path_copy))
         self.update_children()
         self.map_object.setSelected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
@@ -42,10 +43,10 @@ class InsertNodeCmd(QUndoCommand):
 
 
 class RemoveNodeCmd(QUndoCommand):
-    def __init(self, map_object, index, polygons, description):
+    def __init__(self, map_object, index, polygons, description):
         super(RemoveNodeCmd, self).__init__(description)
-        self.data0_copy = copy.copy(map_object.data0)
-        self.path_copy = map_object.path()
+        self.data0_copy = map_object.data0.copy()
+        self.path_copy = QPainterPath(map_object.path())
         self.map_object = map_object
         self.path_num, self.coord_num = index
         self.data_level = self.map_object.current_data_x
@@ -53,9 +54,11 @@ class RemoveNodeCmd(QUndoCommand):
         self.data_level = self.map_object.current_data_x
 
     def redo(self):
+        polygons = copy.deepcopy(self.polygons)
+        polygons[self.path_num].pop(self.coord_num)
         self.map_object.data0.delete_node_at_position(self.data_level, self.path_num, self.coord_num)
-        self.map_objec.tsetPath(self.map_object.create_painter_path(self.polygons))
-        self.mapobject.undecorate()
+        self.map_object.setPath(self.map_object.create_painter_path(polygons))
+        self.map_object.undecorate()
         self.update_children()
         if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
             self.map_object.decorate()
@@ -63,8 +66,8 @@ class RemoveNodeCmd(QUndoCommand):
     def undo(self):
         self.map_object.scene().clearSelection()
         self.map_object.undecorate()
-        self.map_object.data0 = self.data0_copy
-        self.map_object.setPath(self.path_copy)
+        self.map_object.data0 = self.data0_copy.copy()
+        self.map_object.setPath(QPainterPath(self.path_copy))
         self.update_children()
         self.map_object.setSelected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
