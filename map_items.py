@@ -210,11 +210,12 @@ class Data_X(object):
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_numbering_style', right_style)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_after', right_start)
         last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
-        if last_node_def is not None:
 
+        if last_node_def is not None:
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_before', last_node_def.left_side_number_before)
             self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_before', last_node_def.right_side_number_before)
             self._poly_data_points[data_level][poly_num][-1].set_node_has_no_numeration()
+
         if left_start is not None or right_start is not None:
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('left_side_number_before', left_end)
             self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('right_side_number_before', right_end)
@@ -264,7 +265,7 @@ class Data_X(object):
         self.clean_numbers_definitions(data_level, polynum)
 
     def clean_numbers_definitions(self, data_level, polynum):
-        # update numbers definitions for nodes
+         # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
         # pierwszy nod
         if self._poly_data_points[data_level][polynum][0].node_has_numeration():
@@ -645,62 +646,6 @@ class BasicMapItem(object):
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
 
-    def set_data(self, comment_data, obj_data):
-        """
-        Setting element properties when red from disk
-        Parameters
-        ----------
-        obj_data: dict() key: tuple(elem_position, elem_name), value: value
-        Returns
-        -------
-
-        """
-        if comment_data is not None and comment_data:
-            self.set_comment(comment_data)
-        for number_keyname in obj_data:
-            _, key = number_keyname
-            if number_keyname[1] == 'Type':
-                self.set_param('Type', int(obj_data[number_keyname], 16))
-            elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
-                                       'CountryCode', 'ZipCode'):
-                self.set_param(key, obj_data[number_keyname])
-            elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-                self.set_datax(number_keyname[1], obj_data[number_keyname])
-            elif number_keyname[1] == 'RouteParam':
-                if self.routeparam is None:
-                    self.routeparam = []
-                for single_param in obj_data[number_keyname].split(','):
-                    self.routeparam.append(int(single_param))
-            elif number_keyname[1] == 'StreetDesc':
-                self.set_street_desc(obj_data[number_keyname])
-            elif number_keyname[1] == 'HouseNumber':
-                self.set_house_number(obj_data[number_keyname])
-            elif number_keyname[1] == 'Phone':
-                self.set_phone_number(obj_data[number_keyname])
-            elif number_keyname[1] == 'Label':
-                self.set_label1(obj_data[number_keyname])
-            elif number_keyname[1] == 'Label2':
-                self.set_label2(obj_data[number_keyname])
-            elif number_keyname[1] == 'Label3':
-                self.set_label3(obj_data[number_keyname])
-            elif number_keyname[1] == 'DirIndicator':
-                self.set_dirindicator(obj_data[number_keyname])
-            elif number_keyname[1] == 'EndLevel':
-                self.set_endlevel(obj_data[number_keyname])
-            elif number_keyname[1] == 'RoadID':
-                self.roadid = int(obj_data[number_keyname])
-            elif number_keyname[1].startswith('Nod'):
-                pass
-            elif number_keyname[1].startswith('Numbers'):
-                self.set_housenumbers_along_road(obj_data[number_keyname])
-            elif number_keyname[1].startswith('HLevel'):
-                self.set_hlevels(obj_data[number_keyname])
-            # elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
-            #     # temporary remove these from reporting
-            #     pass
-            else:
-                self.set_others(number_keyname, obj_data[number_keyname])
-                # print('Unknown key value: %s.' % number_keyname[1])
 
     def get_comment(self):
         return self.obj_comment
@@ -768,6 +713,63 @@ class BasicMapItem(object):
     def set_comment(self, _comments):
         for _comment in _comments:
             self.obj_comment.append(_comment)
+
+    def set_data(self, comment_data, obj_data):
+        """
+        Setting element properties when red from disk
+        Parameters
+        ----------
+        obj_data: dict() key: tuple(elem_position, elem_name), value: value
+        Returns
+        -------
+
+        """
+        if comment_data is not None and comment_data:
+            self.set_comment(comment_data)
+        for number_keyname in obj_data:
+            _, key = number_keyname
+            if number_keyname[1] == 'Type':
+                self.set_param('Type', int(obj_data[number_keyname], 16))
+            elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
+                                       'CountryCode', 'ZipCode'):
+                self.set_param(key, obj_data[number_keyname])
+            elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
+                self.set_datax(number_keyname[1], obj_data[number_keyname])
+            elif number_keyname[1] == 'RouteParam':
+                if self.routeparam is None:
+                    self.routeparam = []
+                for single_param in obj_data[number_keyname].split(','):
+                    self.routeparam.append(int(single_param))
+            elif number_keyname[1] == 'StreetDesc':
+                self.set_street_desc(obj_data[number_keyname])
+            elif number_keyname[1] == 'HouseNumber':
+                self.set_house_number(obj_data[number_keyname])
+            elif number_keyname[1] == 'Phone':
+                self.set_phone_number(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label':
+                self.set_label1(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label2':
+                self.set_label2(obj_data[number_keyname])
+            elif number_keyname[1] == 'Label3':
+                self.set_label3(obj_data[number_keyname])
+            elif number_keyname[1] == 'DirIndicator':
+                self.set_dirindicator(obj_data[number_keyname])
+            elif number_keyname[1] == 'EndLevel':
+                self.set_endlevel(obj_data[number_keyname])
+            elif number_keyname[1] == 'RoadID':
+                self.roadid = int(obj_data[number_keyname])
+            elif number_keyname[1].startswith('Nod'):
+                pass
+            elif number_keyname[1].startswith('Numbers'):
+                self.set_housenumbers_along_road(obj_data[number_keyname])
+            elif number_keyname[1].startswith('HLevel'):
+                self.set_hlevels(obj_data[number_keyname])
+            # elif number_keyname[1] in ('Miasto', 'Typ', 'Plik'):
+            #     # temporary remove these from reporting
+            #     pass
+            else:
+                self.set_others(number_keyname, obj_data[number_keyname])
+                # print('Unknown key value: %s.' % number_keyname[1])
 
     def set_datax(self, data012345, data012345_val):
         if self.data0 is None:
