@@ -268,6 +268,13 @@ class Data_X(object):
         del self._poly_data_points[data_level][polynum][index]
         self.clean_numbers_definitions(data_level, polynum)
 
+    def clean_empty_numbers_definitions(self):
+        for dl in self.get_data_levels():
+            for poly in self.get_polys_for_data_level(dl):
+                pass
+            # do dokonczenia
+
+
     def clean_numbers_definitions(self, data_level, polynum):
          # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
