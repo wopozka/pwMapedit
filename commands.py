@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QUndoCommand, QUndoStack
 from PyQt5.QtGui import QPainterPath
+from PyQt5.QtCore import QPointF
 import copy
 import time
 
@@ -83,7 +84,7 @@ class RemoveNodeCmd(QUndoCommand):
 class ReversePolylineCmd(QUndoCommand):
     def __init__(self, map_object, description):
         super(ReversePolylineCmd, self).__init__(description)
-        self.data0_copy = copy.copy(map_object.data0)
+        self.data0_copy = map_object.data0.copy()
         self.path_copy = map_object.path()
         self.map_object = map_object
         self.data_level = map_object.current_data_x
@@ -114,7 +115,7 @@ class MoveGripCmd(QUndoCommand):
         super(MoveGripCmd, self).__init__(description)
         self.index = grip.grip_indexes
         self.pos = grip.pos()
-        self.data0_copy = copy.copy(map_object.data0)
+        self.data0_copy = map_object.data0.copy()
         self.path_copy = map_object.path()
         self.map_object = map_object
         self.data_level = map_object.current_data_x
@@ -162,7 +163,7 @@ class SelectModeMoveItem(QUndoCommand):
     def __init__(self, map_object, description, pos):
         super(SelectModeMoveItem, self).__init__(description)
         self.pos = pos
-        self.data0_copy = copy.copy(map_object.data0)
+        self.data0_copy = map_object.data0.copy()
         self.path_copy = map_object.path()
         self.map_object = map_object
         self.data_level = map_object.current_data_x
@@ -190,3 +191,23 @@ class SelectModeMoveItem(QUndoCommand):
 
     def update_children(self):
         self.map_object.update_items_after_obj_move()
+
+class SelectModeMovePoi(QUndoCommand):
+    def __init__(self, map_object, description, orig_pos):
+        super(SelectModeMovePoi, self).__init__(description)
+        self.pos = map_object.pos()
+        self.data0_copy = map_object.data0.copy()
+        self.pos_copy = QPointF(orig_pos)
+        self.map_object = map_object
+        self.data_level = map_object.current_data_x
+
+    def redo(self):
+        self.map_object.data0.update_node_coordinates(self.data_level, 0, 0, self.pos)
+        self.map_object.setPos(self.pos)
+        return
+
+    def undo(self):
+        self.map_object.data0.update_node_coordinates(self.data_level, 0, 0, self.pos_copy)
+        self.map_object.setPos(self.pos_copy)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.setSelected(True)

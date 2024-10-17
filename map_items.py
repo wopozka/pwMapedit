@@ -318,8 +318,6 @@ class Data_X(object):
             last_node.set_numbers_definition_field_name('right_side_number_before', 0)
 
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
-        for a in nodes_with_numbers:
-            print(a.get_numbers_definition())
 
         # mamy wiele wezlow z numeracja przeorganizuj je
         for node_num in range(len(nodes_with_numbers) - 1):
@@ -977,6 +975,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
         BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
         QGraphicsPixmapItem.__init__(self)
+        self.recorded_pos = None
         self.label = None
         self._mp_data = [None, None, None, None, None]
         # self._mp_end_level = 0
@@ -1003,6 +1002,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         hovered_over_pen.setCosmetic(True)
         hovered_over_pen.setWidth(1)
         self.hovered_shape.setPen(hovered_over_pen)
+
+    def command_move_poi(self):
+        command = commands.SelectModeMovePoi(self, 'Przesun POI', self.recorded_pos)
+        self.scene().undo_redo_stack.push(command)
 
     def highlight_when_hoverover(self):
         if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
@@ -1083,6 +1086,13 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def mousePressEvent(self, event):
         self.remove_hovered_shape()
+        self.recorded_pos = self.pos()
+        super().mouseReleaseEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.pos() != self.recorded_pos:
+            self.command_move_poi()
+            self.recorded_pos = None
         super().mouseReleaseEvent(event)
 
     def remove_hovered_shape(self):
@@ -1207,7 +1217,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self._mp_label = None
         self.current_data_x = 0
         self.decorated_poly_nums = None
-        self._obj_pos_in_select_objects_mode = None
+        self.recorded_pos = None
         self._mouse_press_timestamp = None
 
     @staticmethod
@@ -1319,7 +1329,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
         self.scene().undo_redo_stack.push(command)
 
-    def command_move_item(self, event):
+    def command_move_item(self):
+        command = commands.SelectModeMoveItem(self, 'Przesun poly', self.pos())
+        self.scene().undo_redo_stack.push(command)
         return
 
     def command_remove_point(self, grip):
@@ -1369,7 +1381,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.node_grip_items:
             self.undecorate()
         self.setZValue(self.zValue() + 100)
-        self.setOpacity(0.5)
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path())
@@ -1494,16 +1505,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     self.insert_point(index, pos)
                     return
         elif mode == 'select_objects':
-            self._obj_pos_in_select_objects_mode = self.pos()
+            self.recorded_pos = self.pos()
 
     def mouseReleaseEvent(self, event):
         self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
         if mode == 'select_objects':
-            if self.pos() != self._obj_pos_in_select_objects_mode:
-                command = commands.SelectModeMoveItem(self, 'Przesun poly', self.pos())
-                self.scene().undo_redo_stack.push(command)
-        self._obj_pos_in_select_objects_mode = None
+            if self.pos() != self.recorded_pos:
+                self.command_move_item()
+        self.recorded_pos = None
         super().mouseReleaseEvent(event)
 
 
@@ -1512,7 +1522,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected or self.node_grip_items:
+        if option.state & QStyle.State_Selected or self.decorated():
+            self.setOpacity(0.5)
+        else:
+            self.setOpacity(1)
+        if option.state & QStyle.State_Selected or self.decorated():
             self.setPen(self.selected_pen)
         elif self.hovered and not self.node_grip_items:
             self.setPen(self.hovered_over_pen)
@@ -1608,7 +1622,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def undecorate(self):
         print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
         self.setZValue(self.zValue() - 100)
-        self.setOpacity(1)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.remove_interpolated_house_numbers()
         for grip_item in self.node_grip_items:
