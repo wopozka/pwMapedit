@@ -142,7 +142,7 @@ def test_interpolated_number_coordinates(target, answer):
     answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer
 
-IVERTED_ADDRESSES = (
+ADDRESSES = (
         (('(52.85431,16.02645),(52.85454,16.02758)', 'Numbers1=0,O,1,9,E,2,10',), ([{'left_side_number_after': 10,
           'left_side_numbering_style': 'E', 'right_side_number_after': 9, 'right_side_numbering_style': 'O'},
           {'left_side_number_before': 2, 'right_side_number_before': 1}]),),
@@ -167,7 +167,7 @@ IVERTED_ADDRESSES = (
 )
 
 
-@pytest.mark.parametrize('target, answer', IVERTED_ADDRESSES)
+@pytest.mark.parametrize('target, answer', ADDRESSES)
 def test_invert_poly_addresses(target, answer):
     proj = projection.Mercator(None)
     data_obj = map_items.Data_X(projection=proj)

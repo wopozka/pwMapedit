@@ -12,6 +12,7 @@ from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterP
 from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 import commands
+import itertools
 
 Numbers_Definition = namedtuple('Numbers_Definition',
                                 ['left_side_numbering_style',
@@ -442,6 +443,15 @@ class Data_X(object):
             return ([] + Data_X.get_interpolated_numbers_coordinates(poly_vectors, numbers,
                                                                      current_num_distance=current_num_distance,
                                                                      default_num_distance=default_num_distance))
+
+
+    def get_nodes_with_housenumbers(self, data_level, poly_num):
+        # zwraca nody dla ktory przypisana jest numeracja
+        nodes_with_nums = []
+        for node in  self.get_polys_for_data_level(data_level)[poly_num]:
+            if node.node_has_numeration():
+                nodes_with_nums.append(node)
+        return nodes_with_nums
 
     @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
