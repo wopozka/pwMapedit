@@ -6,7 +6,7 @@ import copy
 # from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
-    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsLineItem
+    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsEllipseItem
 from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
@@ -1219,6 +1219,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.decorated_poly_nums = None
         self.recorded_pos = None
         self._mouse_press_timestamp = None
+        self._closes_node_circle = None
 
     @staticmethod
     def accept_map_level_change():
@@ -1250,6 +1251,29 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def add_label(self):
         pass
+
+    def closest_point_to_point(self, event_pos):
+        if self._closes_node_circle is not None:
+            self.scene().removeItem(self._closes_node_circle)
+            self._closes_node_circle = None
+        circle = QPainterPath()
+        circle.addEllipse(event_pos, 30, 30)
+        items_under_circle = self.scene().items(circle)
+        if self in items_under_circle:
+            items_under_circle.remove(self)
+        items_under_circle = [a for a in items_under_circle if (isinstance(a, PolygonQGraphicsPathItem))]
+        point_node_dist = []
+        if items_under_circle:
+            for item_under_c in items_under_circle:
+                for polygon in self.get_polygons_from_path(item_under_c.path()):
+                    for point in polygon:
+                        point_node_dist.append(QLineF(event_pos, point))
+            if point_node_dist:
+                closes_point = sorted(point_node_dist, key=lambda a: a.length())[0]
+                self._closes_node_circle = QGraphicsEllipseItem(closes_point.p2().x()-10, closes_point.p2().y()-10, 20, 20)
+                print(self._closes_node_circle)
+                self.scene().addItem(self._closes_node_circle)
+
 
     def _closest_point_to_poly(self, event_pos):
         """
@@ -1326,6 +1350,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[grip_poly_num][grip_coord_num] = grip.pos()
         except IndexError:
             return
+        self.closest_point_to_point(grip.pos())
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
         self.scene().undo_redo_stack.push(command)
 
