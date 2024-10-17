@@ -1981,7 +1981,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
                 self.current_data_x = level
 
     def shape(self):
-        if not self.node_grip_items:
+        if not self.decorated():
             return super().shape()
         return self._shape()
 
