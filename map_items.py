@@ -1087,7 +1087,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def mousePressEvent(self, event):
         self.remove_hovered_shape()
         self.recorded_pos = self.pos()
-        super().mouseReleaseEvent(event)
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.pos() != self.recorded_pos:
