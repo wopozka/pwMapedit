@@ -368,18 +368,15 @@ class Data_X(object):
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}
-        house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
-        # pozniej trzeba poruszac sie po nodzie z numerem i nodzie nastepnym, dlatego trzeba zbudowac liste
-        # indeksow numerow ktore zawieraja numeracje. Potem bedzie mozna sie posuwac o jeden w przod
-        nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
-        if not nodes_with_nums_idx:
-            return interpolated_numbers
+        # house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
+        # # pozniej trzeba poruszac sie po nodzie z numerem i nodzie nastepnym, dlatego trzeba zbudowac liste
+        # # indeksow numerow ktore zawieraja numeracje. Potem bedzie mozna sie posuwac o jeden w przod
+        # nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
+        # if not [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]:
+        #     return interpolated_numbers
 
-        for elem_num in range(len(nodes_with_nums_idx) - 1):
-            # index noda w ktorym zaczyna sie numeracja
-            start_node_idx = nodes_with_nums_idx[elem_num]
-            # index noda w ktorym konczy sie numeracja
-            end_node_idx = nodes_with_nums_idx[elem_num + 1]
+        for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
+            start_node_idx, end_node_idx = pair
             node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
             node_with_num_plus = self.get_poly_node(data_level, poly_num, end_node_idx, False)
             # create polyline elements as vectors
@@ -552,33 +549,25 @@ class Data_X(object):
     def reverse_poly(self, data_level):
         # inverting order of nodes, which gives eg road oposite direction
         polys = self.get_polys_for_data_level(data_level)
-        for polynum in range(len(polys)):
-            poly_copy = [a.copy() for a in (polys[polynum])]
-            polys[polynum].reverse()
+        for poly_num in range(len(polys)):
+            poly_copy = [a.copy() for a in (polys[poly_num])]
+            polys[poly_num].reverse()
             for num in range(len(poly_copy)):
-                polys[polynum][-num - 1].set_node_has_no_hlevel()
-                polys[polynum][-num - 1].set_node_has_no_numeration()
-                polys[polynum][-num - 1].set_hlevel_definition(poly_copy[num].get_hlevel_definition())
-                polys[polynum][-num - 1].set_numbers_definition(poly_copy[num].get_numbers_definition())
+                polys[poly_num][-num - 1].set_node_has_no_hlevel()
+                polys[poly_num][-num - 1].set_node_has_no_numeration()
+                polys[poly_num][-num - 1].set_hlevel_definition(poly_copy[num].get_hlevel_definition())
+                polys[poly_num][-num - 1].set_numbers_definition(poly_copy[num].get_numbers_definition())
 
-            house_numbers_defs = self.get_housenumbers_for_poly(data_level, polynum)
-            nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
-            if not nodes_with_nums_idx:
-                return
-            # now lets fix the numeration
-            for num in range(len(nodes_with_nums_idx)):
-                node_start = nodes_with_nums_idx[num]
-                polys[polynum][node_start].update_numbers_after_poly_reversing()
-            for num in range(len(nodes_with_nums_idx) - 1):
-                node_start_idx = nodes_with_nums_idx[num]
-                node_start = polys[polynum][node_start_idx]
-                node_end_idx = nodes_with_nums_idx[num+1]
-                node_end = polys[polynum][node_end_idx]
+            for node in self.get_nodes_with_housenumbers(data_level, poly_num):
+                node.update_numbers_after_poly_reversing()
+
+            for nodes_pair in itertools.pairwise(self.get_nodes_with_housenumbers(data_level, poly_num)):
+                node_start, node_end = nodes_pair
                 left_side_numbering_style = node_end.get_specific_number_definition('left_side_numbering_style')
                 right_side_numbering_style = node_end.get_specific_number_definition('right_side_numbering_style')
                 node_start.set_numbers_definition_field_name('left_side_numbering_style', left_side_numbering_style)
                 node_start.set_numbers_definition_field_name('right_side_numbering_style', right_side_numbering_style)
-            self.clean_numbers_definitions(data_level, polynum)
+            self.clean_numbers_definitions(data_level, poly_num)
 
     def set_hlevel_to_node(self, data_level, poly_num, node_num, level_val):
         dl_index = self.get_data_level_index(data_level)
