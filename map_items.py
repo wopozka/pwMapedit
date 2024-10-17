@@ -453,6 +453,14 @@ class Data_X(object):
                 nodes_with_nums.append(node)
         return nodes_with_nums
 
+    def get_nodes_with_housenumbers_indexes(self, data_level, poly_num):
+        # zwraca indeksy nodow z numerami,
+        nodes_with_nums_indexes = []
+        for node_idx, node in  enumerate(self.get_polys_for_data_level(data_level)[poly_num]):
+            if node.node_has_numeration():
+                nodes_with_nums_indexes.append(node_idx)
+        return nodes_with_nums_indexes
+
     @staticmethod
     def get_numbers_between(start_point, end_point, num_style):
         if (start_point - end_point) in (-1, 0, 1):
