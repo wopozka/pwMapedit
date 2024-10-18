@@ -1360,11 +1360,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[grip_poly_num][grip_coord_num] = grip.pos()
         except IndexError:
             return
+        # usuń kółko dociągające, bo jeśli jest może być już niepotrzebne przy self._drag_to_closes_node
         if self._closest_node_circle is not None:
             self.scene().removeItem(self._closest_node_circle)
             self._closest_node_circle = None
         if self._drag_to_closest_node:
             self.closest_point_to_point(grip.pos())
+        # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
+        # dociągnięty
         if self._drag_to_closest_node and self._closest_node_circle is not None:
             grip.setPos(self._closest_node_circle.pos())
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
@@ -2376,6 +2379,8 @@ class GripItem(QGraphicsPathItem):
         self.scene().enable_maplevel_shortcuts()
         super().hoverLeaveEvent(event)
         self._setHover(False)
+        # w przypadku gdy grip został przesunięty bo został dociągnięty do węzła, wtedy ucieka spod myszy
+        # w takim przypadku jeśli pojawiło się kółko dociągające wtedy usuń je bo inaczej zostawało
         if self.parent._closest_node_circle is not None:
             self.scene().removeItem(self.parent._closest_node_circle)
             self.parent._closest_node_circle = None
