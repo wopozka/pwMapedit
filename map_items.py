@@ -1013,8 +1013,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         return True
 
     def paint(self, painter, option, widget):
-        if self.set_transformation_flag():
-            self.update()
+        self.set_transformation_flag()
+        self.update()
             # return
         super().paint(painter, option, widget)
 
@@ -2104,8 +2104,8 @@ class MapLabels(QGraphicsSimpleTextItem):
         return False
 
     def paint(self, painter, option, widget):
-        if self.set_transformation_flag():
-            self.update()
+        self.set_transformation_flag()
+        self.update()
             # return
         super().paint(painter, option, widget)
 
