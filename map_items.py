@@ -1015,7 +1015,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def paint(self, painter, option, widget):
         if self.set_transformation_flag():
             self.update()
-            return
+            # return
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
@@ -1124,7 +1124,7 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
 
     def paint(self, painter, option, widget):
         if self.set_transformation_flag():
-            return
+            self.update()
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
@@ -2106,7 +2106,7 @@ class MapLabels(QGraphicsSimpleTextItem):
     def paint(self, painter, option, widget):
         if self.set_transformation_flag():
             self.update()
-            return
+            # return
         super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
@@ -2384,6 +2384,8 @@ class GripItem(QGraphicsPathItem):
         if self.parent._closest_node_circle is not None:
             self.scene().removeItem(self.parent._closest_node_circle)
             self.parent._closest_node_circle = None
+        # to samo dla modyfikatora ctrl,
+        self.parent._drag_to_closest_node = False
 
     def keyPressEvent(self, event):
         if event.text() == 'n':
@@ -2485,7 +2487,6 @@ class DirectionArrowHead(QGraphicsPathItem):
     def paint(self, painter, option, widget=None):
         if self.set_transformation_flag():
             self.update()
-            return
         super().paint(painter, option, widget=widget)
 
 
