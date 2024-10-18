@@ -192,7 +192,7 @@ class mapCanvas(QGraphicsScene):
             # przypadku gdy obiekt juz jest w trybie edycji wezlow nie rob nic. Zachodzi gdy mamy kliknięty uchwyt
             # a potem klikniemy z shiftem na podswietlony obiekt tak aby dodac wezel. Wtedy zmienia sie selekcja na nowy
             # obiekt ktory ma juz uchwyty. Nie rob nic w takim przypadku.
-            if selected_items and selected_items[0].is_in_node_edit_mode():
+            if selected_items and selected_items[0].decorated():
                 return
             if self.selected_objects:
                 print('usuwam dekoracje selection change', self.selected_objects)

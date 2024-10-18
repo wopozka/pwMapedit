@@ -662,7 +662,6 @@ class BasicMapItem(object):
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
         return coords
 
-
     def get_comment(self):
         return self.obj_comment
 
@@ -1424,7 +1423,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def _decorate(self):
         print('dekoruje polygon', 'type_polygon', self.is_polygon())
-        if self.node_grip_items:
+        if self.decorated():
             self.undecorate()
         self.setZValue(self.zValue() + self.decorated_z_value)
         # elapsed = datetime.now()
@@ -1445,6 +1444,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.set_hover_over_for_address_labels(True)
         self.add_interpolated_housenumber_labels()
         self.setFlags(QGraphicsItem.ItemIsSelectable)
+        self.setCursor(QCursor(Qt.CrossCursor))
 
     def decorate(self):
         # to be redefined in polyline and polygon classes
@@ -1496,7 +1496,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # print('hoverEnter')
         if not self.highlight_when_hoverover():
             return
-        if self.node_grip_items:
+        if self.decorated():
             self.setCursor(QCursor(Qt.CrossCursor))
             return
         self.hovered = True
@@ -1505,7 +1505,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def hoverLeaveEvent(self, event):
         # print('hoverLeave')
-        if self.node_grip_items:
+        if self.decorated():
             self.setCursor(QCursor(Qt.ArrowCursor))
             return
         self.hovered = False
@@ -1516,9 +1516,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     # to be override in other classes
     def insert_point(self, index, pos):
         return
-
-    def is_in_node_edit_mode(self):
-        return True if self.node_grip_items else False
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -1690,6 +1687,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.set_hover_over_for_address_labels(False)
         self.hoverLeaveEvent(None)
         self.decorated_poly_nums = None
+        self.setCursor(QCursor(Qt.ArrowCursor))
 
     def update_label_pos(self):
         return
@@ -2106,8 +2104,8 @@ class MapLabels(QGraphicsSimpleTextItem):
         return False
 
     def paint(self, painter, option, widget):
-        self.set_transformation_flag()
-        self.update()
+        if self.set_transformation_flag():
+            self.update()
             # return
         super().paint(painter, option, widget)
 
@@ -2125,7 +2123,7 @@ class MapLabels(QGraphicsSimpleTextItem):
         return False
 
 
-class PoiLabel(QGraphicsSimpleTextItem):
+class PoiLabel(MapLabels):
     # poi label nie musi byc typem maplabels bo jako dziecko poi, bedzie mialo jego flagi
     _accept_map_level_change = False
     def __init__(self, string_text, parent):
@@ -2134,7 +2132,8 @@ class PoiLabel(QGraphicsSimpleTextItem):
         px0, py0, pheight, pwidth = parent.boundingRect().getRect()
         self.setPos(pheight, pwidth/2)
         self.setZValue(20)
-        # self.set_transformation_flag()
+        self.set_transformation_flag()
+
 
 
 class PolylineLabel(MapLabels):
@@ -2408,9 +2407,10 @@ class GripItem(QGraphicsPathItem):
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
+            self.parent.setSelected(True)
             self.parent.remove_grip(self)
         elif (event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier):
-            print('z shifterm')
+            print('z shiftem')
         else:
             super().mousePressEvent(event)
 
