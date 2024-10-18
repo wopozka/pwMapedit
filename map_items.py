@@ -1015,7 +1015,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def paint(self, painter, option, widget):
         self.set_transformation_flag()
         self.update()
-        for child in self.childrenItems():
+        for child in self.childItems():
             child.update()
             # return
         super().paint(painter, option, widget)
