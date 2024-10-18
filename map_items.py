@@ -2376,6 +2376,9 @@ class GripItem(QGraphicsPathItem):
         self.scene().enable_maplevel_shortcuts()
         super().hoverLeaveEvent(event)
         self._setHover(False)
+        if self.parent._closest_node_circle is not None:
+            self.scene().removeItem(self.parent._closest_node_circle)
+            self.parent._closest_node_circle = None
 
     def keyPressEvent(self, event):
         if event.text() == 'n':
