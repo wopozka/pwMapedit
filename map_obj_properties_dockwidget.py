@@ -3,7 +3,7 @@
 
 from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
                              QPushButton)
-from PyQt5.QtWidgets import QFormLayout
+from PyQt5.QtWidgets import QFormLayout, QTabWidget
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import Qt
 
@@ -13,9 +13,12 @@ class MapObjPropDock(QDockWidget):
         self.parent = parent
         self.map_object_id = None
         super(MapObjPropDock, self).__init__(parent, *args, **kwargs)
+        tab_widget = QTabWidget()
+        # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
+        tab_widget.addTab(dock_widget, 'Glowny')
         dock_box = QVBoxLayout()
-        self.setWidget(dock_widget)
+        self.setWidget(tab_widget)
         dock_widget.setLayout(dock_box)
         type_box = QHBoxLayout()
         type_label = QLabel('Type', dock_widget)
@@ -69,6 +72,23 @@ class MapObjPropDock(QDockWidget):
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
         dock_box.addLayout(extras_box)
+
+        elements_widgets = QWidget()
+        tab_widget.addTab(elements_widgets, 'Elements')
+        self.elements_table = QTableWidget()
+        elements_layout_box = QVBoxLayout()
+        elements_widgets.setLayout(elements_layout_box)
+        elements_layout_box.addWidget(self.elements_table)
+        self.elements_table.setRowCount(3)
+        self.elements_table.setColumnCount(6)
+        self.elements_table.setHorizontalHeaderLabels(['#', 'Level', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar', 'Typ'])
+
+        routing_widget = QWidget()
+        tab_widget.addTab(routing_widget, 'Routing')
+
+        extras_widget = QWidget()
+        tab_widget.addTab(extras_widget, 'Extras')
+
 
     def reverse_polyline(self, event):
         print(self.map_object_id)
