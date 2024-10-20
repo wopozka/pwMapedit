@@ -4,7 +4,6 @@ import calendar
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
-from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt5.QtCore import QPointF, Qt
 import platform
@@ -21,11 +20,11 @@ from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
     """The main map canvas definitions residue here"""
-    def __init__(self, parent, *args, projection=None, map_viewer=None, **kwargs):
+    def __init__(self, parent, *args, projection=None, undo_redo_stack=None, **kwargs):
         self.parent = parent
         self.properties_dock = self.parent.properties_dock
         super(mapCanvas, self).__init__(*args, **kwargs)
-        self.map_viewer = map_viewer
+        self.undo_redo_stack = undo_redo_stack
         self.projection = None
         if projection is not None:
             self.projection = projection
@@ -93,7 +92,7 @@ class mapCanvas(QGraphicsScene):
             #     if mapobject.get_datax(data_x):
             mapobject.set_mp_data()
             #    if mapobject.get_hlevels(data_x):
-            mapobject.set_mp_hlevels()
+            # mapobject.set_mp_hlevels()
             self.addItem(mapobject)
             if mapobject.get_param('DirIndicator'):
                 mapobject.set_mp_dir_indicator(True)
@@ -149,6 +148,7 @@ class mapCanvas(QGraphicsScene):
             return 0
 
     def set_map_level(self, map_level):
+        self.setFocus(False)
         if isinstance(map_level, str):
             map_level = int(map_level)
         if map_level == self.current_map_level:
@@ -166,6 +166,12 @@ class mapCanvas(QGraphicsScene):
 
     def get_map_level(self):
         return self.current_map_level
+
+    def disable_maplevel_shortcuts(self):
+        self.parent.disable_maplevel_shortcuts()
+
+    def enable_maplevel_shortcuts(self):
+        self.parent.enable_maplevel_shortcuts()
 
     def selection_change_actions(self):
         mode = self.get_pw_mapedit_mode()
@@ -186,7 +192,7 @@ class mapCanvas(QGraphicsScene):
             # przypadku gdy obiekt juz jest w trybie edycji wezlow nie rob nic. Zachodzi gdy mamy kliknięty uchwyt
             # a potem klikniemy z shiftem na podswietlony obiekt tak aby dodac wezel. Wtedy zmienia sie selekcja na nowy
             # obiekt ktory ma juz uchwyty. Nie rob nic w takim przypadku.
-            if selected_items and selected_items[0].is_in_node_edit_mode():
+            if selected_items and selected_items[0].decorated():
                 return
             if self.selected_objects:
                 print('usuwam dekoracje selection change', self.selected_objects)

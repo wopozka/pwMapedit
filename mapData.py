@@ -11,7 +11,7 @@ from PyQt5.QtGui import QPainterPath, QPixmap
 from collections import OrderedDict
 import projection as coordinates_projection
 from singleton_store import Store
-from PyQt5.QtSvg import QGraphicsSvgItem
+# from PyQt5.QtSvg import QGraphicsSvgItem
 from PyQt5.QtWidgets import QGraphicsItemGroup
 
 
@@ -106,6 +106,7 @@ class mapData(object):
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 poi_icon = self.map_objects_properties.get_poi_icon(poi_poly_type[1])
                 if isinstance(poi_icon, QPainterPath):
+                    print(mp_record)
                     map_object = map_items.PoiAsPath(map_objects_properties=self.map_objects_properties,
                                                      projection=self.projection)
                 elif isinstance(poi_icon, QPixmap):
@@ -159,107 +160,3 @@ class mapData(object):
 
     def clean_all_map_objects(self):
         self.mapObjectsList.clear()
-#
-# class Point(object):
-#     """Class used for storing coordinates of given map object point"""
-#     def __init__(self, latitude, longitude, projection):
-#         # self.acuracy = 10000
-#         self.projection = projection
-#         self.longitude = longitude
-#         self.latitude = latitude
-#
-#     def return_canvas_coords(self):
-#         # print(Store.projection.projectionName)
-#         coords = self.projection.geo_to_canvas(self.latitude, self.longitude)
-#         return coords
-#
-#     def return_real_coords(self):
-#         coords = self.projection.canvas_to_geo()
-#         return coords
-#
-# class mapObject(object):
-#     """The class stores information about the map object ie. POI, POLYLINE, POLYGON.
-#     All properties of this objects residue here"""
-#
-#     def __init__(self, data, objectId):
-#         self.comment = []
-#         self.object_type = ''  # possible 3 values, [POI], [POLYLINE], [POLYGONE]
-#         self.Type = None  # Type value
-#         self.EndLevel = None  # Endlevel
-#         self.Label = None
-#         self.Points = OrderedDict()  # objects coordinates as a list of instances point class
-#         # maximal and minimal values for coordinates for the given object
-#
-#         # bounding box for the object. The dictionary with NSEW keys, and values of minimal and
-#         # maximal longitudes and latitudes. At the begining it is empty dictionary, because it makes
-#         # thinks to start easier
-#         self.obj_bounding_box = {}
-#         self.objectId = objectId
-#
-#         self.extract_data(tuple(data))
-#
-#
-#     def extract_data(self, data):
-#         map_object_types = ('[POI]', '[POLYGON]', '[POLYLINE]')
-#         map_object_end = '[END]'
-#         for no, aaa in enumerate(data):
-#             aaa = aaa.strip()
-#             if not aaa:
-#                 continue
-#             elif aaa.startswith(';'):
-#                 self.comment.append(aaa)
-#             elif aaa in map_object_types:  # we have found begining object type data, process it further
-#                 self.object_type = aaa
-#             elif aaa.startswith('Data0'):
-#                 Data = 'Data0' + '_' + str(no)
-#                 self.Points[Data] = self.extract_coords_from_data(aaa)
-#             elif aaa.startswith('Data1'):
-#                 Data = 'Data1' + '_' + str(no)
-#                 self.Points[Data] = self.extract_coords_from_data(aaa)
-#             elif aaa.startswith('Data2'):
-#                 Data = 'Data2' + '_' + str(no)
-#                 self.Points[Data] = self.extract_coords_from_data(aaa)
-#             elif aaa.startswith('Data3'):
-#                 Data = 'Data3' + '_' + str(no)
-#                 self.Points[Data] = self.extract_coords_from_data(aaa)
-#             elif aaa.startswith('Data4'):
-#                 Data = 'Data4' + '_' + str(no)
-#                 self.Points[Data] = self.extract_coords_from_data(aaa)
-#             elif aaa.startswith('Label'):
-#                 self.Label = aaa.split('=')[-1]
-#             elif aaa.startswith('Type'):
-#                 self.Type = aaa.split('=')[-1]
-#             elif aaa == map_object_end:  # if [END] was found it means there was no beginning, something wrong
-#                 # with datafile
-#                 pass
-#             elif not aaa:  # empy lines separate records, after strip() we receive empty string
-#                 pass
-#             else:
-#                 pass
-#
-#     def extract_coords_from_data(self, Dataline):
-#         coord = []
-#         coordlist = Dataline.split('=')[-1]
-#         coordlist = coordlist.strip().lstrip('(').rstrip(')')
-#         for a in coordlist.split('),('):
-#             latitude, longitude = a.split(',')
-#             self.set_obj_bounding_box(float(latitude), float(longitude))
-#             coord.append(Point(latitude, longitude))
-#         return coord
-#
-#     def set_obj_bounding_box(self, latitude, longitude):
-#         if not self.obj_bounding_box:
-#             self.obj_bounding_box['S'] = latitude
-#             self.obj_bounding_box['N'] = latitude
-#             self.obj_bounding_box['E'] = longitude
-#             self.obj_bounding_box['W'] = longitude
-#         else:
-#             if latitude <= self.obj_bounding_box['S']:
-#                 self.obj_bounding_box['S'] = latitude
-#             elif latitude >= self.obj_bounding_box['N']:
-#                 self.obj_bounding_box['N'] = latitude
-#             if longitude <= self.obj_bounding_box['W']:
-#                 self.obj_bounding_box['W'] = longitude
-#             elif longitude >= self.obj_bounding_box['E']:
-#                 self.obj_bounding_box['E'] = longitude
-#         return

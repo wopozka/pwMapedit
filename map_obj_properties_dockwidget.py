@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QDockWidget, QFrame, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
+                             QPushButton)
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
+from PyQt5.QtCore import Qt
 
 
 class MapObjPropDock(QDockWidget):
@@ -38,7 +40,10 @@ class MapObjPropDock(QDockWidget):
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
+        reverse_direction_button = QPushButton('Revert direction', dock_widget)
+        reverse_direction_button.clicked.connect(self.reverse_polyline)
         dir_box.addWidget(self.poly_direction)
+        dir_box.addWidget(reverse_direction_button)
         dock_box.addLayout(dir_box)
 
         comment_label = QLabel("Comment (mapper's private note stored in MP file only)", dock_widget)
@@ -58,12 +63,17 @@ class MapObjPropDock(QDockWidget):
         dock_box.addLayout(address_phone_layout)
 
         extras_label = QLabel('Extras', dock_widget)
-        self.extras_table = QTableWidget(3, 2, dock_widget)
+        self.extras_table = ExtrasTable(3, 2, dock_widget)
         self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
         dock_box.addLayout(extras_box)
+
+    def reverse_polyline(self, event):
+        print(self.map_object_id)
+        if self.map_object_id is not None:
+            self.map_object_id.command_reverse_poly()
 
     def set_map_object_id(self, obj_id):
         self.map_object_id = obj_id
@@ -111,4 +121,27 @@ class MapObjPropDock(QDockWidget):
             for row in range(self.extras_table.rowCount()):
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                 self.extras_table.setItem(row, 1, QTableWidgetItem(''))
+
+
+class ExtrasTable(QTableWidget):
+    def __init__(self, rows, columns, parent):
+        super(ExtrasTable, self).__init__(rows, columns, parent)
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+
+    # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
+    def contextMenuEvent(self, event):
+        menu = QMenu()
+        add_row_action = menu.addAction('Dodaj wiersz')
+        add_row_action.triggered.connect(self.add_row)
+        delete_row_action = menu.addAction('Usun wiersz')
+        delete_row_action.triggered.connect(self.remove_row)
+        res = menu.exec_(event.globalPos())
+
+
+    def remove_row(self, event):
+        self.removeRow(self.currentRow())
+
+    def add_row(self, event):
+        self.insertRow(self.currentRow())
+
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 import sys
@@ -13,6 +13,23 @@ import map_items
 import map_object_properties
 import projection
 import map_obj_properties_dockwidget
+
+class MapUndoStack(QUndoStack):
+    def __init__(self, parent):
+        self.parent = parent
+        self.undo_button = None
+        self.redo_button = None
+        super(MapUndoStack, self).__init__(parent)
+
+    def set_undo_button(self, undo_button):
+        self.undo_button = undo_button
+
+    def set_redo_button(self, redo_button):
+        self.redo_button = redo_button
+
+    def push(self, command, q_undo_command=None):
+        super().push(command)
+        self.undo_button.setToolTip(self.undoText())
 
 class pwMapeditPy(QMainWindow):
     """main application window"""
@@ -31,11 +48,12 @@ class pwMapeditPy(QMainWindow):
         self.view = None
         self.setWindowTitle("pwMapeEdit")
         self.status_bar = QStatusBar(self)
+        self.undo_redo_stack = MapUndoStack(self)
         self.projection = projection.Mercator({})
         self.tools_actions_group = None
         self.map_level_action_group = None
-        self.map_level_actions = list()
         self.pw_mapedit_mode = ''
+        self.map_level_actions = list()
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.initialize()
         self.generate_shortcuts()
@@ -53,7 +71,8 @@ class pwMapeditPy(QMainWindow):
         self.addToolBar(toolbar)
         self.setStatusBar(self.status_bar)
         self.generate_menus()
-        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection, map_viewer=None)
+        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
+                                              undo_redo_stack=self.undo_redo_stack)
         self.view = mapRender.mapRender(self.map_canvas, projection=self.projection)
         self.view.setMouseTracking(True)
         self.view.set_main_window_status_bar(self.status_bar)
@@ -61,31 +80,6 @@ class pwMapeditPy(QMainWindow):
         self.map_ruler = map_items.MapRuler(self.view, self.projection)
         self.map_canvas.addItem(self.map_ruler)
         self.view.set_ruler(self.map_ruler)
-
-
-
-        # ramkaglowna = tkinter.Frame(self)
-        # ramkaglowna.pack(expand=1, fill='both')
-        # canvasScrollFrame=tkinter.Frame(ramkaglowna)
-        # canvasScrollFrame.pack(side='top',fill='both',expand=1)
-        # rightScroll=tkinter.Scrollbar(canvasScrollFrame)
-        # bottomScroll=tkinter.Scrollbar(ramkaglowna,orient='horizontal')
-        # self.mapa = mapCanvas.mapCanvas(canvasScrollFrame,yscrollcommand=rightScroll.set,
-        #                                 xscrollcommand=bottomScroll.set, background='white',
-        #                                 width=800, height=500)
-        # self.mapa.pack(expand=1, fill='both',side='left')
-        # rightScroll.config(command=self.mapa.yview)
-        # bottomScroll.config(command=self.mapa.xview)
-        # rightScroll.pack(side='right',fill='y')
-        # bottomScroll.pack(side='bottom',fill='x')
-        #
-        # #if the filename was added as a run parameter, then open a file here
-        # if self.filename:
-        #     map_objects=mapData.mapData(self.filename)
-        #     map_objects.wczytaj_rekordy()
-        #     self.mapa.MapData = map_objects
-        #     self.mapa.draw_all_objects_on_map()
-        # self.mapa.config(scrollregion=self.mapa.bbox('all'))
 
     def generate_menus(self):
         menu = self.menuBar()
@@ -100,6 +94,7 @@ class pwMapeditPy(QMainWindow):
 
         # Edit menu
         edit_menu = menu.addMenu("&Edit")
+        edit_menu.setToolTipsVisible(True)
         for action in self._create_edit_actions():
             if action is not None:
                 edit_menu.addAction(action)
@@ -184,7 +179,13 @@ class pwMapeditPy(QMainWindow):
     def _create_edit_actions(self):
         edit_actions = list()
         edit_actions.append(QAction('&Undo', self))
+        # dajemy znać undo-redo stack aby ustawial w tooltipie ostatnia komende ktora moze odwolac
+        self.undo_redo_stack.set_undo_button(edit_actions[-1])
+        edit_actions[-1].triggered.connect(self.undo_redo_stack.undo)
         edit_actions.append(QAction('&Redo', self))
+        # dajemy znać undo-redo stack aby ustawial w tooltipie ostatnia komende ktora moze powtorzyc
+        self.undo_redo_stack.set_redo_button(edit_actions[-1])
+        edit_actions[-1].triggered.connect(self.undo_redo_stack.redo)
         edit_actions.append(None)
         edit_actions.append(QAction('&Cut', self))
         edit_actions.append(QAction('&Copy', self))
@@ -217,8 +218,8 @@ class pwMapeditPy(QMainWindow):
 
     def _create_tools_actions(self):
         tools_action = list()
-        tools_action.append(QAction('&Drag map', self))
-        tools_action[-1].setData('drag_map')
+        # tools_action.append(QAction('&Drag map', self))
+        # tools_action[-1].setData('drag_map')
         tools_action.append(QAction('&Zoom map', self))
         tools_action[-1].setData('zoom_map')
         tools_action.append(QAction('&Select objects', self))
@@ -229,7 +230,7 @@ class pwMapeditPy(QMainWindow):
         tools_action[-1].setData('edit_nodes')
         for act in tools_action:
             act.setCheckable(True)
-            if act.data() == 'drag_map':
+            if act.data() == 'select_objects':
                 act.setChecked(True)
             act.triggered.connect(self.menu_tools_set_mode)
         return tuple(tools_action)
@@ -266,17 +267,24 @@ class pwMapeditPy(QMainWindow):
         scale_up.activated.connect(self.menu_zoom_in_command)
         cancel_selection = QShortcut(QKeySequence('Escape'), self)
         cancel_selection.activated.connect(self.map_canvas.clearSelection)
-        set_maplevel_0 = QShortcut(QKeySequence('0'), self)
-        set_maplevel_0.activated.connect(self.menu_view_set_map_level_0)
-        set_maplevel_1 = QShortcut(QKeySequence('1'), self)
-        set_maplevel_1.activated.connect(self.menu_view_set_map_level_1)
-        set_maplevel_2 = QShortcut(QKeySequence('2'), self)
-        set_maplevel_2.activated.connect(self.menu_view_set_map_level_2)
-        set_maplevel_3 = QShortcut(QKeySequence('3'), self)
-        set_maplevel_3.activated.connect(self.menu_view_set_map_level_3)
-        set_maplevel_4 = QShortcut(QKeySequence('4'), self)
-        set_maplevel_4.activated.connect(self.menu_view_set_map_level_4)
+        self.map_level_actions.append(QShortcut(QKeySequence('0'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_0)
+        self.map_level_actions.append(QShortcut(QKeySequence('1'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_1)
+        self.map_level_actions.append(QShortcut(QKeySequence('2'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_2)
+        self.map_level_actions.append(QShortcut(QKeySequence('3'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_3)
+        self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
+        self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
 
+    def disable_maplevel_shortcuts(self):
+        for shorcut in self.map_level_actions:
+            shorcut.setEnabled(False)
+
+    def enable_maplevel_shortcuts(self):
+        for shorcut in self.map_level_actions:
+            shorcut.setEnabled(True)
 
     def open_file(self):
         aaa = QFileDialog.getOpenFileName(self, 'File to open')
