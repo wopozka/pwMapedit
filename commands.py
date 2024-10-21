@@ -193,7 +193,7 @@ class SelectModeMoveItem(QUndoCommand):
         self.map_object.update_items_after_obj_move()
 
 class SelectModeMovePoi(QUndoCommand):
-    def __init__(self, map_object, description, orig_pos):
+    def __init__(self, map_object, orig_pos, description):
         super(SelectModeMovePoi, self).__init__(description)
         self.pos = map_object.pos()
         self.data0_copy = map_object.data0.copy()
@@ -211,3 +211,25 @@ class SelectModeMovePoi(QUndoCommand):
         self.map_object.setPos(self.pos_copy)
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
             self.map_object.setSelected(True)
+
+
+class SelectModeSetDirindicator(QUndoCommand):
+    def __init__(self, map_object, dirindicator, description):
+        super(SelectModeSetDirindicator, self).__init__(description)
+        self.map_object = map_object
+        self.old_dirindicator = map_object.get_dirindicator()
+        self.new_dirindicator = dirindicator
+
+    def redo(self):
+        self.map_object.scene().clearSelection()
+        self.map_object.set_dirindicator(self.new_dirindicator)
+        self.map_object.set_mp_dir_indicator(self.new_dirindicator)
+        self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.scene().clearSelection()
+        self.map_object.set_dirindicator(self.old_dirindicator)
+        self.map_object.set_mp_dir_indicator(self.old_dirindicator)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.setSelected(True)
+

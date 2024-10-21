@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPat
 from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
-from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
+from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS
 import commands
 import itertools
 
@@ -800,7 +800,10 @@ class BasicMapItem(object):
         return
 
     def set_dirindicator(self, value):
-        self.dirindicator = value
+        if value == False:
+            self.dirindicator = None
+        else:
+            self.dirindicator = value
 
     def set_endlevel(self, value):
         if isinstance(value, str):
@@ -1018,7 +1021,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self.hovered_shape.setPen(hovered_over_pen)
 
     def command_move_poi(self):
-        command = commands.SelectModeMovePoi(self, 'Przesun POI', self.recorded_pos)
+        command = commands.SelectModeMovePoi(self, self.recorded_pos, 'Przesun POI')
         self.scene().undo_redo_stack.push(command)
 
     def highlight_when_hoverover(self):
@@ -1029,7 +1032,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def paint(self, painter, option, widget):
         if self.set_transformation_flag():
             self.update()
-        super().paint(painter, option, widget)
+        if self.scene().get_viewer_scale() >= SCALE_WITHOUT_POIS:
+            super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
         if self.scene() is None:
@@ -1046,6 +1050,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def set_map_level(self):
         level = self.scene().get_map_level()
+        self.set_transformation_flag()
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
@@ -1424,6 +1429,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # self.decorate()
 
     def command_reverse_poly(self):
+        return
+
+    def command_set_dirindicator(self, dirindicator):
         return
 
     def create_painter_path(self, poly_lists):
@@ -1822,6 +1830,13 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         command = commands.ReversePolylineCmd(self, 'Odwróć polyline')
         self.scene().undo_redo_stack.push(command)
 
+    def command_set_dirindicator(self, dirindicator):
+        if dirindicator:
+            command = commands.SelectModeSetDirindicator(self, dirindicator, 'Dodaj jednokierukowosc')
+        else:
+            command = commands.SelectModeSetDirindicator(self, dirindicator, 'Usuń jednokierukowosc')
+        self.scene().undo_redo_stack.push(command)
+
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):
         # testing=True is used or testing purposes, then values of for number position calculations are fixed
@@ -2123,7 +2138,8 @@ class MapLabels(QGraphicsSimpleTextItem):
         if self.set_transformation_flag():
             self.update()
             # return
-        super().paint(painter, option, widget)
+        if self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
+            super().paint(painter, option, widget)
 
     def set_transformation_flag(self):
         if self.scene() is None:
@@ -2304,12 +2320,13 @@ class PolylineLevelNumber(MapLabels):
         self.setPos(position + QPointF(-pwidth/scale/2, -pheight/scale/2))
 
     def paint(self, painter, option, widget):
-        self.setPos(self.position)
-        brush = QBrush(Qt.yellow)
-        painter.setBrush(brush)
-        a, b, c, d = self.boundingRect().getRect()
-        painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
-        super().paint(painter, option, widget)
+        if self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
+            self.setPos(self.position)
+            brush = QBrush(Qt.yellow)
+            painter.setBrush(brush)
+            a, b, c, d = self.boundingRect().getRect()
+            painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
+            super().paint(painter, option, widget)
 
 
 class GripItem(QGraphicsPathItem):

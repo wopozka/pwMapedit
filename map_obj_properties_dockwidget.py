@@ -54,6 +54,7 @@ class MapObjPropDock(QDockWidget):
 
         polyline_direction = QLabel('Polyline has direction', dock_widget)
         self.poly_direction = QCheckBox(dock_widget)
+        self.poly_direction.stateChanged.connect(self.command_dirindicator_changed)
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
@@ -263,6 +264,9 @@ class MapObjPropDock(QDockWidget):
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                 self.extras_table.setItem(row, 1, QTableWidgetItem(''))
 
+    def command_dirindicator_changed(self):
+        print(self.poly_direction.checkState())
+        self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
