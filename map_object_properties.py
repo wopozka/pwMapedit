@@ -23,22 +23,24 @@ class MapObjectsProperties(object):
         # polylines definitions
         #dictionary where key is Type
         self.polyline_properties_colour = {0: Qt.black,
-                                          0x1: QColor('#0000ff'),
-                                          0x2: QColor('#ff0000'),
-                                          0x3: QColor('#bd3020'),
-                                          0x4: QColor('#ff9500'),
-                                          0x5: QColor('#ffff8b'),
-                                          0x6: QColor('#404040'),
-                                          0x7: QColor('#909090'),
-                                          0x8: QColor('#ff6500'),
-                                          0x9: Qt.blue,
-                                          0xa: QColor('lightgrey'),
-                                          0xc: QColor('darkorange'),
-                                          0xd: QColor('brown'),
-                                          0xe: QColor('#A4A4A4'),
-                                          0x14: Qt.black,
-                                          0x15: QColor('#bdca8b'),
-                                          0x16: QColor('#bd6520'),
+                                          0x1: QColor('#0000ff'), # Motorway
+                                          0x2: QColor('#ff0000'), # Principal Highway
+                                          0x3: QColor('#bd3020'), # Principal Highway
+                                          0x4: QColor('#ff9500'), # Arterial Road
+                                          0x5: QColor('#ffff8b'), # Collector Road
+                                          0x6: QColor('#404040'), # Residential street
+                                          0x7: QColor('#909090'), # Alleyway
+                                          0x8: QColor('#ff6500'), # highway ramp low speed
+                                          0x9: Qt.blue,           # highway ramp high speed
+                                          0xa: QColor('lightgrey'), # unpaved road
+                                          0xb: QColor('#ffff8b'),  # highway connector
+                                          0xc: QColor('darkorange'), # rondo
+                                          0xd: QColor('brown'), # bike route
+                                          0xe: QColor('#bd3020'), # tunel
+                                          0xf: QColor('lightgrey'), # unpaved 4x4
+                                          0x14: Qt.black, # railroad
+                                          0x15: QColor('#bdca8b'), # coastline
+                                          0x16: QColor('#bd6520'), # walkway
                                           0x18: Qt.blue,
                                           0x19: Qt.green,  # timezone
                                           0x1a: QColor('#00ffff"'),
@@ -58,10 +60,11 @@ class MapObjectsProperties(object):
                                           0x10e0b: QColor('#3965ff'),  # rowerowy niebieski
                                           0x10e0c: Qt.black,           # rowerowy czarny
                                           0x10e0d: QColor('#a959a9'),  # rowerowy inny
-                                          0x10e11: QColor('cyan'),
-                                          0x10e12: QColor('cyan'),
-                                          0x10e13: QColor('darkred'),
-                                          0x10e14: Qt.black,
+                                          0x10e10: QColor('#0000ff'), # tramwaj
+                                          0x10e11: QColor('#ffffff'), # planowana ulica
+                                          0x10e12: QColor('#ffffff'), # planowana
+                                          0x10e13: QColor('#e80020'), # w budowie
+                                          0x10e14: Qt.black, # railroad
                                           0x10e15: QColor('#a4a4a4')
                                          }
 
@@ -75,8 +78,10 @@ class MapObjectsProperties(object):
                                           0x8: 2,
                                           0x9: 2,
                                           0xa: 2,
-                                          0xc: 2,
-                                          0xd: 2,
+                                          0xc: 3,
+                                          0xd: 3,
+                                          0xe: 3,
+                                          0xf: 2,
                                           0x14: 3,
                                           0x15: 2,
                                           0x1f: 3,
@@ -96,13 +101,14 @@ class MapObjectsProperties(object):
                                           0x10e12: 3,
                                           0x10e13: 3,
                                           0x10e14: 5,
-                                          0x10e15: 5
+                                          0x10e15: 3,
                                         }
 
         self.polyline_properties_dash = {0xa: Qt.DotLine,
                                         0xd: Qt.DotLine,
                                         0x14: Qt.DashLine,
                                         0x1c: Qt.DashDotLine,
+                                        0x16: Qt.DashLine,
                                         0x18: Qt.DashLine,
                                         0x4b: Qt.DashLine,
                                         0x10e00: Qt.DashLine,
@@ -121,7 +127,7 @@ class MapObjectsProperties(object):
                                         0x10e12: Qt.DashLine,
                                         0x10e13: Qt.DashLine,
                                         0x10e14: Qt.DashLine,
-                                        0x10e15: Qt.DashLine
+                                        0x10e15: Qt.DashLine,
                                        }
 
         self.polyline_type_vs_name = self.create_polyline_type_vs_name()
