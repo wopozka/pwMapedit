@@ -276,12 +276,12 @@ class MapObjectsProperties(object):
         return poi_type_name
 
     def get_poi_icon(self, poi_type):
-        if self.poi_type_has_pixmap_icon(poi_type):
+        if self.poi_type_has_png_icon(poi_type):
+            return self.poi_png_icons[poi_type]
+        elif self.poi_type_has_pixmap_icon(poi_type):
             return self.poi_pixmap_icons[poi_type]
             # px0, py0, pheight, pwidth = qpi.boundingRect().getRect()
             # qpi.setOffset(px0 - pheight/2, py0 - pwidth)
-        elif self.poi_type_has_png_icon(poi_type):
-            return self.poi_png_icons[poi_type]
         # elif self.poi_type_has_nonpixmap_icon(poi_type):
         #     return self.non_pixmap_icons[poi_type]()
         else:
