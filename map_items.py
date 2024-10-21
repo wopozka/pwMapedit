@@ -718,6 +718,11 @@ class BasicMapItem(object):
             return ''
         return self.phone
 
+    def get_route_params(self):
+        if self.routeparam is None:
+            return None
+        return self.routeparam
+
     def get_street_desc(self):
         if self.streetdesc is None:
             return ''
@@ -751,10 +756,11 @@ class BasicMapItem(object):
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.set_datax(number_keyname[1], obj_data[number_keyname])
             elif number_keyname[1] == 'RouteParam':
-                if self.routeparam is None:
-                    self.routeparam = []
-                for single_param in obj_data[number_keyname].split(','):
-                    self.routeparam.append(int(single_param))
+                self.set_route_params(obj_data[number_keyname])
+                # if self.routeparam is None:
+                #     self.routeparam = []
+                # for single_param in obj_data[number_keyname].split(','):
+                #     self.routeparam.append(int(single_param))
             elif number_keyname[1] == 'StreetDesc':
                 self.set_street_desc(obj_data[number_keyname])
             elif number_keyname[1] == 'HouseNumber':
@@ -825,6 +831,15 @@ class BasicMapItem(object):
 
     def set_phone_number(self, value):
         self.phone = value
+
+    def set_route_params(self, value):
+        if self.routeparam is None:
+            self.routeparam = [0 for a in range(12)]
+        for param_num, single_param in enumerate(value.split(',')):
+            try:
+                self.routeparam[param_num] = int(single_param)
+            except IndexError:
+                return
 
     def set_street_desc(self, value):
         self.streetdesc = value
