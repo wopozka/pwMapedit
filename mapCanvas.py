@@ -157,10 +157,12 @@ class mapCanvas(QGraphicsScene):
         self.clearSelection()
         num_screen_items = 0
         start = datetime.now().replace(microsecond=0)
+        self.views()[0].setInteractive(False)
         for item in self.items():
             num_screen_items += 1
             if item._accept_map_level_change:
                 item.set_map_level()
+        self.views()[0].setInteractive(True)
         print('num screen items: %s' % num_screen_items)
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 

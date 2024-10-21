@@ -1054,6 +1054,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         elif self._mp_data[level] is None and self.get_endlevel() >= level:
             self.setVisible(True)
         self._current_map_level = level
+        self.update()
         return
 
     def set_mp_data(self):
@@ -1113,6 +1114,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             self.scene().removeItem(self.hovered_shape)
             self.hovered_shape = None
 
+
 class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
     _accept_map_level_change = True
 
@@ -1163,6 +1165,7 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
         elif self._mp_data[level] is None and self.get_endlevel() >= level:
             self.setVisible(True)
         self._current_map_level = level
+        self.update()
         return
 
     def set_mp_data(self):
@@ -1664,6 +1667,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             else:
                 if self.isVisible():
                     self.setVisible(False)
+        self.update()
         return
 
     def setPen(self, pen):
