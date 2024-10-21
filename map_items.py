@@ -68,7 +68,7 @@ class Node(QPointF):
         return self._hlevel_definition
 
     def get_geo_coordinates(self):
-        return self.projection.geo_to_canvas(self.x(), self.y())
+        return self.projection.canvas_to_geo(self.x(), self.y())
 
     def get_canvas_coords(self):
         return self.x(), self.y()

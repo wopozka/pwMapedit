@@ -98,7 +98,7 @@ class MapObjPropDock(QDockWidget):
         elements_layout_box = QVBoxLayout()
         elements_widgets.setLayout(elements_layout_box)
         elements_layout_box.addWidget(self.elements_table)
-        self.elements_table.setRowCount(3)
+        self.elements_table.setRowCount(0)
         self.elements_table.setColumnCount(6)
         self.elements_table.setHorizontalHeaderLabels(['#', 'Level', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar', 'Typ'])
 
@@ -219,6 +219,18 @@ class MapObjPropDock(QDockWidget):
             self.phone.setText(self.map_object_id.get_phone_number())
         else:
             self.phone.setText('')
+
+        # wypelniamy elements:
+        self.elements_table.setRowCount(0)
+        for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+            for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
+                row_num = data_level_num + poly_num
+                self.elements_table.insertRow(row_num)
+                self.elements_table.setItem(row_num, 0, QTableWidgetItem(str(row_num)))
+                self.elements_table.setItem(row_num, 1, QTableWidgetItem(str(data_level)))
+                lat, lot = poly[0].get_geo_coordinates()
+                self.elements_table.setItem(row_num, 2, QTableWidgetItem(f"{lat:.6f}, {lot:.6f}"))
+                self.elements_table.setItem(row_num, 3, QTableWidgetItem(str(len(poly))))
 
         if self.map_object_id.get_route_params() is not None:
             routing_data = self.map_object_id.get_route_params()
