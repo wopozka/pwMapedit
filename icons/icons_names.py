@@ -240,4 +240,24 @@ icon_types = {
     0x2a12: ('Food', 'Special food products'),
     0x2a13: ('Food', 'Greek'),
 
+    0x2b00: ('Lodging', 'Kwatera'),
+    0x2b01: ('Lodging', 'Hotel'),
+    0x2b02: ('Lodging', 'B&B'),
+    0x2b03: ('Lodging', 'Camping'),
+    0x2b04: ('Lodging', 'Resort'),
+
+    0x2c00: ('Attractions', 'Atrakcja'),
+    0x2c01: ('Attractions', 'Plac zabaw'),
+    0x2c02: ('Attractions', 'Muzeum'),
+    0x2c03: ('Attractions', 'Biblioteka'),
+    0x2c04: ('Attractions', 'Budowla'),
+    0x2c05: ('Education', 'Szkola'),
+    0x2c06: ('Attractions', 'Ogród'),
+    0x2c07: ('Attractions', 'Zoo/akwarium'),
+    0x2c08: ('Attractions', 'Boisko'),
+    0x2c09: ('Attractions', 'Targi'),
+    0x2c0a: ('Attractions', 'Winiarnia'),
+    0x2c0b: ('Religion', 'Kościół'),
+    0x2c10: ('Custom', 'Mural'),
+
 }
