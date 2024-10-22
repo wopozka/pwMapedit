@@ -1,0 +1,20 @@
+icon_types = {
+    0x0100: ('Cities', 'Large city (> 10M)'),
+    0x0200: ('Cities', 'Large city (5-10M)'),
+    0x0300: ('Cities', 'Large city (2-5M)'),
+    0x0400: ('Cities', 'City'),
+    0x0500: ('Cities', 'Medium city (0.5-1M)'),
+    0x0600: ('Cities', 'Medium city (200-500k)'),
+    0x0700: ('Cities', 'Medium city (100-200k)'),
+    0x0800: ('Cities', 'Medium city (50-100k)'),
+    0x0900: ('Cities', 'Medium city (20-50k)'),
+    0x0a00: ('Cities', 'Medium city (10-20k)'),
+    0x0b00: ('Cities', 'Medium city (5-10k)'),
+    0x0c00: ('Cities', 'Medium city (2-5k)'),
+    0x0d00: ('Cities', 'Medium city (1-2k)'),
+    0x0e00: ('Cities', 'Medium city (500-1k)'),
+    0x0f00: ('Cities', 'Medium city (200-500)'),
+    0x1000: ('Cities', 'Medium city (100-200)'),
+    0x1100: ('Cities', 'Medium city (less 100)'),
+
+}
