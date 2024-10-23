@@ -172,8 +172,8 @@ class Data_X(object):
         # definicje numeracji, odkąd numeracja jest w nodach, zbędne
         # self._numbers_definitions = None
 
-        # warto dodac powierzchnie polygonow, tak aby mozna bylo wyswietlac tylko te wieksze w mniejszej skali
-        self.polygon_surface_area = dict()
+        # obwód polygonów albo długość linii
+        self.poly_perimeter = 0
 
     def add_hlevels_from_string(self, hlevels_definition):
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
@@ -237,17 +237,14 @@ class Data_X(object):
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(data_string))
         self._last_data_level = _data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
-        # self.polygon_surface_area[(self._last_data_level, self._last_poly_data_index)] = (
-        #     self.calculate_polygon_surface_area(self.coords_from_data_to_nodes(data_string)))
 
     @staticmethod
-    def calculate_polygon_surface_area(coords):
-        area = 0.0
+    def calculate_poly_perimeter(coords):
+        perimeter = 0.0
         for coord_pair in itertools.pairwise(coords):
-            p1, p2 = coord_pair
-            area += p1.x()*p2.y()
-            area -= p2.x()*p1.y()
-        return abs(area) / 2.0
+            line = QLineF(coord_pair[0],coord_pair[1])
+            perimeter += line.length()
+        return perimeter
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
