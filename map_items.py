@@ -237,6 +237,8 @@ class Data_X(object):
         self._poly_data_points[data_index].append(self.coords_from_data_to_nodes(data_string))
         self._last_data_level = _data_level
         self._last_poly_data_index = len(self._poly_data_points[data_index]) - 1
+        self.poly_perimeter = max(self.poly_perimeter,
+                                  self.calculate_poly_perimeter(self._poly_data_points[data_index][-1]))
 
     @staticmethod
     def calculate_poly_perimeter(coords):
