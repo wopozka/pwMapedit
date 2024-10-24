@@ -2631,7 +2631,8 @@ class MapRuler(QGraphicsPathItem):
 
     def get_map_scale(self):
         self.calculate_geo_distance()
-        return self.geo_distance / (40 / self.map_render.physicalDpiX() * 2.54 / 100)
+        return self.geo_distance / ((self.screen_coord_2.x() - self.screen_coord_1.x()) /
+                                    self.map_render.physicalDpiX() * 2.54 / 100)
 
 
 class PolygonAnnotation(QGraphicsPolygonItem):
