@@ -13,6 +13,7 @@ import map_items
 import map_object_properties
 import projection
 import map_obj_properties_dockwidget
+from web_layers import MapLayersEnum
 
 class MapUndoStack(QUndoStack):
     def __init__(self, parent):
@@ -161,6 +162,27 @@ class pwMapeditPy(QMainWindow):
                 self.tools_actions_group.addAction(action)
             else:
                 object_menu.addSeparator()
+
+        # weblayer menu
+        weblayers = menu.addMenu('&Weblayers')
+        self.weblayers_actions_group = QActionGroup(self)
+        osm_action = QAction('OSM', self)
+        osm_action.setCheckable(True)
+        osm_action.setData(MapLayersEnum.osm_layer)
+        geoportal_action = QAction('Geoportal', self)
+        geoportal_action.setCheckable(True)
+        geoportal_action.setData(MapLayersEnum.geoportal_layer)
+        google_action = QAction('Google', self)
+        google_action.setCheckable(True)
+        google_action.setData(MapLayersEnum.google_layer)
+        weblayers.addAction(osm_action)
+        weblayers.addAction(geoportal_action)
+        weblayers.addAction(google_action)
+
+        self.weblayers_actions_group.addAction(osm_action)
+        self.weblayers_actions_group.addAction(geoportal_action)
+        self.weblayers_actions_group.addAction(google_action)
+
 
     def _create_file_actions(self):
         file_actions = list()

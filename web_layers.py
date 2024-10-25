@@ -1,5 +1,13 @@
 import math
 import os.path
+
+
+class MapLayersEnum(object):
+    osm_layer = 0
+    geoportal_layer = 1
+    google_layer = 2
+
+
 class WebLayers(object):
     def __init__(self):
         self.zoom_level = 0
@@ -43,10 +51,6 @@ class WebLayers(object):
         tp = os.path.join(tp, str(ytile) + '.png')
         return os.path.join(self.web_layer_cache_path, tp)
 
-    def set_current_web_layer(self, weblayer_name):
-        self.current_web_layer = weblayer_name
-        self.web_layer_cache_path = os.path.join(self.cache_folder, weblayer_name)
-
     @staticmethod
     def num2deg(xtile, ytile, zoom):
         n = 1 << zoom
@@ -54,3 +58,7 @@ class WebLayers(object):
         lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
         lat_deg = math.degrees(lat_rad)
         return lat_deg, lon_deg
+
+    def set_current_web_layer(self, weblayer_name):
+        self.current_web_layer = weblayer_name
+        self.web_layer_cache_path = os.path.join(self.cache_folder, weblayer_name)
