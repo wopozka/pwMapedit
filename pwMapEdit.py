@@ -166,6 +166,7 @@ class pwMapeditPy(QMainWindow):
         # weblayer menu
         weblayers = menu.addMenu('&Weblayers')
         self.weblayers_actions_group = QActionGroup(self)
+        self.weblayers_actions_group.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
         osm_action = QAction('OSM', self)
         osm_action.setCheckable(True)
         osm_action.setData(MapLayersEnum.osm_layer)
