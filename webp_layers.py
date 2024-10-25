@@ -27,6 +27,8 @@ class WebLayers(object):
             500,        # 20
         )
         self.cache_folder = 'wl_cache'
+        self.web_layer_cache_path = ''
+        self.current_web_layer = ''
 
     @staticmethod
     def deg2num(lat_deg, lon_deg, zoom):
@@ -36,6 +38,15 @@ class WebLayers(object):
         ytile = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
         return xtile, ytile
 
+    def get_tile_path(self, xtile, ytile):
+        tp = os.path.join(str(self.zoom_level), str(xtile))
+        tp = os.path.join(tp, str(ytile) + '.png')
+        return os.path.join(self.web_layer_cache_path, tp)
+
+    def set_current_web_layer(self, weblayer_name):
+        self.current_web_layer = weblayer_name
+        self.web_layer_cache_path = os.path.join(self.cache_folder, weblayer_name)
+
     @staticmethod
     def num2deg(xtile, ytile, zoom):
         n = 1 << zoom
@@ -43,8 +54,3 @@ class WebLayers(object):
         lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
         lat_deg = math.degrees(lat_rad)
         return lat_deg, lon_deg
-
-    def get_tile_path(self, xtile, ytile):
-        tp = os.path.join(str(self.zoom_level), str(xtile))
-        tp = os.path.join(tp, str(ytile) + '.png')
-        return os.path.join(self.cache_folder, tp)
