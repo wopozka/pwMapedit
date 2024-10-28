@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsView
-from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThread
+from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
 from PyQt5.QtGui import QMouseEvent
 import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
@@ -14,24 +14,31 @@ from pathlib import Path
 import misc_functions
 from singleton_store import Store
 
-class GetWebLayerPictureWorker(QObject):
-    finished = pyqtSignal(WebLayerTile)
+
+class GetWebLayerPictureSignals(QObject):
+    # https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
+    finished = pyqtSignal()
     download_finished = pyqtSignal(WebLayerTile)
+
+class GetWebLayerPictureWorker(QRunnable):
     # https://realpython.com/python-pyqt-qthread/
 
     def __init__(self, tile_def, tile_url):
         self.tile_def = tile_def
         self.tile_url = tile_url
-        super(self, QObject).__init__()
+        self.signals = GetWebLayerPictureSignals()
+        super(GetWebLayerPictureWorker, self).__init__()
 
     def run(self):
         req = urllib.request.Request(url=self.tile_url, headers={'User-Agent': 'pwMapedit'})
         with urllib.request.urlopen(req) as f:
             content = f.read()
+            print('obrazek przeczytany')
         with open(self.tile_def.file_path, 'wb') as f:
             f.write(content)
-        self.emit.download_finished(self.tile_def)
-        self.emit.finished(self.tile_def)
+            print('obrazek zapisany')
+        self.signals.download_finished.emit(self.tile_def)
+        # self.emit.finished(self.tile_def)
 
 
 class mapRender(QGraphicsView):
@@ -155,8 +162,8 @@ class mapRender(QGraphicsView):
             self.mouseReleaseEvent(handmade_event)
         super().mouseReleaseEvent(event)
 
-    def weblayers_get_data_from_thread(self, file_name):
-        self.weblayers_put_files_do_scene((file_name,))
+    def weblayers_get_data_from_thread(self, tile_def):
+        self.scene().set_web_layer_graphic(tile_def)
 
     def weblayers_get_picture_names(self):
         scene_geo_coords = self.get_corners_geo_coordinates()
@@ -170,23 +177,28 @@ class mapRender(QGraphicsView):
         if self.web_layer is None:
             return
         tiles_defs = self.weblayers_get_picture_names()
-        self.weblayers_put_files_do_scene(tiles_defs)
+        self.weblayers_put_files_to_scene(tiles_defs)
 
-    def weblayers_put_files_do_scene(self, tiles_defs):
+    def weblayers_put_files_to_scene(self, tiles_defs):
+        pool = QThreadPool.globalInstance()
         for tile_def in tiles_defs:
-            if os.path.exist(tile_def.file_path):
+            if os.path.exists(tile_def.file_path):
                 self.scene().set_web_layer_graphic(tile_def)
             else:
                 directory = Path(os.path.dirname(tile_def.file_path))
                 if not directory.exists():
                     directory.mkdir(parents=True, exist_ok=True)
                 tile_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
-                web_layer_thread = QThread()
+                # web_layer_thread = QThread()
                 worker = GetWebLayerPictureWorker(tile_def, tile_url)
-                web_layer_thread.started.connect(worker.run)
-                worker.finished.connect(web_layer_thread.quit)
-                worker.finished.connect(web_layer_thread.deleteLater)
-                worker.download_finished.connect(self.weblayers_get_data_from_thread)
+
+                # worker.moveToThread(web_layer_thread)
+                # web_layer_thread.started.connect(worker.run)
+                # worker.finished.connect(web_layer_thread.quit)
+                # worker.finished.connect(web_layer_thread.deleteLater)
+                worker.signals.download_finished.connect(self.weblayers_get_data_from_thread)
+                # web_layer_thread.start()
+                pool.start(worker)
 
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:

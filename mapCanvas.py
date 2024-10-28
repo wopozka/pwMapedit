@@ -220,7 +220,7 @@ class mapCanvas(QGraphicsScene):
             self.removeItem(graphic)
         self.web_layer_graphics = None
 
-    def set_web_layer_graphic(self):
+    def set_web_layer_graphic(self, tile_def):
         return
         if self.web_layer_graphics is not None:
             self.remove_web_layer_graphics()
