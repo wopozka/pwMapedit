@@ -2,14 +2,33 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsView
-from PyQt5.QtCore import QPointF, Qt, QEvent
+from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal
 from PyQt5.QtGui import QMouseEvent
 import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
-from map_items import Node
+import os.path
+import urllib.request
 
 import misc_functions
 from singleton_store import Store
+
+def get_weblayer_files(tiles_paths, tiles_urls):
+    for file_num, file in enumerate(tiles_paths):
+        if not os.path.isfile(file):
+            fild_to_download = tiles_urls[file_num]
+            req = urllib.request.Request(url=fild_to_download, headers={'User-Agent': 'pwMapedit'})
+            with urllib.request.urlopen(req) as f:
+                content = f.read()
+            with open(file, 'wb') as f:
+                f.write(content)
+
+
+class GetWebLayerPictureWorker(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(1)
+    # https://realpython.com/python-pyqt-qthread/
+    def run(self):
+        return
 
 
 class mapRender(QGraphicsView):
