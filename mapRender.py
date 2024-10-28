@@ -81,7 +81,8 @@ class mapRender(QGraphicsView):
         super().resizeEvent(event)
         if self.ruler is not None:
             self.ruler.move_to()
-        self.weblayers_get_picture_names()
+        # self.weblayers_get_picture_names()
+        self.weblayers_put_background_weblayer_pictures()
 
     def set_map_scale(self, map_scale_factor):
         self.map_scale *= map_scale_factor
@@ -110,9 +111,11 @@ class mapRender(QGraphicsView):
             self.main_window_status_bar.showMessage(new_msg + msg_view_render + msg_map_scale)
 
     def set_web_layer(self, layer):
+        # uzywane przy wlaczaniu i wylaczaniu weblayer
         self.web_layer = layer
         if self.web_layer is not None:
-            self.weblayers_get_picture_names()
+            # self.weblayers_get_picture_names()
+            self.weblayers_put_background_weblayer_pictures()
         else:
             self.scene().remove_web_layer_graphics()
 
@@ -123,7 +126,8 @@ class mapRender(QGraphicsView):
             super(mapRender, self).mouseMoveEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
-            self.weblayers_get_picture_names()
+            # self.weblayers_get_picture_names()
+            self.weblayers_put_background_weblayer_pictures()
         else:
             super(mapRender, self).mouseMoveEvent(event)
             self.set_status_bar(event=event)
@@ -152,18 +156,23 @@ class mapRender(QGraphicsView):
         super().mouseReleaseEvent(event)
 
     def weblayers_get_data_from_thread(self, file_name):
-        self.weblayer_put_files_do_scene((file_name,))
+        self.weblayers_put_files_do_scene((file_name,))
 
     def weblayers_get_picture_names(self):
-        if self.web_layer is None:
-            return
         scene_geo_coords = self.get_corners_geo_coordinates()
         self.web_layer.set_zoom_from_scale(self.ruler.get_map_scale())
         picture_paths = self.web_layer.get_tiles_paths(scene_geo_coords[0][0], scene_geo_coords[0][1],
                                                        scene_geo_coords[1][0], scene_geo_coords[1][1])
         print(picture_paths)
+        return picture_paths
 
-    def weblayer_put_files_do_scene(self, tiles_defs):
+    def weblayers_put_background_weblayer_pictures(self):
+        if self.web_layer is None:
+            return
+        tiles_defs = self.weblayers_get_picture_names()
+        self.weblayers_put_files_do_scene(tiles_defs)
+
+    def weblayers_put_files_do_scene(self, tiles_defs):
         for tile_def in tiles_defs:
             if os.path.exist(tile_def.file_path):
                 self.scene().set_web_layer_graphic(tile_def)
@@ -192,7 +201,8 @@ class mapRender(QGraphicsView):
             super(mapRender, self).wheelEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
-        self.weblayers_get_picture_names()
+        # self.weblayers_get_picture_names()
+        self.weblayers_put_background_weblayer_pictures()
 
     def zoom_in_command(self):
         self.setInteractive(False)
