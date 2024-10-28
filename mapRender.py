@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import QGraphicsView
-from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal
+from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThread
 from PyQt5.QtGui import QMouseEvent
 import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
@@ -16,7 +16,7 @@ from singleton_store import Store
 
 class GetWebLayerPictureWorker(QObject):
     finished = pyqtSignal(WebLayerTile)
-    progress = pyqtSignal()
+    download_finished = pyqtSignal(WebLayerTile)
     # https://realpython.com/python-pyqt-qthread/
 
     def __init__(self, tile_def, tile_url):
@@ -30,7 +30,8 @@ class GetWebLayerPictureWorker(QObject):
             content = f.read()
         with open(self.tile_def.file_path, 'wb') as f:
             f.write(content)
-        self.emit.finished((self.tile_def,))
+        self.emit.download_finished(self.tile_def)
+        self.emit.finished(self.tile_def)
 
 
 class mapRender(QGraphicsView):
@@ -150,6 +151,9 @@ class mapRender(QGraphicsView):
             self.mouseReleaseEvent(handmade_event)
         super().mouseReleaseEvent(event)
 
+    def weblayers_get_data_from_thread(self, file_name):
+        self.weblayer_put_files_do_scene((file_name,))
+
     def weblayers_get_picture_names(self):
         if self.web_layer is None:
             return
@@ -167,12 +171,13 @@ class mapRender(QGraphicsView):
                 directory = Path(os.path.dirname(tile_def.file_path))
                 if not directory.exists():
                     directory.mkdir(parents=True, exist_ok=True)
-                file_to_download_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
-                req = urllib.request.Request(url=file_to_download_url, headers={'User-Agent': 'pwMapedit'})
-                with urllib.request.urlopen(req) as f:
-                    content = f.read()
-                with open(tile_def.file_path, 'wb') as f:
-                    f.write(content)
+                tile_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
+                web_layer_thread = QThread()
+                worker = GetWebLayerPictureWorker(tile_def, tile_url)
+                web_layer_thread.started.connect(worker.run)
+                worker.finished.connect(web_layer_thread.quit)
+                worker.finished.connect(web_layer_thread.deleteLater)
+                worker.download_finished.connect(self.weblayers_get_data_from_thread)
 
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:
