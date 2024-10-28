@@ -2,7 +2,7 @@ import math
 import os.path
 from collections import namedtuple
 
-WebLayerTile = namedtuple('WebLayerTile', ['xtile', 'ytile', 'file_path'])
+WebLayerTile = namedtuple('WebLayerTile', ['xtile', 'ytile', 'left_top_lat', 'left_top_lon', 'file_path'])
 
 
 class MapLayersEnum(object):
