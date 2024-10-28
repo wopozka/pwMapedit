@@ -221,6 +221,7 @@ class mapCanvas(QGraphicsScene):
         self.web_layer_graphics = None
 
     def set_web_layer_graphic(self):
+        return
         if self.web_layer_graphics is not None:
             self.remove_web_layer_graphics()
         # dopisac dodawanie grafik

@@ -8,27 +8,28 @@ import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 import os.path
 import urllib.request
+from web_layers import WebLayerTile
 
 import misc_functions
 from singleton_store import Store
 
-def get_weblayer_files(tiles_paths, tiles_urls):
-    for file_num, file in enumerate(tiles_paths):
-        if not os.path.isfile(file):
-            fild_to_download = tiles_urls[file_num]
-            req = urllib.request.Request(url=fild_to_download, headers={'User-Agent': 'pwMapedit'})
-            with urllib.request.urlopen(req) as f:
-                content = f.read()
-            with open(file, 'wb') as f:
-                f.write(content)
-
-
 class GetWebLayerPictureWorker(QObject):
-    finished = pyqtSignal()
-    progress = pyqtSignal(1)
+    finished = pyqtSignal(WebLayerTile)
+    progress = pyqtSignal()
     # https://realpython.com/python-pyqt-qthread/
+
+    def __init__(self, tile_def, tile_url):
+        self.tile_def = tile_def
+        self.tile_url = tile_url
+        super(self, QObject).__init__()
+
     def run(self):
-        return
+        req = urllib.request.Request(url=self.tile_url, headers={'User-Agent': 'pwMapedit'})
+        with urllib.request.urlopen(req) as f:
+            content = f.read()
+        with open(self.tile_def.file_path, 'wb') as f:
+            f.write(content)
+        self.emit.finished((self.tile_def,))
 
 
 class mapRender(QGraphicsView):
@@ -62,15 +63,6 @@ class mapRender(QGraphicsView):
     def get_pw_mapedit_mode(self):
         return self.parent.pw_mapedit_mode
 
-    def get_web_layers_picture_names(self):
-        if self.web_layer is None:
-            return
-        scene_geo_coords = self.get_corners_geo_coordinates()
-        self.web_layer.set_zoom_from_scale(self.ruler.get_map_scale())
-        picture_paths = self.web_layer.get_tiles_paths(scene_geo_coords[0][0], scene_geo_coords[0][1],
-                                                       scene_geo_coords[1][0], scene_geo_coords[1][1])
-        print(picture_paths)
-
     def set_ruler(self, ruler):
         self.ruler = ruler
 
@@ -87,7 +79,7 @@ class mapRender(QGraphicsView):
         super().resizeEvent(event)
         if self.ruler is not None:
             self.ruler.move_to()
-        self.get_web_layers_picture_names()
+        self.weblayers_get_picture_names()
 
     def set_map_scale(self, map_scale_factor):
         self.map_scale *= map_scale_factor
@@ -118,7 +110,7 @@ class mapRender(QGraphicsView):
     def set_web_layer(self, layer):
         self.web_layer = layer
         if self.web_layer is not None:
-            self.get_web_layers_picture_names()
+            self.weblayers_get_picture_names()
         else:
             self.scene().remove_web_layer_graphics()
 
@@ -129,7 +121,7 @@ class mapRender(QGraphicsView):
             super(mapRender, self).mouseMoveEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
-            self.get_web_layers_picture_names()
+            self.weblayers_get_picture_names()
         else:
             super(mapRender, self).mouseMoveEvent(event)
             self.set_status_bar(event=event)
@@ -157,6 +149,27 @@ class mapRender(QGraphicsView):
             self.mouseReleaseEvent(handmade_event)
         super().mouseReleaseEvent(event)
 
+    def weblayers_get_picture_names(self):
+        if self.web_layer is None:
+            return
+        scene_geo_coords = self.get_corners_geo_coordinates()
+        self.web_layer.set_zoom_from_scale(self.ruler.get_map_scale())
+        picture_paths = self.web_layer.get_tiles_paths(scene_geo_coords[0][0], scene_geo_coords[0][1],
+                                                       scene_geo_coords[1][0], scene_geo_coords[1][1])
+        print(picture_paths)
+
+    def weblayer_put_files_do_scene(self, tiles_defs):
+        for tile_def in tiles_defs:
+            if os.path.isfile(tile_def.file_path):
+                self.scene().set_web_layer_graphic(tile_def)
+            else:
+                file_to_download_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
+                req = urllib.request.Request(url=file_to_download_url, headers={'User-Agent': 'pwMapedit'})
+                with urllib.request.urlopen(req) as f:
+                    content = f.read()
+                with open(tile_def.file_path, 'wb') as f:
+                    f.write(content)
+
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:
             if event.angleDelta().y() < 0:
@@ -170,7 +183,7 @@ class mapRender(QGraphicsView):
             super(mapRender, self).wheelEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
-        self.get_web_layers_picture_names()
+        self.weblayers_get_picture_names()
 
     def zoom_in_command(self):
         self.setInteractive(False)
