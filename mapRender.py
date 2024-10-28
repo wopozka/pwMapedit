@@ -9,6 +9,7 @@ from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 import os.path
 import urllib.request
 from web_layers import WebLayerTile
+from pathlib import Path
 
 import misc_functions
 from singleton_store import Store
@@ -160,9 +161,12 @@ class mapRender(QGraphicsView):
 
     def weblayer_put_files_do_scene(self, tiles_defs):
         for tile_def in tiles_defs:
-            if os.path.isfile(tile_def.file_path):
+            if os.path.exist(tile_def.file_path):
                 self.scene().set_web_layer_graphic(tile_def)
             else:
+                directory = Path(os.path.dirname(tile_def.file_path))
+                if not directory.exists():
+                    directory.mkdir(parents=True, exist_ok=True)
                 file_to_download_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
                 req = urllib.request.Request(url=file_to_download_url, headers={'User-Agent': 'pwMapedit'})
                 with urllib.request.urlopen(req) as f:

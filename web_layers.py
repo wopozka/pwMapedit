@@ -40,7 +40,7 @@ class WebLayers(object):
             1000,       # 19
             500,        # 20
         )
-        self.cache_folder = 'wl_cache'
+        self.cache_folder = '/home/piotr/pwmapedit_web_cache/'
         self.current_web_layer = web_layer
         self.web_layer_cache_path = os.path.join(self.cache_folder, str(web_layer))
 
