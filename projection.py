@@ -18,7 +18,7 @@ class Projection(object):
     def geo_to_canvas(self, latitude, longitude):
         return 0, 0
 
-    def canvas_to_geo(self, latitude, longitude):
+    def canvas_to_geo(self, x, y):
         return 0, 0
 
     def set_map_bounding_box(self, bbox):
@@ -35,7 +35,7 @@ class Direct(Projection):
     def geo_to_canvas(self, latitude, longitude):
         return self.earth_radius * float(longitude), -self.earth_radius * float(latitude)
 
-    def canvas_to_geo(self, latitude, longitude):
+    def canvas_to_geo(self, x, y):
         pass
 
 class Mercator(Projection):
@@ -115,5 +115,5 @@ class UTM(Projection):
         return x, -y
         # return[self.longitude, -self.latitude]
 
-    def canvas_to_geo(self, latitude, longitude):
+    def canvas_to_geo(self, x, y):
         pass

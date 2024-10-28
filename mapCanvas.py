@@ -19,6 +19,7 @@ from singleton_store import Store
 from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
+    web_layer_z_value = 1
     """The main map canvas definitions residue here"""
     def __init__(self, parent, *args, projection=None, undo_redo_stack=None, **kwargs):
         self.parent = parent
@@ -40,6 +41,8 @@ class mapCanvas(QGraphicsScene):
         # selection changed slot conection
         self.selectionChanged.connect(self.selection_change_actions)
 
+        self.web_layer_graphics = None
+
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()
 
@@ -51,6 +54,12 @@ class mapCanvas(QGraphicsScene):
 
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
+
+    def get_viewer_corners_geo_coordinates(self):
+        viewer = self.views()[0]
+        left_top_corner = viewer.mapToScene(viewer.sceneRect().upperLeft())
+        right_bottom_corner = viewer.mapToScene(viewer.sceneRect().bottomRight())
+        print(left_top_corner, right_bottom_corner)
 
     def set_canvas_rectangle(self, map_bounding_box):
         start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
@@ -203,3 +212,15 @@ class mapCanvas(QGraphicsScene):
             self.selected_objects = selected_items
             for obj in self.selected_objects:
                 obj.decorate()
+
+    def remove_web_layer_graphics(self):
+        if self.web_layer_graphics is None:
+            return
+        for graphic in self.web_layer_graphics:
+            self.removeItem(graphic)
+        self.web_layer_graphics = None
+
+    def set_web_layer_graphic(self):
+        if self.web_layer_graphics is not None:
+            self.remove_web_layer_graphics()
+        # dopisac dodawanie grafik

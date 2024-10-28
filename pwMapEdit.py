@@ -13,6 +13,7 @@ import map_items
 import map_object_properties
 import projection
 import map_obj_properties_dockwidget
+import web_layers
 from web_layers import MapLayersEnum
 
 class MapUndoStack(QUndoStack):
@@ -169,13 +170,17 @@ class pwMapeditPy(QMainWindow):
         self.weblayers_actions_group.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
         osm_action = QAction('OSM', self)
         osm_action.setCheckable(True)
-        osm_action.setData(MapLayersEnum.osm_layer)
+        osm_action.setData(MapLayersEnum.osm)
+        osm_action.triggered.connect(self.menu_weblayer_set_weblayer)
         geoportal_action = QAction('Geoportal', self)
         geoportal_action.setCheckable(True)
-        geoportal_action.setData(MapLayersEnum.geoportal_layer)
+        geoportal_action.setData(MapLayersEnum.geoportal_orto)
+        geoportal_action.triggered.connect(self.menu_weblayer_set_weblayer)
+
         google_action = QAction('Google', self)
         google_action.setCheckable(True)
-        google_action.setData(MapLayersEnum.google_layer)
+        google_action.setData(MapLayersEnum.google_orto)
+        google_action.triggered.connect(self.menu_weblayer_set_weblayer)
         weblayers.addAction(osm_action)
         weblayers.addAction(geoportal_action)
         weblayers.addAction(google_action)
@@ -369,6 +374,15 @@ class pwMapeditPy(QMainWindow):
         self.map_canvas.clearSelection()
         self.pw_mapedit_mode = self.tools_actions_group.checkedAction().data()
         print(self.pw_mapedit_mode)
+
+    def menu_weblayer_set_weblayer(self):
+        if self.weblayers_actions_group.checkedAction() is None:
+            print(None)
+            self.view.set_web_layer(None)
+        else:
+            print(self.weblayers_actions_group.checkedAction().data())
+            self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data()))
+
 
 if __name__ == "__main__":
 

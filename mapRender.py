@@ -6,6 +6,7 @@ from PyQt5.QtCore import QPointF, Qt, QEvent
 from PyQt5.QtGui import QMouseEvent
 import math
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
+from map_items import Node
 
 import misc_functions
 from singleton_store import Store
@@ -27,12 +28,29 @@ class mapRender(QGraphicsView):
             self.projection = projection
 
         self._right_mouse_button_event_position = None
+        self.web_layer = None
+
+    def get_corners_geo_coordinates(self):
+        left_top_corner = self.mapToScene(0, 0)
+        right_bottom_corner = self.mapToScene(self.viewport().size().width(), self.viewport().size().height())
+        left_top_geo = self.projection.canvas_to_geo(left_top_corner.x(), left_top_corner.y())
+        right_bottom_geo =  self.projection.canvas_to_geo(right_bottom_corner.x(), right_bottom_corner.y())
+        return left_top_geo, right_bottom_geo
 
     def get_item_ignores_transformations(self):
         return self.item_ignores_transformations
 
     def get_pw_mapedit_mode(self):
         return self.parent.pw_mapedit_mode
+
+    def get_web_layers_picture_names(self):
+        if self.web_layer is None:
+            return
+        scene_geo_coords = self.get_corners_geo_coordinates()
+        self.web_layer.set_zoom_from_scale(self.ruler.get_map_scale())
+        picture_paths = self.web_layer.get_tiles_paths(scene_geo_coords[0][0], scene_geo_coords[0][1],
+                                                       scene_geo_coords[1][0], scene_geo_coords[1][1])
+        print(picture_paths)
 
     def set_ruler(self, ruler):
         self.ruler = ruler
@@ -45,6 +63,12 @@ class mapRender(QGraphicsView):
 
     def curent_view_mouse_coords(self):
         return self._curent_view_mouse_coords
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.ruler is not None:
+            self.ruler.move_to()
+        self.get_web_layers_picture_names()
 
     def set_map_scale(self, map_scale_factor):
         self.map_scale *= map_scale_factor
@@ -72,10 +96,21 @@ class mapRender(QGraphicsView):
             new_msg = cur_msg.split('view_render')[0]
             self.main_window_status_bar.showMessage(new_msg + msg_view_render + msg_map_scale)
 
+    def set_web_layer(self, layer):
+        self.web_layer = layer
+        if self.web_layer is not None:
+            self.get_web_layers_picture_names()
+        else:
+            self.scene().remove_web_layer_graphics()
+
+
     # new events definitions:
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.RightButton:
             super(mapRender, self).mouseMoveEvent(event)
+            if self.ruler is not None:
+                self.ruler.move_to()
+            self.get_web_layers_picture_names()
         else:
             super(mapRender, self).mouseMoveEvent(event)
             self.set_status_bar(event=event)
@@ -116,6 +151,7 @@ class mapRender(QGraphicsView):
             super(mapRender, self).wheelEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
+        self.get_web_layers_picture_names()
 
     def zoom_in_command(self):
         self.setInteractive(False)
