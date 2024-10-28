@@ -9,6 +9,7 @@ class MapLayersEnum(object):
 
 
 class WebLayers(object):
+    # https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     def __init__(self, web_layer):
         self.zoom = 0
         self.zoom_level_vs_scale = (
@@ -60,7 +61,7 @@ class WebLayers(object):
         left_bottom_xtile, left_bottom_ytile = self.deg2num(bottom_righ_lat, bottom_right_lon)
         for xtile in range(left_top_xtile, left_bottom_xtile + 1):
             for ytile in range(left_top_ytile, left_bottom_ytile + 1):
-                tiles_path.append(self.get_tile_path(xtile, ytile))
+                tiles_path.append((self.get_tile_path(xtile, ytile), self.num2deg(xtile, ytile),))
         return tiles_path
 
     def get_zoom_from_scale(self, scale):
