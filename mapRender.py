@@ -163,7 +163,7 @@ class mapRender(QGraphicsView):
         super().mouseReleaseEvent(event)
 
     def weblayers_get_data_from_thread(self, tile_def):
-        self.scene().set_web_layer_graphic(tile_def)
+        self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
 
     def weblayers_get_picture_names(self):
         scene_geo_coords = self.get_corners_geo_coordinates()
@@ -183,7 +183,7 @@ class mapRender(QGraphicsView):
         pool = QThreadPool.globalInstance()
         for tile_def in tiles_defs:
             if os.path.exists(tile_def.file_path):
-                self.scene().set_web_layer_graphic(tile_def)
+                self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
             else:
                 directory = Path(os.path.dirname(tile_def.file_path))
                 if not directory.exists():

@@ -42,6 +42,7 @@ class mapCanvas(QGraphicsScene):
         self.selectionChanged.connect(self.selection_change_actions)
 
         self.web_layer_graphics = None
+        self.web_layer_graphic_zoom = -1
 
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()
@@ -220,8 +221,13 @@ class mapCanvas(QGraphicsScene):
             self.removeItem(graphic)
         self.web_layer_graphics = None
 
-    def set_web_layer_graphic(self, tile_def):
-        return
-        if self.web_layer_graphics is not None:
+    def set_web_layer_graphic(self, tile_def, zoom):
+        if zoom != self.web_layer_graphic_zoom:
             self.remove_web_layer_graphics()
-        # dopisac dodawanie grafik
+            self.web_layer_graphic_zoom = zoom
+        if self.web_layer_graphics is None:
+            self.web_layer_graphics = list()
+        self.web_layer_graphics.append(QGraphicsPixmapItem(QPixmap(tile_def.file_path)))
+        self.web_layer_graphics[-1].setPos(*self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon))
+        self.addItem(self.web_layer_graphics[-1])
+
