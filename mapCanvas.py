@@ -228,6 +228,9 @@ class mapCanvas(QGraphicsScene):
         if self.web_layer_graphics is None:
             self.web_layer_graphics = list()
         self.web_layer_graphics.append(QGraphicsPixmapItem(QPixmap(tile_def.file_path)))
-        self.web_layer_graphics[-1].setPos(*self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon))
+        x, y = self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
+        x2, y2 = self.projection.geo_to_canvas(tile_def.right_bott_lat, tile_def.right_bott_lon)
+        self.web_layer_graphics[-1].setPos(x, y)
+        self.web_layer_graphics[-1].setScale((x2 - x)/self.web_layer_graphics[-1].boundingRect().width())
         self.addItem(self.web_layer_graphics[-1])
 

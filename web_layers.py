@@ -3,7 +3,7 @@ import os.path
 from collections import namedtuple
 
 WebLayerTile = namedtuple('WebLayerTile', ['xtile', 'ytile',
-                                           'left_top_lat', 'left_top_lon', 'left_bott_lat', 'left_bott_lon',
+                                           'left_top_lat', 'left_top_lon', 'right_bott_lat', 'right_bott_lon',
                                            'file_path'])
 
 
@@ -81,27 +81,27 @@ class WebLayers(object):
         elif self.current_web_layer == MapLayersEnum.geoportal_orto:
             return ''
 
-    def get_tiles_paths(self, left_top_lat, left_top_lon, bottom_righ_lat, bottom_right_lon):
+    def get_tiles_paths(self, left_top_lat, left_top_lon, right_bottom_lat, right_bottom_lon):
         tiles_path = list()
         left_top_xtile, left_top_ytile = self.deg2num(left_top_lat, left_top_lon)
-        left_bottom_xtile, left_bottom_ytile = self.deg2num(bottom_righ_lat, bottom_right_lon)
-        for xtile in range(left_top_xtile, left_bottom_xtile + 1):
-            for ytile in range(left_top_ytile, left_bottom_ytile + 1):
+        right_bottom_xtile, right_bottom_ytile = self.deg2num(right_bottom_lat, right_bottom_lon)
+        for xtile in range(left_top_xtile, right_bottom_xtile + 1):
+            for ytile in range(left_top_ytile, right_bottom_ytile + 1):
                 img_left_top_lat, img_left_top_lon = self.num2deg(xtile, ytile)
-                img_left_bott_lat, img_left_bott_lon = self.num2deg(xtile + 1, ytile + 1)
+                right_left_bott_lat, right_left_bott_lon = self.num2deg(xtile + 1, ytile + 1)
                 tiles_path.append(WebLayerTile(xtile, ytile,
                                                img_left_top_lat, img_left_top_lon,
-                                               img_left_bott_lat, img_left_bott_lon,
+                                               right_left_bott_lat, right_left_bott_lon,
                                                self.get_tile_path(xtile, ytile)))
                 # tiles_path.append((self.get_tile_path(xtile, ytile), self.num2deg(xtile, ytile),))
         return tiles_path
 
-    def get_tiles_urls(self, left_top_lat, left_top_lon, bottom_righ_lat, bottom_right_lon):
+    def get_tiles_urls(self, left_top_lat, left_top_lon, right_bottom_lat, right_bottom_lon):
         tiles_urls = list()
         left_top_xtile, left_top_ytile = self.deg2num(left_top_lat, left_top_lon)
-        left_bottom_xtile, left_bottom_ytile = self.deg2num(bottom_righ_lat, bottom_right_lon)
-        for xtile in range(left_top_xtile, left_bottom_xtile + 1):
-            for ytile in range(left_top_ytile, left_bottom_ytile + 1):
+        right_bottom_xtile, right_bottom_ytile = self.deg2num(right_bottom_lat, right_bottom_lon)
+        for xtile in range(left_top_xtile, right_bottom_xtile + 1):
+            for ytile in range(left_top_ytile, right_bottom_ytile + 1):
                 tiles_urls.append((self.get_tile_url(xtile, ytile), self.num2deg(xtile, ytile),))
         return tiles_urls
 
