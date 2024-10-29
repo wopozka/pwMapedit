@@ -217,8 +217,9 @@ class mapCanvas(QGraphicsScene):
     def remove_web_layer_graphics(self):
         if self.web_layer_graphics is None:
             return
-        for graphic in self.web_layer_graphics:
-            self.removeItem(graphic)
+        for graphic_item in self.web_layer_graphics:
+            self.removeItem(self.web_layer_graphics[graphic_item])
+        self.web_layer_graphics.clear()
         self.web_layer_graphics = None
 
     def set_web_layer_graphic(self, tile_def, zoom):
@@ -226,17 +227,21 @@ class mapCanvas(QGraphicsScene):
             self.remove_web_layer_graphics()
             self.web_layer_graphic_zoom = zoom
         if self.web_layer_graphics is None:
-            self.web_layer_graphics = list()
+            self.web_layer_graphics = dict()
+        if tile_def.file_path in self.web_layer_graphics:
+            # nie dodawaj ponownie dodanego juz obrazka
+            return
         pixmap = QPixmap(tile_def.file_path)
         if pixmap.isNull():
             print('pixmap jest Null')
             return
-        self.web_layer_graphics.append(QGraphicsPixmapItem(pixmap))
+        web_layer_pic = QGraphicsPixmapItem(pixmap)
         x, y = self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
         x2, y2 = self.projection.geo_to_canvas(tile_def.right_bott_lat, tile_def.right_bott_lon)
-        self.web_layer_graphics[-1].setPos(x, y)
+        web_layer_pic.setPos(x, y)
         # tu raz dostałem division by zero, wiec czasami obrazek nie zaladuje sie, nie wiadomo czemu. Trzeba
         # sprawdzac czy nie null
-        self.web_layer_graphics[-1].setScale((x2 - x)/self.web_layer_graphics[-1].boundingRect().width())
-        self.addItem(self.web_layer_graphics[-1])
+        web_layer_pic.setScale((x2 - x)/web_layer_pic.boundingRect().width())
+        self.addItem(web_layer_pic)
+        self.web_layer_graphics[tile_def.file_path] = web_layer_pic
 

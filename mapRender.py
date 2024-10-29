@@ -17,27 +17,34 @@ from singleton_store import Store
 
 class GetWebLayerPictureSignals(QObject):
     # https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
-    finished = pyqtSignal()
-    download_finished = pyqtSignal(WebLayerTile)
+    download_failed = pyqtSignal(str)
+    download_finished = pyqtSignal(tuple)
 
 class GetWebLayerPictureWorker(QRunnable):
     # https://realpython.com/python-pyqt-qthread/
 
-    def __init__(self, tile_def, tile_url):
+    def __init__(self, tile_def, tile_url, web_layer, current_zoom):
         self.tile_def = tile_def
         self.tile_url = tile_url
+        self.web_layer = web_layer
+        self.current_zoom = current_zoom
         self.signals = GetWebLayerPictureSignals()
         super(GetWebLayerPictureWorker, self).__init__()
 
     def run(self):
         req = urllib.request.Request(url=self.tile_url, headers={'User-Agent': 'pwMapedit'})
-        with urllib.request.urlopen(req) as f:
-            content = f.read()
-            print('obrazek przeczytany')
-        with open(self.tile_def.file_path, 'wb') as f:
-            f.write(content)
-            print('obrazek zapisany')
-        self.signals.download_finished.emit(self.tile_def)
+        try:
+            with urllib.request.urlopen(req) as f:
+                content = f.read()
+                print('obrazek przeczytany')
+        except urllib.error.HTTPError:
+            print('Nie moglem sciagnac obrazka: ', self.tile_url)
+            self.signals.download_failed(self.tile_url)
+        else:
+            with open(self.tile_def.file_path, 'wb') as f:
+                f.write(content)
+                print('obrazek zapisany')
+            self.signals.download_finished.emit((self.tile_url, self.web_layer, self.current_zoom, self.tile_def,))
         # self.emit.finished(self.tile_def)
 
 
@@ -58,6 +65,7 @@ class mapRender(QGraphicsView):
 
         self._right_mouse_button_event_position = None
         self.web_layer = None
+        self.currently_downloading_web_layer_files = set()
 
     def get_corners_geo_coordinates(self):
         left_top_corner = self.mapToScene(0, 0)
@@ -162,8 +170,20 @@ class mapRender(QGraphicsView):
             self.mouseReleaseEvent(handmade_event)
         super().mouseReleaseEvent(event)
 
+
+    def weblayers_download_error(self, tile_url):
+        # if for any reason file will not be downloaded from web, remove the file from currently downloaded files
+        self.currently_downloading_web_layer_files.remove(tile_url)
+
     def weblayers_get_data_from_thread(self, tile_def):
-        self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
+        # zakonczylem pobieranie, usun informacje ze plik jest teraz w trakcie sciagania
+        self.currently_downloading_web_layer_files.remove(tile_def[0])
+
+        # jesli w trakcie sciagania obrazkow w watku wylaczymy warstwę www, wtedy sefl.web_layer będzie None
+        # dodatkowo potwierdz ze obrazek jest dla danego, aktualnie wlaczonego weblayer, inaczej zignoruj
+        if (self.web_layer is not None and tile_def[1] == self.web_layer.get_current_web_layer()
+                and tile_def[2] == self.web_layer.get_zoom()):
+            self.scene().set_web_layer_graphic(tile_def[3], self.web_layer.get_zoom())
 
     def weblayers_get_picture_names(self):
         scene_geo_coords = self.get_corners_geo_coordinates()
@@ -185,20 +205,19 @@ class mapRender(QGraphicsView):
             if os.path.exists(tile_def.file_path):
                 self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
             else:
-                directory = Path(os.path.dirname(tile_def.file_path))
-                if not directory.exists():
-                    directory.mkdir(parents=True, exist_ok=True)
                 tile_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
-                # web_layer_thread = QThread()
-                worker = GetWebLayerPictureWorker(tile_def, tile_url)
+                if tile_url not in self.currently_downloading_web_layer_files:
+                    self.currently_downloading_web_layer_files.add(tile_url)
+                    directory = Path(os.path.dirname(tile_def.file_path))
+                    if not directory.exists():
+                        directory.mkdir(parents=True, exist_ok=True)
 
-                # worker.moveToThread(web_layer_thread)
-                # web_layer_thread.started.connect(worker.run)
-                # worker.finished.connect(web_layer_thread.quit)
-                # worker.finished.connect(web_layer_thread.deleteLater)
-                worker.signals.download_finished.connect(self.weblayers_get_data_from_thread)
-                # web_layer_thread.start()
-                pool.start(worker)
+                    # web_layer_thread = QThread()
+                    worker = GetWebLayerPictureWorker(tile_def, tile_url, self.web_layer.get_current_web_layer(),
+                                                      self.web_layer.get_zoom())
+                    worker.signals.download_finished.connect(self.weblayers_get_data_from_thread)
+                    worker.signals.download_failed.connect(self.weblayers_download_error)
+                    pool.start(worker)
 
     def wheelEvent(self, event):
         if event.modifiers() == Qt.ControlModifier:

@@ -17,6 +17,7 @@ class WebLayers(object):
     # https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     map_layers_extensions = {MapLayersEnum.osm: '.png', MapLayersEnum.geoportal_orto: '.jpg',
                              MapLayersEnum.google_orto: '.jpg'}
+    layer_max_zoom = {MapLayersEnum.osm: 19, MapLayersEnum.geoportal_orto: 20, MapLayersEnum.google_orto: 20}
     zoom_level_vs_scale = (
         500000000,  # 0
         250000000,  # 1
@@ -105,16 +106,15 @@ class WebLayers(object):
                 tiles_urls.append((self.get_tile_url(xtile, ytile), self.num2deg(xtile, ytile),))
         return tiles_urls
 
-    @staticmethod
-    def create_zoom_from_scale(scale):
+    def create_zoom_from_scale(self, scale):
         if scale >= WebLayers.zoom_level_vs_scale[0]:
             return 0
-        for zoom_val in range(len(WebLayers.zoom_level_vs_scale) - 1):
+        for zoom_val in range(WebLayers.layer_max_zoom[self.current_web_layer] - 1):
             cur_zoom = zoom_val
             next_zoom = zoom_val + 1
             if WebLayers.zoom_level_vs_scale[next_zoom] <= scale < WebLayers.zoom_level_vs_scale[cur_zoom]:
                 return next_zoom
-        return len(WebLayers.zoom_level_vs_scale) - 1
+        return WebLayers.layer_max_zoom[self.current_web_layer]
 
     def num2deg(self, xtile, ytile):
         n = 1 << self.zoom
@@ -136,3 +136,6 @@ class WebLayers(object):
 
     def get_zoom(self):
         return self.zoom
+
+    def get_current_web_layer(self):
+        return self.current_web_layer
