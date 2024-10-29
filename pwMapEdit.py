@@ -302,7 +302,6 @@ class pwMapeditPy(QMainWindow):
         self.weblayers_cache_folder.cleanup()
         super().closeEvent(event)
 
-
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
         scale_down.activated.connect(self.menu_zoom_out_command)

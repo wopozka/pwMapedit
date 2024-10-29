@@ -2,7 +2,9 @@ import math
 import os.path
 from collections import namedtuple
 
-WebLayerTile = namedtuple('WebLayerTile', ['xtile', 'ytile', 'left_top_lat', 'left_top_lon', 'file_path'])
+WebLayerTile = namedtuple('WebLayerTile', ['xtile', 'ytile',
+                                           'left_top_lat', 'left_top_lon', 'left_bott_lat', 'left_bott_lon',
+                                           'file_path'])
 
 
 class MapLayersEnum(object):
@@ -86,8 +88,10 @@ class WebLayers(object):
         for xtile in range(left_top_xtile, left_bottom_xtile + 1):
             for ytile in range(left_top_ytile, left_bottom_ytile + 1):
                 img_left_top_lat, img_left_top_lon = self.num2deg(xtile, ytile)
+                img_left_bott_lat, img_left_bott_lon = self.num2deg(xtile + 1, ytile + 1)
                 tiles_path.append(WebLayerTile(xtile, ytile,
                                                img_left_top_lat, img_left_top_lon,
+                                               img_left_bott_lat, img_left_bott_lon,
                                                self.get_tile_path(xtile, ytile)))
                 # tiles_path.append((self.get_tile_path(xtile, ytile), self.num2deg(xtile, ytile),))
         return tiles_path
