@@ -14,7 +14,8 @@ import map_object_properties
 import projection
 import map_obj_properties_dockwidget
 import web_layers
-from web_layers import MapLayersEnum
+import tempfile
+import os.path
 
 class MapUndoStack(QUndoStack):
     def __init__(self, parent):
@@ -52,6 +53,8 @@ class pwMapeditPy(QMainWindow):
         self.status_bar = QStatusBar(self)
         self.undo_redo_stack = MapUndoStack(self)
         self.projection = projection.Mercator({})
+        self.weblayers_cache_folder = tempfile.TemporaryDirectory()
+        print(self.weblayers_cache_folder)
         self.tools_actions_group = None
         self.map_level_action_group = None
         self.pw_mapedit_mode = ''
@@ -170,16 +173,16 @@ class pwMapeditPy(QMainWindow):
         self.weblayers_actions_group.setExclusionPolicy(QActionGroup.ExclusionPolicy.ExclusiveOptional)
         osm_action = QAction('OSM', self)
         osm_action.setCheckable(True)
-        osm_action.setData(MapLayersEnum.osm)
+        osm_action.setData(web_layers.MapLayersEnum.osm)
         osm_action.triggered.connect(self.menu_weblayer_set_weblayer)
         geoportal_action = QAction('Geoportal', self)
         geoportal_action.setCheckable(True)
-        geoportal_action.setData(MapLayersEnum.geoportal_orto)
+        geoportal_action.setData(web_layers.MapLayersEnum.geoportal_orto)
         geoportal_action.triggered.connect(self.menu_weblayer_set_weblayer)
 
         google_action = QAction('Google', self)
         google_action.setCheckable(True)
-        google_action.setData(MapLayersEnum.google_orto)
+        google_action.setData(web_layers.MapLayersEnum.google_orto)
         google_action.triggered.connect(self.menu_weblayer_set_weblayer)
         weblayers.addAction(osm_action)
         weblayers.addAction(geoportal_action)
@@ -202,6 +205,9 @@ class pwMapeditPy(QMainWindow):
         file_actions.append(None)
         file_actions.append(QAction('&Import', self))
         file_actions.append(QAction('&Export', self))
+        file_actions.append(None)
+        file_actions.append(QAction('&Zamknij', self))
+        file_actions[-1].triggered.connect(self.close_app)
         return tuple(file_actions)
 
     def _create_edit_actions(self):
@@ -287,6 +293,15 @@ class pwMapeditPy(QMainWindow):
             act.setCheckable(True)
             act.triggered.connect(self.menu_tools_set_mode)
         return tuple(obj_actions)
+
+    def close_app(self):
+        self.weblayers_cache_folder.cleanup()
+        self.close()
+
+    def closeEvent(self, event):
+        self.weblayers_cache_folder.cleanup()
+        super().closeEvent(event)
+
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
@@ -381,7 +396,8 @@ class pwMapeditPy(QMainWindow):
             self.view.set_web_layer(None)
         else:
             print(self.weblayers_actions_group.checkedAction().data())
-            self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data()))
+            self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
+                                                         cache_folder=self.weblayers_cache_folder.name))
 
 
 if __name__ == "__main__":

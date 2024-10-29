@@ -38,9 +38,9 @@ class WebLayers(object):
         1000,  # 19
         500,  # 20
     )
-    def __init__(self, web_layer):
+    def __init__(self, web_layer, cache_folder=None):
         self.zoom = 0
-        self.cache_folder = '/home/piotr/pwmapedit_web_cache/'
+        self.cache_folder = cache_folder
         self.current_web_layer = web_layer
         self.web_layer_cache_path = os.path.join(self.cache_folder, str(web_layer))
 
