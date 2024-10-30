@@ -71,7 +71,7 @@ class WebLayers(object):
             salt2 = '&s=' if 10000 <= ytile < 100000 else ''
 
             # string.sub('Galileo', 1, (3 * _x + _y) % 8)
-            main_salt = 'Galileo'[1: (3 * xtile + ytile) % 8]
+            main_salt = 'Galileo'[0: (3 * xtile + ytile) % 8]
             server_num = ((xtile + 2) * ytile) % 2
             version = 989
             return ('http://maps.google.com/maps' + str(server_num) + str(version) + str(xtile) + salt2 + str(ytile) +

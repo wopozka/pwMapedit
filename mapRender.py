@@ -17,8 +17,8 @@ from singleton_store import Store
 
 class GetWebLayerPictureSignals(QObject):
     # https://www.pythonguis.com/tutorials/multithreading-pyqt-applications-qthreadpool/
-    download_failed = pyqtSignal(str)
-    download_finished = pyqtSignal(tuple)
+    download_failed = pyqtSignal(str, name='DownloadFailed')
+    download_finished = pyqtSignal(tuple, name='DownloadFinished')
 
 class GetWebLayerPictureWorker(QRunnable):
     # https://realpython.com/python-pyqt-qthread/
@@ -28,7 +28,7 @@ class GetWebLayerPictureWorker(QRunnable):
         self.tile_url = tile_url
         self.web_layer = web_layer
         self.current_zoom = current_zoom
-        self.signals = GetWebLayerPictureSignals()
+        self.www_signals = GetWebLayerPictureSignals()
         super(GetWebLayerPictureWorker, self).__init__()
 
     def run(self):
@@ -36,15 +36,15 @@ class GetWebLayerPictureWorker(QRunnable):
         try:
             with urllib.request.urlopen(req) as f:
                 content = f.read()
-                print('obrazek przeczytany')
-        except urllib.error.HTTPError:
-            print('Nie moglem sciagnac obrazka: ', self.tile_url)
-            self.signals.download_failed(self.tile_url)
+                # print('obrazek przeczytany')
+        except urllib.error.HTTPError as http_error:
+            print('Nie moglem sciagnac obrazka http_error: ', http_error.url)
+            self.www_signals.download_failed.emit(self.tile_url)
         else:
             with open(self.tile_def.file_path, 'wb') as f:
                 f.write(content)
                 print('obrazek zapisany')
-            self.signals.download_finished.emit((self.tile_url, self.web_layer, self.current_zoom, self.tile_def,))
+            self.www_signals.download_finished.emit((self.tile_url, self.web_layer, self.current_zoom, self.tile_def,))
         # self.emit.finished(self.tile_def)
 
 
@@ -215,8 +215,8 @@ class mapRender(QGraphicsView):
                     # web_layer_thread = QThread()
                     worker = GetWebLayerPictureWorker(tile_def, tile_url, self.web_layer.get_current_web_layer(),
                                                       self.web_layer.get_zoom())
-                    worker.signals.download_finished.connect(self.weblayers_get_data_from_thread)
-                    worker.signals.download_failed.connect(self.weblayers_download_error)
+                    worker.www_signals.download_finished.connect(self.weblayers_get_data_from_thread)
+                    worker.www_signals.download_failed.connect(self.weblayers_download_error)
                     pool.start(worker)
 
     def wheelEvent(self, event):
