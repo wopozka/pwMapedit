@@ -69,13 +69,14 @@ class WebLayers(object):
                     self.map_layers_extensions[self.current_web_layer])
         elif self.current_web_layer == MapLayersEnum.google_orto:
             salt2 = '&s=' if 10000 <= ytile < 100000 else ''
-
             # string.sub('Galileo', 1, (3 * _x + _y) % 8)
             main_salt = 'Galileo'[0: (3 * xtile + ytile) % 8]
             server_num = ((xtile + 2) * ytile) % 2
             version = 989
-            return ('http://maps.google.com/maps' + str(server_num) + str(version) + str(xtile) + salt2 + str(ytile) +
-                    str(self.zoom) + main_salt)
+            level = self.zoom
+            # http://khm%d.google.pl/kh/v=%d&x=%d%s&y=%d&z=%s&s=%s
+            google_url = f'http://khm{server_num}.google.pl/kh/v={version}&x={xtile}{salt2}&y={ytile}&z={level}&s={main_salt}'
+            return google_url
         elif self.current_web_layer == MapLayersEnum.geoportal_orto:
             return ''
 
