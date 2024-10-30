@@ -79,7 +79,9 @@ class WebLayers(object):
             return f'http://khm{server_num}.google.pl/kh/v={version}&x={xtile}{salt2}&y={ytile}&z={level}&s={salt1}'
 
         elif self.current_web_layer == MapLayersEnum.geoportal_orto:
-            return ''
+            left_top_lat, left_top_lon = self.num2deg(xtile, ytile)
+            right_bottom_lat, right_bottom_lon = self.num2deg(xtile + 1, ytile + 1)
+            return f'http://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution?REQUEST=GetMap&TRANSPARENT=TRUE&FORMAT=image/jpeg&VERSION=1.3.0&LAYERS=Raster&STYLES=&EXCEPTIONS=xml&WIDTH=256&HEIGHT=256&BBOX={right_bottom_lat:.5f},{left_top_lon:.5f},{left_top_lat:.5f},{right_bottom_lon:.5}f&CRS=EPSG:4326&SERVICE=WMS'
 
     def get_tiles_paths(self, left_top_lat, left_top_lon, right_bottom_lat, right_bottom_lon):
         tiles_path = list()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from urllib.error import URLError
 
 from PyQt5.QtWidgets import QGraphicsView
 from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
@@ -39,6 +40,10 @@ class GetWebLayerPictureWorker(QRunnable):
                 # print('obrazek przeczytany')
         except urllib.error.HTTPError as http_error:
             print('Nie moglem sciagnac obrazka http_error: ', http_error.url)
+            self.www_signals.download_failed.emit(self.tile_url)
+        except urllib.error.URLError as url_error:
+            print('Nie moglem sciagnac obrazka: ', self.tile_url)
+            print(url_error.reason)
             self.www_signals.download_failed.emit(self.tile_url)
         else:
             with open(self.tile_def.file_path, 'wb') as f:
