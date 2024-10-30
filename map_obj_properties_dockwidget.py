@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
-                             QPushButton)
+                             QPushButton, QGroupBox)
 from PyQt5.QtWidgets import QFormLayout, QTabWidget
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import Qt
@@ -90,7 +90,6 @@ class MapObjPropDock(QDockWidget):
         address_phone_layout.addRow('House number', self.housenumber)
         self.phone = QLineEdit(address_widget)
         address_phone_layout.addRow('Phone number', self.phone)
-        dock_box.addLayout(address_phone_layout)
 
         # karta elements,
         elements_widgets = QWidget()
@@ -290,3 +289,14 @@ class ExtrasTable(QTableWidget):
         self.insertRow(self.currentRow())
 
 
+class NodeNumbers(QDockWidget):
+    def __init__(self, parent, *args, **kwargs):
+        self.parent = parent
+        self.node_id = None
+        super(NodeNumbers, self).__init__(parent, *args, **kwargs)
+        dock_widget = QWidget()
+        dock_box_layout = QHBoxLayout(dock_widget)
+        left_side_gb = QGroupBox('Lewa strona numeracji')
+        dock_box_layout.addWidget(left_side_gb)
+        right_side_gb = QGroupBox('Prawa strona numeracji')
+        dock_box_layout.addWidget(right_side_gb)
