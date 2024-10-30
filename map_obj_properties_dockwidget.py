@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetI
 from PyQt5.QtCore import Qt
 from enum import Enum
 
+import map_items
+
+
 class RouteParams(Enum):
     speed_limit = 0
     route_class = 1
@@ -27,12 +30,13 @@ class MapObjPropDock(QDockWidget):
         self.parent = parent
         self.map_object_id = None
         super(MapObjPropDock, self).__init__(parent, *args, **kwargs)
-        tab_widget = QTabWidget()
+        self.tab_widget = QTabWidget()
+        self.tab_names_vs_index = dict()
         # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
-        tab_widget.addTab(dock_widget, 'Glowny')
+        self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Glowny')
         dock_box = QVBoxLayout()
-        self.setWidget(tab_widget)
+        self.setWidget(self.tab_widget)
         dock_widget.setLayout(dock_box)
         type_box = QHBoxLayout()
         type_label = QLabel('Type', dock_widget)
@@ -81,7 +85,7 @@ class MapObjPropDock(QDockWidget):
 
         # karta adres, dla poi
         address_widget =QWidget()
-        tab_widget.addTab(address_widget, 'Adres')
+        self.tab_names_vs_index['adres'] = self.tab_widget.addTab(address_widget, 'Adres')
         address_phone_layout = QFormLayout()
         address_widget.setLayout(address_phone_layout)
         self.streetdesc = QLineEdit(address_widget)
@@ -93,7 +97,7 @@ class MapObjPropDock(QDockWidget):
 
         # karta elements,
         elements_widgets = QWidget()
-        tab_widget.addTab(elements_widgets, 'Elements')
+        self.tab_names_vs_index['elements'] = self.tab_widget.addTab(elements_widgets, 'Elements')
         self.elements_table = QTableWidget()
         elements_layout_box = QVBoxLayout()
         elements_widgets.setLayout(elements_layout_box)
@@ -104,7 +108,7 @@ class MapObjPropDock(QDockWidget):
 
         # karta routing
         routing_widget = QWidget()
-        tab_widget.addTab(routing_widget, 'Routing')
+        self.tab_names_vs_index['routing'] = self.tab_widget.addTab(routing_widget, 'Routing')
         routing_widget_layout = QFormLayout()
         routing_widget.setLayout(routing_widget_layout)
         self.route_params = [None for a in range(12)]
@@ -266,6 +270,24 @@ class MapObjPropDock(QDockWidget):
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
+
+    def activate_map_object_fields(self, map_object):
+        if isinstance(map_object, map_items.PoiAsPixmap):
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'])
+        elif isinstance(map_object, map_items.PolylineQGraphicsPathItem):
+            pass
+        else:
+            pass
+
+    def deactivate_map_object_fields(self, map_object):
+        if isinstance(map_object, map_items.PoiAsPixmap):
+            pass
+        elif isinstance(map_object, map_items.PolylineQGraphicsPathItem):
+            pass
+        else:
+            pass
+
+
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
