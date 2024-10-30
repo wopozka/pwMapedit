@@ -390,11 +390,9 @@ class pwMapeditPy(QMainWindow):
         print(self.pw_mapedit_mode)
 
     def menu_weblayer_set_weblayer(self):
-        if self.weblayers_actions_group.checkedAction() is None:
-            print(None)
+        self.view.set_web_layer(None)
+        if self.weblayers_actions_group.checkedAction() is not None:
             self.view.set_web_layer(None)
-        else:
-            print(self.weblayers_actions_group.checkedAction().data())
             self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
                                                          cache_folder=self.weblayers_cache_folder.name))
 

@@ -45,6 +45,9 @@ class GetWebLayerPictureWorker(QRunnable):
             print('Nie moglem sciagnac obrazka: ', self.tile_url)
             print(url_error.reason)
             self.www_signals.download_failed.emit(self.tile_url)
+        except ConnectionResetError as connection_error:
+            print('Nie moglem sciagnac obrazka: ', self.tile_url)
+            self.www_signals.download_failed.emit(self.tile_url)
         else:
             with open(self.tile_def.file_path, 'wb') as f:
                 f.write(content)
