@@ -58,11 +58,6 @@ class WebLayers(object):
         self.zoom = self.create_zoom_from_scale(scale)
         return self.deg2num(lat_deg, lon_deg)
 
-    @staticmethod
-    def generate_salt(xtile, ytile):
-        # return string.sub('Galileo',1,(3 * _x + _y) % 8)
-        return 'Galileo,1 %s' % (3 * xtile + ytile) % 8
-
     def get_tile_path(self, xtile, ytile):
         tp = os.path.join(str(self.zoom), str(xtile))
         tp = os.path.join(tp, str(ytile) + self.map_layers_extensions[self.current_web_layer])
@@ -74,10 +69,12 @@ class WebLayers(object):
                     self.map_layers_extensions[self.current_web_layer])
         elif self.current_web_layer == MapLayersEnum.google_orto:
             salt2 = '&s=' if 10000 <= ytile < 100000 else ''
-            main_salt = self.generate_salt(xtile, ytile)
+
+            # string.sub('Galileo', 1, (3 * _x + _y) % 8)
+            main_salt = 'Galileo'[1: (3 * xtile + ytile) % 8]
             server_num = ((xtile + 2) * ytile) % 2
-            version = '989'
-            return ('http://maps.google.com/maps' + server_num + version + str(xtile) + salt2 + str(ytile) +
+            version = 989
+            return ('http://maps.google.com/maps' + str(server_num) + str(version) + str(xtile) + salt2 + str(ytile) +
                     str(self.zoom) + main_salt)
         elif self.current_web_layer == MapLayersEnum.geoportal_orto:
             return ''
