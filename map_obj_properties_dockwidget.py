@@ -188,6 +188,7 @@ class MapObjPropDock(QDockWidget):
         node_widget.setLayout(node_widget_layout)
         node_has_numeration_layout = QFormLayout()
         self.node_has_numeration = QCheckBox()
+        self.node_has_numeration.toggled.connect(self.switch_on_of_numerations)
         node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
         node_widget_layout.addLayout(node_has_numeration_layout)
 
@@ -248,6 +249,7 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering_przed = QFormLayout()
         right_side_gb_przed.setLayout(right_side_numbering_przed)
         right_side_numbering_przed.addRow('Skończ na', self.right_side_num_data['right_side_number_before'])
+        self.switch_on_of_numerations(False)
 
     def reverse_polyline(self, event):
         print(self.map_object_id)
@@ -351,6 +353,22 @@ class MapObjPropDock(QDockWidget):
             for row in range(self.extras_table.rowCount()):
                 self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                 self.extras_table.setItem(row, 1, QTableWidgetItem(''))
+
+    def  fill_map_object_properties_node(self, node):
+        if node.node_has_numeration():
+            self.node_has_numeration.setChecket(True)
+
+    def switch_on_of_numerations(self, val):
+        if val:
+            for num_key in self.right_side_num_data:
+                self.right_side_num_data[num_key].setEnabled(True)
+            for num_key in self.left_side_num_data:
+                self.left_side_num_data[num_key].setEnabled(True)
+        else:
+            for num_key in self.right_side_num_data:
+                self.right_side_num_data[num_key].setEnabled(False)
+            for num_key in self.left_side_num_data:
+                self.left_side_num_data[num_key].setEnabled(False)
 
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
