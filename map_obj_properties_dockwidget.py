@@ -62,10 +62,10 @@ class MapObjPropDock(QDockWidget):
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
-        reverse_direction_button = QPushButton('Revert direction', dock_widget)
-        reverse_direction_button.clicked.connect(self.reverse_polyline)
+        self.reverse_direction_button = QPushButton('Revert direction', dock_widget)
+        self.reverse_direction_button.clicked.connect(self.reverse_polyline)
         dir_box.addWidget(self.poly_direction)
-        dir_box.addWidget(reverse_direction_button)
+        dir_box.addWidget(self.reverse_direction_button)
         dock_box.addLayout(dir_box)
 
         comment_label = QLabel("Comment (mapper's private note stored in MP file only)", dock_widget)
@@ -181,6 +181,27 @@ class MapObjPropDock(QDockWidget):
         self.route_params[routing_pos] = QCheckBox(routing_widget)
         routing_widget_layout.addRow('No truck', self.route_params[routing_pos])
 
+        # karta właściwości wezlow
+        node_widget = QWidget()
+        self.tab_names_vs_index['nody'] = self.tab_widget.addTab(node_widget, 'Węzły')
+        node_widget_layout = QVBoxLayout()
+        node_widget.setLayout(node_widget_layout)
+        node_has_numeration_layout = QFormLayout()
+        self.node_has_numeration = QCheckBox()
+        node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
+        node_widget_layout.addLayout(node_has_numeration_layout)
+
+        node_properties_layout = QHBoxLayout()
+        node_widget_layout.addLayout(node_properties_layout)
+        left_side_gb = QGroupBox('Lewa strona numeracji po')
+        node_properties_layout.addWidget(left_side_gb)
+        right_side_gb = QGroupBox('Prawa strona numeracji po')
+        node_properties_layout.addWidget(right_side_gb)
+        #
+        # node_widget.setLayout(node_widget_layout)
+
+
+
 
     def reverse_polyline(self, event):
         print(self.map_object_id)
@@ -203,26 +224,38 @@ class MapObjPropDock(QDockWidget):
             self.label3_entry.setText(self.map_object_id.get_label3())
         else:
             self.label3_entry.setText('')
-        if self.map_object_id.get_dirindicator():
-            self.poly_direction.setChecked(True)
+        if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+            self.poly_direction.setDisabled(True)
+            self.reverse_direction_button.setDisabled(True)
         else:
-            self.poly_direction.setChecked(False)
+            self.poly_direction.setDisabled(False)
+            self.reverse_direction_button.setDisabled(False)
+            if self.map_object_id.get_dirindicator():
+                self.poly_direction.setChecked(True)
+            else:
+                self.poly_direction.setChecked(False)
         if self.map_object_id.get_comment():
             self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
         else:
             self.comment_text_edit.setPlainText('')
-        if self.map_object_id.get_street_desc():
-            self.streetdesc.setText(self.map_object_id.get_street_desc())
+
+        # wypelniamy adresy, ale tylko dla poi
+        if not isinstance(self.map_object_id, map_items.PoiAsPixmap):
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], False)
         else:
-            self.streetdesc.setText('')
-        if self.map_object_id.get_house_number():
-            self.housenumber.setText(self.map_object_id.get_house_number())
-        else:
-            self.housenumber.setText('')
-        if self.map_object_id.get_phone_number():
-            self.phone.setText(self.map_object_id.get_phone_number())
-        else:
-            self.phone.setText('')
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], True)
+            if self.map_object_id.get_street_desc():
+                self.streetdesc.setText(self.map_object_id.get_street_desc())
+            else:
+                self.streetdesc.setText('')
+            if self.map_object_id.get_house_number():
+                self.housenumber.setText(self.map_object_id.get_house_number())
+            else:
+                self.housenumber.setText('')
+            if self.map_object_id.get_phone_number():
+                self.phone.setText(self.map_object_id.get_phone_number())
+            else:
+                self.phone.setText('')
 
         # wypelniamy elements:
         self.elements_table.setRowCount(0)
@@ -236,23 +269,29 @@ class MapObjPropDock(QDockWidget):
                 self.elements_table.setItem(row_num, 2, QTableWidgetItem(f"{lat:.6f}, {lot:.6f}"))
                 self.elements_table.setItem(row_num, 3, QTableWidgetItem(str(len(poly))))
 
-        if self.map_object_id.get_route_params() is not None:
-            routing_data = self.map_object_id.get_route_params()
-            if all(a == 0 for a in routing_data):
-                return
-            for index, val in enumerate(routing_data):
-                if index == RouteParams.speed_limit.value or index == RouteParams.route_class.value:
-                    self.route_params[index].setCurrentIndex(0)
-                    self.route_params[index].setCurrentIndex(val)
-                else:
-                    self.route_params[index].setChecked(False)
-                    self.route_params[index].setChecked(bool(val))
+        if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
         else:
-            for route_param in RouteParams:
-                if route_param == RouteParams.speed_limit or route_param == RouteParams.route_class:
-                    self.route_params[route_param.value].setCurrentIndex(0)
-                else:
-                    self.route_params[route_param.value].setChecked(False)
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], True)
+            # jesli route param ma dany obiekt to wypelnij je
+            if self.map_object_id.get_route_params() is not None:
+                routing_data = self.map_object_id.get_route_params()
+                if all(a == 0 for a in routing_data):
+                    return
+                for index, val in enumerate(routing_data):
+                    if index == RouteParams.speed_limit.value or index == RouteParams.route_class.value:
+                        self.route_params[index].setCurrentIndex(0)
+                        self.route_params[index].setCurrentIndex(val)
+                    else:
+                        self.route_params[index].setChecked(False)
+                        self.route_params[index].setChecked(bool(val))
+            else:
+                # w przeciwnym wypadku ustaw wszystko jako nieustawione
+                for route_param in RouteParams:
+                    if route_param == RouteParams.speed_limit or route_param == RouteParams.route_class:
+                        self.route_params[route_param.value].setCurrentIndex(0)
+                    else:
+                        self.route_params[route_param.value].setChecked(False)
 
 
         others = self.map_object_id.get_others()
@@ -270,23 +309,6 @@ class MapObjPropDock(QDockWidget):
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
-
-    def activate_map_object_fields(self, map_object):
-        if isinstance(map_object, map_items.PoiAsPixmap):
-            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'])
-        elif isinstance(map_object, map_items.PolylineQGraphicsPathItem):
-            pass
-        else:
-            pass
-
-    def deactivate_map_object_fields(self, map_object):
-        if isinstance(map_object, map_items.PoiAsPixmap):
-            pass
-        elif isinstance(map_object, map_items.PolylineQGraphicsPathItem):
-            pass
-        else:
-            pass
-
 
 
 class ExtrasTable(QTableWidget):
