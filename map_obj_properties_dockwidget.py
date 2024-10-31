@@ -30,6 +30,7 @@ class MapObjPropDock(QDockWidget):
         self.parent = parent
         self.map_object_id = None
         super(MapObjPropDock, self).__init__(parent, *args, **kwargs)
+        self.setWindowTitle("Właściwości")
         self.tab_widget = QTabWidget()
         self.tab_names_vs_index = dict()
         # tab_widget.setTabPosition(QTabWidget.West)
@@ -53,6 +54,8 @@ class MapObjPropDock(QDockWidget):
         labels_layout.addRow('Label2', self.label2_entry)
         self.label3_entry = QLineEdit(dock_widget)
         labels_layout.addRow('Label3', self.label3_entry)
+        self.end_level = QLineEdit(dock_widget)
+        labels_layout.addRow('EndLevel', self.end_level)
 
         dock_box.addLayout(labels_layout)
 
@@ -282,6 +285,10 @@ class MapObjPropDock(QDockWidget):
                 self.poly_direction.setChecked(True)
             else:
                 self.poly_direction.setChecked(False)
+        if self.map_object_id.get_endlevel():
+            self.end_level.setText(str(self.map_object_id.get_endlevel()))
+        else:
+            self.end_level.setText('')
         if self.map_object_id.get_comment():
             self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
         else:

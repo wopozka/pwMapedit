@@ -133,6 +133,13 @@ class pwMapeditPy(QMainWindow):
             map_level_menu.addAction(l_act)
             self.map_level_actions.append(l_act)
             self.map_level_action_group.addAction(l_act)
+        # self.dock_widget_button = QAction('Właściwości', self)
+        # self.dock_widget_button.setCheckable(True)
+        # self.dock_widget_button.setChecked(True)
+        # self.dock_widget_button.triggered.connect(self.dock_widget_on_and_off)
+        self.dock_widget_button = self.properties_dock.toggleViewAction()
+        self.dock_widget_button.setChecked(True)
+        view_menu.addAction(self.dock_widget_button)
 
         # projection submenu
         # self.menuProjectionVar = tkinter.StringVar()
@@ -395,6 +402,7 @@ class pwMapeditPy(QMainWindow):
             self.view.set_web_layer(None)
             self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
                                                          cache_folder=self.weblayers_cache_folder.name))
+
 
 
 if __name__ == "__main__":
