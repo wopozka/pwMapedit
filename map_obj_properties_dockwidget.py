@@ -191,17 +191,63 @@ class MapObjPropDock(QDockWidget):
         node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
         node_widget_layout.addLayout(node_has_numeration_layout)
 
-        node_properties_layout = QHBoxLayout()
+        node_properties_layout = QVBoxLayout()
         node_widget_layout.addLayout(node_properties_layout)
-        left_side_gb = QGroupBox('Lewa strona numeracji po')
+        left_side_gb = QGroupBox('Lewa strona numeracji po węźle')
         node_properties_layout.addWidget(left_side_gb)
-        right_side_gb = QGroupBox('Prawa strona numeracji po')
+        left_side_numbering = QFormLayout()
+        left_side_gb.setLayout(left_side_numbering)
+        self.left_side_num_data = {'left_side_numbering_style': QComboBox()}
+        self.left_side_num_data['left_side_numbering_style'].addItem('None')
+        self.left_side_num_data['left_side_numbering_style'].addItem('Parzysty (2, 4, 6, 8)')
+        self.left_side_num_data['left_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
+        self.left_side_num_data['left_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
+        left_side_numbering.addRow('Styl numeracji', self.left_side_num_data['left_side_numbering_style'])
+        self.left_side_num_data['left_side_number_after'] = QLineEdit()
+        left_side_numbering.addRow('Zacznij od', self.left_side_num_data['left_side_number_after'])
+        self.left_side_num_data['left_side_zip_code'] = QLineEdit()
+        left_side_numbering.addRow('Kod poczt.', self.left_side_num_data['left_side_zip_code'])
+        self.left_side_num_data['left_side_city'] = QLineEdit()
+        left_side_numbering.addRow('Miasto', self.left_side_num_data['left_side_city'])
+        self.left_side_num_data['left_side_region'] = QLineEdit()
+        left_side_numbering.addRow('Region', self.left_side_num_data['left_side_region'])
+        self.left_side_num_data['left_side_country'] = QLineEdit()
+        left_side_numbering.addRow('Państwo', self.left_side_num_data['left_side_country'])
+
+        left_side_gb_przed = QGroupBox('Lewa strona numeracji przed węzłem')
+        node_properties_layout.addWidget(left_side_gb_przed)
+        self.left_side_num_data['left_side_number_before'] = QLineEdit()
+        left_side_numbering_przed = QFormLayout()
+        left_side_gb_przed.setLayout(left_side_numbering_przed)
+        left_side_numbering_przed.addRow('Skończ na', self.left_side_num_data['left_side_number_before'])
+
+        right_side_gb = QGroupBox('Prawa strona numeracji po węźle')
         node_properties_layout.addWidget(right_side_gb)
-        #
-        # node_widget.setLayout(node_widget_layout)
+        right_side_numbering = QFormLayout()
+        right_side_gb.setLayout(right_side_numbering)
+        self.right_side_num_data = {'right_side_numbering_style': QComboBox()}
+        self.right_side_num_data['right_side_numbering_style'].addItem('None')
+        self.right_side_num_data['right_side_numbering_style'].addItem('Parzysty (2, 4, 6, 8)')
+        self.right_side_num_data['right_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
+        self.right_side_num_data['right_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
+        right_side_numbering.addRow('Styl numeracji', self.right_side_num_data['right_side_numbering_style'])
+        self.right_side_num_data['right_side_number_after'] = QLineEdit()
+        right_side_numbering.addRow('Zacznij od', self.right_side_num_data['right_side_number_after'])
+        self.right_side_num_data['right_side_zip_code'] = QLineEdit()
+        right_side_numbering.addRow('Kod poczt.', self.right_side_num_data['right_side_zip_code'])
+        self.right_side_num_data['right_side_city'] = QLineEdit()
+        right_side_numbering.addRow('Miasto', self.right_side_num_data['right_side_city'])
+        self.right_side_num_data['right_side_region'] = QLineEdit()
+        right_side_numbering.addRow('Region', self.right_side_num_data['right_side_region'])
+        self.right_side_num_data['right_side_country'] = QLineEdit()
+        right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
 
-
-
+        right_side_gb_przed = QGroupBox('Prawa strona numeracji przed węzłem')
+        node_properties_layout.addWidget(right_side_gb_przed)
+        self.right_side_num_data['right_side_number_before'] = QLineEdit()
+        right_side_numbering_przed = QFormLayout()
+        right_side_gb_przed.setLayout(right_side_numbering_przed)
+        right_side_numbering_przed.addRow('Skończ na', self.right_side_num_data['right_side_number_before'])
 
     def reverse_polyline(self, event):
         print(self.map_object_id)
@@ -331,16 +377,3 @@ class ExtrasTable(QTableWidget):
 
     def add_row(self, event):
         self.insertRow(self.currentRow())
-
-
-class NodeNumbers(QDockWidget):
-    def __init__(self, parent, *args, **kwargs):
-        self.parent = parent
-        self.node_id = None
-        super(NodeNumbers, self).__init__(parent, *args, **kwargs)
-        dock_widget = QWidget()
-        dock_box_layout = QHBoxLayout(dock_widget)
-        left_side_gb = QGroupBox('Lewa strona numeracji')
-        dock_box_layout.addWidget(left_side_gb)
-        right_side_gb = QGroupBox('Prawa strona numeracji')
-        dock_box_layout.addWidget(right_side_gb)
