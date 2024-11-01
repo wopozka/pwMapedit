@@ -49,12 +49,16 @@ class MapObjPropDock(QDockWidget):
 
         labels_layout = QFormLayout()
         self.label1_entry = QLineEdit(dock_widget)
+        self.label1_entry.editingFinished.connect(self.command_label1_entry_edited)
         labels_layout.addRow('Label', self.label1_entry)
         self.label2_entry = QLineEdit(dock_widget)
+        self.label2_entry.editingFinished.connect(self.command_label2_entry_edited)
         labels_layout.addRow('Label2', self.label2_entry)
         self.label3_entry = QLineEdit(dock_widget)
+        self.label3_entry.editingFinished.connect(self.command_label3_entry_edited)
         labels_layout.addRow('Label3', self.label3_entry)
         self.end_level = QLineEdit(dock_widget)
+        self.end_level.editingFinished.connect(self.command_end_level_entry_edited)
         labels_layout.addRow('EndLevel', self.end_level)
 
         dock_box.addLayout(labels_layout)
@@ -92,10 +96,13 @@ class MapObjPropDock(QDockWidget):
         address_phone_layout = QFormLayout()
         address_widget.setLayout(address_phone_layout)
         self.streetdesc = QLineEdit(address_widget)
+        self.streetdesc.editingFinished.connect(self.command_streetdesc_edited)
         address_phone_layout.addRow('Street name', self.streetdesc)
         self.housenumber = QLineEdit(address_widget)
+        self.housenumber.editingFinished.connect(self.command_housenumber_edited)
         address_phone_layout.addRow('House number', self.housenumber)
         self.phone = QLineEdit(address_widget)
+        self.phone.editingFinished.connect(self.command_phone_edited)
         address_phone_layout.addRow('Phone number', self.phone)
 
         # karta elements,
@@ -380,6 +387,30 @@ class MapObjPropDock(QDockWidget):
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
+
+    def command_label1_entry_edited(self):
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(1, self.label1_entry.text())
+
+    def command_label2_entry_edited(self):
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(2, self.label2_entry.text())
+
+    def command_label3_entry_edited(self):
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(3, self.label3_entry.text())
+
+    def command_end_level_entry_edited(self):
+        return
+
+    def command_streetdesc_edited(self):
+        self.map_object_id.command_update_address(self.streetdesc.text(), 'StreetDesc')
+
+    def command_housenumber_edited(self):
+        self.map_object_id.command_update_address(self.housenumber.text(), 'HouseNumber')
+
+    def command_phone_edited(self):
+        self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
 
 
 class ExtrasTable(QTableWidget):

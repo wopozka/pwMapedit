@@ -1037,6 +1037,14 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         command = commands.SelectModeMovePoi(self, self.recorded_pos, 'Przesun POI')
         self.scene().undo_redo_stack.push(command)
 
+    def command_update_labels(self, label_num, new_label):
+        command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
+        self.scene().undo_redo_stack.push(command)
+
+    def command_update_address(self, new_value, description):
+        command = commands.UpdateAddressComponents(self, new_value, description)
+        self.scene().undo_redo_stack.push(command)
+
     def highlight_when_hoverover(self):
         if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
             return False
@@ -1131,6 +1139,11 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         if self.hovered_shape is not None:
             self.scene().removeItem(self.hovered_shape)
             self.hovered_shape = None
+
+    def remove_label(self):
+        if self.label is not None:
+            self.scene().removeItem(self.label)
+        self.label = None
 
 
 class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
@@ -1446,6 +1459,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def command_set_dirindicator(self, dirindicator):
         return
+
+    def command_update_labels(self, label_num, new_label):
+        command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
+        self.scene().undo_redo_stack.push(command)
 
     def create_painter_path(self, poly_lists):
         path = QPainterPath()

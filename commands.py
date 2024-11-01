@@ -233,3 +233,78 @@ class SelectModeSetDirindicator(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
             self.map_object.setSelected(True)
 
+class UpdateLabel123(QUndoCommand):
+    def __init__(self, map_object, label_num, new_label, description):
+        super(UpdateLabel123, self).__init__(description + str(label_num))
+        self.map_object = map_object
+        self.new_label = new_label
+        self.old_label = map_object.get_label1()
+        self.label_num = label_num
+
+    def redo(self):
+        if self.label_num == 1:
+            self.map_object.set_label1(self.new_label)
+            self.map_object.remove_label()
+            self.map_object.add_label()
+        elif self.label_num == 2:
+            self.map_object.set_label2(self.new_label)
+        elif self.label_num == 3:
+            self.map_object.set_label3(self.new_label)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+    def undo(self):
+        if self.label_num == 1:
+            self.map_object.set_label1(self.old_label)
+            self.map_object.remove_label()
+            self.map_object.add_label()
+        elif self.label_num == 2:
+            self.map_object.set_label2(self.old_label)
+        elif self.label_num == 3:
+            self.map_object.set_label3(self.old_label)
+
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+        self.map_object.scene().views()[0].centerOn(self.map_object)
+
+
+class UpdateAddressComponents(QUndoCommand):
+    def __init__(self, map_object, new_value, description):
+        super(UpdateAddressComponents, self).__init__('zmiana ' + description)
+        self.map_object = map_object
+        self.new_value = new_value
+        self.address_component = description
+        if self.address_component == 'StreetDesc':
+            self.old_value = map_object.get_street_desc()
+        elif self.address_component == 'HouseNumber':
+            self.old_value = map_object.get_house_number()
+        elif self.address_component == 'PhoneNumber':
+            self.old_value = map_object.get_phone_number()
+        else:
+            self.old_value = ''
+
+    def redo(self):
+        if self.address_component == 'StreetDesc':
+            self.map_object.set_street_desc(self.new_value)
+        elif self.address_component == 'HouseNumber':
+            self.map_object.set_house_number(self.new_value)
+        elif self.address_component == 'PhoneNumber':
+            self.map_object.set_phone_number(self.new_value)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+    def undo(self):
+        if self.address_component == 'StreetDesc':
+            self.map_object.set_street_desc(self.old_value)
+        elif self.address_component == 'HouseNumber':
+            self.map_object.set_house_number(self.old_value)
+        elif self.address_component == 'Phone':
+            self.map_object.set_phone_number(self.old_value)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+        self.map_object.scene().views()[0].centerOn(self.map_object)
+
