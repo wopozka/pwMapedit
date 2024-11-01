@@ -769,11 +769,7 @@ class BasicMapItem(object):
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.set_datax(number_keyname[1], obj_data[number_keyname])
             elif number_keyname[1] == 'RouteParam':
-                self.set_route_params(obj_data[number_keyname])
-                # if self.routeparam is None:
-                #     self.routeparam = []
-                # for single_param in obj_data[number_keyname].split(','):
-                #     self.routeparam.append(int(single_param))
+                self.set_route_params(obj_data[number_keyname].split(','))
             elif number_keyname[1] == 'StreetDesc':
                 self.set_street_desc(obj_data[number_keyname])
             elif number_keyname[1] == 'HouseNumber':
@@ -849,13 +845,19 @@ class BasicMapItem(object):
         self.phone = value
 
     def set_route_params(self, value):
-        if self.routeparam is None:
-            self.routeparam = [0 for a in range(12)]
-        for param_num, single_param in enumerate(value.split(',')):
-            try:
-                self.routeparam[param_num] = int(single_param)
-            except IndexError:
-                return
+        # przypadku gdy na poczatku nie bylo zadnego route param self.routeparam wynosi none. Wtedy
+        # gdy robimy redo, nie da sie enumerowac, ustawmy wiec None i z glowy. Zastanowic sie czy wszedzie zera
+        # w route param nie powinny ustawiac routeparam na none
+        if value is None:
+            self.routeparam = None
+        else:
+            if self.routeparam is None:
+                self.routeparam = [0 for a in range(12)]
+            for param_num, single_param in enumerate(value):
+                try:
+                    self.routeparam[param_num] = int(single_param)
+                except IndexError:
+                    return
 
     def set_street_desc(self, value):
         self.streetdesc = value
@@ -1460,6 +1462,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def command_set_dirindicator(self, dirindicator):
         return
 
+    def command_set_route_params(self, route_params_values):
+        return
+
     def command_update_labels(self, label_num, new_label):
         command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
         self.scene().undo_redo_stack.push(command)
@@ -1866,6 +1871,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         else:
             command = commands.SelectModeSetDirindicator(self, dirindicator, 'Usuń jednokierukowosc')
         self.scene().undo_redo_stack.push(command)
+
+    def command_set_route_params(self, route_params_values):
+        command = commands.SelectModeRouteParams(self, route_params_values)
+        self.scene().undo_redo_stack.push(command)
+
 
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):

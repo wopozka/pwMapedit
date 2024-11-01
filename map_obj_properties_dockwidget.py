@@ -65,7 +65,7 @@ class MapObjPropDock(QDockWidget):
 
         polyline_direction = QLabel('Polyline has direction', dock_widget)
         self.poly_direction = QCheckBox(dock_widget)
-        self.poly_direction.stateChanged.connect(self.command_dirindicator_changed)
+        self.poly_direction.clicked.connect(self.command_dirindicator_changed)
         dir_box = QHBoxLayout()
         dir_box.addWidget(polyline_direction)
         # dir_box.addStretch(1)
@@ -126,6 +126,7 @@ class MapObjPropDock(QDockWidget):
         # 0
         routing_pos = RouteParams.speed_limit.value
         self.route_params[routing_pos] = QComboBox(routing_widget)
+        self.route_params[routing_pos].activated.connect(self.command_route_params_edited)
         self.route_params[routing_pos].addItems(['(0) 3mph/5kmh', '(1) 15mph/20kmh',
                                                                    '(2) 25mph/40kmh', '(3) 35mph/60kmh',
                                                                    '(4) 50mph/80kmh', '(5) 60mph/90kmh',
@@ -135,6 +136,7 @@ class MapObjPropDock(QDockWidget):
         # 1
         routing_pos = RouteParams.route_class.value
         self.route_params[routing_pos] = QComboBox(routing_widget)
+        self.route_params[routing_pos].activated.connect(self.command_route_params_edited)
         self.route_params[routing_pos].addItems(['(0) residential/alley/unpaved/trail',
                                                                    '(1) roundabout/collector',
                                                                    '(2) arterial/other HW', '(3) principal HW',
@@ -144,51 +146,61 @@ class MapObjPropDock(QDockWidget):
         # 2
         routing_pos = RouteParams.one_way.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('One way', self.route_params[routing_pos])
 
         # 3
         routing_pos = RouteParams.route_is_toll.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('Route is toll', self.route_params[routing_pos])
 
         # 4
         routing_pos = RouteParams.no_emergency.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No emergency', self.route_params[routing_pos])
 
         # 5
         routing_pos = RouteParams.no_delivery.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No delivery', self.route_params[routing_pos])
 
         # 6
         routing_pos = RouteParams.no_car_motorcycle.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No car/motorcycle', self.route_params[routing_pos])
 
         # 7
         routing_pos = RouteParams.no_bus.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No bus', self.route_params[routing_pos])
 
         # 8
         routing_pos = RouteParams.no_taxi.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No taxi', self.route_params[routing_pos])
 
         # 9
         routing_pos = RouteParams.no_pedestrian.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No pedestrian', self.route_params[routing_pos])
 
         # 10
         routing_pos = RouteParams.no_bicycle.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No bicycle', self.route_params[routing_pos])
 
         # 11
         routing_pos = RouteParams.no_truck.value
         self.route_params[routing_pos] = QCheckBox(routing_widget)
+        self.route_params[routing_pos].clicked.connect(self.command_route_params_edited)
         routing_widget_layout.addRow('No truck', self.route_params[routing_pos])
 
         # karta właściwości wezlow
@@ -411,6 +423,15 @@ class MapObjPropDock(QDockWidget):
 
     def command_phone_edited(self):
         self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
+
+    def command_route_params_edited(self, value):
+        route_defs = list()
+        for item_num in range(len(self.route_params)):
+            if item_num == RouteParams.speed_limit.value or item_num == RouteParams.route_class.value:
+                route_defs.append(self.route_params[item_num].currentIndex())
+            else:
+                route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
+        self.map_object_id.command_set_route_params(route_defs)
 
 
 class ExtrasTable(QTableWidget):

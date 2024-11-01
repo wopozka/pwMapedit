@@ -233,6 +233,28 @@ class SelectModeSetDirindicator(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
             self.map_object.setSelected(True)
 
+
+class SelectModeRouteParams(QUndoCommand):
+    def __init__(self, map_object, route_params):
+        super(SelectModeRouteParams, self).__init__('modyfikacja RouteParams')
+        self.map_object = map_object
+        self.old_route_params = copy.copy(self.map_object.get_route_params())
+        self.new_route_params = copy.copy(route_params)
+
+    def redo(self):
+        self.map_object.set_route_params(self.new_route_params)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.set_route_params(self.old_route_params)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+        self.map_object.scene().views()[0].centerOn(self.map_object)
+
+
 class UpdateLabel123(QUndoCommand):
     def __init__(self, map_object, label_num, new_label, description):
         super(UpdateLabel123, self).__init__(description + str(label_num))
