@@ -233,7 +233,8 @@ class mapCanvas(QGraphicsScene):
             return
         pixmap = QPixmap(tile_def.file_path)
         if pixmap.isNull():
-            print('pixmap jest Null')
+            print(f'pixmap jest Null, usuwam plik: {tile_def.file_path}.')
+            os.remove(tile_def.file_path)
             return
         web_layer_pic = QGraphicsPixmapItem(pixmap)
         x, y = self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
