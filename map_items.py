@@ -358,13 +358,40 @@ class Data_X(object):
         return
 
     def get_calculated_housenumber_defs_for_node(self, data_level, poly_num, node_num):
-        # calculate numbers definition for node, in case the node is located at interpolated numbers road section.
-        # Used when set numbering for node without numeration, or when polyline is split into parts.
+        """
+        Calculate numbers definition for node, in case the node is located at interpolated numbers road section.
+        Used when set numbering for node without numeration, or when polyline is split into parts.
+        Parameters
+        ----------
+        data_level: int, 0 - Data0, 1 - Data1, 2 - Data2, 3 - Data3, 4 - Data4
+        poly_num: int, number of poly in polys, in case there are more than 1
+        node_num: int, number of node in poly
+
+        Returns
+        -------
+        None: if there is no definition
+        Numbers_Definition: if there is definition
+        """
+
         for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
-            if pair[0] < node_num < pair[1]:
+            # if node is between two nodes with number
+            start_node_idx, end_node_idx = pair
+            if start_node_idx < node_num < end_node_idx:
+                definitions = Numbers_Definition(*[None for a in range(14)])._asdict()
+                left, right = self.get_interpolated_housenumbers_for_poly_section(data_level, poly_num,
+                                                                                  start_node_idx, end_node_idx)
+                if not left:
+                    pass
+                else:
+                    pass
+                if not right:
+                    pass
+                else:
+                    pass
+                # analysis left side
                 pass
 
-        return
+        return None
 
     def get_data_levels(self):
         return self._data_levels
