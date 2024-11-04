@@ -437,7 +437,7 @@ class Data_X(object):
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
-    def get_interpolated_housenumber_for_nodes_between(self, data_level, poly_num, start_node_idx, end_node_idx):
+    def get_interpolated_housenumber_for_nodes_between(self, data_level, poly_num, start_node_idx, end_node_idx, node_idx):
         """
         returns interpolated numbers for each node
         Parameters
@@ -454,6 +454,8 @@ class Data_X(object):
         """
         segment_length = sum(a.length() for a in self.get_poly_vectors(data_level, poly_num, start_node_idx,
                                                                        end_node_idx))
+        segment_to_node_length = sum(a.length() for a in self.get_poly_vectors(data_level, poly_num, start_node_idx,
+                                                                       node_idx))
         start_node_num_def = self.get_poly_node(data_level, poly_num, start_node_idx,
                                                 False).get_numbers_definition()
         end_node_num_def = self.get_poly_node(data_level, poly_num, end_node_idx,
@@ -461,10 +463,19 @@ class Data_X(object):
         left_numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
                                                 end_node_num_def.left_side_number_after,
                                                 start_node_num_def.left_side_numbering_style)
-
+        left_numbers = ([start_node_num_def.left_side_number_after] + left_numbers +
+                        [end_node_num_def.left_side_number_before])
         right_numbers = self.get_numbers_between(start_node_num_def.right_side_number_after,
                                                  end_node_num_def.right_side_number_after,
                                                  start_node_num_def.right_side_numbering_style)
+        right_numbers = ([start_node_num_def.right_side_number_after] + right_numbers +
+                         [end_node_num_def.right_side_number_before])
+        lef_distance = segment_length / (len(left_numbers) - 1)
+        right_distance = segment_length / (len(right_numbers) - 1)
+        lef_side_before = left_numbers[segment_to_node_length // lef_distance]
+        left_side_after = left_numbers[segment_to_node_length // lef_distance + 1]
+        right_side_before = right_numbers[segment_length // right_distance]
+        right_side_after = right_numbers[segment_length // right_distance + 1]
 
         return
 
