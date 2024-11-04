@@ -452,6 +452,9 @@ class Data_X(object):
         dict, {node_idx: Numbers_Definition)
 
         """
+        left, right = self.get_interpolated_housenumbers_for_poly_section(data_level, poly_num,
+                                                                          start_node_idx, end_node_idx)
+
         return
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
