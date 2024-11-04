@@ -442,18 +442,27 @@ class Data_X(object):
         returns interpolated numbers for each node
         Parameters
         ----------
-        data_level: int, data0, data1, data2, data3
+        data_level: int, data0, data1, data2, data3, data4
         poly_num: int, num of poly in polygons
-        start_node_idx, int, index of start node
-        end_node_idx, int, index of end node
+        start_node_idx: int, index of start node
+        end_node_idx: int, index of end node
 
         Returns
         -------
         dict, {node_idx: Numbers_Definition)
 
         """
-        left, right = self.get_interpolated_housenumbers_for_poly_section(data_level, poly_num,
-                                                                          start_node_idx, end_node_idx)
+        segment_length = sum(a.length() for a in self.get_poly_vectors(data_level, poly_num, start_node_idx,
+                                                                       end_node_idx))
+        start_node_num_def = self.get_poly_node(data_level, poly_num, start_node_idx,
+                                                False).get_numbers_definition()
+        end_node_num_def = self.get_poly_node(data_level, poly_num, end_node_idx,
+                                                False).get_numbers_definition()
+        left_numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
+                                                end_node_num_def.left_side_number_after,
+                                                start_node_num_def.left_side_numbering_style)
+
+        # right_numbers =
 
         return
 
@@ -547,7 +556,6 @@ class Data_X(object):
                                                                      current_num_distance=current_num_distance,
                                                                      default_num_distance=default_num_distance))
 
-
     def get_nodes_with_housenumbers(self, data_level, poly_num):
         # zwraca nody dla ktory przypisana jest numeracja
         nodes_with_nums = []
@@ -619,7 +627,7 @@ class Data_X(object):
                 returned_data.append(data_list)
         return returned_data
 
-    def get_poly_vectors(self, data_level, poly_num, start_node_num, end_node_num):
+    def get_poly_vectors(self, data_level, poly_num, start_node_idx, end_node_idx):
         """
         generating polygon vectors for each path. Each path is split to separate polygons and then each polygon
         is converted to single vectors. In Poly class there is similar function, but those one creates
@@ -628,8 +636,8 @@ class Data_X(object):
         ----------
         data_level: int, data level
         poly_num: int, number of polygon
-        start_node_num: int, start node number
-        end_node_num: int, end node number
+        start_node_idx: int, start node number
+        end_node_idx: int, end node number
 
         Returns
         -------
@@ -639,7 +647,7 @@ class Data_X(object):
         """
         poly = self.get_polys_for_data_level(data_level)[poly_num]
         poly_vectors = list()
-        for vector_num in range(start_node_num, end_node_num):
+        for vector_num in range(start_node_idx, end_node_idx):
             x1 = poly[vector_num].x()
             y1 = poly[vector_num].y()
             x2 = poly[vector_num + 1].x()
