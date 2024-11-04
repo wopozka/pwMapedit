@@ -377,19 +377,45 @@ class Data_X(object):
             # if node is between two nodes with number
             start_node_idx, end_node_idx = pair
             if start_node_idx < node_num < end_node_idx:
+                start_node = self.get_poly_node(data_level, poly_num, start_node_idx, False)
+                end_node = self.get_poly_node(data_level, poly_num, start_node_idx, False)
                 definitions = Numbers_Definition(*[None for a in range(14)])._asdict()
                 left, right = self.get_interpolated_housenumbers_for_poly_section(data_level, poly_num,
                                                                                   start_node_idx, end_node_idx)
-                if not left:
+                if left:
+                    # there are interpolated numbers on left, do something
                     pass
                 else:
+                    # there are no interpolated numbers on left, check whether there are any
+                    if start_node.node_has_numeration() and start_node.node_starts_numeration():
+                        for num_key in ('left_side_numbering_style', 'left_side_zip_code', 'left_side_city',
+                                        'left_side_region', 'left_side_country'):
+                            definitions[num_key] = start_node.get_specific_number_definition(num_key)
+                        definitions['left_side_number_after'] = (
+                            end_node.get_specific_number_definition('left_side_number_after'))
+                        definitions['left_side_number_before'] = (
+                            start_node.get_specific_number_definition('left_side_number_after'))
+
+                        # 'left_side_numbering_style',
+                        # 'left_side_number_before', 'left_side_number_after', 'right_side_numbering_style',
+                        # 'right_side_number_before', 'right_side_number_after', 'left_side_zip_code',
+                        # 'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
+                        # 'right_side_city', 'right_side_region', 'right_side_country'
                     pass
-                if not right:
+                if right:
                     pass
                 else:
-                    pass
+                    # there are no interpolated numbers on right, check whether there are any
+                    if start_node.node_has_numeration() and start_node.node_starts_numeration():
+                        for num_key in ('right_side_numbering_style', 'right_side_zip_code', 'right_side_city',
+                                        'right_side_region', 'right_side_country'):
+                            definitions[num_key] = start_node.get_specific_number_definition(num_key)
+                        definitions['right_side_number_after'] = (
+                            end_node.get_specific_number_definition('right_side_number_after'))
+                        definitions['right_side_number_before'] = (
+                            start_node.get_specific_number_definition('right_side_number_after'))
                 # analysis left side
-                pass
+                return Numbers_Definition(**definitions)
 
         return None
 
@@ -410,6 +436,9 @@ class Data_X(object):
         # zwraca definicje wszystkich numerow domow przypisanych do danego noda
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_numbers_definition() for node in polys[poly_num]]
+
+    def get_interpolated_housenumber_before_and_after_node(self, data_level, poly_num, node_num):
+        return
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}
