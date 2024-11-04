@@ -408,7 +408,6 @@ class Data_X(object):
         -------
         tuple(lhs, rhs) - (Interpolated_Number(vector, position, num), Interpolated_Number(vector, position, num))
         """
-        # interpolated_numbers = {'left': [], 'right': []}
         left = []
         right = []
         node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
