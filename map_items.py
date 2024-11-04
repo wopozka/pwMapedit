@@ -437,7 +437,8 @@ class Data_X(object):
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
-    def get_interpolated_housenumber_before_and_after_node(self, data_level, poly_num, node_num):
+    def get_interpolated_housenumber_before_and_after_node(self, data_level, poly_num, start_node_idx, end_node_idx,
+                                                           node_num):
         return
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
