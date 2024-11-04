@@ -360,6 +360,10 @@ class Data_X(object):
     def get_calculated_housenumber_defs_for_node(self, data_level, poly_num, node_num):
         # calculate numbers definition for node, in case the node is located at interpolated numbers road section.
         # Used when set numbering for node without numeration, or when polyline is split into parts.
+        for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
+            if pair[0] < node_num < pair[1]:
+                pass
+
         return
 
     def get_data_levels(self):
@@ -391,29 +395,52 @@ class Data_X(object):
 
         for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
             start_node_idx, end_node_idx = pair
-            node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
-            node_with_num_plus = self.get_poly_node(data_level, poly_num, end_node_idx, False)
-            # create polyline elements as vectors
-            poly_vectors = self.get_poly_vectors(data_level, poly_num, start_node_idx, end_node_idx)
-
-            left_num_style = node_with_num.get_specific_number_definition('left_side_numbering_style')
-            if left_num_style != 'N':
-                left_num_start = node_with_num.get_specific_number_definition('left_side_number_after')
-                left_num_end = node_with_num_plus.get_specific_number_definition('left_side_number_before')
-                on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
-                # poly vectors will be changed during get_interpolated_numbers_coordinates,
-                # therefore we work on a copy: list(poly_vectors)
-                interpolated_numbers['left'] += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_left)
-
-            right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
-            if right_num_style != 'N':
-                right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
-                right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
-                on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
-                # poly vectors will be changed during get_interpolated_numbers_coordinates,
-                # therefore we work on a copy: list(poly_vectors)
-                interpolated_numbers['right'] += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_right)
+            left, right = self.get_interpolated_housenumbers_for_poly_section(data_level,
+                                                                              poly_num, start_node_idx, end_node_idx)
+            interpolated_numbers['left'] += left
+            interpolated_numbers['right'] += right
         return interpolated_numbers
+
+    def get_interpolated_housenumbers_for_poly_section(self, data_level, poly_num, start_node_idx, end_node_idx):
+        """
+        Zwraca interpolowane numery dla odcinka drogi
+        Parameters
+        ----------
+        data_level: int, końcówka data: data0 ->0, data1 - 1, data2 - 2, data3 - 3, data4 - 4
+        poly_num: int, numer polygonu
+        start_node_idx: int, indeks nodu startowego
+        end_node_idx: index nodu koncowego
+
+        Returns
+        -------
+        tuple(lhs, rhs) - (Interpolated_Number(vector, position, num), Interpolated_Number(vector, position, num))
+        """
+        # interpolated_numbers = {'left': [], 'right': []}
+        left = []
+        right = []
+        node_with_num = self.get_poly_node(data_level, poly_num, start_node_idx, False)
+        node_with_num_plus = self.get_poly_node(data_level, poly_num, end_node_idx, False)
+        # create polyline elements as vectors
+        poly_vectors = self.get_poly_vectors(data_level, poly_num, start_node_idx, end_node_idx)
+
+        left_num_style = node_with_num.get_specific_number_definition('left_side_numbering_style')
+        if left_num_style != 'N':
+            left_num_start = node_with_num.get_specific_number_definition('left_side_number_after')
+            left_num_end = node_with_num_plus.get_specific_number_definition('left_side_number_before')
+            on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
+            # poly vectors will be changed during get_interpolated_numbers_coordinates,
+            # therefore we work on a copy: list(poly_vectors)
+            left += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_left)
+
+        right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
+        if right_num_style != 'N':
+            right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
+            right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
+            on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
+            # poly vectors will be changed during get_interpolated_numbers_coordinates,
+            # therefore we work on a copy: list(poly_vectors)
+            right += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_right)
+        return left, right
 
     @staticmethod
     def get_interpolated_numbers_coordinates(poly_vectors, numbers, current_num_distance=None,
