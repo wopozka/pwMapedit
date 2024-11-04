@@ -288,7 +288,6 @@ class Data_X(object):
                 pass
             # do dokonczenia
 
-
     def clean_numbers_definitions(self, data_level, polynum):
          # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
@@ -324,7 +323,6 @@ class Data_X(object):
                     last_node.set_numbers_definition_field_name('right_side_number_before', 0)
             return
 
-
         # jesli ostatni wezel nie ma ustawionej zadnej numeracji to ja ustaw, pomoze to porzadkowac wezly
         if not last_node.node_has_numeration():
             last_node.set_numbers_definition_field_name('left_side_number_before', 0)
@@ -357,6 +355,11 @@ class Data_X(object):
                     # jesli nod nie zaczyna numeracji wyzeruj jego numeracje
                     node_end.set_node_has_no_numeration()
 
+        return
+
+    def get_calculated_housenumber_defs_for_node(self, data_level, poly_num, node_num):
+        # calculate numbers definition for node, in case the node is located at interpolated numbers road section.
+        # Used when set numbering for node without numeration, or when polyline is split into parts.
         return
 
     def get_data_levels(self):
