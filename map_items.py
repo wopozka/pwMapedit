@@ -457,12 +457,14 @@ class Data_X(object):
         start_node_num_def = self.get_poly_node(data_level, poly_num, start_node_idx,
                                                 False).get_numbers_definition()
         end_node_num_def = self.get_poly_node(data_level, poly_num, end_node_idx,
-                                                False).get_numbers_definition()
+                                              False).get_numbers_definition()
         left_numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
                                                 end_node_num_def.left_side_number_after,
                                                 start_node_num_def.left_side_numbering_style)
 
-        # right_numbers =
+        right_numbers = self.get_numbers_between(start_node_num_def.right_side_number_after,
+                                                 end_node_num_def.right_side_number_after,
+                                                 start_node_num_def.right_side_numbering_style)
 
         return
 
