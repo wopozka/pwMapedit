@@ -386,13 +386,6 @@ class Data_X(object):
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}
-        # house_numbers_defs = self.get_housenumbers_for_poly(data_level, poly_num)
-        # # pozniej trzeba poruszac sie po nodzie z numerem i nodzie nastepnym, dlatego trzeba zbudowac liste
-        # # indeksow numerow ktore zawieraja numeracje. Potem bedzie mozna sie posuwac o jeden w przod
-        # nodes_with_nums_idx = [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]
-        # if not [a for a in range(len(house_numbers_defs)) if house_numbers_defs[a] is not None]:
-        #     return interpolated_numbers
-
         for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
             start_node_idx, end_node_idx = pair
             left, right = self.get_interpolated_housenumbers_for_poly_section(data_level,
