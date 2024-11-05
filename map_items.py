@@ -2566,6 +2566,16 @@ class GripItem(QGraphicsPathItem):
     def boundingRect(self):
         return self._boundingRect
 
+    def node_grip_has_numeration(self):
+        data_level = self.parent.current_data_x
+        poly_num, node_num = self.grip_indexes
+        return self.parent.data0.get_poly_node(data_level, poly_num, node_num, False).node_has_numeration()
+
+    def node_grip_get_numeration(self):
+        data_level = self.parent.current_data_x
+        poly_num, node_num = self.grip_indexes
+        return self.parent.data0.get_poly_node(data_level, poly_num, node_num, False).get_numbers_definition()
+
     def hoverEnterEvent(self, event):
         self.setFocus(True)
         self.grabKeyboard()

@@ -272,6 +272,7 @@ class MapObjPropDock(QDockWidget):
         right_side_gb_przed.setLayout(right_side_numbering_przed)
         right_side_numbering_przed.addRow('Skończ na', self.right_side_num_data['right_side_number_before'])
         self.switch_on_of_numerations(False)
+        self.set_dock_off()
 
     def reverse_polyline(self, event):
         print(self.map_object_id)
@@ -280,22 +281,16 @@ class MapObjPropDock(QDockWidget):
 
     def set_map_object_id(self, obj_id):
         if isinstance(obj_id, map_items.GripItem):
-            for tab_name, tab_index in self.tab_names_vs_index.items():
-                if tab_name != 'nody':
-                    self.tab_widget.setTabEnabled(tab_index, False)
-                else:
-                    self.tab_widget.setTabEnabled(tab_index, True)
+            self.set_dock_mode_edit_nodes()
         else:
-            self.map_object_id = obj_id
-            for tab_name, tab_index in self.tab_names_vs_index.items():
-                if tab_name == 'nody':
-                    self.tab_widget.setTabEnabled(tab_index, False)
-                else:
-                    self.tab_widget.setTabEnabled(tab_index, True)
+            self.set_dock_mode_select()
+        self.map_object_id = obj_id
 
     def fill_map_object_properties(self):
+        if self.map_object_id is None:
+            return
         if isinstance(self.map_object_id, map_items.GripItem):
-            pass
+            self.fill_map_object_properties_node()
         else:
             if self.map_object_id.get_label1():
                 self.label1_entry.setText(self.map_object_id.get_label1())
@@ -394,9 +389,45 @@ class MapObjPropDock(QDockWidget):
                     self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                     self.extras_table.setItem(row, 1, QTableWidgetItem(''))
 
-    def fill_map_object_properties_node(self, node):
-        if node.node_has_numeration():
-            self.node_has_numeration.setChecket(True)
+    def fill_map_object_properties_node(self):
+        if self.map_object_id.node_grip_has_numeration():
+            self.node_has_numeration.setChecked(True)
+            print(self.map_object_id.node_grip_get_numeration())
+            num_dict = self.map_object_id.node_grip_get_numeration()._asdict()
+            for key in num_dict:
+                if 'left' in key:
+                    if 'style' in key:
+                        if num_dict[key] == 'N':
+                            self.left_side_num_data[key].setCurrentIndex(0)
+                        elif num_dict[key] == 'E':
+                            self.left_side_num_data[key].setCurrentIndex(1)
+                        elif num_dict[key] == 'O':
+                            self.left_side_num_data[key].setCurrentIndex(2)
+                        elif num_dict[key] == 'B':
+                            self.left_side_num_data[key].setCurrentIndex(3)
+                    else:
+                        if num_dict[key] is None:
+                            self.left_side_num_data[key].setText('')
+                        else:
+                            self.left_side_num_data[key].setText(str(num_dict[key]))
+                else:
+                    if 'style' in key:
+                        if num_dict[key] == 'N':
+                            self.right_side_num_data[key].setCurrentIndex(0)
+                        elif num_dict[key] == 'E':
+                            self.right_side_num_data[key].setCurrentIndex(1)
+                        elif num_dict[key] == 'O':
+                            self.right_side_num_data[key].setCurrentIndex(2)
+                        elif num_dict[key] == 'B':
+                            self.right_side_num_data[key].setCurrentIndex(3)
+                    else:
+                        if num_dict[key] is None:
+                            self.right_side_num_data[key].setText('')
+                        else:
+                            self.right_side_num_data[key].setText(str(num_dict[key]))
+        else:
+            self.node_has_numeration.setChecked(False)
+
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -448,6 +479,24 @@ class MapObjPropDock(QDockWidget):
                 route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
         self.map_object_id.command_set_route_params(route_defs)
 
+    def set_dock_mode_edit_nodes(self):
+        for tab_name, tab_index in self.tab_names_vs_index.items():
+            if tab_name != 'nody':
+                print('wylaczam', tab_name)
+                self.tab_widget.setTabEnabled(tab_index, False)
+            else:
+                self.tab_widget.setTabEnabled(tab_index, True)
+
+    def set_dock_mode_select(self):
+        for tab_name, tab_index in self.tab_names_vs_index.items():
+            if tab_name == 'nody':
+                self.tab_widget.setTabEnabled(tab_index, False)
+            else:
+                self.tab_widget.setTabEnabled(tab_index, True)
+
+    def set_dock_off(self):
+        for tab_name, tab_index in self.tab_names_vs_index.items():
+            self.tab_widget.setTabEnabled(tab_index, False)
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
