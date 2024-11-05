@@ -200,6 +200,9 @@ class mapCanvas(QGraphicsScene):
                 return
             if any(hasattr(a, 'hover_drag_mode') and a.hover_drag_mode for a in selected_items):
                 print('selekcja sie zmienila na uchwyty')
+                print('wypelniam docka, ale tylko noda')
+                self.properties_dock.set_map_object_id(self.selectedItems()[0])
+                self.properties_dock.fill_map_object_properties()
                 return
             # przypadku gdy obiekt juz jest w trybie edycji wezlow nie rob nic. Zachodzi gdy mamy kliknięty uchwyt
             # a potem klikniemy z shiftem na podswietlony obiekt tak aby dodac wezel. Wtedy zmienia sie selekcja na nowy
