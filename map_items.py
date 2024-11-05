@@ -384,7 +384,13 @@ class Data_X(object):
                                                                                   start_node_idx, end_node_idx)
                 if left:
                     # there are interpolated numbers on left, do something
-                    pass
+                    for num_key in ('left_side_numbering_style', 'left_side_zip_code', 'left_side_city',
+                                    'left_side_region', 'left_side_country'):
+                        definitions[num_key] = start_node.get_specific_number_definition(num_key)
+                    definitions['left_side_number_before'], definitions['left_side_number_after'] = (
+                        self.get_housenumber_for_node_from_interpolated_numbers(data_level, poly_num, start_node_idx,
+                                                                                end_node_idx, node_num, True))
+
                 else:
                     # there are no interpolated numbers on left, check whether there are any
                     if start_node.node_has_numeration() and start_node.node_starts_numeration():
@@ -401,9 +407,13 @@ class Data_X(object):
                         # 'right_side_number_before', 'right_side_number_after', 'left_side_zip_code',
                         # 'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
                         # 'right_side_city', 'right_side_region', 'right_side_country'
-                    pass
                 if right:
-                    pass
+                    for num_key in ('right_side_numbering_style', 'right_side_zip_code', 'right_side_city',
+                                    'right_side_region', 'right_side_country'):
+                        definitions[num_key] = start_node.get_specific_number_definition(num_key)
+                    definitions['right_side_number_before'], definitions['right_side_number_after'] = (
+                        self.get_housenumber_for_node_from_interpolated_numbers(data_level, poly_num, start_node_idx,
+                                                                                end_node_idx, node_num, False))
                 else:
                     # there are no interpolated numbers on right, check whether there are any
                     if start_node.node_has_numeration() and start_node.node_starts_numeration():
@@ -414,9 +424,7 @@ class Data_X(object):
                             end_node.get_specific_number_definition('right_side_number_after'))
                         definitions['right_side_number_before'] = (
                             start_node.get_specific_number_definition('right_side_number_after'))
-                # analysis left side
                 return Numbers_Definition(**definitions)
-
         return None
 
     def get_data_levels(self):
@@ -437,7 +445,8 @@ class Data_X(object):
         polys = self.get_polys_for_data_level(data_level)
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
-    def get_interpolated_housenumber_for_nodes_between(self, data_level, poly_num, start_node_idx, end_node_idx, node_idx):
+    def get_housenumber_for_node_from_interpolated_numbers(self, data_level, poly_num, start_node_idx, end_node_idx,
+                                                           node_idx, left_side):
         """
         returns interpolated numbers for each node
         Parameters
@@ -446,6 +455,8 @@ class Data_X(object):
         poly_num: int, num of poly in polygons
         start_node_idx: int, index of start node
         end_node_idx: int, index of end node
+        node_idx: int, index of given node
+        left_side: bool, either left or right side of the road
 
         Returns
         -------
@@ -460,24 +471,23 @@ class Data_X(object):
                                                 False).get_numbers_definition()
         end_node_num_def = self.get_poly_node(data_level, poly_num, end_node_idx,
                                               False).get_numbers_definition()
-        left_numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
-                                                end_node_num_def.left_side_number_after,
-                                                start_node_num_def.left_side_numbering_style)
-        left_numbers = ([start_node_num_def.left_side_number_after] + left_numbers +
-                        [end_node_num_def.left_side_number_before])
-        right_numbers = self.get_numbers_between(start_node_num_def.right_side_number_after,
-                                                 end_node_num_def.right_side_number_after,
-                                                 start_node_num_def.right_side_numbering_style)
-        right_numbers = ([start_node_num_def.right_side_number_after] + right_numbers +
-                         [end_node_num_def.right_side_number_before])
-        lef_distance = segment_length / (len(left_numbers) - 1)
-        right_distance = segment_length / (len(right_numbers) - 1)
-        lef_side_before = left_numbers[segment_to_node_length // lef_distance]
-        left_side_after = left_numbers[segment_to_node_length // lef_distance + 1]
-        right_side_before = right_numbers[segment_length // right_distance]
-        right_side_after = right_numbers[segment_length // right_distance + 1]
+        if left_side:
+            numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
+                                                    end_node_num_def.left_side_number_after,
+                                                    start_node_num_def.left_side_numbering_style)
+            numbers = ([start_node_num_def.left_side_number_after] + numbers +
+                            [end_node_num_def.left_side_number_before])
+        else:
+            numbers = self.get_numbers_between(start_node_num_def.right_side_number_after,
+                                                     end_node_num_def.right_side_number_after,
+                                                     start_node_num_def.right_side_numbering_style)
+            numbers = ([start_node_num_def.right_side_number_after] + numbers +
+                             [end_node_num_def.right_side_number_before])
+        distance = segment_length / (len(numbers) - 1)
+        before = numbers[segment_to_node_length // distance]
+        after = numbers[segment_to_node_length // distance + 1]
 
-        return
+        return before, after
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}

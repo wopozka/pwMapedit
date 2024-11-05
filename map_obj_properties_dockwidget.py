@@ -395,6 +395,7 @@ class MapObjPropDock(QDockWidget):
                 self.right_side_num_data[num_key].setEnabled(False)
             for num_key in self.left_side_num_data:
                 self.left_side_num_data[num_key].setEnabled(False)
+        # self.map_object_id.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
 
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
