@@ -484,8 +484,8 @@ class Data_X(object):
             numbers = ([start_node_num_def.right_side_number_after] + numbers +
                              [end_node_num_def.right_side_number_before])
         distance = segment_length / (len(numbers) - 1)
-        before = numbers[segment_to_node_length // distance]
-        after = numbers[segment_to_node_length // distance + 1]
+        before = numbers[int(segment_to_node_length // distance)]
+        after = numbers[int(segment_to_node_length // distance + 1)]
 
         return before, after
 
@@ -2575,6 +2575,11 @@ class GripItem(QGraphicsPathItem):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
         return self.parent.data0.get_poly_node(data_level, poly_num, node_num, False).get_numbers_definition()
+
+    def node_grip_get_calculated_numeration(self):
+        data_level = self.parent.current_data_x
+        poly_num, node_num = self.grip_indexes
+        return self.parent.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
 
     def hoverEnterEvent(self, event):
         self.setFocus(True)

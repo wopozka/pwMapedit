@@ -263,7 +263,7 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
 
         node_widget_layout.addStretch()
-        self.switch_on_of_numerations(False)
+        self.switch_on_numerations_fields()
         self.set_dock_off()
 
     def reverse_polyline(self, event):
@@ -423,16 +423,22 @@ class MapObjPropDock(QDockWidget):
 
     def switch_on_of_numerations(self, val):
         if val:
-            for num_key in self.right_side_num_data:
-                self.right_side_num_data[num_key].setEnabled(True)
-            for num_key in self.left_side_num_data:
-                self.left_side_num_data[num_key].setEnabled(True)
+            self.switch_on_numerations_fields()
         else:
-            for num_key in self.right_side_num_data:
-                self.right_side_num_data[num_key].setEnabled(False)
-            for num_key in self.left_side_num_data:
-                self.left_side_num_data[num_key].setEnabled(False)
-        # self.map_object_id.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
+            self.switch_off_numerations_field()
+        print(self.map_object_id.node_grip_get_calculated_numeration())
+
+    def switch_off_numerations_field(self):
+        for num_key in self.right_side_num_data:
+            self.right_side_num_data[num_key].setEnabled(False)
+        for num_key in self.left_side_num_data:
+            self.left_side_num_data[num_key].setEnabled(False)
+
+    def switch_on_numerations_fields(self):
+        for num_key in self.right_side_num_data:
+            self.right_side_num_data[num_key].setEnabled(True)
+        for num_key in self.left_side_num_data:
+            self.left_side_num_data[num_key].setEnabled(True)
 
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
