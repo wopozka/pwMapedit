@@ -314,12 +314,16 @@ class Data_X(object):
             if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
                 last_node.set_numbers_definition_field_name('left_side_number_before', None)
             else:
-                if last_node.get_specific_number_definition('left_side_number_before') is None:
+                if not last_node.node_has_numeration():
+                    last_node.set_numbers_definition_field_name('left_side_number_before', 0)
+                elif last_node.get_specific_number_definition('left_side_number_before') is None:
                     last_node.set_numbers_definition_field_name('left_side_number_before', 0)
             if nodes_with_numbers[0].get_specific_number_definition('right_side_number_after') is None:
                 last_node.set_numbers_definition_field_name('right_side_number_before', None)
             else:
-                if last_node.get_specific_number_definition('right_side_number_before') is None:
+                if not last_node.node_has_numeration():
+                    last_node.set_numbers_definition_field_name('right_side_number_before', 0)
+                elif last_node.get_specific_number_definition('right_side_number_before') is None:
                     last_node.set_numbers_definition_field_name('right_side_number_before', 0)
             return
 

@@ -393,38 +393,39 @@ class MapObjPropDock(QDockWidget):
             self.node_has_numeration.setChecked(False)
 
     def fill_map_object_properties_node(self, definition):
-        num_dict = definition._asdict()
-        for key in num_dict:
-            if 'left' in key:
-                if 'style' in key:
-                    if num_dict[key] == 'N':
-                        self.left_side_num_data[key].setCurrentIndex(0)
-                    elif num_dict[key] == 'E':
-                        self.left_side_num_data[key].setCurrentIndex(1)
-                    elif num_dict[key] == 'O':
-                        self.left_side_num_data[key].setCurrentIndex(2)
-                    elif num_dict[key] == 'B':
-                        self.left_side_num_data[key].setCurrentIndex(3)
-                else:
-                    if num_dict[key] is None:
-                        self.left_side_num_data[key].setText('')
+        if definition is not None:
+            num_dict = definition._asdict()
+            for key in num_dict:
+                if 'left' in key:
+                    if 'style' in key:
+                        if num_dict[key] == 'N':
+                            self.left_side_num_data[key].setCurrentIndex(0)
+                        elif num_dict[key] == 'E':
+                            self.left_side_num_data[key].setCurrentIndex(1)
+                        elif num_dict[key] == 'O':
+                            self.left_side_num_data[key].setCurrentIndex(2)
+                        elif num_dict[key] == 'B':
+                            self.left_side_num_data[key].setCurrentIndex(3)
                     else:
-                        self.left_side_num_data[key].setText(str(num_dict[key]))
-            else:
-                if 'style' in key:
-                    if num_dict[key] == 'N':
-                        self.right_side_num_data[key].setCurrentIndex(0)
-                    elif num_dict[key] == 'E':
-                        self.right_side_num_data[key].setCurrentIndex(1)
-                    elif num_dict[key] == 'O':
-                        self.right_side_num_data[key].setCurrentIndex(2)
-                    elif num_dict[key] == 'B':
-                        self.right_side_num_data[key].setCurrentIndex(3)
+                        if num_dict[key] is None:
+                            self.left_side_num_data[key].setText('')
+                        else:
+                            self.left_side_num_data[key].setText(str(num_dict[key]))
                 else:
-                    if num_dict[key] is None:
-                        self.right_side_num_data[key].setText('')
+                    if 'style' in key:
+                        if num_dict[key] == 'N':
+                            self.right_side_num_data[key].setCurrentIndex(0)
+                        elif num_dict[key] == 'E':
+                            self.right_side_num_data[key].setCurrentIndex(1)
+                        elif num_dict[key] == 'O':
+                            self.right_side_num_data[key].setCurrentIndex(2)
+                        elif num_dict[key] == 'B':
+                            self.right_side_num_data[key].setCurrentIndex(3)
                     else:
-                        self.right_side_num_data[key].setText(str(num_dict[key]))
+                        if num_dict[key] is None:
+                            self.right_side_num_data[key].setText('')
+                        else:
+                            self.right_side_num_data[key].setText(str(num_dict[key]))
         self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
