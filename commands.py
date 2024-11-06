@@ -255,6 +255,44 @@ class SelectModeRouteParams(QUndoCommand):
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
+class SetNumbersToNode(QUndoCommand):
+    def __init__(self, map_object, grip, num_definition, description):
+        super(SetNumbersToNode, self).__init__(description)
+        self.poly_num, self.node_num = grip.grip_indexes
+        self.pos = grip.pos()
+        self.poly_num, self.node_num = grip.grip_indexes
+        self.map_object = map_object
+        self.data_level = map_object.current_data_x
+        self.new_num_definition = num_definition
+        self.old_num_definition = self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
+                                                                      self.node_num, False).get_numbers_definition()
+
+
+    def redo(self):
+        self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num,
+                                        False).set_numbers_definition(self.new_num_definition)
+        self.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
+        self.map_object.update_housenumber_labels()
+        self.map_object.update_interpolated_housenumber_labels()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+            # self.map_object.decorate()
+            self.map_object.scene().views()[0].centerOn(self.pos)
+
+    def undo(self):
+        self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num,
+                                        False).set_numbers_definition(self.old_num_definition)
+        self.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
+        self.map_object.update_housenumber_labels()
+        self.map_object.update_interpolated_housenumber_labels()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+            # self.map_object.decorate()
+            self.map_object.scene().views()[0].centerOn(self.pos)
+
+
 class UpdateLabel123(QUndoCommand):
     def __init__(self, map_object, label_num, new_label, description):
         super(UpdateLabel123, self).__init__(description + str(label_num))

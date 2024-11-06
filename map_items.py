@@ -192,9 +192,9 @@ class Data_X(object):
             _, definition = num_string.split('=', 1)
         else:
             definition = num_string
-        self.add_housenumbers_to_node(data_level, poly_num, definition)
+        self.add_housenumbers_to_nodes(data_level, poly_num, definition)
 
-    def add_housenumbers_to_node(self, data_level, poly_num, definition):
+    def add_housenumbers_to_nodes(self, data_level, poly_num, definition):
         """
         Parameters
         ----------
@@ -373,7 +373,7 @@ class Data_X(object):
         Numbers_Definition: if there is definition
         """
 
-        for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
+        for pair in itertools.pairwise(self.get_nodes_indexes_with_housenumbers(data_level, poly_num)):
             # if node is between two nodes with number
             start_node_idx, end_node_idx = pair
             if start_node_idx < node_num < end_node_idx:
@@ -491,7 +491,7 @@ class Data_X(object):
 
     def get_interpolated_housenumbers_for_poly(self, data_level, poly_num):
         interpolated_numbers = {'left': [], 'right': []}
-        for pair in itertools.pairwise(self.get_nodes_with_housenumbers_indexes(data_level, poly_num)):
+        for pair in itertools.pairwise(self.get_nodes_indexes_with_housenumbers(data_level, poly_num)):
             start_node_idx, end_node_idx = pair
             left, right = self.get_interpolated_housenumbers_for_poly_section(data_level,
                                                                               poly_num, start_node_idx, end_node_idx)
@@ -587,7 +587,7 @@ class Data_X(object):
                 nodes_with_nums.append(node)
         return nodes_with_nums
 
-    def get_nodes_with_housenumbers_indexes(self, data_level, poly_num):
+    def get_nodes_indexes_with_housenumbers(self, data_level, poly_num):
         # zwraca indeksy nodow z numerami,
         nodes_with_nums_indexes = []
         for node_idx, node in  enumerate(self.get_polys_for_data_level(data_level)[poly_num]):
@@ -1588,6 +1588,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def command_set_dirindicator(self, dirindicator):
         return
 
+    def command_set_numeration_to_node(self, grip, num_definition):
+        return
+
     def command_set_route_params(self, route_params_values):
         return
 
@@ -1996,6 +1999,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             command = commands.SelectModeSetDirindicator(self, dirindicator, 'Dodaj jednokierukowosc')
         else:
             command = commands.SelectModeSetDirindicator(self, dirindicator, 'Usuń jednokierukowosc')
+        self.scene().undo_redo_stack.push(command)
+
+    def command_set_numeration_to_node(self, grip, num_definition):
+        command = commands.SetNumbersToNode(self, grip, num_definition, 'Ustaw numeracje dla wezla')
         self.scene().undo_redo_stack.push(command)
 
     def command_set_route_params(self, route_params_values):
@@ -2580,6 +2587,9 @@ class GripItem(QGraphicsPathItem):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
         return self.parent.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
+
+    def node_grip_set_numeration(self, numeration):
+        self.parent.command_set_numeration_to_node(self, numeration)
 
     def hoverEnterEvent(self, event):
         self.setFocus(True)

@@ -282,7 +282,7 @@ class MapObjPropDock(QDockWidget):
         if self.map_object_id is None:
             return
         if isinstance(self.map_object_id, map_items.GripItem):
-            self.fill_map_object_properties_node()
+            self.fill_map_object_properties_node_when_selected()
         else:
             if self.map_object_id.get_label1():
                 self.label1_entry.setText(self.map_object_id.get_label1())
@@ -381,52 +381,58 @@ class MapObjPropDock(QDockWidget):
                     self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                     self.extras_table.setItem(row, 1, QTableWidgetItem(''))
 
-    def fill_map_object_properties_node(self):
+    def fill_map_object_properties_node_when_selected(self):
         if self.map_object_id.node_grip_has_numeration():
             self.node_has_numeration.setChecked(True)
             print(self.map_object_id.node_grip_get_numeration())
-            num_dict = self.map_object_id.node_grip_get_numeration()._asdict()
-            for key in num_dict:
-                if 'left' in key:
-                    if 'style' in key:
-                        if num_dict[key] == 'N':
-                            self.left_side_num_data[key].setCurrentIndex(0)
-                        elif num_dict[key] == 'E':
-                            self.left_side_num_data[key].setCurrentIndex(1)
-                        elif num_dict[key] == 'O':
-                            self.left_side_num_data[key].setCurrentIndex(2)
-                        elif num_dict[key] == 'B':
-                            self.left_side_num_data[key].setCurrentIndex(3)
-                    else:
-                        if num_dict[key] is None:
-                            self.left_side_num_data[key].setText('')
-                        else:
-                            self.left_side_num_data[key].setText(str(num_dict[key]))
-                else:
-                    if 'style' in key:
-                        if num_dict[key] == 'N':
-                            self.right_side_num_data[key].setCurrentIndex(0)
-                        elif num_dict[key] == 'E':
-                            self.right_side_num_data[key].setCurrentIndex(1)
-                        elif num_dict[key] == 'O':
-                            self.right_side_num_data[key].setCurrentIndex(2)
-                        elif num_dict[key] == 'B':
-                            self.right_side_num_data[key].setCurrentIndex(3)
-                    else:
-                        if num_dict[key] is None:
-                            self.right_side_num_data[key].setText('')
-                        else:
-                            self.right_side_num_data[key].setText(str(num_dict[key]))
+            self.fill_map_object_properties_node(self.map_object_id.node_grip_get_numeration())
         else:
             self.node_has_numeration.setChecked(False)
+
+    def fill_map_object_properties_node(self, definition):
+        num_dict = definition._asdict()
+        for key in num_dict:
+            if 'left' in key:
+                if 'style' in key:
+                    if num_dict[key] == 'N':
+                        self.left_side_num_data[key].setCurrentIndex(0)
+                    elif num_dict[key] == 'E':
+                        self.left_side_num_data[key].setCurrentIndex(1)
+                    elif num_dict[key] == 'O':
+                        self.left_side_num_data[key].setCurrentIndex(2)
+                    elif num_dict[key] == 'B':
+                        self.left_side_num_data[key].setCurrentIndex(3)
+                else:
+                    if num_dict[key] is None:
+                        self.left_side_num_data[key].setText('')
+                    else:
+                        self.left_side_num_data[key].setText(str(num_dict[key]))
+            else:
+                if 'style' in key:
+                    if num_dict[key] == 'N':
+                        self.right_side_num_data[key].setCurrentIndex(0)
+                    elif num_dict[key] == 'E':
+                        self.right_side_num_data[key].setCurrentIndex(1)
+                    elif num_dict[key] == 'O':
+                        self.right_side_num_data[key].setCurrentIndex(2)
+                    elif num_dict[key] == 'B':
+                        self.right_side_num_data[key].setCurrentIndex(3)
+                else:
+                    if num_dict[key] is None:
+                        self.right_side_num_data[key].setText('')
+                    else:
+                        self.right_side_num_data[key].setText(str(num_dict[key]))
 
 
     def switch_on_of_numerations(self, val):
         if val:
             self.switch_on_numerations_fields()
+            numeration = self.map_object_id.node_grip_get_calculated_numeration()
+            self.fill_map_object_properties_node(numeration)
+            self.map_object_id.node_grip_set_numeration(numeration)
         else:
             self.switch_off_numerations_field()
-        print(self.map_object_id.node_grip_get_calculated_numeration())
+            self.map_object_id.node_grip_set_numeration(None)
 
     def switch_off_numerations_field(self):
         for num_key in self.right_side_num_data:
