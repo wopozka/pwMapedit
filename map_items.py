@@ -1775,7 +1775,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setPen(self.hovered_over_pen)
         else:
             self.setPen(self.orig_pen)
-        super().paint(painter, option, widget=widget)
+        saved_option = option
+        saved_option.state = QStyle.State_None
+        super().paint(painter, saved_option, widget=widget)
 
     def update_arrow_heads(self):
         return
