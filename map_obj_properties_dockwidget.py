@@ -499,6 +499,12 @@ class MapObjPropDock(QDockWidget):
     def command_numeration_style_edited(self, new_index):
         if self.current_numbering_styles_changed():
             self.save_current_numbering_styles()
+            if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
+                if not self.left_side_num_data['left_side_number_after'].text():
+                    self.left_side_num_data['left_side_number_after'].setText('0')
+            if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
+                if not self.right_side_num_data['right_side_number_after'].text():
+                    self.right_side_num_data['right_side_number_after'].setText('0')
             self.command_numeration_edited()
 
     def command_numeration_edited(self):
