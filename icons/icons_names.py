@@ -287,5 +287,8 @@ icon_types = {
     0x2f01: ('Auto', 'Stacja benzynowa'),
     0x2f02: ('Auto', 'Wypożyczalnia samochodów'),
     0x2f03: ('Auto', 'Serwis'),
-    0x2f04: ('Transport', 'Lotnisko')
+    0x2f04: ('Transport', 'Lotnisko'),
+    0x2f05: ('Services', 'Urząd pocztowy'),
+    0x2f06: ('Services', 'Bank/ATM'),
+
 }
