@@ -308,5 +308,7 @@ icon_types = {
     0x2f16: ('Auto', 'Postój ciężarówek'),
     0x2f17: ('Transport', 'Usługi tranzytowe'),
     0x2f18: ('Custom', 'Biletomat'),
+    0x2f1b: ('Custom', 'Firma'),
+
 
 }
