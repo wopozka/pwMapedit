@@ -60,6 +60,7 @@ class MapObjectsProperties(object):
                                           0x10e0b: QColor('#3965ff'),  # rowerowy niebieski
                                           0x10e0c: Qt.black,           # rowerowy czarny
                                           0x10e0d: QColor('#a959a9'),  # rowerowy inny
+                                          0x10e0f: Qt.black,           # trial other
                                           0x10e10: QColor('#0000ff'), # tramwaj
                                           0x10e11: QColor('#ffffff'), # planowana ulica
                                           0x10e12: QColor('#ffffff'), # planowana
@@ -97,6 +98,7 @@ class MapObjectsProperties(object):
                                           0x10e0b: 3,
                                           0x10e0c: 3,
                                           0x10e0d: 3,
+                                          0x10e0f: 3,
                                           0x10e11: 2,
                                           0x10e12: 3,
                                           0x10e13: 3,
@@ -123,6 +125,7 @@ class MapObjectsProperties(object):
                                         0x10e0b: Qt.DotLine,
                                         0x10e0c: Qt.DotLine,
                                         0x10e0d: Qt.DotLine,
+                                        0x10e0f: Qt.DotLine,
                                         0x10e11: Qt.DashLine,
                                         0x10e12: Qt.DashLine,
                                         0x10e13: Qt.DashLine,
