@@ -33,6 +33,7 @@ class MapObjPropDock(QDockWidget):
         self.setWindowTitle("Właściwości")
         self.tab_widget = QTabWidget()
         self.tab_names_vs_index = dict()
+        self.current_numbering_styles = {'left_side_numbering_style': None, 'right_side_numbering_style': None}
         # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
         self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Glowny')
@@ -261,6 +262,8 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering.addRow('Region', self.right_side_num_data['right_side_region'])
         self.right_side_num_data['right_side_country'] = QLineEdit()
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
+        self.save_current_numbering_styles()
+        self.connect_numbering_widgets_signals()
 
         node_widget_layout.addStretch()
         self.switch_on_numerations_fields()
@@ -422,14 +425,14 @@ class MapObjPropDock(QDockWidget):
                         self.right_side_num_data[key].setText('')
                     else:
                         self.right_side_num_data[key].setText(str(num_dict[key]))
-
+        self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
         if val:
             self.switch_on_numerations_fields()
             numeration = self.map_object_id.node_grip_get_calculated_numeration()
             self.fill_map_object_properties_node(numeration)
-            self.map_object_id.node_grip_set_numeration(numeration)
+            self.command_numeration_edited()
         else:
             self.switch_off_numerations_field()
             self.map_object_id.node_grip_set_numeration(None)
@@ -445,6 +448,15 @@ class MapObjPropDock(QDockWidget):
             self.right_side_num_data[num_key].setEnabled(True)
         for num_key in self.left_side_num_data:
             self.left_side_num_data[num_key].setEnabled(True)
+
+    def current_numbering_styles_changed(self):
+        if (self.current_numbering_styles['left_side_numbering_style'] !=
+                self.left_side_num_data['left_side_numbering_style'].currentIndex()):
+            return True
+        if (self.current_numbering_styles['right_side_numbering_style'] !=
+                self.right_side_num_data['right_side_numbering_style'].currentIndex()):
+            return True
+        return False
 
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
@@ -482,6 +494,49 @@ class MapObjPropDock(QDockWidget):
             else:
                 route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
         self.map_object_id.command_set_route_params(route_defs)
+
+    def command_numeration_style_edited(self, new_index):
+        if self.current_numbering_styles_changed():
+            self.save_current_numbering_styles()
+            self.command_numeration_edited()
+
+    def command_numeration_edited(self):
+        self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
+
+    def connect_numbering_widgets_signals(self):
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.activated.connect(self.command_numeration_style_edited)
+                else:
+                    val.editingFinished.connect(self.command_numeration_edited)
+
+    def get_node_numeration_definition_from_form(self):
+        definition = dict()
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, widget in left_right.items():
+                if 'style' in key:
+                    _index = widget.currentIndex()
+                    if _index == 1:
+                        definition[key] = 'E'
+                    elif _index == 2:
+                        definition[key] = 'O'
+                    elif _index == 3:
+                        definition[key] = 'B'
+                    else:
+                        definition[key] = 'N'
+                else:
+                    if widget.text():
+                        definition[key] = int(widget.text())
+                    else:
+                        definition[key] = None
+        return map_items.Numbers_Definition(**definition)
+
+    def save_current_numbering_styles(self):
+        self.current_numbering_styles['left_side_numbering_style'] = (
+            self.left_side_num_data['left_side_numbering_style'].currentIndex())
+        self.current_numbering_styles['right_side_numbering_style'] = (
+            self.right_side_num_data['right_side_numbering_style'].currentIndex())
 
     def set_dock_mode_edit_nodes(self):
         for tab_name, tab_index in self.tab_names_vs_index.items():
