@@ -186,6 +186,7 @@ class mapCanvas(QGraphicsScene):
         self.parent.enable_maplevel_shortcuts()
 
     def selection_change_actions(self):
+        self.properties_dock.set_dock_off()
         mode = self.get_pw_mapedit_mode()
         if mode == 'select_objects':
             if len(self.selectedItems()) == 1:

@@ -451,11 +451,7 @@ class MapObjPropDock(QDockWidget):
             self.left_side_num_data[num_key].setEnabled(True)
 
     def current_numbering_styles_changed(self):
-        if (self.current_numbering_styles['left_side_numbering_style'] !=
-                self.left_side_num_data['left_side_numbering_style'].currentIndex()):
-            return True
-        if (self.current_numbering_styles['right_side_numbering_style'] !=
-                self.right_side_num_data['right_side_numbering_style'].currentIndex()):
+        if self.current_numbering_definitions != self.get_node_numeration_definition_from_form():
             return True
         return False
 
@@ -508,7 +504,8 @@ class MapObjPropDock(QDockWidget):
             self.command_numeration_edited()
 
     def command_numeration_edited(self):
-        self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
+        if self.current_numbering_styles_changed():
+            self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def connect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
@@ -532,18 +529,20 @@ class MapObjPropDock(QDockWidget):
                         definition[key] = 'B'
                     else:
                         definition[key] = 'N'
-                else:
+                elif 'before' in key or 'after' in key:
                     if widget.text():
                         definition[key] = int(widget.text())
+                    else:
+                        definition[key] = None
+                else:
+                    if widget.text():
+                        definition[key] = widget.text().strip()
                     else:
                         definition[key] = None
         return map_items.Numbers_Definition(**definition)
 
     def save_current_numbering_styles(self):
-        self.current_numbering_styles['left_side_numbering_style'] = (
-            self.left_side_num_data['left_side_numbering_style'].currentIndex())
-        self.current_numbering_styles['right_side_numbering_style'] = (
-            self.right_side_num_data['right_side_numbering_style'].currentIndex())
+        self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
         for tab_name, tab_index in self.tab_names_vs_index.items():
