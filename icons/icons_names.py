@@ -310,5 +310,28 @@ icon_types = {
     0x2f18: ('Custom', 'Biletomat'),
     0x2f1b: ('Custom', 'Firma'),
 
+    0x3000: ('Emerg./Gov.', 'Emergency/Governmental'),
+    0x3001: ('Emerg./Gov.', 'Policja'),
+    0x3002: ('Emerg./Gov.', 'Szpital'),
+    0x3003: ('Emerg./Gov.', 'Ratusz'),
+    0x3004: ('Emerg./Gov.', 'Sąd'),
+    0x3005: ('Emerg./Gov.', 'Świetlica'),
+    0x3006: ('Emerg./Gov.', 'Przejście graniczne'),
+    0x3007: ('Emerg./Gov.', 'Biuro rządowe'),
+    0x3008: ('Emerg./Gov.', 'Straż pożarna'),
+
+    0x4000: ('Sport', 'Golf'),
+    0x4100: ('Recreation', 'Wędkarstwo'),
+    0x4200: ('Auto', 'Wrak'),
+    0x4201: ('Auto', 'Wrak'),
+    0x4300: ('Marine', 'Kotwicowisko'),
+    0x4301: ('Marine', 'Przystań'),
+    0x4400: ('Auto', 'Stacja paliw'),
+    0x4500: ('Food', 'Restaurant'),
+    0x4600: ('Food', 'Bar'),
+    0x4700: ('Marine', 'Rampa dla łodzi'),
+    0x4800: ('Recreation', 'Kemping'),
+    0x4900: ('Recreation', 'Park'),
+    0x4a00: ('Recreation', 'Ławka'),
 
 }
