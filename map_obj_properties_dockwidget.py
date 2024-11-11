@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
-                             QPushButton, QGroupBox)
+                             QPushButton, QGroupBox, QCompleter)
 from PyQt5.QtWidgets import QFormLayout, QTabWidget
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal
+from PyQt5.QtGui import QIcon
 from enum import Enum
 
 import map_items
@@ -34,35 +35,33 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget = QTabWidget()
         self.tab_names_vs_index = dict()
         self.current_numbering_styles = {'left_side_numbering_style': None, 'right_side_numbering_style': None}
+        self.current_labels_vals = []
+        self.current_address_vals = []
+        self.current_comment_val = ''
         # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
         self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Glowny')
         dock_box = QVBoxLayout()
         self.setWidget(self.tab_widget)
         dock_widget.setLayout(dock_box)
-        type_box = QHBoxLayout()
-        type_label = QLabel('Type', dock_widget)
-        self.type_selector = QComboBox(dock_widget)
-        type_box.addWidget(type_label)
-        # type_box.addStretch(1)
-        type_box.addWidget(self.type_selector)
-        dock_box.addLayout(type_box)
-
-        labels_layout = QFormLayout()
+        type_labels_layout = QFormLayout()
+        self.type_selector = TypeComboBox(dock_widget)
+        self.type_selector.setEditable(True)
+        type_labels_layout.addRow('Type', self.type_selector)
         self.label1_entry = QLineEdit(dock_widget)
         self.label1_entry.editingFinished.connect(self.command_label1_entry_edited)
-        labels_layout.addRow('Label', self.label1_entry)
+        type_labels_layout.addRow('Label', self.label1_entry)
         self.label2_entry = QLineEdit(dock_widget)
         self.label2_entry.editingFinished.connect(self.command_label2_entry_edited)
-        labels_layout.addRow('Label2', self.label2_entry)
+        type_labels_layout.addRow('Label2', self.label2_entry)
         self.label3_entry = QLineEdit(dock_widget)
         self.label3_entry.editingFinished.connect(self.command_label3_entry_edited)
-        labels_layout.addRow('Label3', self.label3_entry)
+        type_labels_layout.addRow('Label3', self.label3_entry)
         self.end_level = QLineEdit(dock_widget)
         self.end_level.editingFinished.connect(self.command_end_level_entry_edited)
-        labels_layout.addRow('EndLevel', self.end_level)
+        type_labels_layout.addRow('EndLevel', self.end_level)
 
-        dock_box.addLayout(labels_layout)
+        dock_box.addLayout(type_labels_layout)
 
         polyline_direction = QLabel('Polyline has direction', dock_widget)
         self.poly_direction = QCheckBox(dock_widget)
@@ -77,7 +76,8 @@ class MapObjPropDock(QDockWidget):
         dock_box.addLayout(dir_box)
 
         comment_label = QLabel("Comment (mapper's private note stored in MP file only)", dock_widget)
-        self.comment_text_edit = QPlainTextEdit(dock_widget)
+        self.comment_text_edit = CommentTextEdit(dock_widget)
+        self.comment_text_edit.signals.comment_changed.connect(self.command_comment_changed)
         comment_box = QVBoxLayout()
         comment_box.addWidget(comment_label)
         comment_box.addWidget(self.comment_text_edit)
@@ -286,7 +286,24 @@ class MapObjPropDock(QDockWidget):
             return
         if isinstance(self.map_object_id, map_items.GripItem):
             self.fill_map_object_properties_node_when_selected()
+            self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
         else:
+            # wypełniamy type
+            self.type_selector.clear()
+            if isinstance(self.map_object_id, map_items.PoiAsPixmap):
+                cur_index = -1
+                for poi_type, val in (
+                        self.map_object_id.map_objects_properties.get_create_poi_type_name_alias().items()):
+                    cur_index += 1
+                    icon = QIcon(val[0])
+                    p_type = str(hex(poi_type)) + ' '
+                    category = '(' + val[1] + '), '
+                    name = val[2] + ', '
+                    aliases = val[3]
+                    self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
+                    if poi_type == self.map_object_id.get_type():
+                        self.type_selector.setCurrentIndex(cur_index)
+
             if self.map_object_id.get_label1():
                 self.label1_entry.setText(self.map_object_id.get_label1())
             else:
@@ -299,6 +316,7 @@ class MapObjPropDock(QDockWidget):
                 self.label3_entry.setText(self.map_object_id.get_label3())
             else:
                 self.label3_entry.setText('')
+            self.save_current_labels()
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.poly_direction.setDisabled(True)
                 self.reverse_direction_button.setDisabled(True)
@@ -335,6 +353,7 @@ class MapObjPropDock(QDockWidget):
                     self.phone.setText(self.map_object_id.get_phone_number())
                 else:
                     self.phone.setText('')
+                self.save_current_address()
 
             # wypelniamy elements:
             self.elements_table.setRowCount(0)
@@ -383,6 +402,8 @@ class MapObjPropDock(QDockWidget):
                 for row in range(self.extras_table.rowCount()):
                     self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                     self.extras_table.setItem(row, 1, QTableWidgetItem(''))
+            self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+
 
     def fill_map_object_properties_node_when_selected(self):
         if self.map_object_id.node_grip_has_numeration():
@@ -450,24 +471,38 @@ class MapObjPropDock(QDockWidget):
         for num_key in self.left_side_num_data:
             self.left_side_num_data[num_key].setEnabled(True)
 
+    def current_comment_changed(self):
+        if self.current_comment_val != self.comment_text_edit.toPlainText():
+            return True
+        return False
+
     def current_numbering_styles_changed(self):
         if self.current_numbering_definitions != self.get_node_numeration_definition_from_form():
             return True
         return False
+
+    def command_comment_changed(self):
+        self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
 
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
 
     def command_label1_entry_edited(self):
+        if not self.labels_changed():
+            return
         if self.map_object_id is not None:
             self.map_object_id.command_update_labels(1, self.label1_entry.text())
 
     def command_label2_entry_edited(self):
+        if not self.labels_changed():
+            return
         if self.map_object_id is not None:
             self.map_object_id.command_update_labels(2, self.label2_entry.text())
 
     def command_label3_entry_edited(self):
+        if not self.labels_changed():
+            return
         if self.map_object_id is not None:
             self.map_object_id.command_update_labels(3, self.label3_entry.text())
 
@@ -475,13 +510,16 @@ class MapObjPropDock(QDockWidget):
         return
 
     def command_streetdesc_edited(self):
-        self.map_object_id.command_update_address(self.streetdesc.text(), 'StreetDesc')
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.streetdesc.text(), 'StreetDesc')
 
     def command_housenumber_edited(self):
-        self.map_object_id.command_update_address(self.housenumber.text(), 'HouseNumber')
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.housenumber.text(), 'HouseNumber')
 
     def command_phone_edited(self):
-        self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
 
     def command_route_params_edited(self, value):
         route_defs = list()
@@ -541,6 +579,25 @@ class MapObjPropDock(QDockWidget):
                         definition[key] = None
         return map_items.Numbers_Definition(**definition)
 
+    def address_changed(self):
+        if [a.text for a in (self.streetdesc, self.housenumber, self.phone)] != self.current_address_vals:
+            return True
+        return False
+
+    def labels_changed(self):
+        if [a.text() for a in (self.label1_entry,self.label2_entry, self.label3_entry)] != self.current_labels_vals:
+            return True
+        return False
+
+    def save_current_address(self):
+        self.current_address_vals = [a.text for a in (self.streetdesc, self.housenumber, self.phone)]
+
+    def save_current_comment(self):
+        self.current_comment_val = self.comment_text_edit.toPlainText()
+
+    def save_current_labels(self):
+        self.current_labels_vals = [a.text() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
+
     def save_current_numbering_styles(self):
         self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
@@ -583,3 +640,68 @@ class ExtrasTable(QTableWidget):
 
     def add_row(self, event):
         self.insertRow(self.currentRow())
+
+
+class TypeComboBox(QComboBox):
+    def __init__(self, parent=None):
+        super(TypeComboBox, self).__init__(parent)
+
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setEditable(True)
+
+        # add a filter model to filter matching items
+        self.pFilterModel = QSortFilterProxyModel(self)
+        self.pFilterModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.pFilterModel.setSourceModel(self.model())
+
+        # add a completer, which uses the filter model
+        self.completer = QCompleter(self.pFilterModel, self)
+        # always show all (filtered) completions
+        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self.setCompleter(self.completer)
+
+        # connect signals
+        self.lineEdit().textEdited[str].connect(self.pFilterModel.setFilterFixedString)
+        self.completer.activated.connect(self.on_completer_activated)
+
+    # on selection of an item from the completer, select the corresponding item from combobox
+    def on_completer_activated(self, text):
+        if text:
+            index = self.findText(text)
+            self.setCurrentIndex(index)
+            self.activated[str].emit(self.itemText(index))
+
+    # on model change, update the models of the filter and completer as well
+    def setModel(self, model):
+        super(TypeComboBox, self).setModel(model)
+        self.pFilterModel.setSourceModel(model)
+        self.completer.setModel(self.pFilterModel)
+
+    # on model column change, update the model column of the filter and completer as well
+    def setModelColumn(self, column):
+        self.completer.setCompletionColumn(column)
+        self.pFilterModel.setFilterKeyColumn(column)
+        super(TypeComboBox, self).setModelColumn(column)
+
+
+class CommentChangedSignal(QObject):
+    comment_changed = pyqtSignal(str)
+
+class CommentTextEdit(QPlainTextEdit):
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.old_text = ''
+        self.signals = CommentChangedSignal()
+        super(CommentTextEdit, self).__init__(parent)
+
+    def focusOutEvent(self, event):
+        if self.toPlainText() != self.old_text:
+            self.old_text = self.toPlainText()
+            self.signals.comment_changed.emit(self.toPlainText())
+        super().focusOutEvent(event)
+
+    def focusInEvent(self, event):
+        self.old_text = self.toPlainText()
+        super().focusInEvent(event)
+

@@ -767,7 +767,7 @@ class BasicMapItem(object):
             self.projection = projection
         if map_objects_properties is not None:
             self.map_objects_properties = map_objects_properties
-        self.obj_comment = list()
+        self.obj_comment = None
         self.type = None
         self.label1 = None
         self.label2 = None
@@ -871,11 +871,21 @@ class BasicMapItem(object):
             return ''
         return self.streetdesc
 
+    def get_type(self):
+        return self.type
+
     # setters
 
     def set_comment(self, _comments):
-        for _comment in _comments:
-            self.obj_comment.append(_comment)
+        if self.obj_comment is None:
+            self.obj_comment = list()
+        else:
+            self.obj_comment.clear()
+        if _comments is None:
+            self.obj_comment = None
+        else:
+            for _comment in _comments:
+                self.obj_comment.append(_comment)
 
     def set_data(self, comment_data, obj_data):
         """
@@ -1102,7 +1112,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
             if not data:
                 continue
             if self.path().isEmpty():
-                self.setPath(self.map_objects_properties.get_poi_icon(self.get_param('Type')))
+                self.setPath(self.map_objects_properties.get_poi_icon(self.get_type()))
             level = int(given_level[-1])
             # creates qpainterpaths for polylines at given Data level
             node = data[0]
@@ -1118,7 +1128,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
             self.label = PoiLabel(label, self)
 
     def set_brush(self):
-        brush = self.map_objects_properties.get_nonpixmap_poi_brush(self.get_param('Type'))
+        brush = self.map_objects_properties.get_nonpixmap_poi_brush(self.get_type())
         if brush:
             self.setBrush(brush)
 
@@ -1144,7 +1154,6 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self._mp_label = None
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
-        # self.icon = self.map_objects_properties.get_poi_icon(self.get_param('Type'))
         self.setZValue(20)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
@@ -1167,6 +1176,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def command_move_poi(self):
         command = commands.SelectModeMovePoi(self, self.recorded_pos, 'Przesun POI')
+        self.scene().undo_redo_stack.push(command)
+
+    def command_update_comment(self, new_comment):
+        command = commands.UpdateComment(self, new_comment, 'Zmiana komentarza')
         self.scene().undo_redo_stack.push(command)
 
     def command_update_labels(self, label_num, new_label):
@@ -1221,7 +1234,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             if not data:
                 continue
             if self.pixmap().isNull():
-                self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_param('Type')))
+                self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_type()))
             level = int(given_level[-1])
             node = data[0]
             x, y = node[0].get_canvas_coords()
@@ -1597,6 +1610,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def command_set_route_params(self, route_params_values):
         return
+
+    def command_update_comment(self, new_comment):
+        command = commands.UpdateComment(self, new_comment, 'Zmiana komentarza')
+        self.scene().undo_redo_stack.push(command)
 
     def command_update_labels(self, label_num, new_label):
         command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')

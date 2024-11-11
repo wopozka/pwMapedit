@@ -6,6 +6,8 @@ from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
 
 import map_items
+from icons.type_aliases import type_2_alias
+from icons.icons_names import icon_types
 
 
 class MapObjectsProperties(object):
@@ -19,6 +21,7 @@ class MapObjectsProperties(object):
         self.non_pixmap_brushes = self.create_nonpixmap_brushes()
         self.question_mark_icon = self.create_question_mark_icon()
         self.poi_type_vs_name = self.create_poi_type_vs_name()
+        self.poi_type_name_alias = self.create_poi_type_name_alias()
 
         # polylines definitions
         #dictionary where key is Type
@@ -52,7 +55,7 @@ class MapObjectsProperties(object):
                                           0x10e01: QColor('#ffff41'),  # hiking trial yellow
                                           0x10e02: QColor('#399520'),  # hiking trial green
                                           0x10e03: QColor('#3965ff'),  # hiking trial blue
-                                          0x10e04: Qt.black        ,   # hiking trial czarny
+                                          0x10e04: Qt.black,           # hiking trial czarny
                                           0x10e07: QColor('#a959a9"'), # hiking trial multicolor
                                           0x10e08: Qt.red,             # rowerowy czerwony
                                           0x10e09: QColor('#ffff41'),  # rowerowy zolty
@@ -61,11 +64,11 @@ class MapObjectsProperties(object):
                                           0x10e0c: Qt.black,           # rowerowy czarny
                                           0x10e0d: QColor('#a959a9'),  # rowerowy inny
                                           0x10e0f: Qt.black,           # trial other
-                                          0x10e10: QColor('#0000ff'), # tramwaj
-                                          0x10e11: QColor('#ffffff'), # planowana ulica
-                                          0x10e12: QColor('#ffffff'), # planowana
-                                          0x10e13: QColor('#e80020'), # w budowie
-                                          0x10e14: Qt.black, # railroad
+                                          0x10e10: QColor('#0000ff'),  # tramwaj
+                                          0x10e11: QColor('#ffffff'),  # planowana ulica
+                                          0x10e12: QColor('#ffffff'),  # planowana
+                                          0x10e13: QColor('#e80020'),  # w budowie
+                                          0x10e14: Qt.black,  # railroad
                                           0x10e15: QColor('#a4a4a4')
                                          }
 
@@ -288,12 +291,27 @@ class MapObjectsProperties(object):
         # elif self.poi_type_has_nonpixmap_icon(poi_type):
         #     return self.non_pixmap_icons[poi_type]()
         else:
-            return self.create_question_mark_icon()
+            return self.poi_pixmap_icons['question_mark']
 
     def get_poi_pixmap(self, poi_type):
         if self.poi_type_has_pixmap_icon(poi_type):
             return self.poi_pixmap_icons[poi_type]
         return self.poi_pixmap_icons['question_mark']
+
+    def create_poi_type_name_alias(self):
+        poi_types = {}
+        for icon_type in icon_types:
+            poi_types[icon_type] = [self.get_poi_icon(icon_type)]
+            poi_types[icon_type] += list(icon_types[icon_type])
+            if str(hex(icon_type)) in type_2_alias:
+                poi_types[icon_type] += ['/'.join(type_2_alias[str(hex(icon_type))]).upper()]
+            else:
+                poi_types[icon_type] += ['']
+        print(poi_types)
+        return poi_types
+
+    def get_create_poi_type_name_alias(self):
+        return self.poi_type_name_alias
 
     def get_nonpixmap_poi_brush(self, poi_type):
         if poi_type in self.non_pixmap_brushes:

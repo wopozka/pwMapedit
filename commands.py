@@ -293,6 +293,27 @@ class SetNumbersToNode(QUndoCommand):
             self.map_object.scene().views()[0].centerOn(self.pos)
 
 
+class UpdateComment(QUndoCommand):
+    def __init__(self, map_object, new_comment, description):
+        super(UpdateComment, self).__init__(description)
+        self.map_object = map_object
+        self.new_comment = new_comment.split('\n')
+        self.old_comment = copy.copy(self.map_object.get_comment())
+
+    def redo(self):
+        self.map_object.set_comment(self.new_comment)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            if not self.map_object.isSelected():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.set_comment(self.old_comment)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+
 class UpdateLabel123(QUndoCommand):
     def __init__(self, map_object, label_num, new_label, description):
         super(UpdateLabel123, self).__init__(description + str(label_num))
