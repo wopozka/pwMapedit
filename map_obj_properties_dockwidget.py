@@ -619,6 +619,7 @@ class MapObjPropDock(QDockWidget):
             if tab_name == 'nody':
                 self.tab_widget.setTabEnabled(tab_index, False)
             else:
+                print('wlaczam', tab_name)
                 self.tab_widget.setTabEnabled(tab_index, True)
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
         self.tab_widget.update()

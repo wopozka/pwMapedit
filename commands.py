@@ -332,8 +332,9 @@ class UpdateLabel123(QUndoCommand):
         elif self.label_num == 3:
             self.map_object.set_label3(self.new_label)
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
-            self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
 
     def undo(self):
         if self.label_num == 1:
@@ -374,8 +375,9 @@ class UpdateAddressComponents(QUndoCommand):
         elif self.address_component == 'PhoneNumber':
             self.map_object.set_phone_number(self.new_value)
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
-            self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
 
     def undo(self):
         if self.address_component == 'StreetDesc':
