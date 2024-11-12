@@ -244,8 +244,9 @@ class SelectModeRouteParams(QUndoCommand):
     def redo(self):
         self.map_object.set_route_params(self.new_route_params)
         if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
-            self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
 
     def undo(self):
         self.map_object.set_route_params(self.old_route_params)
