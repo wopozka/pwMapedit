@@ -259,6 +259,7 @@ class SelectModeRouteParams(QUndoCommand):
 class SetNumbersToNode(QUndoCommand):
     def __init__(self, map_object, grip, num_definition, description):
         super(SetNumbersToNode, self).__init__(description)
+        self.grip = grip
         self.poly_num, self.node_num = grip.grip_indexes
         self.pos = grip.pos()
         self.poly_num, self.node_num = grip.grip_indexes
@@ -276,10 +277,11 @@ class SetNumbersToNode(QUndoCommand):
         self.map_object.update_housenumber_labels()
         self.map_object.update_interpolated_housenumber_labels()
         if self.map_object.scene().get_pw_mapedit_mode() == 'edit_nodes':
-            self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
-            # self.map_object.decorate()
-            self.map_object.scene().views()[0].centerOn(self.pos)
+            if not (self.grip in self.map_object.scene().items(self.pos) and self.grip.isSelected()):
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+                # self.map_object.decorate()
+                self.map_object.scene().views()[0].centerOn(self.pos)
 
     def undo(self):
         self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num,

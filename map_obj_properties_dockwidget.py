@@ -35,6 +35,7 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget = QTabWidget()
         self.tab_names_vs_index = dict()
         self.current_numbering_styles = {'left_side_numbering_style': None, 'right_side_numbering_style': None}
+        self.current_numbering_definitions = None
         self.current_labels_vals = []
         self.current_address_vals = []
         self.current_comment_val = ''
