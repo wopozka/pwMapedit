@@ -457,7 +457,7 @@ class MapObjPropDock(QDockWidget):
             self.switch_on_numerations_fields()
             numeration = self.map_object_id.node_grip_get_calculated_numeration()
             self.fill_map_object_properties_node(numeration)
-            self.command_numeration_edited()
+            self.command_set_numeration_to_node()
         else:
             self.switch_off_numerations_field()
             self.map_object_id.node_grip_set_numeration(None)
@@ -542,11 +542,14 @@ class MapObjPropDock(QDockWidget):
             if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
                 if not self.right_side_num_data['right_side_number_after'].text():
                     self.right_side_num_data['right_side_number_after'].setText('0')
-            self.command_numeration_edited()
+            self.command_set_numeration_to_node()
 
     def command_numeration_edited(self):
         if self.current_numbering_styles_changed():
-            self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
+            self.command_set_numeration_to_node()
+
+    def command_set_numeration_to_node(self):
+        self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def connect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
