@@ -582,53 +582,56 @@ class MapObjPropDock(QDockWidget):
         return map_items.Numbers_Definition(**definition)
 
     def address_changed(self):
-        if [a.text for a in (self.streetdesc, self.housenumber, self.phone)] != self.current_address_vals:
+        if [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)] != self.current_address_vals:
             return True
         return False
 
     def labels_changed(self):
-        if [a.text() for a in (self.label1_entry,self.label2_entry, self.label3_entry)] != self.current_labels_vals:
+        if [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)] != self.current_labels_vals:
             return True
         return False
 
     def save_current_address(self):
-        self.current_address_vals = [a.text for a in (self.streetdesc, self.housenumber, self.phone)]
+        self.current_address_vals = [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)]
 
     def save_current_comment(self):
         self.current_comment_val = self.comment_text_edit.toPlainText()
 
     def save_current_labels(self):
-        self.current_labels_vals = [a.text() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
+        self.current_labels_vals = [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
 
     def save_current_numbering_styles(self):
         self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
-        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
-        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'nody':
                 print('wylaczam', tab_name)
                 self.tab_widget.setTabEnabled(tab_index, False)
             else:
                 self.tab_widget.setTabEnabled(tab_index, True)
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
+        self.tab_widget.update()
 
     def set_dock_mode_select(self):
-        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
-        self.tab_widget.update()
+        print('wlaczam select mode')
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name == 'nody':
                 self.tab_widget.setTabEnabled(tab_index, False)
             else:
                 self.tab_widget.setTabEnabled(tab_index, True)
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.tab_widget.update()
 
     def set_dock_off(self):
+        print('wylaczam dock')
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
         self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'glowny':
                 self.tab_widget.setTabEnabled(tab_index, False)
         self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
+        self.tab_widget.update()
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
