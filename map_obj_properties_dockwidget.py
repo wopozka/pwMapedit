@@ -403,6 +403,8 @@ class MapObjPropDock(QDockWidget):
                     self.extras_table.setItem(row, 0, QTableWidgetItem(''))
                     self.extras_table.setItem(row, 1, QTableWidgetItem(''))
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.tab_widget.update()
+
 
 
     def fill_map_object_properties_node_when_selected(self):
@@ -602,6 +604,8 @@ class MapObjPropDock(QDockWidget):
         self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
+        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'nody':
                 print('wylaczam', tab_name)
@@ -610,6 +614,8 @@ class MapObjPropDock(QDockWidget):
                 self.tab_widget.setTabEnabled(tab_index, True)
 
     def set_dock_mode_select(self):
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name == 'nody':
                 self.tab_widget.setTabEnabled(tab_index, False)
@@ -617,8 +623,12 @@ class MapObjPropDock(QDockWidget):
                 self.tab_widget.setTabEnabled(tab_index, True)
 
     def set_dock_off(self):
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
-            self.tab_widget.setTabEnabled(tab_index, False)
+            if tab_name != 'glowny':
+                self.tab_widget.setTabEnabled(tab_index, False)
+        self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
