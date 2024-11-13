@@ -406,8 +406,6 @@ class MapObjPropDock(QDockWidget):
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
         self.tab_widget.update()
 
-
-
     def fill_map_object_properties_node_when_selected(self):
         if self.map_object_id.node_grip_has_numeration():
             self.node_has_numeration.setChecked(True)
