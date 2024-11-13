@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="16"
+   height="16"
+   viewBox="0 0 4.2333333 4.2333333"
+   version="1.1"
+   id="svg1"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="5a03_znacznik_odleglosci.svg"
+   xml:space="preserve"
+   inkscape:export-filename="..\icons_png\6513_swamp.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300"><metadata
+     id="metadata8"><rdf:RDF><cc:Work
+         rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="9.1152082"
+     inkscape:cx="-10.894142"
+     inkscape:cy="-9.220105"
+     inkscape:window-width="1366"
+     inkscape:window-height="703"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px" /><defs
+     id="defs1" /><g
+     inkscape:label="Warstwa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-292.76667)"><g
+       style="fill:#000000"
+       id="g977"
+       transform="matrix(0.00611706,0,0,0.00611706,1.2033618,293.89651)"><g
+         id="XMLID_466_">
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="170"
+   id="XMLID_467_" />
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="90"
+   id="XMLID_468_" />
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="50"
+   id="XMLID_469_" />
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="130"
+   id="XMLID_470_" />
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="250"
+   id="XMLID_472_" />
+	<rect
+   height="30"
+   width="30"
+   y="259.60901"
+   x="210"
+   id="XMLID_473_" />
+	<path
+   d="M 150,115.4 C 150,74.04 116.354,40.391 74.999,40.391 33.644,40.391 0,74.04 0,115.4 c 0,67.33 64.064,109.981 66.792,111.764 2.493,1.629 5.351,2.444 8.207,2.444 2.856,0 5.714,-0.815 8.208,-2.444 0.355,-0.233 8.858,-5.825 19.521,-15.76 C 124.294,191.316 150,158.354 150,115.4 Z m -75,19.991 c -11.045,0 -20.001,-8.954 -20.001,-19.999 0,-11.046 8.956,-20.001 20.001,-20.001 11.044,0 19.999,8.955 19.999,20.001 0,11.045 -8.955,19.999 -19.999,19.999 z"
+   id="XMLID_474_"
+   inkscape:connector-curvature="0" />
+	<path
+   d="M 254.999,40.391 C 213.644,40.391 180,74.04 180,115.4 c 0,67.33 64.064,109.981 66.792,111.764 2.493,1.629 5.351,2.444 8.207,2.444 2.857,0 5.714,-0.815 8.208,-2.444 0.355,-0.233 8.858,-5.825 19.521,-15.76 C 304.294,191.316 330,158.354 330,115.4 330,74.04 296.354,40.391 254.999,40.391 Z m 0.001,95 c -11.045,0 -20.001,-8.954 -20.001,-19.999 0,-11.046 8.956,-20.001 20.001,-20.001 11.044,0 19.999,8.955 19.999,20.001 0,11.045 -8.955,19.999 -19.999,19.999 z"
+   id="XMLID_477_"
+   inkscape:connector-curvature="0" />
+</g></g></g><style
+     type="text/css"
+     id="style1">
+	.st0{fill-rule:evenodd;clip-rule:evenodd;}
+</style><style
+     id="style819"
+     type="text/css">
+<![CDATA[
+	.st0{fill:#D1D1D1;}
+	.st1{fill:#464646;}
+]]>
+</style></svg>
