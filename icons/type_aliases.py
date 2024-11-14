@@ -95,7 +95,7 @@ type_2_alias = {
             '0x2a0f': ["french"],
             '0x2a10': ["german"],
             '0x2a11': ["british"],
-            '0x2a12': ["mleczny", "vegetarian"],
+            '0x2a12': ["mleczny", "vegetarian", "glutenfree"],
             '0x2a13': ["grecka", "libanska", "greek"],
             '0x2b00': ["schronisko", "hostel"],
             '0x2b01': ["hotel", "lodging", "motel"],
