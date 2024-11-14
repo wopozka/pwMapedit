@@ -242,6 +242,8 @@ class mapCanvas(QGraphicsScene):
                 os.remove(tile_def.file_path)
             except PermissionError:
                 print(f'PermissionError. Nie mogłem usunąć pixmapy: {tile_def.file_path}. Pozostawiam.')
+            except FileNotFoundError:
+                print(f'FileNotFoundError: nie znalazłem pliku: {tile_def.file_path}.')
             return
         web_layer_pic = QGraphicsPixmapItem(pixmap)
         x, y = self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
