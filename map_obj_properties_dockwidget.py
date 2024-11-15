@@ -479,6 +479,7 @@ class MapObjPropDock(QDockWidget):
 
     def current_numbering_styles_changed(self):
         if self.current_numbering_definitions != self.get_node_numeration_definition_from_form():
+            self.save_current_numbering_styles()
             return True
         return False
 
@@ -533,7 +534,6 @@ class MapObjPropDock(QDockWidget):
 
     def command_numeration_style_edited(self, new_index):
         if self.current_numbering_styles_changed():
-            self.save_current_numbering_styles()
             if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
                 if not self.left_side_num_data['left_side_number_after'].text():
                     self.left_side_num_data['left_side_number_after'].setText('0')
@@ -629,12 +629,46 @@ class MapObjPropDock(QDockWidget):
     def set_dock_off(self):
         print('wylaczam dock')
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
-        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'glowny':
                 self.tab_widget.setTabEnabled(tab_index, False)
         self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
         self.tab_widget.update()
+
+    def reset_all_fields(self):
+        # self.type_selector
+        for item in (self.label1_entry, self.label2_entry,
+                     self.label3_entry, self.end_level,
+                     self.comment_text_edit, self.streetdesc,
+                     self.housenumber, self.phone,
+                     ):
+            item.clear()
+        for item in (self.poly_direction,):
+            item.setChecked(False)
+        self.extras_table.clearContents()
+
+        # karta elements
+        self.elements_table.clearContents()
+
+        # karta route params
+        for item in self.route_params:
+            self.route_params[item].setChecked(False)
+
+        # karta wlasciwosci wezlow
+        self.node_has_numeration.setChecked(False)
+        for itemname, item in self.left_side_num_data.items():
+            if 'style' in itemname:
+                item.setCurrentIndex(-1)
+            else:
+                item.clear()
+
+        for itemname, item in self.right_side_num_data.items():
+            if 'style' in itemname:
+                item.setCurrentIndex(-1)
+            else:
+                item.clear()
+
+
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
