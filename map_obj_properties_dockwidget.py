@@ -212,7 +212,7 @@ class MapObjPropDock(QDockWidget):
         node_widget.setLayout(node_widget_layout)
         node_has_numeration_layout = QFormLayout()
         self.node_has_numeration = QCheckBox()
-        self.node_has_numeration.toggled.connect(self.switch_on_of_numerations)
+        self.node_has_numeration.clicked.connect(self.switch_on_of_numerations)
         node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
         node_widget_layout.addLayout(node_has_numeration_layout)
 
@@ -416,6 +416,7 @@ class MapObjPropDock(QDockWidget):
 
     def fill_map_object_properties_node(self, definition):
         if definition is not None:
+            print('wypełniam numeracje')
             num_dict = definition._asdict()
             for key in num_dict:
                 if 'left' in key:
@@ -451,12 +452,14 @@ class MapObjPropDock(QDockWidget):
         self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
+        print('przycisk wlacz wylacz numeracje wcisniety')
         if val:
             self.switch_on_numerations_fields()
             numeration = self.map_object_id.node_grip_get_calculated_numeration()
             self.fill_map_object_properties_node(numeration)
             self.command_set_numeration_to_node()
         else:
+            self.reset_numeration_fields()
             self.switch_off_numerations_field()
             self.map_object_id.node_grip_set_numeration(None)
 
@@ -533,6 +536,7 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_set_route_params(route_defs)
 
     def command_numeration_style_edited(self, new_index):
+        print('numeration style edited')
         if self.current_numbering_styles_changed():
             if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
                 if not self.left_side_num_data['left_side_number_after'].text():
@@ -543,6 +547,7 @@ class MapObjPropDock(QDockWidget):
             self.command_set_numeration_to_node()
 
     def command_numeration_edited(self):
+        print('numeration fields edited')
         if self.current_numbering_styles_changed():
             self.command_set_numeration_to_node()
 
@@ -606,6 +611,7 @@ class MapObjPropDock(QDockWidget):
         self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
+        self.reset_all_fields()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'nody':
                 print('wylaczam', tab_name)
@@ -616,6 +622,7 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def set_dock_mode_select(self):
+        self.reset_all_fields()
         print('wlaczam select mode')
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name == 'nody':
@@ -627,6 +634,8 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def set_dock_off(self):
+        print('zeruje wszystkie pola')
+        self.reset_all_fields()
         print('wylaczam dock')
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
         for tab_name, tab_index in self.tab_names_vs_index.items():
@@ -652,9 +661,15 @@ class MapObjPropDock(QDockWidget):
 
         # karta route params
         for item in self.route_params:
-            self.route_params[item].setChecked(False)
+            if isinstance(item, QComboBox):
+                item.setCurrentIndex(-1)
+            else:
+                item.setChecked(False)
 
         # karta wlasciwosci wezlow
+        self.reset_numeration_fields()
+
+    def reset_numeration_fields(self):
         self.node_has_numeration.setChecked(False)
         for itemname, item in self.left_side_num_data.items():
             if 'style' in itemname:
