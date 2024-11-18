@@ -212,7 +212,7 @@ class MapObjPropDock(QDockWidget):
         node_widget.setLayout(node_widget_layout)
         node_has_numeration_layout = QFormLayout()
         self.node_has_numeration = QCheckBox()
-        self.node_has_numeration.clicked.connect(self.switch_on_of_numerations)
+        self.node_has_numeration.toggled.connect(self.switch_on_of_numerations)
         node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
         node_widget_layout.addLayout(node_has_numeration_layout)
 
@@ -228,17 +228,17 @@ class MapObjPropDock(QDockWidget):
         self.left_side_num_data['left_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
         self.left_side_num_data['left_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
         left_side_numbering.addRow('Styl numeracji', self.left_side_num_data['left_side_numbering_style'])
-        self.left_side_num_data['left_side_number_after'] = QLineEdit()
+        self.left_side_num_data['left_side_number_after'] = NumberEdit(only_numers=True)
         left_side_numbering.addRow('Zacznij od', self.left_side_num_data['left_side_number_after'])
-        self.left_side_num_data['left_side_number_before'] = QLineEdit()
+        self.left_side_num_data['left_side_number_before'] = NumberEdit(only_numers=True)
         left_side_numbering.addRow('Skończ na', self.left_side_num_data['left_side_number_before'])
-        self.left_side_num_data['left_side_zip_code'] = QLineEdit()
+        self.left_side_num_data['left_side_zip_code'] = NumberEdit(only_numers=False)
         left_side_numbering.addRow('Kod poczt.', self.left_side_num_data['left_side_zip_code'])
-        self.left_side_num_data['left_side_city'] = QLineEdit()
+        self.left_side_num_data['left_side_city'] = NumberEdit(only_numers=False)
         left_side_numbering.addRow('Miasto', self.left_side_num_data['left_side_city'])
-        self.left_side_num_data['left_side_region'] = QLineEdit()
+        self.left_side_num_data['left_side_region'] = NumberEdit(only_numers=False)
         left_side_numbering.addRow('Region', self.left_side_num_data['left_side_region'])
-        self.left_side_num_data['left_side_country'] = QLineEdit()
+        self.left_side_num_data['left_side_country'] = NumberEdit(only_numers=False)
         left_side_numbering.addRow('Państwo', self.left_side_num_data['left_side_country'])
 
         right_side_gb = QGroupBox('Prawa strona numeracji po węźle')
@@ -251,17 +251,17 @@ class MapObjPropDock(QDockWidget):
         self.right_side_num_data['right_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
         self.right_side_num_data['right_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
         right_side_numbering.addRow('Styl numeracji', self.right_side_num_data['right_side_numbering_style'])
-        self.right_side_num_data['right_side_number_after'] = QLineEdit()
+        self.right_side_num_data['right_side_number_after'] = NumberEdit(only_numers=True)
         right_side_numbering.addRow('Zacznij od', self.right_side_num_data['right_side_number_after'])
-        self.right_side_num_data['right_side_number_before'] = QLineEdit()
+        self.right_side_num_data['right_side_number_before'] = NumberEdit(only_numers=True)
         right_side_numbering.addRow('Skończ na', self.right_side_num_data['right_side_number_before'])
-        self.right_side_num_data['right_side_zip_code'] = QLineEdit()
+        self.right_side_num_data['right_side_zip_code'] = NumberEdit(only_numers=False)
         right_side_numbering.addRow('Kod poczt.', self.right_side_num_data['right_side_zip_code'])
-        self.right_side_num_data['right_side_city'] = QLineEdit()
+        self.right_side_num_data['right_side_city'] = NumberEdit(only_numers=False)
         right_side_numbering.addRow('Miasto', self.right_side_num_data['right_side_city'])
-        self.right_side_num_data['right_side_region'] = QLineEdit()
+        self.right_side_num_data['right_side_region'] = NumberEdit(only_numers=False)
         right_side_numbering.addRow('Region', self.right_side_num_data['right_side_region'])
-        self.right_side_num_data['right_side_country'] = QLineEdit()
+        self.right_side_num_data['right_side_country'] = NumberEdit(only_numers=False)
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
         self.save_current_numbering_styles()
         self.connect_numbering_widgets_signals()
@@ -416,7 +416,6 @@ class MapObjPropDock(QDockWidget):
 
     def fill_map_object_properties_node(self, definition):
         if definition is not None:
-            print('wypełniam numeracje')
             num_dict = definition._asdict()
             for key in num_dict:
                 if 'left' in key:
@@ -452,14 +451,12 @@ class MapObjPropDock(QDockWidget):
         self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
-        print('przycisk wlacz wylacz numeracje wcisniety')
         if val:
             self.switch_on_numerations_fields()
             numeration = self.map_object_id.node_grip_get_calculated_numeration()
             self.fill_map_object_properties_node(numeration)
             self.command_set_numeration_to_node()
         else:
-            self.reset_numeration_fields()
             self.switch_off_numerations_field()
             self.map_object_id.node_grip_set_numeration(None)
 
@@ -482,7 +479,6 @@ class MapObjPropDock(QDockWidget):
 
     def current_numbering_styles_changed(self):
         if self.current_numbering_definitions != self.get_node_numeration_definition_from_form():
-            self.save_current_numbering_styles()
             return True
         return False
 
@@ -536,8 +532,8 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_set_route_params(route_defs)
 
     def command_numeration_style_edited(self, new_index):
-        print('numeration style edited')
         if self.current_numbering_styles_changed():
+            self.save_current_numbering_styles()
             if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
                 if not self.left_side_num_data['left_side_number_after'].text():
                     self.left_side_num_data['left_side_number_after'].setText('0')
@@ -547,11 +543,11 @@ class MapObjPropDock(QDockWidget):
             self.command_set_numeration_to_node()
 
     def command_numeration_edited(self):
-        print('numeration fields edited')
         if self.current_numbering_styles_changed():
             self.command_set_numeration_to_node()
 
     def command_set_numeration_to_node(self):
+        return
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def connect_numbering_widgets_signals(self):
@@ -611,7 +607,6 @@ class MapObjPropDock(QDockWidget):
         self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
-        self.reset_all_fields()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'nody':
                 print('wylaczam', tab_name)
@@ -622,7 +617,6 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def set_dock_mode_select(self):
-        self.reset_all_fields()
         print('wlaczam select mode')
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name == 'nody':
@@ -634,56 +628,14 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def set_dock_off(self):
-        print('zeruje wszystkie pola')
-        self.reset_all_fields()
         print('wylaczam dock')
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'glowny':
                 self.tab_widget.setTabEnabled(tab_index, False)
         self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
         self.tab_widget.update()
-
-    def reset_all_fields(self):
-        # self.type_selector
-        for item in (self.label1_entry, self.label2_entry,
-                     self.label3_entry, self.end_level,
-                     self.comment_text_edit, self.streetdesc,
-                     self.housenumber, self.phone,
-                     ):
-            item.clear()
-        for item in (self.poly_direction,):
-            item.setChecked(False)
-        self.extras_table.clearContents()
-
-        # karta elements
-        self.elements_table.clearContents()
-
-        # karta route params
-        for item in self.route_params:
-            if isinstance(item, QComboBox):
-                item.setCurrentIndex(-1)
-            else:
-                item.setChecked(False)
-
-        # karta wlasciwosci wezlow
-        self.reset_numeration_fields()
-
-    def reset_numeration_fields(self):
-        self.node_has_numeration.setChecked(False)
-        for itemname, item in self.left_side_num_data.items():
-            if 'style' in itemname:
-                item.setCurrentIndex(-1)
-            else:
-                item.clear()
-
-        for itemname, item in self.right_side_num_data.items():
-            if 'style' in itemname:
-                item.setCurrentIndex(-1)
-            else:
-                item.clear()
-
-
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
@@ -770,3 +722,29 @@ class CommentTextEdit(QPlainTextEdit):
         self.old_text = self.toPlainText()
         super().focusInEvent(event)
 
+
+class NumberEdit(QLineEdit):
+    def __init__(self, only_numers=False):
+        self.only_numbers = only_numers
+        self.old_text = ''
+        self.signals = CommentChangedSignal()
+        super(NumberEdit, self).__init__()
+
+    def focusInEvent(self, event):
+        self.old_text = self.text().strip()
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        self.number_edited()
+        super().focusOutEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Enter:
+            self.number_edited()
+        super().keyPressEvent(event)
+
+    def number_edited(self):
+        new_text = self.text().strip()
+        if new_text != self.old_text:
+            self.signals.comment_changed.emit(new_text)
+            print(new_text)
