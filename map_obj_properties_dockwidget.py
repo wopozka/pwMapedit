@@ -556,7 +556,7 @@ class MapObjPropDock(QDockWidget):
                 if 'style' in key:
                     val.activated.connect(self.command_numeration_style_edited)
                 else:
-                    val.editingFinished.connect(self.command_numeration_edited)
+                    val.signals.comment_changed.connect(self.command_numeration_edited)
 
     def get_node_numeration_definition_from_form(self):
         definition = dict()
@@ -728,6 +728,7 @@ class NumberEdit(QLineEdit):
         self.only_numbers = only_numers
         self.old_text = ''
         self.signals = CommentChangedSignal()
+        self.valid_value = True
         super(NumberEdit, self).__init__()
 
     def focusInEvent(self, event):
@@ -739,12 +740,33 @@ class NumberEdit(QLineEdit):
         super().focusOutEvent(event)
 
     def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+        if self.only_numbers:
+            text = self.text().strip()
+            print('sprawdzam text', text)
+            if text:
+                try:
+                    num_val = int(text)
+                    if num_val < 0:
+                        print('blad wartosci')
+                        self.setStyleSheet("background-color: red")
+                        self.valid_value = False
+                except ValueError:
+                    print('blad wartosci')
+                    self.setStyleSheet("background-color: red")
+                    self.valid_value = False
+                else:
+                    print('poprawna wartosc')
+                    self.setStyleSheet("background-color: white")
+                    self.valid_value = True
+            else:
+                self.valid_value = True
+                self.setStyleSheet("background-color: white")
+
         if event.key() == Qt.Key_Enter:
             self.number_edited()
-        super().keyPressEvent(event)
 
     def number_edited(self):
         new_text = self.text().strip()
         if new_text != self.old_text:
             self.signals.comment_changed.emit(new_text)
-            print(new_text)
