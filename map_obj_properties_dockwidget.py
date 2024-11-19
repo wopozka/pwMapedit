@@ -34,8 +34,6 @@ class MapObjPropDock(QDockWidget):
         self.setWindowTitle("Właściwości")
         self.tab_widget = QTabWidget()
         self.tab_names_vs_index = dict()
-        self.current_numbering_styles = {'left_side_numbering_style': None, 'right_side_numbering_style': None}
-        self.current_numbering_definitions = None
         self.current_labels_vals = []
         self.current_address_vals = []
         self.current_comment_val = ''
@@ -263,7 +261,6 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering.addRow('Region', self.right_side_num_data['right_side_region'])
         self.right_side_num_data['right_side_country'] = NumberEdit(only_numers=False)
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
-        self.save_current_numbering_styles()
         self.connect_numbering_widgets_signals()
 
         node_widget_layout.addStretch()
@@ -407,6 +404,7 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def fill_map_object_properties_node_when_selected(self):
+        self.disconnect_numbering_widgets_signals()
         if self.map_object_id.node_grip_has_numeration():
             self.node_has_numeration.setChecked(True)
             print(self.map_object_id.node_grip_get_numeration())
@@ -414,7 +412,7 @@ class MapObjPropDock(QDockWidget):
         else:
             self.node_has_numeration.setChecked(False)
             self.switch_off_numerations_fields()
-            self.current_numbering_definitions = None
+        self.connect_numbering_widgets_signals()
 
     def fill_map_object_properties_node(self, definition):
         print(definition)
@@ -427,14 +425,13 @@ class MapObjPropDock(QDockWidget):
                 else:
                     side_of_road = self.right_side_num_data
                 if 'style' in key:
-                    num_style = {'N': 0, 'E': 1, 'O': 2, 'B': 3}
+                    num_style = {None: 0, 'N': 0, 'E': 1, 'O': 2, 'B': 3}
                     side_of_road[key].setCurrentIndex(num_style[num_dict[key]])
                 else:
                     if num_dict[key] is None:
                        side_of_road[key].setText('')
                     else:
                         side_of_road[key].setText(str(num_dict[key]))
-            self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -460,11 +457,6 @@ class MapObjPropDock(QDockWidget):
 
     def current_comment_changed(self):
         if self.current_comment_val != self.comment_text_edit.toPlainText():
-            return True
-        return False
-
-    def current_numbering_styles_changed(self):
-        if self.current_numbering_definitions != self.get_node_numeration_definition_from_form():
             return True
         return False
 
@@ -518,19 +510,17 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_set_route_params(route_defs)
 
     def command_numeration_style_edited(self, new_index):
-        if self.current_numbering_styles_changed():
-            self.save_current_numbering_styles()
-            if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
-                if not self.left_side_num_data['left_side_number_after'].text():
-                    self.left_side_num_data['left_side_number_after'].setText('0')
-            if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
-                if not self.right_side_num_data['right_side_number_after'].text():
-                    self.right_side_num_data['right_side_number_after'].setText('0')
-            self.command_set_numeration_to_node()
-
-    def command_numeration_edited(self):
-        if self.current_numbering_styles_changed():
-            self.command_set_numeration_to_node()
+        if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
+            if not self.left_side_num_data['left_side_number_after'].text():
+                self.left_side_num_data['left_side_number_after'].setText('0')
+        else:
+            self.left_side_num_data['left_side_number_after'].clear()
+        if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
+            if not self.right_side_num_data['right_side_number_after'].text():
+                self.right_side_num_data['right_side_number_after'].setText('0')
+        else:
+            self.right_side_num_data['right_side_number_after'].clear()
+        self.command_set_numeration_to_node()
 
     def command_set_numeration_to_node(self):
         return
@@ -540,9 +530,17 @@ class MapObjPropDock(QDockWidget):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
             for key, val in left_right.items():
                 if 'style' in key:
-                    val.activated.connect(self.command_numeration_style_edited)
+                    val.currentIndexChanged.connect(self.command_numeration_style_edited)
                 else:
-                    val.signals.comment_changed.connect(self.command_numeration_edited)
+                    val.signals.comment_changed.connect(self.command_set_numeration_to_node)
+
+    def disconnect_numbering_widgets_signals(self):
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.currentIndexChanged.disconnect()
+                else:
+                    val.signals.comment_changed.disconnect()
 
     def get_node_numeration_definition_from_form(self):
         definition = dict()
@@ -557,7 +555,7 @@ class MapObjPropDock(QDockWidget):
                     elif _index == 3:
                         definition[key] = 'B'
                     else:
-                        definition[key] = 'N'
+                        definition[key] = None
                 elif 'before' in key or 'after' in key:
                     if widget.text():
                         definition[key] = int(widget.text())
@@ -588,9 +586,6 @@ class MapObjPropDock(QDockWidget):
 
     def save_current_labels(self):
         self.current_labels_vals = [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
-
-    def save_current_numbering_styles(self):
-        self.current_numbering_definitions = self.get_node_numeration_definition_from_form()
 
     def set_dock_mode_edit_nodes(self):
         for tab_name, tab_index in self.tab_names_vs_index.items():
@@ -636,7 +631,6 @@ class ExtrasTable(QTableWidget):
         delete_row_action = menu.addAction('Usun wiersz')
         delete_row_action.triggered.connect(self.remove_row)
         res = menu.exec_(event.globalPos())
-
 
     def remove_row(self, event):
         self.removeRow(self.currentRow())
