@@ -413,42 +413,28 @@ class MapObjPropDock(QDockWidget):
             self.fill_map_object_properties_node(self.map_object_id.node_grip_get_numeration())
         else:
             self.node_has_numeration.setChecked(False)
+            self.switch_off_numerations_fields()
+            self.current_numbering_definitions = None
 
     def fill_map_object_properties_node(self, definition):
+        print(definition)
         if definition is not None:
+            self.switch_on_numerations_fields()
             num_dict = definition._asdict()
             for key in num_dict:
                 if 'left' in key:
-                    if 'style' in key:
-                        if num_dict[key] == 'N':
-                            self.left_side_num_data[key].setCurrentIndex(0)
-                        elif num_dict[key] == 'E':
-                            self.left_side_num_data[key].setCurrentIndex(1)
-                        elif num_dict[key] == 'O':
-                            self.left_side_num_data[key].setCurrentIndex(2)
-                        elif num_dict[key] == 'B':
-                            self.left_side_num_data[key].setCurrentIndex(3)
-                    else:
-                        if num_dict[key] is None:
-                            self.left_side_num_data[key].setText('')
-                        else:
-                            self.left_side_num_data[key].setText(str(num_dict[key]))
+                    side_of_road = self.left_side_num_data
                 else:
-                    if 'style' in key:
-                        if num_dict[key] == 'N':
-                            self.right_side_num_data[key].setCurrentIndex(0)
-                        elif num_dict[key] == 'E':
-                            self.right_side_num_data[key].setCurrentIndex(1)
-                        elif num_dict[key] == 'O':
-                            self.right_side_num_data[key].setCurrentIndex(2)
-                        elif num_dict[key] == 'B':
-                            self.right_side_num_data[key].setCurrentIndex(3)
+                    side_of_road = self.right_side_num_data
+                if 'style' in key:
+                    num_style = {'N': 0, 'E': 1, 'O': 2, 'B': 3}
+                    side_of_road[key].setCurrentIndex(num_style[num_dict[key]])
+                else:
+                    if num_dict[key] is None:
+                       side_of_road[key].setText('')
                     else:
-                        if num_dict[key] is None:
-                            self.right_side_num_data[key].setText('')
-                        else:
-                            self.right_side_num_data[key].setText(str(num_dict[key]))
-        self.save_current_numbering_styles()
+                        side_of_road[key].setText(str(num_dict[key]))
+            self.save_current_numbering_styles()
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -457,10 +443,10 @@ class MapObjPropDock(QDockWidget):
             self.fill_map_object_properties_node(numeration)
             self.command_set_numeration_to_node()
         else:
-            self.switch_off_numerations_field()
+            self.switch_off_numerations_fields()
             self.map_object_id.node_grip_set_numeration(None)
 
-    def switch_off_numerations_field(self):
+    def switch_off_numerations_fields(self):
         for num_key in self.right_side_num_data:
             self.right_side_num_data[num_key].setEnabled(False)
         for num_key in self.left_side_num_data:
