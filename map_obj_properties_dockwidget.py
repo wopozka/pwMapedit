@@ -36,7 +36,6 @@ class MapObjPropDock(QDockWidget):
         self.tab_names_vs_index = dict()
         self.current_labels_vals = []
         self.current_address_vals = []
-        self.current_comment_val = ''
         # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
         self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Glowny')
@@ -305,15 +304,15 @@ class MapObjPropDock(QDockWidget):
             if self.map_object_id.get_label1():
                 self.label1_entry.setText(self.map_object_id.get_label1())
             else:
-                self.label1_entry.setText('')
+                self.label1_entry.clear()
             if self.map_object_id.get_label2():
                 self.label2_entry.setText(self.map_object_id.get_label2())
             else:
-                self.label2_entry.setText('')
+                self.label2_entry.clear()
             if self.map_object_id.get_label3():
                 self.label3_entry.setText(self.map_object_id.get_label3())
             else:
-                self.label3_entry.setText('')
+                self.label3_entry.clear()
             self.save_current_labels()
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.poly_direction.setDisabled(True)
@@ -328,11 +327,11 @@ class MapObjPropDock(QDockWidget):
             if self.map_object_id.get_endlevel():
                 self.end_level.setText(str(self.map_object_id.get_endlevel()))
             else:
-                self.end_level.setText('')
+                self.end_level.clear()
             if self.map_object_id.get_comment():
                 self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
             else:
-                self.comment_text_edit.setPlainText('')
+                self.comment_text_edit.clear()
 
             # wypelniamy adresy, ale tylko dla poi
             if not isinstance(self.map_object_id, map_items.PoiAsPixmap):
@@ -342,18 +341,19 @@ class MapObjPropDock(QDockWidget):
                 if self.map_object_id.get_street_desc():
                     self.streetdesc.setText(self.map_object_id.get_street_desc())
                 else:
-                    self.streetdesc.setText('')
+                    self.streetdesc.clear()
                 if self.map_object_id.get_house_number():
                     self.housenumber.setText(self.map_object_id.get_house_number())
                 else:
-                    self.housenumber.setText('')
+                    self.housenumber.clear()
                 if self.map_object_id.get_phone_number():
                     self.phone.setText(self.map_object_id.get_phone_number())
                 else:
-                    self.phone.setText('')
+                    self.phone.clear()
                 self.save_current_address()
 
             # wypelniamy elements:
+            self.elements_table.clearContents()
             self.elements_table.setRowCount(0)
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
                 for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
@@ -397,9 +397,7 @@ class MapObjPropDock(QDockWidget):
                     self.extras_table.setItem(row, 0, QTableWidgetItem(item[0]))
                     self.extras_table.setItem(row, 1, QTableWidgetItem(item[1]))
             else:
-                for row in range(self.extras_table.rowCount()):
-                    self.extras_table.setItem(row, 0, QTableWidgetItem(''))
-                    self.extras_table.setItem(row, 1, QTableWidgetItem(''))
+                self.extras_table.clearContents()
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
         self.tab_widget.update()
 
@@ -429,7 +427,7 @@ class MapObjPropDock(QDockWidget):
                     side_of_road[key].setCurrentIndex(num_style[num_dict[key]])
                 else:
                     if num_dict[key] is None:
-                       side_of_road[key].setText('')
+                       side_of_road[key].clear()
                     else:
                         side_of_road[key].setText(str(num_dict[key]))
 
@@ -454,11 +452,6 @@ class MapObjPropDock(QDockWidget):
             self.right_side_num_data[num_key].setEnabled(True)
         for num_key in self.left_side_num_data:
             self.left_side_num_data[num_key].setEnabled(True)
-
-    def current_comment_changed(self):
-        if self.current_comment_val != self.comment_text_edit.toPlainText():
-            return True
-        return False
 
     def command_comment_changed(self):
         self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
@@ -580,9 +573,6 @@ class MapObjPropDock(QDockWidget):
 
     def save_current_address(self):
         self.current_address_vals = [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)]
-
-    def save_current_comment(self):
-        self.current_comment_val = self.comment_text_edit.toPlainText()
 
     def save_current_labels(self):
         self.current_labels_vals = [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
