@@ -225,17 +225,17 @@ class MapObjPropDock(QDockWidget):
         self.left_side_num_data['left_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
         self.left_side_num_data['left_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
         left_side_numbering.addRow('Styl numeracji', self.left_side_num_data['left_side_numbering_style'])
-        self.left_side_num_data['left_side_number_after'] = NumberEdit(only_numers=True)
+        self.left_side_num_data['left_side_number_after'] = NumberEdit(only_numbers=True)
         left_side_numbering.addRow('Zacznij od', self.left_side_num_data['left_side_number_after'])
-        self.left_side_num_data['left_side_number_before'] = NumberEdit(only_numers=True)
+        self.left_side_num_data['left_side_number_before'] = NumberEdit(only_numbers=True)
         left_side_numbering.addRow('Skończ na', self.left_side_num_data['left_side_number_before'])
-        self.left_side_num_data['left_side_zip_code'] = NumberEdit(only_numers=False)
+        self.left_side_num_data['left_side_zip_code'] = NumberEdit(only_numbers=False)
         left_side_numbering.addRow('Kod poczt.', self.left_side_num_data['left_side_zip_code'])
-        self.left_side_num_data['left_side_city'] = NumberEdit(only_numers=False)
+        self.left_side_num_data['left_side_city'] = NumberEdit(only_numbers=False)
         left_side_numbering.addRow('Miasto', self.left_side_num_data['left_side_city'])
-        self.left_side_num_data['left_side_region'] = NumberEdit(only_numers=False)
+        self.left_side_num_data['left_side_region'] = NumberEdit(only_numbers=False)
         left_side_numbering.addRow('Region', self.left_side_num_data['left_side_region'])
-        self.left_side_num_data['left_side_country'] = NumberEdit(only_numers=False)
+        self.left_side_num_data['left_side_country'] = NumberEdit(only_numbers=False)
         left_side_numbering.addRow('Państwo', self.left_side_num_data['left_side_country'])
 
         right_side_gb = QGroupBox('Prawa strona numeracji po węźle')
@@ -248,17 +248,17 @@ class MapObjPropDock(QDockWidget):
         self.right_side_num_data['right_side_numbering_style'].addItem('Nieparzysty (1, 3, 5, 7)')
         self.right_side_num_data['right_side_numbering_style'].addItem('Ciągły (1, 2, 3, 4)')
         right_side_numbering.addRow('Styl numeracji', self.right_side_num_data['right_side_numbering_style'])
-        self.right_side_num_data['right_side_number_after'] = NumberEdit(only_numers=True)
+        self.right_side_num_data['right_side_number_after'] = NumberEdit(only_numbers=True)
         right_side_numbering.addRow('Zacznij od', self.right_side_num_data['right_side_number_after'])
-        self.right_side_num_data['right_side_number_before'] = NumberEdit(only_numers=True)
+        self.right_side_num_data['right_side_number_before'] = NumberEdit(only_numbers=True)
         right_side_numbering.addRow('Skończ na', self.right_side_num_data['right_side_number_before'])
-        self.right_side_num_data['right_side_zip_code'] = NumberEdit(only_numers=False)
+        self.right_side_num_data['right_side_zip_code'] = NumberEdit(only_numbers=False)
         right_side_numbering.addRow('Kod poczt.', self.right_side_num_data['right_side_zip_code'])
-        self.right_side_num_data['right_side_city'] = NumberEdit(only_numers=False)
+        self.right_side_num_data['right_side_city'] = NumberEdit(only_numbers=False)
         right_side_numbering.addRow('Miasto', self.right_side_num_data['right_side_city'])
-        self.right_side_num_data['right_side_region'] = NumberEdit(only_numers=False)
+        self.right_side_num_data['right_side_region'] = NumberEdit(only_numbers=False)
         right_side_numbering.addRow('Region', self.right_side_num_data['right_side_region'])
-        self.right_side_num_data['right_side_country'] = NumberEdit(only_numers=False)
+        self.right_side_num_data['right_side_country'] = NumberEdit(only_numbers=False)
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
         self.connect_numbering_widgets_signals()
 
@@ -428,8 +428,11 @@ class MapObjPropDock(QDockWidget):
                 else:
                     if num_dict[key] is None:
                        side_of_road[key].clear()
+                       if 'before' in key:
+                           side_of_road[key].set_empty_allowed()
                     else:
                         side_of_road[key].setText(str(num_dict[key]))
+                        side_of_road[key].set_empty_not_allowed()
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -506,13 +509,17 @@ class MapObjPropDock(QDockWidget):
         if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
             if not self.left_side_num_data['left_side_number_after'].text():
                 self.left_side_num_data['left_side_number_after'].setText('0')
+            self.left_side_num_data['left_side_number_after'].set_empty_not_allowed()
         else:
             self.left_side_num_data['left_side_number_after'].clear()
+            self.left_side_num_data['left_side_number_after'].set_empty_allowed()
         if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
             if not self.right_side_num_data['right_side_number_after'].text():
                 self.right_side_num_data['right_side_number_after'].setText('0')
+            self.right_side_num_data['right_side_number_after'].set_empty_not_allowed()
         else:
             self.right_side_num_data['right_side_number_after'].clear()
+            self.right_side_num_data['right_side_number_after'].set_empty_allowed()
         print('num style edited')
         self.command_set_numeration_to_node()
 
@@ -696,11 +703,12 @@ class CommentTextEdit(QPlainTextEdit):
 
 
 class NumberEdit(QLineEdit):
-    def __init__(self, only_numers=False):
-        self.only_numbers = only_numers
+    def __init__(self, only_numbers=False):
+        self.only_numbers = only_numbers
         self.old_text = ''
         self.signals = CommentChangedSignal()
         self.valid_value = True
+        self.empty_allowed = True
         super(NumberEdit, self).__init__()
 
     def focusInEvent(self, event):
@@ -721,24 +729,42 @@ class NumberEdit(QLineEdit):
                     num_val = int(text)
                     if num_val < 0:
                         print('blad wartosci')
-                        self.setStyleSheet("background-color: red")
-                        self.valid_value = False
+                        self.set_invalid()
                 except ValueError:
-                    print('blad wartosci')
-                    self.setStyleSheet("background-color: red")
-                    self.valid_value = False
+                    self.set_invalid()
                 else:
                     print('poprawna wartosc')
-                    self.setStyleSheet("background-color: white")
-                    self.valid_value = True
+                    self.set_valid()
             else:
-                self.valid_value = True
-                self.setStyleSheet("background-color: white")
+                if self.empty_allowed:
+                    self.set_valid()
+                else:
+                    self.set_invalid()
 
         if event.key() == Qt.Key_Enter:
             self.number_edited()
 
+    def set_invalid(self):
+        self.valid_value = False
+        self.setStyleSheet("background-color: red")
+
+    def set_valid(self):
+        self.setStyleSheet("background-color: white")
+        self.valid_value = True
+
     def number_edited(self):
         new_text = self.text().strip()
-        if new_text != self.old_text:
+        if self.is_valid() and new_text != self.old_text:
             self.signals.comment_changed.emit(new_text)
+
+    def is_valid(self):
+        if self.empty_allowed:
+            if self.text().strip() and self.valid_value:
+                return True
+        return self.valid_value
+
+    def set_empty_allowed(self):
+        self.empty_allowed = True
+
+    def set_empty_not_allowed(self):
+        self.empty_allowed = False
