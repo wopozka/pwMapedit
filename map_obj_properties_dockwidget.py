@@ -209,7 +209,7 @@ class MapObjPropDock(QDockWidget):
         node_widget.setLayout(node_widget_layout)
         node_has_numeration_layout = QFormLayout()
         self.node_has_numeration = QCheckBox()
-        self.node_has_numeration.toggled.connect(self.switch_on_of_numerations)
+        self.node_has_numeration.clicked.connect(self.switch_on_of_numerations)
         node_has_numeration_layout.addRow('Węzeł ma numerację', self.node_has_numeration)
         node_widget_layout.addLayout(node_has_numeration_layout)
 
@@ -513,9 +513,11 @@ class MapObjPropDock(QDockWidget):
                 self.right_side_num_data['right_side_number_after'].setText('0')
         else:
             self.right_side_num_data['right_side_number_after'].clear()
+        print('num style edited')
         self.command_set_numeration_to_node()
 
     def command_set_numeration_to_node(self):
+        print('Uaktualniam numeracje, nowa numeracja: ', self.get_node_numeration_definition_from_form())
         return
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
