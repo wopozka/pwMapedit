@@ -740,7 +740,8 @@ class NumberEdit(QLineEdit):
                     self.set_valid()
                 else:
                     self.set_invalid()
-        if event.key() == Qt.Key_Enter:
+        print(event.key(), Qt.Key_Enter)
+        if event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
             self.number_edited()
 
     def set_invalid(self):
