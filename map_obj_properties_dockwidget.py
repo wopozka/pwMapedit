@@ -508,14 +508,14 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_set_route_params(route_defs)
 
     def command_numeration_style_edited(self, new_index):
-        if self.left_side_num_data['left_side_numbering_style'].currentIndex() != 0:
+        if self.left_side_num_data['left_side_numbering_style'].currentIndex() > 0:
             if not self.left_side_num_data['left_side_number_after'].text():
                 self.left_side_num_data['left_side_number_after'].setText('0')
             self.left_side_num_data['left_side_number_after'].set_empty_not_allowed()
         else:
             self.left_side_num_data['left_side_number_after'].clear()
             self.left_side_num_data['left_side_number_after'].set_empty_allowed()
-        if self.right_side_num_data['right_side_numbering_style'].currentIndex() != 0:
+        if self.right_side_num_data['right_side_numbering_style'].currentIndex() > 0:
             if not self.right_side_num_data['right_side_number_after'].text():
                 self.right_side_num_data['right_side_number_after'].setText('0')
             self.right_side_num_data['right_side_number_after'].set_empty_not_allowed()
