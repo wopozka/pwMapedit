@@ -402,18 +402,18 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def fill_map_object_properties_node_when_selected(self):
-        self.disconnect_numbering_widgets_signals()
         if self.map_object_id.node_grip_has_numeration():
             self.node_has_numeration.setChecked(True)
             print(self.map_object_id.node_grip_get_numeration())
             self.fill_map_object_properties_node(self.map_object_id.node_grip_get_numeration())
         else:
             self.node_has_numeration.setChecked(False)
+            self.clear_numeration_fields()
             self.switch_off_numerations_fields()
-        self.connect_numbering_widgets_signals()
 
     def fill_map_object_properties_node(self, definition):
         print(definition)
+        self.disconnect_numbering_widgets_signals()
         if definition is not None:
             self.switch_on_numerations_fields()
             num_dict = definition._asdict()
@@ -433,6 +433,7 @@ class MapObjPropDock(QDockWidget):
                     else:
                         side_of_road[key].setText(str(num_dict[key]))
                         side_of_road[key].set_empty_not_allowed()
+        self.connect_numbering_widgets_signals()
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -441,6 +442,7 @@ class MapObjPropDock(QDockWidget):
             self.fill_map_object_properties_node(numeration)
             self.command_set_numeration_to_node()
         else:
+            self.clear_numeration_fields()
             self.switch_off_numerations_fields()
             self.map_object_id.node_grip_set_numeration(None)
 
@@ -616,6 +618,17 @@ class MapObjPropDock(QDockWidget):
                 self.tab_widget.setTabEnabled(tab_index, False)
         self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
         self.tab_widget.update()
+
+    def clear_numeration_fields(self):
+        self.disconnect_numbering_widgets_signals()
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.setCurrentIndex(-1)
+                else:
+                    val.clear()
+        self.connect_numbering_widgets_signals()
+
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
