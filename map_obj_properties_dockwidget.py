@@ -525,7 +525,7 @@ class MapObjPropDock(QDockWidget):
 
     def command_set_numeration_to_node(self):
         print('Uaktualniam numeracje, nowa numeracja: ', self.get_node_numeration_definition_from_form())
-        return
+        # return
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def connect_numbering_widgets_signals(self):
@@ -740,7 +740,6 @@ class NumberEdit(QLineEdit):
                     self.set_valid()
                 else:
                     self.set_invalid()
-
         if event.key() == Qt.Key_Enter:
             self.number_edited()
 
@@ -755,6 +754,7 @@ class NumberEdit(QLineEdit):
     def number_edited(self):
         new_text = self.text().strip()
         if self.is_valid() and new_text != self.old_text:
+            print('generuje number edited')
             self.signals.comment_changed.emit(new_text)
 
     def is_valid(self):
