@@ -477,13 +477,13 @@ class Data_X(object):
                                               False).get_numbers_definition()
         if left_side:
             numbers = self.get_numbers_between(start_node_num_def.left_side_number_after,
-                                                    end_node_num_def.left_side_number_after,
+                                                    end_node_num_def.left_side_number_before,
                                                     start_node_num_def.left_side_numbering_style)
             numbers = ([start_node_num_def.left_side_number_after] + numbers +
                             [end_node_num_def.left_side_number_before])
         else:
             numbers = self.get_numbers_between(start_node_num_def.right_side_number_after,
-                                                     end_node_num_def.right_side_number_after,
+                                                     end_node_num_def.right_side_number_before,
                                                      start_node_num_def.right_side_numbering_style)
             numbers = ([start_node_num_def.right_side_number_after] + numbers +
                              [end_node_num_def.right_side_number_before])
@@ -525,7 +525,7 @@ class Data_X(object):
         poly_vectors = self.get_poly_vectors(data_level, poly_num, start_node_idx, end_node_idx)
 
         left_num_style = node_with_num.get_specific_number_definition('left_side_numbering_style')
-        if left_num_style != 'N':
+        if left_num_style is not None and left_num_style != 'N':
             left_num_start = node_with_num.get_specific_number_definition('left_side_number_after')
             left_num_end = node_with_num_plus.get_specific_number_definition('left_side_number_before')
             on_left = self.get_numbers_between(left_num_start, left_num_end, left_num_style)
@@ -534,7 +534,7 @@ class Data_X(object):
             left += self.get_interpolated_numbers_coordinates(list(poly_vectors), on_left)
 
         right_num_style = node_with_num.get_specific_number_definition('right_side_numbering_style')
-        if right_num_style != 'N':
+        if right_num_style is not None and right_num_style != 'N':
             right_num_start = node_with_num.get_specific_number_definition('right_side_number_after')
             right_num_end = node_with_num_plus.get_specific_number_definition('right_side_number_before')
             on_right = self.get_numbers_between(right_num_start, right_num_end, right_num_style)
