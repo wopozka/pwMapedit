@@ -13,7 +13,7 @@
   },
   "4": {
     "en": "Arterial Road",
-    "pl": "droga g\u0142\u00f3wna"
+    "pl": "droga główna"
   },
   "5": {
     "en": "Collector Road",
@@ -41,7 +41,7 @@
   },
   "11": {
     "en": "Highway connector",
-    "pl": "\u0142\u0105cznik"
+    "pl": "Łącznik"
   },
   "12": {
     "en": "Roundabout",
@@ -49,7 +49,7 @@
   },
   "13": {
     "en": "Bike Route",
-    "pl": "droga dla rower\u00f3w"
+    "pl": "droga dla rowerów"
   },
   "14": {
     "en": "Tunnel",
@@ -73,11 +73,11 @@
   },
   "24": {
     "en": "Stream",
-    "pl": "strumie\u0144"
+    "pl": "strumień"
   },
   "25": {
     "en": "Turn restriction",
-    "pl": "zakaz skr\u0119tu"
+    "pl": "zakaz skrętu"
   },
   "26": {
     "en": "Ferry",
@@ -93,7 +93,7 @@
   },
   "30": {
     "en": "International boundary",
-    "pl": "granica mi\u0119dzynarodowa"
+    "pl": "granica międzynarodowa"
   },
   "31": {
     "en": "River",
@@ -112,7 +112,7 @@
   },
   "47": {
     "en": "Road Sign",
-    "pl": "podpowied\u017a"
+    "pl": "podpowiedź"
   },
   "69120": {
     "en": "Hiking Trial Red",
@@ -120,7 +120,7 @@
   },
   "69121": {
     "en": "Hiking Trial Yellow",
-    "pl": "Szlak pieszy \u017c\u00f3\u0142ty"
+    "pl": "Szlak pieszy żółty"
   },
   "69122": {
     "en": "Hiking Trial Green",
@@ -152,7 +152,7 @@
   },
   "69129": {
     "en": "Bike Trial Yellow",
-    "pl": "Szlak rowerowy \u017c\u00f3\u0142ty"
+    "pl": "Szlak rowerowy żółty"
   },
   "69130": {
     "en": "Bike Trial Green",
@@ -171,7 +171,7 @@
   },
   "69135": {
     "en": "Trial other",
-    "pl": "Szlak ko\u0144ski - \u015bcie\u017cka dydaktyczna - inne"
+    "pl": "Szlak koński - ścieżka dydaktyczna - inne"
   },
   "69136": {
     "en": "Tram",
@@ -199,7 +199,7 @@
   },
   "69142": {
     "en": "Ski lift",
-    "pl": "wyci\u0105g/kolejka"
+    "pl": "wyciąg/kolejka"
   },
   "69143": {
     "en": "Ski lift",
@@ -207,7 +207,7 @@
   },
   "69146": {
     "en": "Floodbank",
-    "pl": "wa\u0142 przeciwpowodziowy"
+    "pl": "wał przeciwpowodziowy"
   },
   "69147": {
     "en": "Walls",
@@ -223,11 +223,11 @@
   },
   "69397": {
     "en": "White",
-    "pl": "bia\u0142e"
+    "pl": "białe"
   },
   "69398": {
     "en": "Yellow",
-    "pl": "\u017c\u00f3\u0142te"
+    "pl": "Żółte"
   },
   "69399": {
     "en": "Red",
@@ -239,7 +239,7 @@
   },
   "69401": {
     "en": "Orange",
-    "pl": "pomara\u0144czowe"
+    "pl": "pomarańczowe"
   },
   "69402": {
     "en": "Pier",
@@ -247,7 +247,7 @@
   },
   "69403": {
     "en": "Submarine pipe",
-    "pl": "ruroci\u0105g podwodny"
+    "pl": "rurociąg podwodny"
   },
   "69404": {
     "en": "Submarine cable",
@@ -259,7 +259,7 @@
   },
   "69406": {
     "en": "Leading line",
-    "pl": "linia nabie\u017cnika"
+    "pl": "linia nabieżnika"
   },
   "69407": {
     "en": "Separation line",

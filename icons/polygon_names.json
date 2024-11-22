@@ -1,11 +1,11 @@
 {
   "1": {
     "en": "City",
-    "pl": "miasto du\u017ce pow. 200tys"
+    "pl": "miasto duże pow. 200tys"
   },
   "2": {
     "en": "City",
-    "pl": "miasto ma\u0142e"
+    "pl": "miasto małe"
   },
   "4": {
     "en": "Military base",
@@ -33,7 +33,7 @@
   },
   "10": {
     "en": "School",
-    "pl": "szko\u0142a"
+    "pl": "szkoła"
   },
   "11": {
     "en": "Hospital",
@@ -41,7 +41,7 @@
   },
   "12": {
     "en": "Industrial area",
-    "pl": "teren przemys\u0142owy"
+    "pl": "teren przemysłowy"
   },
   "14": {
     "en": "Airport runway",
@@ -81,43 +81,43 @@
   },
   "60": {
     "en": "Large lake",
-    "pl": "du\u017ce jezioro"
+    "pl": "duże jezioro"
   },
   "61": {
     "en": "Large lake",
-    "pl": "du\u017ce jezioro"
+    "pl": "duże jezioro"
   },
   "62": {
     "en": "Medium lake",
-    "pl": "\u015brednie jezioro"
+    "pl": "średnie jezioro"
   },
   "63": {
     "en": "Medium lake",
-    "pl": "\u015brednie jezioro"
+    "pl": "średnie jezioro"
   },
   "64": {
     "en": "Small lake",
-    "pl": "ma\u0142e jezioro"
+    "pl": "małe jezioro"
   },
   "65": {
     "en": "Small lake",
-    "pl": "ma\u0142e jezioro"
+    "pl": "małe jezioro"
   },
   "70": {
     "en": "Major river",
-    "pl": "du\u017ca rzeka (rozlewisko)"
+    "pl": "duża rzeka (rozlewisko)"
   },
   "71": {
     "en": "Large river",
-    "pl": "du\u017ca rzeka"
+    "pl": "duża rzeka"
   },
   "72": {
     "en": "Medium river",
-    "pl": "\u015brednia rzeka"
+    "pl": "średnia rzeka"
   },
   "73": {
     "en": "Small river",
-    "pl": "ma\u0142a rzeka"
+    "pl": "mała rzeka"
   },
   "75": {},
   "76": {
@@ -130,19 +130,19 @@
   },
   "78": {
     "en": "Orchard",
-    "pl": "sad i ogrody dzia\u0142kowe"
+    "pl": "sad i ogrody działkowe"
   },
   "79": {
     "en": "Scrub",
-    "pl": "zaro\u015bla i nieu\u017cytki"
+    "pl": "zarośla i nieużytki"
   },
   "80": {
     "en": "Don't use! See 0x14...",
-    "pl": "Nie u\u017cywa\u0107! Las jest 0x14"
+    "pl": "Nie używać! Las jest 0x14"
   },
   "81": {
     "en": "Swamp",
-    "pl": "mokrad\u0142a"
+    "pl": "mokradła"
   },
   "83": {
     "en": "Sand",
