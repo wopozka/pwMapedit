@@ -48,8 +48,20 @@ class MapObjectsProperties(object):
                                           0x19: Qt.green,  # timezone
                                           0x1a: QColor('#00ffff"'),
                                           0x1c: QColor('gray'),
-                                          0x1f: Qt.blue,
-                                          0x2f: Qt.blue,
+                                          0x1f: Qt.blue, # rzeka
+                                          0x20: QColor("#AAAA00"),  # elevation minor land contour
+                                          0x21: QColor("#AAAA00"),  # elevation interm land contour
+                                          0x22: QColor("#AAAA00"),  # elevation major land contour
+                                          0x23: QColor('#39caff'),  # elevation minor depth contour
+                                          0x24: QColor('#39caff'),  # elevation interm depth contour
+                                          0x25: QColor('#39caff'),  # elevation major depth contour
+                                          0x26: QColor('#39caff'),  # strumień okresowy
+                                          0x27: Qt.blue,            # airport runway centerline
+                                          0x28: Qt.gray,            # oil or water pipeline
+                                          0x29: Qt.black,           # power line
+                                          0x2a: Qt.red,             # marine boundary
+                                          0x2b: QColor('#FAA500'),  # marine hazard
+                                          0x2f: Qt.blue, # znak drogowy
                                           0x4b: Qt.red,
                                           0x10e00: QColor('#ff0000'),  # hiking trial red
                                           0x10e01: QColor('#ffff41'),  # hiking trial yellow
@@ -65,8 +77,8 @@ class MapObjectsProperties(object):
                                           0x10e0d: QColor('#a959a9'),  # rowerowy inny
                                           0x10e0f: Qt.black,           # trial other
                                           0x10e10: QColor('#0000ff'),  # tramwaj
-                                          0x10e11: QColor('#ffffff'),  # planowana ulica
-                                          0x10e12: QColor('#ffffff'),  # planowana
+                                          0x10e11: QColor('#39caff'),  # planowana ulica
+                                          0x10e12: QColor('#39caff'),  # planowana
                                           0x10e13: QColor('#e80020'),  # w budowie
                                           0x10e14: Qt.black,  # railroad
                                           0x10e15: QColor('#a4a4a4')
@@ -89,6 +101,9 @@ class MapObjectsProperties(object):
                                           0x14: 3,
                                           0x15: 2,
                                           0x1f: 3,
+                                          0x25: 3,
+                                          0x26: 4,
+                                          0x2a: 2,
                                           0x10e00: 2,
                                           0x10e01: 2,
                                           0x10e02: 2,
@@ -115,6 +130,12 @@ class MapObjectsProperties(object):
                                         0x1c: Qt.DashDotLine,
                                         0x16: Qt.DashLine,
                                         0x18: Qt.DashLine,
+                                        0x21: Qt.DotLine,
+                                        0x22: Qt.DashLine,
+                                        0x23: Qt.DashLine,
+                                        0x28: Qt.DotLine,
+                                        0x2a: Qt.DashLine,
+                                        0x2b: Qt.DashLine,
                                         0x4b: Qt.DashLine,
                                         0x10e00: Qt.DashLine,
                                         0x10e01: Qt.DashLine,
