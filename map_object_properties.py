@@ -157,7 +157,7 @@ class MapObjectsProperties(object):
                                         0x10e15: Qt.DashLine,
                                        }
 
-        self.polyline_type_vs_name = self.create_polyline_type_vs_name()
+        # self.polyline_type_vs_name = self.create_polyline_type_vs_name()
 
         #polygon definitions
         self.polygon_properties_fill_colour = {0x1: QColor('#d5d5d5'),
@@ -265,7 +265,7 @@ class MapObjectsProperties(object):
                                            0x53: 5, # sand/tidal/mud flat
                                            }
 
-        self.polygon_type_vs_name = self.create_polygon_type_vs_name()
+        # self.polygon_type_vs_name = self.create_polygon_type_vs_name()
 
     @staticmethod
     def read_icons(icon_type):

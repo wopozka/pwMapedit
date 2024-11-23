@@ -73,7 +73,7 @@ class WebLayers(object):
             salt1 = 'Galileo'[0: (3 * xtile + ytile) % 8]
             salt2 = '&s=' if 10000 <= ytile < 100000 else ''
             server_num = ((xtile + 2) * ytile) % 2
-            version = 989
+            version = 988
             level = self.zoom
             # http://khm%d.google.pl/kh/v=%d&x=%d%s&y=%d&z=%s&s=%s
             return f'http://khm{server_num}.google.pl/kh/v={version}&x={xtile}{salt2}&y={ytile}&z={level}&s={salt1}'
