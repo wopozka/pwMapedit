@@ -26,4 +26,18 @@ line_type_2_name = {
     0x1d: ('Boundaries', 'Border', 'granica'),
     0x1e: ('Boundaries', 'International boundary', 'granica międzynarodowa'),
     0x1f: ('Water', 'River', 'rzeka'),
+    0x20: ('Elevation', 'Minor land contour (1/10)', ''),
+    0x21: ('Elevation', 'Interm. land contour (1/2)', ''),
+    0x22: ('Elevation', 'Major land contour (1/1)', ''),
+    0x23: ('Elevation', 'Minor depth contour (1/10)', ''),
+    0x24: ('Elevation', 'Interm. depth contour (1/2)', ''),
+    0x25: ('Elevation', 'Major depth contour (1/1)', ''),
+    0x26: ('Water', 'Intermittenth stream/ditch', ''),
+    0x27: ('Man made', 'Airport runway centerline', 'pas startowy linia centralna'),
+    0x28: ('Man made', 'Oil or water pipeline', 'rurociąg ropa/woda'),
+    0x29: ('Man made', 'Powerline', 'linia energetyczna'),
+    0x2a: ('Water', 'Marine boundary', 'granica morska'),
+    0x2b: ('Water', 'Marine hazard', 'granica morska niebezpieczeństwo'),
+    0x2f: ('Custom', 'Road sign', 'podpowiedź'),
+
 }
