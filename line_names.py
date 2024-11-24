@@ -85,4 +85,15 @@ polygon_type_2_name = {
     0x9: ('Man made', 'Marina', 'porty przystanie terminale kontererowe'),
     0xa: ('Man made', 'School', 'szkola'),
     0xb: ('Man made', 'Hospital', 'szpital'),
+    0xc: ('Man made', 'Industrial area', 'teren przemysłowy'),
+    0xd: ('Man made', 'Reservation', ''),
+    0xe: ('Man made', 'Airport runway', 'pas startowy'),
+    0x13: ('Building', 'Building', 'budynek'),
+    0x14: ('Land', 'Forest', 'las'),
+    0x15: ('Land', 'National park', 'park narodowy rezerwat'),
+    0x16: ('Land', 'National park', ''),
+    0x17: ('Man made', 'City park', 'park miejski'),
+    0x18: ('Sports', 'Golf course', 'pole golfowe'),
+    0x19: ('Sports', 'Sports comples', 'obiekty sportowe'),
+
 }
