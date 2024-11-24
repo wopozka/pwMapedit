@@ -72,3 +72,17 @@ line_type_2_name = {
     0x10f1e: ('Custom', 'Leading line', 'linia nabieżnika'),
     0x10f1f: ('Custom', 'Separation line', 'linia rozgraniczenia'),
 }
+
+polygon_type_2_name = {
+    0x1: ('Cities', 'City', 'miasto duże powyżej 200tys'),
+    0x2: ('Cities', 'City', 'miasto małe'),
+    0x3: ('Cities', 'Rural housing area', 'obszar zamieszkały'),
+    0x4: ('Man made', 'Military base', 'baza wojskowa'),
+    0x5: ('Man made', 'Parking', 'parking odkryty'),
+    0x6: ('Man made', 'Parking garage', 'parking pod dachem'),
+    0x7: ('Man made', 'Airport', 'terminal lotniska lub hangar'),
+    0x8: ('Man made', 'Shop', 'sklep'),
+    0x9: ('Man made', 'Marina', 'porty przystanie terminale kontererowe'),
+    0xa: ('Man made', 'School', 'szkola'),
+    0xb: ('Man made', 'Hospital', 'szpital'),
+}
