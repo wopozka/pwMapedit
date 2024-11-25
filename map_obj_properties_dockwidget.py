@@ -655,6 +655,7 @@ class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.itemChanged.connect(self.item_edited)
 
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
     def contextMenuEvent(self, event):
@@ -670,6 +671,9 @@ class ExtrasTable(QTableWidget):
 
     def add_row(self, event):
         self.insertRow(self.currentRow())
+
+    def item_edited(row, column):
+       print(row, column)
 
 
 class TypeComboBox(QComboBox):
