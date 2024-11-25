@@ -28,7 +28,7 @@ class MapObjectsProperties(object):
         #dictionary where key is Type
         self.polyline_properties_colour = {0: Qt.black,
                                           0x1: QColor('#0000ff'), # Motorway
-                                          0x2: QColor('#ff0000'), # Principal Highway
+                                          0x2: QColor('#cc00ff'), # Principal Highway
                                           0x3: QColor('#bd3020'), # Principal Highway
                                           0x4: QColor('#ff9500'), # Arterial Road
                                           0x5: QColor('#ffff8b'), # Collector Road
@@ -103,7 +103,7 @@ class MapObjectsProperties(object):
                                           0x15: 2,
                                           0x1f: 3,
                                           0x25: 3,
-                                          0x26: 4,
+                                          0x26: 2,
                                           0x2a: 2,
                                           0x10e00: 2,
                                           0x10e01: 2,

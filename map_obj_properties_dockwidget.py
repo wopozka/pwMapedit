@@ -44,6 +44,7 @@ class MapObjPropDock(QDockWidget):
         dock_widget.setLayout(dock_box)
         type_labels_layout = QFormLayout()
         self.type_selector = TypeComboBox(dock_widget)
+        self.type_selector.currentIndexChanged.connect(self.command_type_changed)
         self.type_selector.setEditable(True)
         type_labels_layout.addRow('Type', self.type_selector)
         self.label1_entry = QLineEdit(dock_widget)
@@ -286,6 +287,7 @@ class MapObjPropDock(QDockWidget):
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
         else:
             # wypełniamy type
+            self.type_selector.currentIndexChanged.disconnect()
             self.type_selector.clear()
             if isinstance(self.map_object_id, map_items.PoiAsPixmap):
                 cur_index = -1
@@ -299,6 +301,7 @@ class MapObjPropDock(QDockWidget):
                     self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
                     if poi_type == self.map_object_id.get_type():
                         self.type_selector.setCurrentIndex(cur_index)
+                    self.type_selector.setItemData(cur_index, p_type)
             else:
                 if isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                     poly_types = self.map_object_id.map_objects_properties.get_line_type_names()
@@ -314,6 +317,8 @@ class MapObjPropDock(QDockWidget):
                     self.type_selector.addItem(p_type + category + name_en + name_pl)
                     if poly_type == self.map_object_id.get_type():
                         self.type_selector.setCurrentIndex(cur_index)
+                    self.type_selector.setItemData(cur_index, p_type)
+            self.type_selector.currentIndexChanged.connect(self.command_type_changed)
 
             if self.map_object_id.get_label1():
                 self.label1_entry.setText(self.map_object_id.get_label1())
@@ -544,6 +549,10 @@ class MapObjPropDock(QDockWidget):
         # return
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
+    def command_type_changed(self, new_index):
+        print(f'type changed to {self.type_selector.currentIndex()}')
+        print(f'item data {self.type_selector.itemData(new_index)}')
+
     def connect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
             for key, val in left_right.items():
@@ -626,7 +635,6 @@ class MapObjPropDock(QDockWidget):
     def set_dock_off(self):
         print('wylaczam dock')
         self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
-        self.tab_widget.update()
         for tab_name, tab_index in self.tab_names_vs_index.items():
             if tab_name != 'glowny':
                 self.tab_widget.setTabEnabled(tab_index, False)
