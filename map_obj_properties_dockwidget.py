@@ -301,7 +301,7 @@ class MapObjPropDock(QDockWidget):
                     self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
                     if poi_type == self.map_object_id.get_type():
                         self.type_selector.setCurrentIndex(cur_index)
-                    self.type_selector.setItemData(cur_index, p_type)
+                    self.type_selector.setItemData(cur_index, poi_type)
             else:
                 if isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                     poly_types = self.map_object_id.map_objects_properties.get_line_type_names()
@@ -317,7 +317,7 @@ class MapObjPropDock(QDockWidget):
                     self.type_selector.addItem(p_type + category + name_en + name_pl)
                     if poly_type == self.map_object_id.get_type():
                         self.type_selector.setCurrentIndex(cur_index)
-                    self.type_selector.setItemData(cur_index, p_type)
+                    self.type_selector.setItemData(cur_index, poly_type)
             self.type_selector.currentIndexChanged.connect(self.command_type_changed)
 
             if self.map_object_id.get_label1():
@@ -550,7 +550,6 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def command_type_changed(self, new_index):
-        print(f'item data {self.type_selector.itemData(new_index)}')
         self.map_object_id.command_update_type(self.type_selector.itemData(new_index))
 
     def connect_numbering_widgets_signals(self):

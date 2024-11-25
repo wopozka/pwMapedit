@@ -1198,7 +1198,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self.scene().undo_redo_stack.push(command)
 
     def command_update_type(self, new_type):
-        command = commands.UpdatePoiType(self, new_type, f'Edycja type to {new_type}')
+        command = commands.UpdatePoiType(self, new_type, f'Edycja type POI na: {new_type}')
         self.scene().undo_redo_stack.push(command)
 
     def highlight_when_hoverover(self):
@@ -1882,6 +1882,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.update()
         return
 
+    def set_pen(self):
+        return
+
     def setPen(self, pen):
         if self.orig_pen is None:
             self.orig_pen = pen
@@ -2050,9 +2053,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.scene().undo_redo_stack.push(command)
 
     def command_update_type(self, new_type):
-        return
-        # command = commands.UpdatePoiType(self, new_type, f'Edycja type to {new_type}')
-        # self.scene().undo_redo_stack.push(command)
+        command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
+        self.scene().undo_redo_stack.push(command)
 
 
     @staticmethod
@@ -2128,6 +2130,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                 continue
             level = int(given_level[-1])
             self._mp_hlevels[level] = data
+
+    def set_pen(self):
+        self.orig_pen = None
+        pen = self.map_objects_properties.get_polyline_qpen(self.get_type())
+        self.setPen(pen)
 
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:
@@ -2297,6 +2304,11 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:
             self.remove_label()
+
+    def set_pen(self):
+        self.orig_pen = None
+        pen = self.map_objects_properties.get_polygon_qpen(self.get_type())
+        self.setPen(pen)
 
     def add_items_after_new_map_level_set(self):
         self.add_label()

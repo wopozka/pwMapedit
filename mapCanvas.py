@@ -110,16 +110,14 @@ class mapCanvas(QGraphicsScene):
             # if mapobject.get_param('EndLevel'):
             #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
             mapobject.set_map_level()
-            pen = self.map_objects_properties.get_polyline_qpen(mapobject.get_param('Type'))
-            mapobject.setPen(pen)
-            # mapobject.add_hlevel_labels()
+            mapobject.set_pen()
         elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
             # polygon = map_items.PolygonQGraphicsPathItem(self.projection)
             # for data_x in mp_data_range:
             #     if mapobject.get_datax(data_x):
             mapobject.set_mp_data()
             mapobject.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.get_param('Type')))
-            mapobject.setPen(self.map_objects_properties.get_polygon_qpen(mapobject.get_param('Type')))
+            mapobject.set_pen()
             color = self.map_objects_properties.get_polygon_fill_colour(mapobject.get_param('Type'))
             mapobject.setBrush(QBrush(color))
             self.addItem(mapobject)
