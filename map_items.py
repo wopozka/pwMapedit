@@ -902,7 +902,8 @@ class BasicMapItem(object):
         for number_keyname in obj_data:
             _, key = number_keyname
             if number_keyname[1] == 'Type':
-                self.set_param('Type', int(obj_data[number_keyname], 16))
+                # self.set_param('Type', int(obj_data[number_keyname], 16))
+                self.set_type(obj_data[number_keyname])
             elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
                                        'CountryCode', 'ZipCode'):
                 self.set_param(key, obj_data[number_keyname])
@@ -1001,6 +1002,12 @@ class BasicMapItem(object):
 
     def set_street_desc(self, value):
         self.streetdesc = value
+
+    def set_type(self, type_val):
+        if isinstance(type_val, str):
+            self.type = int(type_val, 16)
+        else:
+            self.type = type_val
 
     def set_obj_bounding_box(self, obj_bb):
         if not self.obj_bounding_box:
@@ -1190,6 +1197,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         command = commands.UpdateAddressComponents(self, new_value, description)
         self.scene().undo_redo_stack.push(command)
 
+    def command_update_type(self, new_type):
+        command = commands.UpdatePoiType(self, new_type, f'Edycja type to {new_type}')
+        self.scene().undo_redo_stack.push(command)
+
     def highlight_when_hoverover(self):
         if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
             return False
@@ -1234,7 +1245,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             if not data:
                 continue
             if self.pixmap().isNull():
-                self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_type()))
+                self.set_pixmap()
             level = int(given_level[-1])
             node = data[0]
             x, y = node[0].get_canvas_coords()
@@ -1252,6 +1263,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def set_brush(self):
         pass
+
+    def set_pixmap(self):
+        self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_type()))
 
     def decorate(self):
         pass
@@ -1618,6 +1632,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def command_update_labels(self, label_num, new_label):
         command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
         self.scene().undo_redo_stack.push(command)
+
+    def command_update_type(self, new_type):
+        return
 
     def create_painter_path(self, poly_lists):
         path = QPainterPath()
@@ -2032,6 +2049,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         command = commands.SelectModeRouteParams(self, route_params_values)
         self.scene().undo_redo_stack.push(command)
 
+    def command_update_type(self, new_type):
+        return
+        # command = commands.UpdatePoiType(self, new_type, f'Edycja type to {new_type}')
+        # self.scene().undo_redo_stack.push(command)
+
 
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):
@@ -2249,6 +2271,9 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
                                                        projection=projection)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
+
+    def command_update_type(self, new_type):
+        return
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):

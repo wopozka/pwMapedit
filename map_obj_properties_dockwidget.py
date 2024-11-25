@@ -550,8 +550,8 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
 
     def command_type_changed(self, new_index):
-        print(f'type changed to {self.type_selector.currentIndex()}')
         print(f'item data {self.type_selector.itemData(new_index)}')
+        self.map_object_id.command_update_type(self.type_selector.itemData(new_index))
 
     def connect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
