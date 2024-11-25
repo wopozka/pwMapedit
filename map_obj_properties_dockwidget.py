@@ -289,8 +289,7 @@ class MapObjPropDock(QDockWidget):
             self.type_selector.clear()
             if isinstance(self.map_object_id, map_items.PoiAsPixmap):
                 cur_index = -1
-                for poi_type, val in (
-                        self.map_object_id.map_objects_properties.get_create_poi_type_name_alias().items()):
+                for poi_type, val in self.map_object_id.map_objects_properties.get_poi_type_name_alias().items():
                     cur_index += 1
                     icon = QIcon(val[0])
                     p_type = str(hex(poi_type)) + ' '
@@ -299,6 +298,28 @@ class MapObjPropDock(QDockWidget):
                     aliases = val[3]
                     self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
                     if poi_type == self.map_object_id.get_type():
+                        self.type_selector.setCurrentIndex(cur_index)
+            elif isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+                cur_index = -1
+                for  poly_type, val in self.map_object_id.map_objects_properties.get_line_type_names().items():
+                    cur_index += 1
+                    p_type = str(hex(poly_type)) + ' '
+                    category = '(' + val[0] + '), '
+                    name_en = val[1]
+                    name_pl = ', ' + val[2] if val[2] else ''
+                    self.type_selector.addItem(p_type + category + name_en + name_pl)
+                    if poly_type == self.map_object_id.get_type():
+                        self.type_selector.setCurrentIndex(cur_index)
+            else:
+                cur_index = -1
+                for poly_type, val in self.map_object_id.map_objects_properties.get_polygon_type_names().items():
+                    cur_index += 1
+                    p_type = str(hex(poly_type)) + ' '
+                    category = '(' + val[0] + '), '
+                    name_en = val[1]
+                    name_pl = ', ' + val[2] if val[2] else ''
+                    self.type_selector.addItem(p_type + category + name_en + name_pl)
+                    if poly_type == self.map_object_id.get_type():
                         self.type_selector.setCurrentIndex(cur_index)
 
             if self.map_object_id.get_label1():

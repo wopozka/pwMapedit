@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphics
 import map_items
 from icons.type_aliases import type_2_alias
 from icons.icons_names import icon_types
+from icons.line_polygon_names import line_type_2_name, polygon_type_2_name
 
 
 class MapObjectsProperties(object):
@@ -331,8 +332,14 @@ class MapObjectsProperties(object):
         print(poi_types)
         return poi_types
 
-    def get_create_poi_type_name_alias(self):
+    def get_poi_type_name_alias(self):
         return self.poi_type_name_alias
+
+    def get_line_type_names(self):
+        return line_type_2_name
+
+    def get_polygon_type_names(self):
+        return polygon_type_2_name
 
     def get_nonpixmap_poi_brush(self, poi_type):
         if poi_type in self.non_pixmap_brushes:
