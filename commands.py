@@ -446,3 +446,32 @@ class UpdatePolyType(QUndoCommand):
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
                 self.map_object.setSelected(True)
+
+
+class UpdatePolygonType(QUndoCommand):
+    def __init__(self, map_object, new_type, description):
+        super(UpdatePolygonType, self).__init__(description)
+        self.map_object = map_object
+        self.new_type = new_type
+        self.old_type = self.map_object.get_type()
+
+    def redo(self):
+        self.map_object.set_type(self.new_type)
+        self.update_after_type_change()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.set_type(self.old_type)
+        self.update_after_type_change()
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+
+    def update_after_type_change(self):
+        self.map_object.set_z_value()
+        self.map_object.set_pen()
+        self.map_object.set_brush()

@@ -116,10 +116,9 @@ class mapCanvas(QGraphicsScene):
             # for data_x in mp_data_range:
             #     if mapobject.get_datax(data_x):
             mapobject.set_mp_data()
-            mapobject.setZValue(self.map_objects_properties.get_polygon_z_value(mapobject.get_param('Type')))
+            mapobject.set_z_value()
             mapobject.set_pen()
-            color = self.map_objects_properties.get_polygon_fill_colour(mapobject.get_param('Type'))
-            mapobject.setBrush(QBrush(color))
+            mapobject.set_brush()
             self.addItem(mapobject)
             mapobject.add_label()
             # if mapobject.get_param('EndLevel'):

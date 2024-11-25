@@ -1882,7 +1882,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.update()
         return
 
+    def set_brush(self):
+        return
+
     def set_pen(self):
+        return
+
+    def set_z_value(self):
         return
 
     def setPen(self, pen):
@@ -2280,7 +2286,8 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setAcceptHoverEvents(True)
 
     def command_update_type(self, new_type):
-        return
+        command = commands.UpdatePolygonType(self, new_type, f'Edycja type polygonu na: {new_type}')
+        self.scene().undo_redo_stack.push(command)
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
@@ -2305,10 +2312,17 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         if self.label is not None:
             self.remove_label()
 
+    def set_brush(self):
+        color = self.map_objects_properties.get_polygon_fill_colour(self.get_type())
+        self.setBrush(QBrush(color))
+
     def set_pen(self):
         self.orig_pen = None
         pen = self.map_objects_properties.get_polygon_qpen(self.get_type())
         self.setPen(pen)
+
+    def set_z_value(self):
+        self.setZValue(self.map_objects_properties.get_polygon_z_value(self.get_type()))
 
     def add_items_after_new_map_level_set(self):
         self.add_label()
