@@ -104,22 +104,16 @@ class mapData(object):
             poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
             self.lastObjectId += 1
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
-                poi_icon = self.map_objects_properties.get_poi_icon(poi_poly_type[1])
-                if isinstance(poi_icon, QPainterPath):
-                    print(mp_record)
-                    map_object = map_items.PoiAsPath(map_objects_properties=self.map_objects_properties,
-                                                     projection=self.projection)
-                elif isinstance(poi_icon, QPixmap):
-                    map_object = map_items.PoiAsPixmap(map_objects_properties=self.map_objects_properties,
-                                                       projection=self.projection)
-                elif isinstance(poi_icon, str):
-                    map_object = map_items.AddrLabel(map_objects_properties=self.map_objects_properties,
-                                                     projection=self.projection)
+                map_object = map_items.PoiAsPixmap(self.get_object_id(),
+                                                   map_objects_properties=self.map_objects_properties,
+                                                   projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
-                map_object = map_items.PolylineQGraphicsPathItem(map_objects_properties=self.map_objects_properties,
+                map_object = map_items.PolylineQGraphicsPathItem(self.get_object_id(),
+                                                                 map_objects_properties=self.map_objects_properties,
                                                                  projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
-                map_object = map_items.PolygonQGraphicsPathItem(map_objects_properties=self.map_objects_properties,
+                map_object = map_items.PolygonQGraphicsPathItem(self.get_object_id(),
+                                                                map_objects_properties=self.map_objects_properties,
                                                                 projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
                 pass
@@ -160,3 +154,6 @@ class mapData(object):
 
     def clean_all_map_objects(self):
         self.mapObjectsList.clear()
+
+    def get_object_id(self):
+        return len(self.mapObjectsList)

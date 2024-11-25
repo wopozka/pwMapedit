@@ -752,7 +752,7 @@ class Data_X(object):
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
 class BasicMapItem(object):
-    def __init__(self, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
         """
         basic map items properties, derived map items inherit from it
         Parameters
@@ -761,6 +761,7 @@ class BasicMapItem(object):
         projection = projection class
         """
         # super(BasicMapItem, self).__init__()
+        self._id = map_obj_id
         self.projection = None
         self.map_objects_properties = None
         if projection is not None:
@@ -830,6 +831,9 @@ class BasicMapItem(object):
 
     def get_housenumbers_along_road(self):
         return self.data0.get_housenumbers_nodes_defs()
+
+    def get_id(self):
+        return self._id
 
     def get_label1(self):
         if self.label1 is not None:
@@ -974,6 +978,9 @@ class BasicMapItem(object):
 
     def set_label3(self, value):
         self.label3 = value
+
+    def set_id(self, obj_id):
+        self._id = obj_id
 
     def set_others(self, key, value):
         self.others[key] = value
@@ -1150,9 +1157,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True
 
     # basic class for poi with pixmap icon
-    def __init__(self, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
         # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, projection=projection)
         QGraphicsPixmapItem.__init__(self)
         self.recorded_pos = None
         self.label = None
@@ -1417,11 +1424,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     _threshold = None
     _accept_map_level_change = True
 
-    def __init__(self, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
         self.hovered = False
         # super(PolyQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
         #                                             projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, projection=projection)
         QGraphicsPathItem.__init__(self)
         self.orig_pen = None
         self.node_grip_items = list()
@@ -1946,8 +1953,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.add_items_after_new_map_level_set()
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
-    def __init__(self, map_objects_properties=None, projection=None):
-        super(PolylineQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
+    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+        super(PolylineQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
                                                         projection=projection)
         self.arrow_head_items = []
         self.hlevel_labels = None
@@ -2279,8 +2286,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
-    def __init__(self, map_objects_properties=None, projection=None):
-        super(PolygonQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
+    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+        super(PolygonQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
                                                        projection=projection)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)

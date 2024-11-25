@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
+    QProgressBar, QLabel
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
@@ -34,6 +35,23 @@ class MapUndoStack(QUndoStack):
         super().push(command)
         self.undo_button.setToolTip(self.undoText())
 
+
+class MapStatusBar(QStatusBar):
+    def __init__(self, parent):
+        super(MapStatusBar, self).__init__(parent)
+        self.progress_bar = QProgressBar(self)
+        self.addWidget(self.progress_bar)
+        self.info_text = QLabel(self)
+        self.addWidget(self.info_text)
+
+    def set_info_text(self, text):
+        self.info_text.clear()
+        self.info_text.setText(text)
+
+    def get_info_text(self):
+        return self.info_text.text()
+
+
 class pwMapeditPy(QMainWindow):
     """main application window"""
     map_scale_km = (3000, 2500, 2100, 1800, 1500, 1300, 1100, 920, 770, 650, 550, 460, 390, 330, 280, 240,
@@ -50,7 +68,7 @@ class pwMapeditPy(QMainWindow):
         self.map_canvas = None
         self.view = None
         self.setWindowTitle("pwMapeEdit")
-        self.status_bar = QStatusBar(self)
+        self.status_bar = MapStatusBar(self)
         self.undo_redo_stack = MapUndoStack(self)
         self.projection = projection.Mercator({})
         self.weblayers_cache_folder = tempfile.TemporaryDirectory()
@@ -347,7 +365,7 @@ class pwMapeditPy(QMainWindow):
             self.map_canvas.draw_all_objects_on_map(self.map_objects.get_all_map_objects())
             self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
             print(self.map_canvas.sceneRect())
-            self.map_objects.clean_all_map_objects()
+            # self.map_objects.clean_all_map_objects()
             # print(self.map_canvas.sceneRect())
             # print(self.map_canvas.itemsBoundingRect())
             # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)

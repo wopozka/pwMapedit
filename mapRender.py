@@ -132,11 +132,14 @@ class mapRender(QGraphicsView):
             y = self._curent_scene_mouse_coords.y()
             lon, lat = self.projection.canvas_to_geo(x, y)
             msg_coords = '(%.7f, %.7f), (%.1f, %.1f), ' % (lon, lat, x, -y)
-            self.main_window_status_bar.showMessage(msg_coords + msg_view_render + msg_map_scale)
+            # self.main_window_status_bar.showMessage(msg_coords + msg_view_render + msg_map_scale)
+            self.main_window_status_bar.set_info_text(msg_coords + msg_view_render + msg_map_scale)
         else:
-            cur_msg = self.main_window_status_bar.currentMessage()
+            # cur_msg = self.main_window_status_bar.currentMessage()
+            cur_msg = self.main_window_status_bar.get_info_text()
             new_msg = cur_msg.split('view_render')[0]
-            self.main_window_status_bar.showMessage(new_msg + msg_view_render + msg_map_scale)
+            # self.main_window_status_bar.showMessage(new_msg + msg_view_render + msg_map_scale)
+            self.main_window_status_bar.set_info_text(new_msg + msg_view_render + msg_map_scale)
 
     def set_web_layer(self, layer):
         # uzywane przy wlaczaniu i wylaczaniu weblayer
