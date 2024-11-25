@@ -34,7 +34,7 @@ class mapData(object):
         self.mapObjectsList = []
         # zwolnione id obiektów. W przypadku gdyby obiekt był usunięty z mapy, wtedy jego Id trafia na te
         # listę. To zwolnione id można później
-        # wykorzystał w przypadku gdybyśmy tworzyli nowy obietk
+        # wykorzystał w przypadku gdybyśmy tworzyli nowy obiekt
         self.freeObiectIdList = []
         self.listOfAttachments = []
         self.lastObjectId_POI = 0
