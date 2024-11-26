@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetI
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal
 from PyQt5.QtGui import QIcon
 from enum import Enum
-
+from collections import OrderedDict
 import map_items
 
 
@@ -510,7 +510,21 @@ class MapObjPropDock(QDockWidget):
         return
 
     def command_extras_table_changed(self, row, column):
-        print(f'extras table changed: {row}, {column}')
+        extras_data = OrderedDict()
+        for row_num in range(self.extras_table.rowCount()):
+            key_item = self.extras_table.item(row_num, 0)
+            if key_item is not None:
+                key = key_item.text().strip()
+            else:
+                key = ''
+            value_item = self.extras_table.item(row_num, 1)
+            if value_item is not None:
+                value = self.extras_table.item(row_num, 1).text().strip()
+            else:
+                value = ''
+            if key and '=' not in key and value:
+                extras_data[(row_num, key,)] = value
+        print(extras_data)
 
     def command_streetdesc_edited(self):
         if self.address_changed():
@@ -607,7 +621,8 @@ class MapObjPropDock(QDockWidget):
         return False
 
     def labels_changed(self):
-        if [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)] != self.current_labels_vals:
+        if ([a.text().strip() for a in (self.label1_entry, self.label2_entry, self.label3_entry)]
+                != self.current_labels_vals):
             return True
         return False
 
@@ -615,7 +630,7 @@ class MapObjPropDock(QDockWidget):
         self.current_address_vals = [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)]
 
     def save_current_labels(self):
-        self.current_labels_vals = [a.text().strip() for a in (self.label1_entry,self.label2_entry, self.label3_entry)]
+        self.current_labels_vals = [a.text().strip() for a in (self.label1_entry, self.label2_entry, self.label3_entry)]
 
     def set_dock_mode_edit_nodes(self):
         for tab_name, tab_index in self.tab_names_vs_index.items():
@@ -662,6 +677,7 @@ class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.current_table_content = OrderedDict()
 
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
     def contextMenuEvent(self, event):
@@ -685,6 +701,30 @@ class ExtrasTable(QTableWidget):
     def add_row_below(self, event):
         self.insertRow(self.currentRow() + 1)
 
+    def get_current_content(self):
+        extras_data = OrderedDict()
+        for row_num in range(self.rowCount()):
+            key_item = self.item(row_num, 0)
+            if key_item is not None:
+                key = key_item.text().strip()
+            else:
+                key = ''
+            value_item = self.item(row_num, 1)
+            if value_item is not None:
+                value = self.item(row_num, 1).text().strip()
+            else:
+                value = ''
+            if key and '=' not in key and value:
+                extras_data[(row_num, key,)] = value
+        return extras_data
+
+    def save_current_content(self):
+        self.current_table_content = self.get_current_content()
+
+    def is_table_modified(self):
+        current_list = [key[1] + '=' + 'val' for key, val in self.get_current_content.items()]
+        orig_list = [key[1] + '=' + 'val' for key, val in self.current_table_content.items()]
+        return False if current_list != orig_list else True
 
 class TypeComboBox(QComboBox):
     def __init__(self, parent=None):
