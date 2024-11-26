@@ -82,9 +82,11 @@ class MapObjPropDock(QDockWidget):
         comment_box.addWidget(self.comment_text_edit)
         dock_box.addLayout(comment_box)
 
+        # pozostałe elementy - Extras
         extras_label = QLabel('Extras', dock_widget)
         self.extras_table = ExtrasTable(3, 2, dock_widget)
         self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
+        self.extras_table.cellChanged.connect(self.command_extras_table_changed)
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
         extras_box.addWidget(self.extras_table)
@@ -409,6 +411,7 @@ class MapObjPropDock(QDockWidget):
                             self.route_params[route_param.value].setChecked(False)
 
             others = self.map_object_id.get_others()
+            self.extras_table.cellChanged.disconnect()
             if others:
                 self.extras_table.setRowCount(0)
                 self.extras_table.setRowCount(len(others) + 1)
@@ -418,6 +421,7 @@ class MapObjPropDock(QDockWidget):
             else:
                 self.extras_table.clearContents()
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+            self.extras_table.cellChanged.connect(self.command_extras_table_changed)
         self.tab_widget.update()
 
     def fill_map_object_properties_node_when_selected(self):
@@ -504,6 +508,9 @@ class MapObjPropDock(QDockWidget):
 
     def command_end_level_entry_edited(self):
         return
+
+    def command_extras_table_changed(self, row, column):
+        print(f'extras table changed: {row}, {column}')
 
     def command_streetdesc_edited(self):
         if self.address_changed():
@@ -655,13 +662,16 @@ class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
-        self.itemChanged.connect(self.item_edited)
 
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
     def contextMenuEvent(self, event):
         menu = QMenu()
-        add_row_action = menu.addAction('Dodaj wiersz')
-        add_row_action.triggered.connect(self.add_row)
+        copy_text_action = menu.addAction('Kopiuj')
+        paste_text_action = menu.addAction('Wklej')
+        add_row_action_below = menu.addAction('Dodaj wiersz powyżej')
+        add_row_action_below.triggered.connect(self.add_row_above)
+        add_row_action_above = menu.addAction('Dodaj wiersz poniżej')
+        add_row_action_above.triggered.connect(self.add_row_below)
         delete_row_action = menu.addAction('Usun wiersz')
         delete_row_action.triggered.connect(self.remove_row)
         res = menu.exec_(event.globalPos())
@@ -669,11 +679,11 @@ class ExtrasTable(QTableWidget):
     def remove_row(self, event):
         self.removeRow(self.currentRow())
 
-    def add_row(self, event):
+    def add_row_above(self, event):
         self.insertRow(self.currentRow())
 
-    def item_edited(row, column):
-       print(row, column)
+    def add_row_below(self, event):
+        self.insertRow(self.currentRow() + 1)
 
 
 class TypeComboBox(QComboBox):
