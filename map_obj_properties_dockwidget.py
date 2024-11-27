@@ -682,11 +682,13 @@ class ExtrasTable(QTableWidget):
         res = menu.exec_(event.globalPos())
 
     def remove_row(self, event):
+        cur_row = self.currentRow()
         self.removeRow(self.currentRow())
+        self.cellChanged.emit(cur_row, 0)
 
     def set_items(self, row, key_val):
         self.setItem(row, 0, QTableWidgetItem(key_val[0]))
-        self.setItem(row, 0, QTableWidgetItem(key_val[1]))
+        self.setItem(row, 1, QTableWidgetItem(key_val[1]))
         self.current_table_content[(row, key_val[0])] = key_val[1]
 
     def add_row_above(self, event):
