@@ -413,13 +413,13 @@ class MapObjPropDock(QDockWidget):
             others = self.map_object_id.get_others()
             self.extras_table.cellChanged.disconnect()
             if others:
+                self.extras_table.clear_contents()
                 self.extras_table.setRowCount(0)
                 self.extras_table.setRowCount(len(others) + 1)
-                for row, item in enumerate(others):
-                    self.extras_table.setItem(row, 0, QTableWidgetItem(item[0]))
-                    self.extras_table.setItem(row, 1, QTableWidgetItem(item[1]))
+                for row, key_val in enumerate(others):
+                    self.extras_table.set_items(row, key_val)
             else:
-                self.extras_table.clearContents()
+                self.extras_table.clear_contents()
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
             self.extras_table.cellChanged.connect(self.command_extras_table_changed)
         self.tab_widget.update()
@@ -510,21 +510,10 @@ class MapObjPropDock(QDockWidget):
         return
 
     def command_extras_table_changed(self, row, column):
-        extras_data = OrderedDict()
-        for row_num in range(self.extras_table.rowCount()):
-            key_item = self.extras_table.item(row_num, 0)
-            if key_item is not None:
-                key = key_item.text().strip()
-            else:
-                key = ''
-            value_item = self.extras_table.item(row_num, 1)
-            if value_item is not None:
-                value = self.extras_table.item(row_num, 1).text().strip()
-            else:
-                value = ''
-            if key and '=' not in key and value:
-                extras_data[(row_num, key,)] = value
-        print(extras_data)
+        if self.extras_table.is_table_modified():
+            print(self.extras_table.get_current_content())
+        else:
+            print('tabela niezmodyfikowana')
 
     def command_streetdesc_edited(self):
         if self.address_changed():
@@ -695,11 +684,20 @@ class ExtrasTable(QTableWidget):
     def remove_row(self, event):
         self.removeRow(self.currentRow())
 
+    def set_items(self, row, key_val):
+        self.setItem(row, 0, QTableWidgetItem(key_val[0]))
+        self.setItem(row, 0, QTableWidgetItem(key_val[1]))
+        self.current_table_content[(row, key_val[0])] = key_val[1]
+
     def add_row_above(self, event):
         self.insertRow(self.currentRow())
 
     def add_row_below(self, event):
         self.insertRow(self.currentRow() + 1)
+
+    def clear_contents(self):
+        self.clearContents()
+        self.current_table_content.clear()
 
     def get_current_content(self):
         extras_data = OrderedDict()
@@ -722,9 +720,12 @@ class ExtrasTable(QTableWidget):
         self.current_table_content = self.get_current_content()
 
     def is_table_modified(self):
-        current_list = [key[1] + '=' + 'val' for key, val in self.get_current_content.items()]
-        orig_list = [key[1] + '=' + 'val' for key, val in self.current_table_content.items()]
-        return False if current_list != orig_list else True
+        current_list = [key[1] + '=' + val for key, val in self.get_current_content().items()]
+        orig_list = [key[1] + '=' + val for key, val in self.current_table_content.items()]
+        print(current_list, orig_list)
+        if current_list != orig_list:
+            return True
+        return False
 
 class TypeComboBox(QComboBox):
     def __init__(self, parent=None):
