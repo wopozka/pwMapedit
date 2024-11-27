@@ -511,7 +511,10 @@ class MapObjPropDock(QDockWidget):
 
     def command_extras_table_changed(self, row, column):
         if self.extras_table.is_table_modified():
+            print('tabela zmodyfikowan')
             print(self.extras_table.get_current_content())
+            print('zapisuje nowy content')
+            self.extras_table.save_current_content()
         else:
             print('tabela niezmodyfikowana')
 
