@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
     QProgressBar, QLabel
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtGui import QKeySequence
 import sys
 import mapData
@@ -14,6 +14,8 @@ import map_items
 import map_object_properties
 import projection
 import map_obj_properties_dockwidget
+import pwmapedit_constants
+import misc_functions
 import web_layers
 import tempfile
 import os.path
@@ -35,6 +37,103 @@ class MapUndoStack(QUndoStack):
         super().push(command)
         self.undo_button.setToolTip(self.undoText())
 
+
+class MapOpener(QObject):
+    # class for reading the file in background
+    finished = pyqtSignal(mapData.mapData)
+    progress = pyqtSignal(int)
+
+    def __init__(self, map_objects, filename, map_objects_properties):
+        self.map_objects = map_objects
+        self.filename = filename
+        self.map_objects_properties = map_objects_properties
+        super(MapOpener, self).__init__()
+
+    def run(self):
+        self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
+                                           projection=self.projection)
+        self.map_objects.wczytaj_rekordy()
+
+    def wczytaj_rekordy(self):
+        print('wczytuje rekordy')
+
+        with open(self.filename, 'r', encoding='cp1250') as a:
+            zawartosc_pliku_mp = a.readlines()
+
+        # Firstly. At the end of file there might be attachments (files or weblayers). The format is as below:
+        # ;@File *, for file attached
+        # ;@WEBMAP *, for web layers attached
+        # we have to skipp these data as well.
+        while zawartosc_pliku_mp[-1].startswith(';@'):
+            print(zawartosc_pliku_mp[-1])
+            self.listOfAttachments.append(zawartosc_pliku_mp[-1].strip())
+            del (zawartosc_pliku_mp[-1])
+
+        #remove all empty lines until there is the last [END] in the file
+        while not zawartosc_pliku_mp[-1].strip():
+            del (zawartosc_pliku_mp[-1])
+
+        # after removal of attachments we can measure the lenght of the whole file
+        zawartosc_pliku_mp_len = len(zawartosc_pliku_mp)
+        b = 0
+
+        # first lets skip the file header
+        while b < zawartosc_pliku_mp_len:
+            # print(b)
+            if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
+                b += 1
+            else:
+                break
+
+        # we skipped the header, but at the same time we might have skipped
+        # the first comment, try to recover it
+        while b >= 0:
+            if zawartosc_pliku_mp[b].strip().startswith(';'):
+                b -= 1
+            else:
+                break
+
+        print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
+        while b < zawartosc_pliku_mp_len:
+            # print(b)
+            mp_record = []
+            mpfileline = zawartosc_pliku_mp[b].strip()
+            while not mpfileline.startswith(pwmapedit_constants.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
+
+                mp_record.append(mpfileline)
+                b += 1
+                mpfileline = zawartosc_pliku_mp[b]
+
+            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
+            self.lastObjectId += 1
+            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+                map_object = map_items.PoiAsPixmap(self.get_object_id(),
+                                                   map_objects_properties=self.map_objects_properties,
+                                                   projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+                map_object = map_items.PolylineQGraphicsPathItem(self.get_object_id(),
+                                                                 map_objects_properties=self.map_objects_properties,
+                                                                 projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+                map_object = map_items.PolygonQGraphicsPathItem(self.get_object_id(),
+                                                                map_objects_properties=self.map_objects_properties,
+                                                                projection=self.projection)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
+                pass
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
+                pass
+            else:
+                pass
+            map_object.set_data(obj_comment, obj_data)
+            self.mapObjectsList.append(map_object)
+            self.set_map_bounding_box(map_object.obj_bounding_box)
+            del mp_record[:]
+            b += 1
+        self.projection.set_map_bounding_box(self.get_map_bounding_box())
+        self.projection.calculate_data_offset()
+
+        print('map data ofset', self.projection.earth_radius)
+        print('bonding box', self.map_bounding_box)
 
 class MapStatusBar(QStatusBar):
     def __init__(self, parent):
