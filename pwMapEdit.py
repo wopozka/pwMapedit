@@ -42,7 +42,9 @@ class MapFileOpener(QObject):
     # class for reading the file in background
     finished = pyqtSignal(mapData.mapData)
     progress = pyqtSignal(tuple)
-    draw_object = pyqtSignal(tuple)
+    draw_poi = pyqtSignal(map_items.PoiAsPixmap)
+    draw_polyline = pyqtSignal(map_items.PolylineQGraphicsPathItem)
+    draw_polygon = pyqtSignal(map_items.PolygonQGraphicsPathItem)
 
     def __init__(self, filename, map_objects_properties):
         self.map_objects = None
@@ -114,19 +116,19 @@ class MapFileOpener(QObject):
                                                    map_objects_properties=self.map_objects_properties,
                                                    projection=self.projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POI, map_object,))
+                self.draw_poi.emit(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(self.map_objects.get_object_id(),
                                                                  map_objects_properties=self.map_objects_properties,
                                                                  projection=self.projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POLYLINE, map_object,))
+                self.draw_polyline.emit(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(self.map_objects.get_object_id(),
                                                                 map_objects_properties=self.map_objects_properties,
                                                                 projection=self.projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POLYGON, map_object,))
+                self.draw_polygon.emit(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
                 map_object = None
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
@@ -140,6 +142,7 @@ class MapFileOpener(QObject):
             del mp_record[:]
             b += 1
             self.progress.emit(('set_value', b))
+
         self.projection.set_map_bounding_box(self.map_objects.get_map_bounding_box())
         self.projection.calculate_data_offset()
 
