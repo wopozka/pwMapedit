@@ -157,3 +157,6 @@ class mapData(object):
 
     def get_object_id(self):
         return len(self.mapObjectsList)
+
+    def add_map_object(self, map_object):
+        self.mapObjectsList.append(map_object)

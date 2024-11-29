@@ -38,21 +38,22 @@ class MapUndoStack(QUndoStack):
         self.undo_button.setToolTip(self.undoText())
 
 
-class MapOpener(QObject):
+class MapFileOpener(QObject):
     # class for reading the file in background
     finished = pyqtSignal(mapData.mapData)
-    progress = pyqtSignal(int)
+    progress = pyqtSignal(tuple)
+    draw_object = pyqtSignal(tuple)
 
-    def __init__(self, map_objects, filename, map_objects_properties):
-        self.map_objects = map_objects
+    def __init__(self, filename, map_objects_properties):
+        self.map_objects = None
         self.filename = filename
         self.map_objects_properties = map_objects_properties
-        super(MapOpener, self).__init__()
+        super(MapFileOpener, self).__init__()
 
     def run(self):
         self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
                                            projection=self.projection)
-        self.map_objects.wczytaj_rekordy()
+        self.wczytaj_rekordy()
 
     def wczytaj_rekordy(self):
         print('wczytuje rekordy')
@@ -77,6 +78,7 @@ class MapOpener(QObject):
         zawartosc_pliku_mp_len = len(zawartosc_pliku_mp)
         b = 0
 
+        self.progress.emit(('set_maximum', zawartosc_pliku_mp_len))
         # first lets skip the file header
         while b < zawartosc_pliku_mp_len:
             # print(b)
@@ -94,6 +96,7 @@ class MapOpener(QObject):
                 break
 
         print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
+        self.progress.emit(('set_value', b))
         while b < zawartosc_pliku_mp_len:
             # print(b)
             mp_record = []
@@ -107,29 +110,37 @@ class MapOpener(QObject):
             poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
             self.lastObjectId += 1
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
-                map_object = map_items.PoiAsPixmap(self.get_object_id(),
+                map_object = map_items.PoiAsPixmap(self.map_objects.get_object_id(),
                                                    map_objects_properties=self.map_objects_properties,
                                                    projection=self.projection)
+                map_object.set_data(obj_comment, obj_data)
+                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POI, map_object,))
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
-                map_object = map_items.PolylineQGraphicsPathItem(self.get_object_id(),
+                map_object = map_items.PolylineQGraphicsPathItem(self.map_objects.get_object_id(),
                                                                  map_objects_properties=self.map_objects_properties,
                                                                  projection=self.projection)
+                map_object.set_data(obj_comment, obj_data)
+                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POLYLINE, map_object,))
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
-                map_object = map_items.PolygonQGraphicsPathItem(self.get_object_id(),
+                map_object = map_items.PolygonQGraphicsPathItem(self.map_objects.get_object_id(),
                                                                 map_objects_properties=self.map_objects_properties,
                                                                 projection=self.projection)
+                map_object.set_data(obj_comment, obj_data)
+                self.draw_object.emit((pwmapedit_constants.MAP_OBJECT_POLYGON, map_object,))
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
-                pass
+                map_object = None
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
-                pass
+                map_object = None
             else:
-                pass
-            map_object.set_data(obj_comment, obj_data)
-            self.mapObjectsList.append(map_object)
-            self.set_map_bounding_box(map_object.obj_bounding_box)
+                map_object = None
+
+            if map_object is not None:
+                self.map_objects.add_map_object(map_object)
+                self.map_objects.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
             b += 1
-        self.projection.set_map_bounding_box(self.get_map_bounding_box())
+            self.progress.emit(('set_value', b))
+        self.projection.set_map_bounding_box(self.map_objects.get_map_bounding_box())
         self.projection.calculate_data_offset()
 
         print('map data ofset', self.projection.earth_radius)
