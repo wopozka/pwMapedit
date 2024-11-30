@@ -51,7 +51,11 @@ class mapCanvas(QGraphicsScene):
         return self.parent.pw_mapedit_mode
 
     def get_viewer_scale(self):
-        return self.views()[0].map_scale
+        # if there is a view connected return real scale
+        if self.views():
+            return self.views()[0].map_scale
+        # otherwise return 1
+        return 1.0
 
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
@@ -81,16 +85,16 @@ class mapCanvas(QGraphicsScene):
             # group_item = QGraphicsItemGroup()
             # nodes = mapobject.obj_datax_get('Data0')[0]
             # x, y = nodes[0].get_canvas_coords()
-            poi_icon = self.map_objects_properties.get_poi_icon(mapobject.get_param('Type'))
-            if isinstance(poi_icon, QPainterPath):
-                poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.get_param('Type'))
-            elif isinstance(poi_icon, QPixmap):
-                poi_icon_brush = False
-            elif isinstance(poi_icon, str):
-                poi_icon_brush = False
-            mapobject.set_mp_data()
-            if isinstance(poi_icon_brush, QBrush):
-                mapobject.setBrush(poi_icon_brush)
+            # poi_icon = self.map_objects_properties.get_poi_icon(mapobject.get_param('Type'))
+            # if isinstance(poi_icon, QPainterPath):
+            #     poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.get_param('Type'))
+            # elif isinstance(poi_icon, QPixmap):
+            #     poi_icon_brush = False
+            # elif isinstance(poi_icon, str):
+            #     poi_icon_brush = False
+            # mapobject.set_mp_data()
+            # if isinstance(poi_icon_brush, QBrush):
+            #     mapobject.setBrush(poi_icon_brush)
             self.addItem(mapobject)
             mapobject.add_label()
             mapobject.set_map_level()
@@ -100,7 +104,7 @@ class mapCanvas(QGraphicsScene):
             # polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
             # for data_x in mp_data_range:
             #     if mapobject.get_datax(data_x):
-            mapobject.set_mp_data()
+            # mapobject.set_mp_data()
             #    if mapobject.get_hlevels(data_x):
             # mapobject.set_mp_hlevels()
             self.addItem(mapobject)
@@ -115,7 +119,7 @@ class mapCanvas(QGraphicsScene):
             # polygon = map_items.PolygonQGraphicsPathItem(self.projection)
             # for data_x in mp_data_range:
             #     if mapobject.get_datax(data_x):
-            mapobject.set_mp_data()
+            # mapobject.set_mp_data()
             mapobject.set_z_value()
             mapobject.set_pen()
             mapobject.set_brush()
@@ -164,17 +168,20 @@ class mapCanvas(QGraphicsScene):
         self.clearSelection()
         num_screen_items = 0
         start = datetime.now().replace(microsecond=0)
-        self.views()[0].setInteractive(False)
+        # self.views()[0].setInteractive(False)
         for item in self.items():
             num_screen_items += 1
             if item._accept_map_level_change:
                 item.set_map_level()
-        self.views()[0].setInteractive(True)
+        # self.views()[0].setInteractive(True)
         print('num screen items: %s' % num_screen_items)
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
     def get_map_level(self):
         return self.current_map_level
+
+    def get_undo_redo_stack(self):
+        return self.undo_redo_stack
 
     def disable_maplevel_shortcuts(self):
         self.parent.disable_maplevel_shortcuts()
@@ -252,3 +259,8 @@ class mapCanvas(QGraphicsScene):
         self.addItem(web_layer_pic)
         self.web_layer_graphics[tile_def.file_path] = web_layer_pic
 
+    def set_undo_redo_stack(self, undo_redo_stack):
+        self.undo_redo_stack = undo_redo_stack
+
+    def set_projection(self, _projection):
+        self.projection = _projection

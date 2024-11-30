@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
     QProgressBar, QLabel
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
-from PyQt5.QtCore import Qt, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtGui import QKeySequence
 import sys
 import mapData
@@ -18,7 +18,7 @@ import pwmapedit_constants
 import misc_functions
 import web_layers
 import tempfile
-import os.path
+import time
 
 class MapUndoStack(QUndoStack):
     def __init__(self, parent):
@@ -40,36 +40,38 @@ class MapUndoStack(QUndoStack):
 
 class MapFileOpener(QObject):
     # class for reading the file in background
-    finished = pyqtSignal(mapData.mapData)
-    progress = pyqtSignal(tuple)
-    draw_poi = pyqtSignal(map_items.PoiAsPixmap)
-    draw_polyline = pyqtSignal(map_items.PolylineQGraphicsPathItem)
-    draw_polygon = pyqtSignal(map_items.PolygonQGraphicsPathItem)
+    finished = pyqtSignal()
+    map_items_map_canvas = pyqtSignal(object)
+    progress = pyqtSignal(str, int)
+    draw_poi_polyline_polygon = pyqtSignal(list, object)
 
-    def __init__(self, filename, map_objects_properties):
-        self.map_objects = None
-        self.filename = filename
+    def __init__(self, parent, file_name, map_objects_properties, _projection, undo_redo_stack):
+        self.parent = parent
+        self.filename = file_name
         self.map_objects_properties = map_objects_properties
+        self.projection = _projection
+        self.undo_redo_stack = undo_redo_stack
         super(MapFileOpener, self).__init__()
 
     def run(self):
-        self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
-                                           projection=self.projection)
         self.wczytaj_rekordy()
 
     def wczytaj_rekordy(self):
         print('wczytuje rekordy')
-
-        with open(self.filename, 'r', encoding='cp1250') as a:
-            zawartosc_pliku_mp = a.readlines()
+        _map_object_properties = map_object_properties.MapObjectsProperties()
+        _projection = projection.Mercator({})
+        map_objects = mapData.mapData(self.filename, map_objects_properties=_map_object_properties,
+                                      projection=_projection)
 
         # Firstly. At the end of file there might be attachments (files or weblayers). The format is as below:
         # ;@File *, for file attached
         # ;@WEBMAP *, for web layers attached
         # we have to skipp these data as well.
+        with open(self.filename, 'r', encoding='cp1250') as mp_file:
+            zawartosc_pliku_mp = mp_file.readlines()
         while zawartosc_pliku_mp[-1].startswith(';@'):
             print(zawartosc_pliku_mp[-1])
-            self.listOfAttachments.append(zawartosc_pliku_mp[-1].strip())
+            # self.listOfAttachments.append(zawartosc_pliku_mp[-1].strip())
             del (zawartosc_pliku_mp[-1])
 
         #remove all empty lines until there is the last [END] in the file
@@ -79,9 +81,10 @@ class MapFileOpener(QObject):
         # after removal of attachments we can measure the lenght of the whole file
         zawartosc_pliku_mp_len = len(zawartosc_pliku_mp)
         b = 0
-
-        self.progress.emit(('set_maximum', zawartosc_pliku_mp_len))
+        self.progress.emit('set_maximum', zawartosc_pliku_mp_len)
         # first lets skip the file header
+        # map_canvas = mapCanvas.mapCanvas(self.parent, 0, 0, 400, 200, projection=self.projection,
+        #                                  undo_redo_stack=self.undo_redo_stack)
         while b < zawartosc_pliku_mp_len:
             # print(b)
             if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
@@ -98,7 +101,8 @@ class MapFileOpener(QObject):
                 break
 
         print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
-        self.progress.emit(('set_value', b))
+        self.progress.emit('set_value', b)
+        objs_to_draw = []
         while b < zawartosc_pliku_mp_len:
             # print(b)
             mp_record = []
@@ -110,25 +114,33 @@ class MapFileOpener(QObject):
                 mpfileline = zawartosc_pliku_mp[b]
 
             poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
-            self.lastObjectId += 1
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
-                map_object = map_items.PoiAsPixmap(self.map_objects.get_object_id(),
-                                                   map_objects_properties=self.map_objects_properties,
-                                                   projection=self.projection)
+                map_object = map_items.PoiAsPixmap(map_objects.get_object_id(),
+                                                   map_objects_properties=_map_object_properties,
+                                                   projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_poi.emit(map_object)
+                map_object.set_mp_data()
+                # map_canvas.draw_object_on_map(map_object)
+                # self.draw_poi.emit(map_object)
+                objs_to_draw.append(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
-                map_object = map_items.PolylineQGraphicsPathItem(self.map_objects.get_object_id(),
-                                                                 map_objects_properties=self.map_objects_properties,
-                                                                 projection=self.projection)
+                map_object = map_items.PolylineQGraphicsPathItem(map_objects.get_object_id(),
+                                                                 map_objects_properties=_map_object_properties,
+                                                                 projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_polyline.emit(map_object)
+                map_object.set_mp_data()
+                # map_canvas.draw_object_on_map(map_object)
+                # self.draw_polyline.emit(map_object)
+                objs_to_draw.append(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
-                map_object = map_items.PolygonQGraphicsPathItem(self.map_objects.get_object_id(),
-                                                                map_objects_properties=self.map_objects_properties,
-                                                                projection=self.projection)
+                map_object = map_items.PolygonQGraphicsPathItem(map_objects.get_object_id(),
+                                                                map_objects_properties=_map_object_properties,
+                                                                projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
-                self.draw_polygon.emit(map_object)
+                map_object.set_mp_data()
+                # map_canvas.draw_object_on_map(map_object)
+                # self.draw_polygon.emit(map_object)
+                objs_to_draw.append(map_object)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
                 map_object = None
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
@@ -137,17 +149,55 @@ class MapFileOpener(QObject):
                 map_object = None
 
             if map_object is not None:
-                self.map_objects.add_map_object(map_object)
-                self.map_objects.set_map_bounding_box(map_object.obj_bounding_box)
+                map_objects.add_map_object(map_object)
+                map_objects.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
+            if len(objs_to_draw) == 10000:
+                print(f'{b}')
+                self.draw_poi_polyline_polygon.emit(objs_to_draw, None)
+                self.progress.emit('set_value', b)
+                objs_to_draw.clear()
             b += 1
-            self.progress.emit(('set_value', b))
+            # self.progress.emit('set_value', b)
+        if objs_to_draw:
+            self.draw_poi_polyline_polygon.emit(objs_to_draw, map_objects)
+            self.progress.emit('set_value', b)
+        self.finished.emit()
+        # self.projection.set_map_bounding_box(map_objects.get_map_bounding_box())
+        # self.projection.calculate_data_offset()
+        #
+        # print('map data ofset', self.projection.earth_radius)
+        # # print('bonding box', self.map_bounding_box)
 
-        self.projection.set_map_bounding_box(self.map_objects.get_map_bounding_box())
-        self.projection.calculate_data_offset()
+class MapeEndlevelWorker(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(str, int)
+    get_canvas = pyqtSignal(object, int)
 
-        print('map data ofset', self.projection.earth_radius)
-        print('bonding box', self.map_bounding_box)
+    def __init__(self, map_canvas, map_level):
+        self.map_canvas = map_canvas
+        if isinstance(map_level, str):
+            self.map_level = int(map_level)
+        else:
+            self.map_level = map_level
+        super(MapeEndlevelWorker, self).__init__()
+
+    def run(self):
+        if self.map_level == self.map_canvas.current_map_level:
+            return
+        items = self.map_canvas.items()
+        len_items_1_percent = len(items) // 100
+        self.progress.emit('set_maximum', len(items))
+        self.map_canvas.current_map_level = self.map_level
+        self.map_canvas.clearSelection()
+        self.map_canvas.set_map_level(self.map_level)
+        for item_num, item in enumerate(items):
+            if item._accept_map_level_change:
+                item.set_map_level()
+            if item_num % len_items_1_percent == 0:
+                self.progress.emit('set_value', item_num)
+        self.get_canvas.emit(self.map_canvas, self.map_level)
+        self.finished.emit()
 
 class MapStatusBar(QStatusBar):
     def __init__(self, parent):
@@ -163,6 +213,15 @@ class MapStatusBar(QStatusBar):
 
     def get_info_text(self):
         return self.info_text.text()
+
+    def set_progress_bar_maximum(self, val):
+        self.progress_bar.setMaximum(val)
+
+    def set_progress_bar_value(self, val):
+        self.progress_bar.setValue(val)
+
+    def reset_progress_bar(self):
+        self.progress_bar.reset()
 
 
 class pwMapeditPy(QMainWindow):
@@ -196,7 +255,12 @@ class pwMapeditPy(QMainWindow):
         self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
+        # as reading of file is done in separate thread, we need to know whether all objects were already drawn
+        # below variable will be empty if all is drawn
+        self.map_objects_to_be_drawn = set()
         self.map_ruler = None
+        self.open_save_thread = None
+        self.worker_file_parser = None
         self.menu_tools_set_mode()
 
 
@@ -471,22 +535,65 @@ class pwMapeditPy(QMainWindow):
         print(aaa[0])
         print('Plik do otwarcia %s' % aaa[0])
         if aaa[0]:
-            self.filename = aaa[0]
-            self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
-                                               projection=self.projection)
-            self.map_objects.wczytaj_rekordy()
-            self.map_canvas.draw_all_objects_on_map(self.map_objects.get_all_map_objects())
-            self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
-            print(self.map_canvas.sceneRect())
+            self.open_save_thread = QThread()
+            self.worker_file_parser = MapFileOpener(self, aaa[0], self.map_objects_properties, self.projection,
+                                                    self.undo_redo_stack)
+            self.worker_file_parser.moveToThread(self.open_save_thread)
+
+            self.open_save_thread.started.connect(self.worker_file_parser.run)
+            self.worker_file_parser.finished.connect(self.open_save_thread.quit)
+            self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
+            self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
+            self.worker_file_parser.progress.connect(self.update_progress_bar)
+            self.worker_file_parser.draw_poi_polyline_polygon.connect(self.draw_poi_polyline_polygon)
+            self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
+            self.open_save_thread.start()
+
+            # self.filename = aaa[0]
+            # self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
+            #                                    projection=self.projection)
+            # self.map_objects.wczytaj_rekordy()
+            # self.map_canvas.draw_all_objects_on_map(self.map_objects.get_all_map_objects())
+            # self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
+            # print(self.map_canvas.sceneRect())
             # self.map_objects.clean_all_map_objects()
             # print(self.map_canvas.sceneRect())
             # print(self.map_canvas.itemsBoundingRect())
             # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)
             # self.view.ensureVisible(self.map_canvas.itemsBoundingRect())
 
+    def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
+        print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
+        if self.view.scene() is not None:
+            self.view.setScene(None)
+        for poi_polyline_polygon in pois_polylines_polygons:
+            poi_polyline_polygon.set_projection(self.projection)
+            poi_polyline_polygon.set_map_objects_properties(self.map_objects_properties)
+            self.map_objects_to_be_drawn.add(poi_polyline_polygon.get_id())
+            self.map_canvas.draw_object_on_map(poi_polyline_polygon)
+            self.map_objects_to_be_drawn.remove(poi_polyline_polygon.get_id())
+        print('koniec rysowania')
+        if map_objects is not None:
+            self.map_objects = map_objects
+            self.map_objects.set_projection(self.projection)
+            self.map_objects.set_map_objects_properties(self.map_objects_properties)
+            self.view.setScene(self.map_canvas)
+            self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
+            self.projection.set_map_bounding_box(self.map_objects.get_map_bounding_box())
+            self.projection.calculate_data_offset()
+            print('map data ofset', self.projection.earth_radius)
+            print(self.map_canvas.sceneRect())
+        return
+
+    def get_map_items(self, map_items):
+        print('getting map_items i map_canvas')
+        self.map_objects = map_items
+        self.map_objects.set_projection(self.projection)
+        self.map_objects.set_map_objects_properties(self.map_objects_properties)
+        return
+
     def menu_zoom_in_command(self):
         self.view.zoom_in_command()
-
 
     def menu_zoom_out_command(self):
         self.view.zoom_out_command()
@@ -498,29 +605,56 @@ class pwMapeditPy(QMainWindow):
                                        self.map_objects.get_all_map_objects()):
             self.menuProjectionVar.set(projection)
 
+    def menu_select_map_level_thread(self):
+        self.view.setScene(None)
+        self.open_save_thread = QThread()
+        self.worker_file_parser = MapeEndlevelWorker(self.map_canvas,
+                                                     self.map_level_action_group.checkedAction().data())
+        self.worker_file_parser.moveToThread(self.open_save_thread)
+
+        self.open_save_thread.started.connect(self.worker_file_parser.run)
+        self.worker_file_parser.finished.connect(self.open_save_thread.quit)
+        self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
+        self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
+        self.worker_file_parser.progress.connect(self.update_progress_bar)
+        self.worker_file_parser.get_canvas.connect(self.end_level_change_get_canvas_from_thread)
+        self.open_save_thread.start()
+
+    def end_level_change_get_canvas_from_thread(self, map_canvas, map_level):
+        self.map_canvas = map_canvas
+        self.map_canvas.set_map_level(map_level)
+        self.view.setScene(self.map_canvas)
+
     def menu_select_map_level(self):
         map_level = self.map_level_action_group.checkedAction().data()
+        self.view.setScene(None)
         self.map_canvas.set_map_level(map_level)
+        self.view.setScene(self.map_canvas)
 
     def menu_view_set_map_level_0(self):
         self.map_level_actions[0].setChecked(True)
         self.menu_select_map_level()
+        # self.menu_select_map_level_thread()
 
     def menu_view_set_map_level_1(self):
         self.map_level_actions[1].setChecked(True)
         self.menu_select_map_level()
+        # self.menu_select_map_level_thread()
 
     def menu_view_set_map_level_2(self):
         self.map_level_actions[2].setChecked(True)
         self.menu_select_map_level()
+        # self.menu_select_map_level_thread()
 
     def menu_view_set_map_level_3(self):
         self.map_level_actions[3].setChecked(True)
         self.menu_select_map_level()
+        # self.menu_select_map_level_thread()
 
     def menu_view_set_map_level_4(self):
         self.map_level_actions[4].setChecked(True)
         self.menu_select_map_level()
+        # self.menu_select_map_level_thread()
 
     def menu_tools_set_mode(self):
         self.map_canvas.clearSelection()
@@ -534,7 +668,16 @@ class pwMapeditPy(QMainWindow):
             self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
                                                          cache_folder=self.weblayers_cache_folder.name))
 
-
+    def update_progress_bar(self, command, value):
+        if command == 'set_maximum':
+            print('progress maximum')
+            self.status_bar.set_progress_bar_maximum(value)
+        elif command == 'set_value':
+            print('progres wartosc aktualna')
+            self.status_bar.set_progress_bar_value(value)
+        else:
+            self.status_bar.reset_progress_bar()
+        return
 
 if __name__ == "__main__":
 
