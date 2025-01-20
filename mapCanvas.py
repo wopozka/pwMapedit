@@ -166,15 +166,21 @@ class mapCanvas(QGraphicsScene):
             return
         self.current_map_level = map_level
         self.clearSelection()
-        num_screen_items = 0
         start = datetime.now().replace(microsecond=0)
         # self.views()[0].setInteractive(False)
-        for item in self.items():
-            num_screen_items += 1
+        map_items = self.items()
+        one_perc = len(map_items) // 100
+        self.parent.update_progress_bar('set_maximum', len(map_items))
+        self.parent.update_progress_bar('set_value', 0)
+        for item_num, item in enumerate(map_items):
             if item._accept_map_level_change:
                 item.set_map_level()
+            if item_num % one_perc == 0:
+                self.parent.update_progress_bar('set_value', item_num)
+                # self.parent.update()
         # self.views()[0].setInteractive(True)
-        print('num screen items: %s' % num_screen_items)
+        self.parent.update_progress_bar('set_value', len(map_items))
+        print('num screen items: %s' % len(map_items))
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
     def get_map_level(self):
