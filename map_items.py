@@ -1261,6 +1261,12 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
                 self.setPos(self._mp_data[level])
                 self.current_data_x = level
 
+    def set_projection(self, _projection):
+        self.projection = _projection
+
+    def set_map_objects_properties(self, _map_objects_properties):
+        self.map_objects_properties = _map_objects_properties
+
     def add_label(self):
         label = self.get_label1()
         if label is not None and label:
@@ -1902,6 +1908,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self.orig_pen is None:
             self.orig_pen = pen
         super().setPen(pen)
+
+    def set_projection(self, _projection):
+        self.projection = _projection
+
+    def set_map_objects_properties(self, _map_objects_properties):
+        self.map_objects_properties = _map_objects_properties
 
     def _shape(self):
         stroker = QPainterPathStroker()

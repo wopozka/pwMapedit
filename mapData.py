@@ -160,3 +160,9 @@ class mapData(object):
 
     def add_map_object(self, map_object):
         self.mapObjectsList.append(map_object)
+
+    def set_projection(self, _projection):
+        self.projection = _projection
+
+    def set_map_objects_properties(self, _map_objects_properties):
+        self.map_objects_properties = _map_objects_properties
