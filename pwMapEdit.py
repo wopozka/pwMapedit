@@ -627,9 +627,9 @@ class pwMapeditPy(QMainWindow):
 
     def menu_select_map_level(self):
         map_level = self.map_level_action_group.checkedAction().data()
-        self.view.setScene(None)
+        # self.view.setScene(None)
         self.map_canvas.set_map_level(map_level)
-        self.view.setScene(self.map_canvas)
+        # self.view.setScene(self.map_canvas)
 
     def menu_view_set_map_level_0(self):
         self.map_level_actions[0].setChecked(True)
