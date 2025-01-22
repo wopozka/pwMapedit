@@ -1054,6 +1054,21 @@ class BasicMapItem(object):
             self.data0.add_hlevels_from_string(hlevel_item)
         return
 
+    def to_mp_record(self):
+        mp_record = 'Type' + self.type + '\n'
+        if self.label1:
+            mp_record += 'Label' + self.label1 + '\n'
+        if self.label2:
+            mp_record += 'Label2' + self.label2 + '\n'
+        if self.label3:
+            mp_record += 'Label3' + self.label3 + '\n'
+        if self.dirindicator:
+            mp_record += 'DirIndicator' + self.dirindicator + '\n'
+        if self.endlevel:
+            mp_record += 'EndLevel' + self.endlevel + '\n'
+        return mp_record
+
+
 
 class BasicSignRestrict(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
