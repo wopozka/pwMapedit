@@ -439,6 +439,16 @@ class Data_X(object):
             return self._data_levels.index(data_level)
 
     def get_polys_for_data_level(self, data_level):
+        """
+        Returns list of polygons for given data level. Polgons are defined as Nodes
+        Parameters
+        ----------
+        data_level: int, 0, 1, 2, 3, 4
+
+        Returns: list of list of Nodes
+        -------
+
+        """
         if data_level not in self._data_levels:
             return tuple()
         data_level_index = self.get_data_level_index(data_level)
@@ -730,6 +740,14 @@ class Data_X(object):
             elif longitude >= self._bounding_box_E:
                 self._bounding_box_E = longitude
         return
+
+    def to_mp_record(self):
+        for data_level in self.get_data_levels():
+            for poly in self.get_polys_for_data_level(data_level):
+                poly_points = [point.get_geo_coordinates() for point in poly]
+
+
+
 
     def update_node_coordinates(self, data_level, polynum, index, position):
         """
@@ -1055,19 +1073,27 @@ class BasicMapItem(object):
         return
 
     def to_mp_record(self):
-        mp_record = 'Type' + self.type + '\n'
-        if self.label1:
-            mp_record += 'Label' + self.label1 + '\n'
-        if self.label2:
-            mp_record += 'Label2' + self.label2 + '\n'
-        if self.label3:
-            mp_record += 'Label3' + self.label3 + '\n'
-        if self.dirindicator:
-            mp_record += 'DirIndicator' + self.dirindicator + '\n'
-        if self.endlevel:
-            mp_record += 'EndLevel' + self.endlevel + '\n'
+        mp_record = list()
+        if self.obj_comment is not None and self.obj_comment:
+            mp_record = copy.copy(self.obj_comment)
+        mp_record.append('Type=' + self.type)
+        if self.label1 is not None and self.label1:
+            mp_record.append('Label=' + self.label1)
+        if self.label2 is not None and self.label2:
+            mp_record.append('Label2=' + self.label2)
+        if self.label3 is not None and self.label3:
+            mp_record.append('Label3=' + self.label3)
+        if self.endlevel is not None and self.endlevel:
+            mp_record.append('EndLevel=' + str(self.endlevel))
+        if self.dirindicator is not None and self.dirindicator:
+            mp_record.append('DirIndicator=' + self.dirindicator)
+        if self.streetdesc is not None and self.streetdesc:
+            mp_record.append('StreetDesc=' + self.streetdesc)
+        if self.housenumber is not None and self.housenumber:
+            mp_record.append('HouseNumber=' + self.housenumber)
+        if self.phone is not None and self.phone:
+            mp_record.append('Phone=' + self.phone)
         return mp_record
-
 
 
 class BasicSignRestrict(object):
