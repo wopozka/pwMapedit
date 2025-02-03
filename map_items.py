@@ -72,11 +72,15 @@ class Node(QPointF):
 
     def get_canvas_coords(self):
         return self.x(), self.y()
-        return self.projection.geo_to_canvas(self.latitude, self.longitude)
+        # return self.projection.geo_to_canvas(self.latitude, self.longitude)
 
     def get_canvas_coords_as_qpointf(self):
         return self
-        return QPointF(self.x(), self.y())
+        # return QPointF(self.x(), self.y())
+
+    def get_mp_coords(self, accuracy):
+        lan, lon = self.get_geo_coordinates()
+        return 'f({lan:.{accuracy}}f}),({lon:.{accuracy}}f})'
 
     def node_starts_numeration(self):
         if self._numbers_definitions is None:
