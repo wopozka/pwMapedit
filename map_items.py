@@ -80,7 +80,7 @@ class Node(QPointF):
 
     def get_mp_coords(self, accuracy):
         lan, lon = self.get_geo_coordinates()
-        return 'f({lan:.{accuracy}f}),({lon:.{accuracy}f})'
+        return f'({lan:.{accuracy}f},{lon:.{accuracy}f})'
 
     def node_starts_numeration(self):
         if self._numbers_definitions is None:
