@@ -746,12 +746,12 @@ class Data_X(object):
         return
 
     def to_mp_record(self):
+        poly_points = []
         for data_level in self.get_data_levels():
             for poly in self.get_polys_for_data_level(data_level):
-                poly_points = [point.get_geo_coordinates() for point in poly]
-
-
-
+                data_x = 'Data' + (str(data_level)) + '='
+                poly_points.append(data_x + ','.join([point.get_mp_coords(5) for point in poly]))
+        return poly_points
 
     def update_node_coordinates(self, data_level, polynum, index, position):
         """
