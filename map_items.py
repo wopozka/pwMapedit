@@ -79,6 +79,7 @@ class Node(QPointF):
         # return QPointF(self.x(), self.y())
 
     def get_mp_coords(self, accuracy):
+        # get coords in mp file specification
         lan, lon = self.get_geo_coordinates()
         return f'({lan:.{accuracy}f},{lon:.{accuracy}f})'
 
@@ -756,6 +757,23 @@ class Data_X(object):
             for poly in self.get_polys_for_data_level(data_level):
                 data_x = 'Data' + (str(data_level)) + '='
                 poly_points.append(data_x + ','.join([point.get_mp_coords(self.precision) for point in poly]))
+                nodes_with_nums = [(node_num, node) for node_num, node in enumerate(poly) if node.node_has_numeration()]
+                if len(nodes_with_nums) >= 2:
+                    for node_pair in itertools.pairwise(nodes_with_nums):
+                        start_node = node_pair[0]
+                        end_node = node_pair[1]
+                        if start_node.node_starts_numeration():
+                            left_def = ''
+                        else:
+                            left_def = 'N,-1,-1'
+                            right_def = 'N,-1,-1'
+
+
+
+                for node_num, node in enumerate(poly):
+                    if node.node_has_numeration():
+
+
         return poly_points
 
     def update_node_coordinates(self, data_level, polynum, index, position):
