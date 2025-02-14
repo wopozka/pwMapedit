@@ -19,17 +19,14 @@ def test_get_mp_coords(target, answer):
     assert node.get_mp_coords(target[2]) == answer
 
 DATA_TEST = (
-    (['[POLYLINE]', 'Type=0x1', 'Data0=(51.81940,19.30379),(51.81887,19.30638)', '[END]'], 'Data0=(51.81940,19.30379),(51.81887,19.30638)'),
+    ('Data0=(51.81940,19.30379),(51.81887,19.30638)', ['Data0=(51.81940,19.30379),(51.81887,19.30638)']),
+    ('Data0=(51.819400,19.303790),(51.818870,19.306380)', ['Data0=(51.819400,19.303790),(51.818870,19.306380)'])
 )
 
 @pytest.mark.parametrize('target, answer', DATA_TEST)
 def test_data_to_mp_record(target, answer):
-    _map_object_properties = map_object_properties.MapObjectsProperties()
-    _projection = projection.Mercator({})
-    poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(target)
-    map_object = map_items.PolylineQGraphicsPathItem(1,
-                                                     map_objects_properties=_map_object_properties,
-                                                     projection=_projection)
-    map_object.set_data(obj_comment, obj_data)
-    map_object.set_mp_data()
-    assert map_object.data0.data_to_mp_record(target) == answer
+    _projection = projection.Mercator(None)
+    data_x = map_items.Data_X(projection=_projection)
+    data_level, data_string = target.split('=', 1)
+    data_x.add_nodes_from_string(data_level, data_string)
+    assert data_x.to_mp_record() == answer

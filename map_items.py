@@ -149,6 +149,7 @@ class Node(QPointF):
 
 
 class Data_X(object):
+    precision = 0
     def __init__(self, projection=None):
         self.projection = projection
         # dane mozna by przechowywac w slownikach, ale poniewaz jest ich duzo, dlatego pod wzgledem przechowywania
@@ -255,10 +256,14 @@ class Data_X(object):
     def coords_from_data_to_nodes(self, data_line):
         coords = []
         coordlist = data_line.strip().lstrip('(').rstrip(')')
+        precision = 0
         for a in coordlist.split('),('):
             latitude, longitude = a.split(',')
+            if not precision:
+                precision = max(len(latitude.split('.', 1)[1]), len(longitude.split('.', 1)[1]))
             self.set_obj_bounding_box(float(latitude), float(longitude))
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
+        self.precision = max(self.precision, precision)
         return coords
 
     def copy(self):
@@ -750,7 +755,7 @@ class Data_X(object):
         for data_level in self.get_data_levels():
             for poly in self.get_polys_for_data_level(data_level):
                 data_x = 'Data' + (str(data_level)) + '='
-                poly_points.append(data_x + ','.join([point.get_mp_coords(5) for point in poly]))
+                poly_points.append(data_x + ','.join([point.get_mp_coords(self.precision) for point in poly]))
         return poly_points
 
     def update_node_coordinates(self, data_level, polynum, index, position):
