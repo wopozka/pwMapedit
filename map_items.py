@@ -761,7 +761,7 @@ class Data_X(object):
                 if len(nodes_with_nums) >= 2:
                     numbers_defs = []
                     for node_pair in itertools.pairwise(nodes_with_nums):
-                        numbers_defs.append(self.numbers_to_mp(node_pair[0], node_pair[1]))
+                        numbers_defs.append(self.numbers_to_mp(node_pair[0][0], node_pair[0][1], node_pair[1][1]))
                     for num, number_def in enumerate(numbers_defs):
                         poly_points.append('Numbers' + str(num) + '=' + str(poly.index(nodes_with_nums[num])))
 
@@ -773,10 +773,10 @@ class Data_X(object):
 
         return poly_points
 
-    def numbers_to_mp(self, start_node, end_node):
+    def numbers_to_mp(self, start_node_num, start_node, end_node):
         # tworzenie definicji numeracji zgodnej z plikiem mp na podstawie pary nodow
-        s_numeration = start_node[1].get_numbers_definition()
-        e_numeration = end_node[1].get_numbers_definition()
+        s_numeration = start_node.get_numbers_definition()
+        e_numeration = end_node.get_numbers_definition()
         numeration = ''
         if s_numeration.left_side_numbering_style is not None and s_numeration.left_side_numbering_style != 'N'
             numeration += s_numeration.left_side_numbering_style
@@ -790,7 +790,7 @@ class Data_X(object):
             numeration += e_numeration.right_side_number_before
         else:
             numeration += 'N,-1,-1'
-        return str(start_node[0]) + ',' + numeration
+        return str(start_node_num) + ',' + numeration
 
     def update_node_coordinates(self, data_level, polynum, index, position):
         """
