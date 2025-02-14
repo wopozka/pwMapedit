@@ -769,6 +769,7 @@ class Data_X(object):
 
                 for node_num, node in enumerate(poly):
                     if node.node_has_numeration():
+                        pass
 
 
         return poly_points
