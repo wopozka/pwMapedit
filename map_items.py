@@ -759,39 +759,36 @@ class Data_X(object):
                 poly_points.append(data_x + ','.join([point.get_mp_coords(self.precision) for point in poly]))
                 nodes_with_nums = [(node_num, node) for node_num, node in enumerate(poly) if node.node_has_numeration()]
                 if len(nodes_with_nums) >= 2:
-                    numbers_defs = []
+                    number_num = 1
                     for node_pair in itertools.pairwise(nodes_with_nums):
-                        numbers_defs.append(self.numbers_to_mp(node_pair[0][0], node_pair[0][1], node_pair[1][1]))
-                    for num, number_def in enumerate(numbers_defs):
-                        poly_points.append('Numbers' + str(num) + '=' + str(poly.index(nodes_with_nums[num])))
-
-
-
-                for node_num, node in enumerate(poly):
-                    if node.node_has_numeration():
-                        pass
-
-
+                        numbers_def = self.numbers_to_mp(node_pair[0][0], node_pair[0][1], node_pair[1][1])
+                        poly_points.append('Numbers' + str(number_num) + '=' + numbers_def)
+                        number_num += 1
+                    # jeśli ostatni numerowany nod nie jest fizycznie ostatnim nodem, dodaj jeszcze informację
+                    # gdzie numeracje sie konczy
+                    last_node = nodes_with_nums[-1]
+                    if last_node[0] < len(nodes_with_nums) and not last_node[1].node_starts_numeration():
+                        poly_points.append('Numbers' + str(number_num) + '=' + str(last_node[0]) + ',N,-1,-1,N,-1,-1,')
         return poly_points
 
     def numbers_to_mp(self, start_node_num, start_node, end_node):
         # tworzenie definicji numeracji zgodnej z plikiem mp na podstawie pary nodow
         s_numeration = start_node.get_numbers_definition()
         e_numeration = end_node.get_numbers_definition()
-        numeration = ''
-        if s_numeration.left_side_numbering_style is not None and s_numeration.left_side_numbering_style != 'N'
-            numeration += s_numeration.left_side_numbering_style
-            numeration += s_numeration.left_side_number_after
-            numeration += e_numeration.left_side_number_before
+        numeration = [start_node_num]
+        if s_numeration.left_side_numbering_style is not None and s_numeration.left_side_numbering_style != 'N':
+            numeration.append(s_numeration.left_side_numbering_style)
+            numeration.append(s_numeration.left_side_number_after)
+            numeration.append(e_numeration.left_side_number_before)
         else:
-            numeration += 'N,-1,-1'
-        if s_numeration.right_side_numbering_style is not None and s_numeration.left_side_numbering_style != 'N'
-            numeration += s_numeration.right_side_numbering_style
-            numeration += s_numeration.right_side_number_after
-            numeration += e_numeration.right_side_number_before
+            numeration += ['N,-1,-1']
+        if s_numeration.right_side_numbering_style is not None and s_numeration.right_side_numbering_style != 'N':
+            numeration.append(s_numeration.right_side_numbering_style)
+            numeration.append(s_numeration.right_side_number_after)
+            numeration.append(e_numeration.right_side_number_before)
         else:
-            numeration += 'N,-1,-1'
-        return str(start_node_num) + ',' + numeration
+            numeration += ['N,-1,-1']
+        return ','.join(str(num) for num in numeration)
 
     def update_node_coordinates(self, data_level, polynum, index, position):
         """
