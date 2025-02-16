@@ -767,7 +767,7 @@ class Data_X(object):
                     # jeśli ostatni numerowany nod nie jest fizycznie ostatnim nodem, dodaj jeszcze informację
                     # gdzie numeracje sie konczy
                     last_node = nodes_with_nums[-1]
-                    if last_node[0] < len(nodes_with_nums) and not last_node[1].node_starts_numeration():
+                    if last_node[0] < (len(nodes_with_nums) -1) and not last_node[1].node_starts_numeration():
                         poly_points.append('Numbers' + str(number_num) + '=' + str(last_node[0]) + ',N,-1,-1,N,-1,-1,')
         return poly_points
 
