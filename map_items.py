@@ -99,6 +99,9 @@ class Node(QPointF):
             return True
         return False
 
+    def node_has_hlevel(self):
+        return False if self._hlevel_definition is None else True
+
     def node_has_numeration(self):
         if self._numbers_definitions is None:
             return False
@@ -182,6 +185,8 @@ class Data_X(object):
         self.poly_perimeter = 0
 
     def add_hlevels_from_string(self, hlevels_definition):
+        if hlevels_definition.startswith('HLevel'):
+            hlevels_definition = hlevels_definition.split('=', 1)[1]
         for hlevel_def in hlevels_definition.lstrip('(').rstrip(')').split('),('):
             node_num, level_val = hlevel_def.split(',')
             self.add_hlevel_to_node_from_string(int(node_num), int(level_val))
@@ -754,10 +759,11 @@ class Data_X(object):
     def to_mp_record(self):
         poly_points = []
         for data_level in self.get_data_levels():
-            for poly in self.get_polys_for_data_level(data_level):
+            for poly_num, poly in enumerate(self.get_polys_for_data_level(data_level)):
                 data_x = 'Data' + (str(data_level)) + '='
                 poly_points.append(data_x + ','.join([point.get_mp_coords(self.precision) for point in poly]))
                 nodes_with_nums = [(node_num, node) for node_num, node in enumerate(poly) if node.node_has_numeration()]
+                nodes_with_hlevel = [(node_num, node) for node_num, node in enumerate(poly) if node.node_has_hlevel()]
                 if len(nodes_with_nums) >= 2:
                     number_num = 1
                     for node_pair in itertools.pairwise(nodes_with_nums):
@@ -769,6 +775,14 @@ class Data_X(object):
                     last_node = nodes_with_nums[-1]
                     if last_node[0] < (len(poly) -1) and not last_node[1].node_starts_numeration():
                         poly_points.append('Numbers' + str(number_num) + '=' + str(last_node[0]) + ',N,-1,-1,N,-1,-1')
+                if nodes_with_hlevel:
+                    hlevel_def = []
+                    for node_num_node in nodes_with_hlevel:
+                        node_num = node_num_node[0]
+                        node = node_num_node[1]
+                        hlevel_def.append(f'({node_num},{node.get_hlevel_definition()})')
+                    poly_points.append('HLevel' + str(poly_num) + '=' + ','.join(hlevel_def))
+
         return poly_points
 
     def numbers_to_mp(self, start_node_num, start_node, end_node):
