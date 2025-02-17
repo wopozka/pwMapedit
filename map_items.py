@@ -226,9 +226,9 @@ class Data_X(object):
         left_zip = None
         right_zip = None
         if len(num_data) > 7:
-            left_zip = num_data[7] if num_data[7] else None
+            left_zip = num_data[7] if num_data[7] != -1 else None
         if len(num_data) > 8:
-            right_zip = num_data[8] if num_data[8] else None
+            right_zip = num_data[8] if num_data[8] != -1 else None
 
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
