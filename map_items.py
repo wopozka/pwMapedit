@@ -223,11 +223,20 @@ class Data_X(object):
         right_style = num_data[4]
         right_start = int(num_data[5]) if right_style != 'N' else None
         right_end = int(num_data[6]) if right_style != 'N' else None
+        left_zip = None
+        right_zip = None
+        if len(num_data) > 7:
+            left_zip = num_data[7] if num_data[7] else None
+        if len(num_data) > 8:
+            right_zip = num_data[8] if num_data[8] else None
 
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_numbering_style', right_style)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_after', right_start)
+        if left_zip is not None or right_zip is not None:
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_zip_code', left_zip)
+            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_zip_code', right_zip)
         last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
 
         if last_node_def is not None:
@@ -802,6 +811,16 @@ class Data_X(object):
             numeration.append(e_numeration.right_side_number_before)
         else:
             numeration += ['N,-1,-1']
+        if s_numeration.left_side_zip_code is not None or s_numeration.right_side_zip_code is not None:
+            if s_numeration.left_side_zip_code is not None:
+                numeration.append(s_numeration.left_side_zip_code)
+            else:
+                numeration.append('-1')
+            if s_numeration.right_side_zip_code is not None:
+                numeration.append(s_numeration.right_side_zip_code)
+            else:
+                numeration.append('-1')
+            numeration += ['-1', '-1']
         return ','.join(str(num) for num in numeration)
 
     def update_node_coordinates(self, data_level, polynum, index, position):
