@@ -1167,7 +1167,10 @@ class BasicMapItem(object):
             mp_record.append('HouseNumber=' + self.housenumber)
         if self.phone is not None and self.phone:
             mp_record.append('Phone=' + self.phone)
-        return mp_record
+        return mp_record + self.to_mp_record_others()
+
+    def to_mp_record_others(self):
+        return [f'{key}={val}' for key, val in self.get_others()]
 
 
 class BasicSignRestrict(object):
