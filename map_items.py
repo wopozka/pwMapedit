@@ -878,9 +878,10 @@ class BasicMapItem(object):
         self.countryname = None
         self.countrycode = None
         self.regionname = None
+        self.districtname = None
         self.roadid = None
         self.zipcode = None
-        self.others = OrderedDict()
+        self.others = None
         self.obj_bounding_box = {}
 
     def __repr__(self):
@@ -888,6 +889,9 @@ class BasicMapItem(object):
 
     def __str__(self):
         return str(self.type)
+
+    def clear_others(self):
+        self.others = None
 
     def coords_from_data_to_nodes(self, data_line):
         coords = []
@@ -943,11 +947,14 @@ class BasicMapItem(object):
         return ''
 
     def get_others(self):
-        return_val = list()
-        for key_tuple, val in self.others.items():
-            key = key_tuple[1]
-            return_val.append((key, val,))
-        return return_val
+        if self.others is None:
+            return []
+        return tuple(self.others)
+        # return_val = list()
+        # for key_tuple, val in self.others.items():
+        #     key = key_tuple[1]
+        #     return_val.append((key, val,))
+        # return return_val
 
     def get_param(self, parameter):
         return getattr(self, parameter.lower())
@@ -1001,7 +1008,7 @@ class BasicMapItem(object):
                 # self.set_param('Type', int(obj_data[number_keyname], 16))
                 self.set_type(obj_data[number_keyname])
             elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
-                                       'CountryCode', 'ZipCode'):
+                                       'CountryCode', 'ZipCode', 'DistrictName'):
                 self.set_param(key, obj_data[number_keyname])
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
                 self.set_datax(number_keyname[1], obj_data[number_keyname])
@@ -1035,7 +1042,7 @@ class BasicMapItem(object):
             #     # temporary remove these from reporting
             #     pass
             else:
-                self.set_others(number_keyname, obj_data[number_keyname])
+                self.set_others(number_keyname[1], obj_data[number_keyname])
                 # print('Unknown key value: %s.' % number_keyname[1])
 
     def set_datax(self, data012345, data012345_val):
@@ -1075,7 +1082,9 @@ class BasicMapItem(object):
         self._id = obj_id
 
     def set_others(self, key, value):
-        self.others[key] = value
+        if self.others is None:
+            self.others = list()
+        self.others.append((key, value,))
 
     def set_param(self, parameter, value):
         setattr(self, parameter.lower(), value)
