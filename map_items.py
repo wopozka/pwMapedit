@@ -1150,7 +1150,7 @@ class BasicMapItem(object):
         mp_record = list()
         if self.obj_comment is not None and self.obj_comment:
             mp_record = copy.copy(self.obj_comment)
-        mp_record.append('Type=' + self.type)
+        mp_record.append('Type=' + str(hex(self.type)))
         if self.label1 is not None and self.label1:
             mp_record.append('Label=' + self.label1)
         if self.label2 is not None and self.label2:
@@ -1161,13 +1161,13 @@ class BasicMapItem(object):
             mp_record.append('EndLevel=' + str(self.endlevel))
         if self.dirindicator is not None and self.dirindicator:
             mp_record.append('DirIndicator=' + self.dirindicator)
-        if self.streetdesc is not None and self.streetdesc:
-            mp_record.append('StreetDesc=' + self.streetdesc)
         if self.housenumber is not None and self.housenumber:
             mp_record.append('HouseNumber=' + self.housenumber)
+        if self.streetdesc is not None and self.streetdesc:
+            mp_record.append('StreetDesc=' + self.streetdesc)
         if self.phone is not None and self.phone:
             mp_record.append('Phone=' + self.phone)
-        return mp_record + self.to_mp_record_others()
+        return mp_record + self.data0.to_mp_record() +self.to_mp_record_others()
 
     def to_mp_record_others(self):
         return [f'{key}={val}' for key, val in self.get_others()]
