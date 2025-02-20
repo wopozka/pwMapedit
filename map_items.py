@@ -1159,10 +1159,10 @@ class BasicMapItem(object):
             mp_record.append('Label3=' + self.label3)
         if self.endlevel is not None and self.endlevel:
             mp_record.append('EndLevel=' + str(self.endlevel))
-        if self.routeparam:
-            mp_record.append('RouteParam=' + ','.join(str(a) for a in self.routeparam))
         if self.dirindicator is not None and self.dirindicator:
             mp_record.append('DirIndicator=' + self.dirindicator)
+        if self.routeparam:
+            mp_record.append('RouteParam=' + ','.join(str(a) for a in self.routeparam))
         if self.housenumber is not None and self.housenumber:
             mp_record.append('HouseNumber=' + self.housenumber)
         if self.streetdesc is not None and self.streetdesc:
