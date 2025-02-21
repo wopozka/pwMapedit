@@ -169,6 +169,27 @@ class MapFileOpener(QObject):
         # print('map data ofset', self.projection.earth_radius)
         # # print('bonding box', self.map_bounding_box)
 
+class MapFileSaver(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(str, int)
+
+    def __init__(self, map_objects, map_filename):
+        self.map_objects = map_objects
+        self.map_filename = map_filename
+        super(MapFileSaver, self).__init__()
+
+    def run(self):
+        try:
+            with open(self.map_filename, 'w') as map_file:
+                for map_object in self.map_objects.get_all_map_objects():
+                    map_file.writelines(map_object.to_mp_record())
+                    map_file.writelines(['[END]', ''])
+        except FileNotFoundError:
+            pass
+        except IOError:
+            pass
+
+
 class MapeEndlevelWorker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(str, int)
