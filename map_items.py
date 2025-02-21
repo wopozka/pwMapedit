@@ -1156,7 +1156,7 @@ class BasicMapItem(object):
         return
 
     def to_mp_record(self):
-        mp_record = list()
+        mp_record = self.to_mp_record_header()
         if self.obj_comment is not None and self.obj_comment:
             mp_record = copy.copy(self.obj_comment)
         mp_record.append('Type=' + str(hex(self.type)))
@@ -1179,6 +1179,10 @@ class BasicMapItem(object):
         if self.phone is not None and self.phone:
             mp_record.append('Phone=' + self.phone)
         return mp_record + self.data0.to_mp_record() +self.to_mp_record_others()
+
+    @staticmethod
+    def to_mp_record_header():
+        return []
 
     def to_mp_record_others(self):
         return [f'{key}={val}' for key, val in self.get_others()]
@@ -1408,6 +1412,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def set_pixmap(self):
         self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_type()))
+
+    @staticmethod
+    def to_mp_record_header():
+        return ['[POI]']
 
     def decorate(self):
         pass
@@ -2323,6 +2331,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     # redefine shape function from QGraphicsPathItem, to be used in hoverover etc.
     def shape(self):
         return self._shape()
+
+    @staticmethod
+    def to_mp_record_header():
+        return ['[POLYLINE]']
     
     def remove_arrow_heads(self):
         for arrow_head in self.arrow_head_items:
@@ -2455,6 +2467,10 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         if not self.decorated():
             return super().shape()
         return self._shape()
+
+    @staticmethod
+    def to_mp_record_header():
+        return ['[POLYGON]']
 
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:
