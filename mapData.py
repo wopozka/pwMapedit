@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QGraphicsItemGroup
 class mapData(object):
     """class stores all data from map ie polylines, polygones, pois, map header, map weird sections"""
 
-    def __init__(self, filename, map_objects_properties=None, projection=None):
+    def __init__(self, map_filename, map_objects_properties=None, projection=None):
         # inicjujemy zmienne początkowe
         # z założenia każdy obiekt na mapie będzie miał swoje osobne ID. Dlatego będzie
         # przechowywany zmiennej typu listowego, gdzie ID to będzie kolejny numer
@@ -41,7 +41,8 @@ class mapData(object):
         self.lastObjectId_Polygon = 0
         self.lastObjectId_Polyline = 0
         self.lastObjectId = 0
-        self.filename = filename
+        self.map_filename = map_filename
+        self.map_header = []
 
         # map bounding box, the maximal and minimal values of longitude and lattitude
         # presented as a python dictionary, with keys N, S, W, E
@@ -50,6 +51,11 @@ class mapData(object):
 
         self.projection = projection
 
+    def contains_data(self):
+        return len(self.mapObjectsList) > 0
+
+    def records_number(self):
+        return len(self.mapObjectsList)
 
     def wczytaj_rekordy(self):
         print('wczytuje rekordy')
@@ -146,6 +152,9 @@ class mapData(object):
             if bBox['S'] < self.map_bounding_box['S']:
                 self.map_bounding_box['S'] = bBox['S']
 
+    def set_map_file_name(self, file_name):
+        self.map_filename = file_name
+
     def get_map_bounding_box(self):
         return self.map_bounding_box
 
@@ -157,6 +166,9 @@ class mapData(object):
 
     def get_object_id(self):
         return len(self.mapObjectsList)
+
+    def get_map_file_name(self):
+        return self.map_filename
 
     def add_map_object(self, map_object):
         self.mapObjectsList.append(map_object)

@@ -89,6 +89,7 @@ class MapFileOpener(QObject):
             # print(b)
             if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
                 b += 1
+                map_objects.map_header.append(zawartosc_pliku_mp[b])
             else:
                 break
 
@@ -97,6 +98,7 @@ class MapFileOpener(QObject):
         while b >= 0:
             if zawartosc_pliku_mp[b].strip().startswith(';'):
                 b -= 1
+                del(map_objects.map_header[-1])
             else:
                 break
 
@@ -173,21 +175,26 @@ class MapFileSaver(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(str, int)
 
-    def __init__(self, map_objects, map_filename):
+    def __init__(self, parent, map_objects):
+        self.parent = parent
         self.map_objects = map_objects
-        self.map_filename = map_filename
+        self.map_filename = map_objects.get_map_file_name()
         super(MapFileSaver, self).__init__()
 
     def run(self):
         try:
-            with open(self.map_filename, 'w') as map_file:
-                for map_object in self.map_objects.get_all_map_objects():
-                    map_file.writelines(map_object.to_mp_record())
-                    map_file.writelines(['[END]', ''])
+            with open(self.map_filename, 'w', encoding='cp1250') as map_file:
+                self.progress.emit('set_maximum', self.map_objects.records_number())
+                map_file.writelines(self.map_objects.map_header)
+                for map_object_num, map_object in enumerate(self.map_objects.get_all_map_objects()):
+                    map_file.writelines([a + '\n' for a in map_object.to_mp_record()])
+                    map_file.writelines(['[END]\n', '\n'])
+                    self.progress.emit('set_value', map_object_num + 1)
         except FileNotFoundError:
             pass
         except IOError:
             pass
+        self.finished.emit()
 
 
 class MapeEndlevelWorker(QObject):
@@ -424,6 +431,7 @@ class pwMapeditPy(QMainWindow):
         file_actions.append(QAction('&Close', self))
         file_actions.append(None)
         file_actions.append(QAction('&Save map', self))
+        file_actions[-1].triggered.connect(self.save_map)
         file_actions.append(QAction('&Save map as', self))
         file_actions.append(None)
         file_actions.append(QAction('&Import', self))
@@ -698,6 +706,21 @@ class pwMapeditPy(QMainWindow):
             self.status_bar.set_progress_bar_value(value)
         else:
             self.status_bar.reset_progress_bar()
+        return
+
+    def save_map(self):
+        if self.map_objects is not None and self.map_objects.contains_data():
+            self.open_save_thread = QThread()
+            self.worker_file_parser = MapFileSaver(self, self.map_objects)
+            self.worker_file_parser.moveToThread(self.open_save_thread)
+            self.open_save_thread.started.connect(self.worker_file_parser.run)
+            self.worker_file_parser.finished.connect(self.open_save_thread.quit)
+            self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
+            self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
+            self.worker_file_parser.progress.connect(self.update_progress_bar)
+            self.open_save_thread.start()
+
+    def save_map_as(self):
         return
 
 if __name__ == "__main__":
