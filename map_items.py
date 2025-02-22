@@ -1792,10 +1792,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def create_painter_path(self, poly_lists):
         path = QPainterPath()
         for poly in poly_lists:
+            pp_poly = [point for point in poly]
             if self.is_polygon() and poly[0] != poly[-1]:
-                poly.append(poly[0])
+                pp_poly.append(poly[0])
             qpp = QPainterPath()
-            qpp.addPolygon(QPolygonF(poly))
+            qpp.addPolygon(QPolygonF(pp_poly))
             path.addPath(qpp)
         return path
 
@@ -2506,7 +2507,9 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
-        return num_elems_in_path >= 3
+        # as for polygons the first and the last node is the same, then triangle formally contains 4 nodes
+        # therefore something below 4 is not possible
+        return num_elems_in_path >= 4
 
     def add_label(self):
         label = self.get_label1()
