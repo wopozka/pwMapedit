@@ -1158,7 +1158,7 @@ class BasicMapItem(object):
     def to_mp_record(self):
         mp_record = self.to_mp_record_header()
         if self.obj_comment is not None and self.obj_comment:
-            mp_record = copy.copy(self.obj_comment)
+            mp_record += [';' + comment for comment in self.obj_comment]
         mp_record.append('Type=' + str(hex(self.type)))
         if self.label1 is not None and self.label1:
             mp_record.append('Label=' + self.label1)
