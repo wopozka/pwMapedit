@@ -1156,16 +1156,14 @@ class BasicMapItem(object):
         return
 
     def to_mp_record(self):
-        mp_record = self.to_mp_record_header()
         if self.obj_comment is not None and self.obj_comment:
-            mp_record += [';' + comment for comment in self.obj_comment]
+            mp_record = [';' + comment for comment in self.obj_comment]
+        else:
+            mp_record = []
+        mp_record += self.to_mp_record_header()
         mp_record.append('Type=' + str(hex(self.type)))
         if self.label1 is not None and self.label1:
             mp_record.append('Label=' + self.label1)
-        if self.label2 is not None and self.label2:
-            mp_record.append('Label2=' + self.label2)
-        if self.label3 is not None and self.label3:
-            mp_record.append('Label3=' + self.label3)
         if self.endlevel is not None and self.endlevel:
             mp_record.append('EndLevel=' + str(self.endlevel))
         if self.dirindicator is not None and self.dirindicator:
@@ -1178,7 +1176,12 @@ class BasicMapItem(object):
             mp_record.append('StreetDesc=' + self.streetdesc)
         if self.phone is not None and self.phone:
             mp_record.append('Phone=' + self.phone)
-        return mp_record + self.data0.to_mp_record() +self.to_mp_record_others()
+        mp_record += self.data0.to_mp_record()
+        if self.label2 is not None and self.label2:
+            mp_record.append('Label2=' + self.label2)
+        if self.label3 is not None and self.label3:
+            mp_record.append('Label3=' + self.label3)
+        return mp_record + self.to_mp_record_others()
 
     @staticmethod
     def to_mp_record_header():
