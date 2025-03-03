@@ -1007,7 +1007,7 @@ class BasicMapItem(object):
             if number_keyname[1] == 'Type':
                 # self.set_param('Type', int(obj_data[number_keyname], 16))
                 self.set_type(obj_data[number_keyname])
-            elif number_keyname[1] in ('Highway', 'CityName', 'CountryName', 'RegionName',
+            elif number_keyname[1] in ('CityName', 'CountryName', 'RegionName',
                                        'CountryCode', 'ZipCode', 'DistrictName'):
                 self.set_param(key, obj_data[number_keyname])
             elif number_keyname[1] in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
