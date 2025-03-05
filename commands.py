@@ -395,6 +395,32 @@ class UpdateAddressComponents(QUndoCommand):
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
+class UpdateExtras(QUndoCommand):
+    def __init__(self, map_object, new_extras, description):
+        super(UpdateExtras, self).__init__(description)
+        self.map_object = map_object
+        self.new_extras = new_extras
+        self.old_extras = [a for a in map_object.get_others()]
+
+    def redo(self):
+        self.map_object.clear_others()
+        for other_item in self.new_extras:
+            self.map_object.set_others(*other_item)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            if self.map_object not in self.map_object.scene().selectedItems():
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.clear_others()
+        for other_item in self.old_extras:
+            self.map_object.set_others(*other_item)
+        if self.map_object.scene().get_pw_mapedit_mode() == 'select_objects':
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+        self.map_object.scene().views()[0].centerOn(self.map_object)
+
+
 class UpdatePoiType(QUndoCommand):
     def __init__(self, map_object, new_type, description):
         super(UpdatePoiType, self).__init__(description)

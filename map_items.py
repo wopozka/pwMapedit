@@ -1332,6 +1332,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         command = commands.UpdateComment(self, new_comment, 'Zmiana komentarza')
         self.scene().undo_redo_stack.push(command)
 
+    def command_update_extras(self, new_extras):
+        command = commands.UpdateExtras(self, new_extras, 'Zmiana extras')
+        self.scene().undo_redo_stack.push(command)
+
     def command_update_labels(self, label_num, new_label):
         command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
         self.scene().undo_redo_stack.push(command)
@@ -1696,6 +1700,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # redefined in derived classes
         return -1, QPointF(), (0, -1)
 
+    def command_update_extras(self, new_extras):
+        command = commands.UpdateExtras(self, new_extras, 'Zmiana extras')
+        self.scene().undo_redo_stack.push(command)
+
     def command_insert_point(self, index, pos):
         # index is always > 0, so the first element will always be moveTo
         path_num, coord_num = index
@@ -2009,7 +2017,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def set_hover_over_for_address_labels(self, value):
         return
 
-    def set_mp_data(self, level, data):
+    def set_mp_data(self):
         # to be defined separately for polygon and polyline
         pass
 

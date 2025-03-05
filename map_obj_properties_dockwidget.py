@@ -510,13 +510,16 @@ class MapObjPropDock(QDockWidget):
         return
 
     def command_extras_table_changed(self, row, column):
-        if self.extras_table.is_table_modified():
-            print('tabela zmodyfikowan')
-            print(self.extras_table.get_current_content())
-            print('zapisuje nowy content')
-            self.extras_table.save_current_content()
-        else:
-            print('tabela niezmodyfikowana')
+        if not self.extras_table.is_table_modified():
+            return
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_extras(self.extras_table.get_current_content())
+        #     print('tabela zmodyfikowan')
+        #     print(self.extras_table.get_current_content())
+        #     print('zapisuje nowy content')
+        #     self.extras_table.save_current_content()
+        # else:
+        #     print('tabela niezmodyfikowana')
 
     def command_streetdesc_edited(self):
         if self.address_changed():
@@ -669,7 +672,7 @@ class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
-        self.current_table_content = OrderedDict()
+        self.current_table_content = list()
 
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
     def contextMenuEvent(self, event):
@@ -692,7 +695,7 @@ class ExtrasTable(QTableWidget):
     def set_items(self, row, key_val):
         self.setItem(row, 0, QTableWidgetItem(key_val[0]))
         self.setItem(row, 1, QTableWidgetItem(key_val[1]))
-        self.current_table_content[(row, key_val[0])] = key_val[1]
+        self.current_table_content.append((key_val[0], key_val[1],))
 
     def add_row_above(self, event):
         self.insertRow(self.currentRow())
@@ -705,7 +708,7 @@ class ExtrasTable(QTableWidget):
         self.current_table_content.clear()
 
     def get_current_content(self):
-        extras_data = OrderedDict()
+        extras_data = list()
         for row_num in range(self.rowCount()):
             key_item = self.item(row_num, 0)
             if key_item is not None:
@@ -718,15 +721,15 @@ class ExtrasTable(QTableWidget):
             else:
                 value = ''
             if key and '=' not in key and value:
-                extras_data[(row_num, key,)] = value
+                extras_data.append((key, value,))
         return extras_data
 
     def save_current_content(self):
         self.current_table_content = self.get_current_content()
 
     def is_table_modified(self):
-        current_list = [key[1] + '=' + val for key, val in self.get_current_content().items()]
-        orig_list = [key[1] + '=' + val for key, val in self.current_table_content.items()]
+        current_list = self.get_current_content()
+        orig_list = self.current_table_content
         print(current_list, orig_list)
         if current_list != orig_list:
             return True
