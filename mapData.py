@@ -171,7 +171,13 @@ class mapData(object):
         return self.map_filename
 
     def add_map_object(self, map_object):
-        self.mapObjectsList.append(map_object)
+        if map_object.get_id() < len(self.mapObjectsList) and self.mapObjectsList[map_object.get_id()] is None:
+            self.mapObjectsList[map_object.get_id()] = map_object
+        else:
+            self.mapObjectsList.append(map_object)
+
+    def remove_map_object(self, map_object):
+        self.mapObjectsList[map_object.get_id()] = None
 
     def set_projection(self, _projection):
         self.projection = _projection

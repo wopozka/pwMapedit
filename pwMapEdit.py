@@ -594,18 +594,6 @@ class pwMapeditPy(QMainWindow):
             self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
             self.open_save_thread.start()
 
-            # self.filename = aaa[0]
-            # self.map_objects = mapData.mapData(self.filename, map_objects_properties=self.map_objects_properties,
-            #                                    projection=self.projection)
-            # self.map_objects.wczytaj_rekordy()
-            # self.map_canvas.draw_all_objects_on_map(self.map_objects.get_all_map_objects())
-            # self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
-            # print(self.map_canvas.sceneRect())
-            # self.map_objects.clean_all_map_objects()
-            # print(self.map_canvas.sceneRect())
-            # print(self.map_canvas.itemsBoundingRect())
-            # self.view.fitInView(self.map_canvas.itemsBoundingRect(), Qt.KeepAspectRatio)
-            # self.view.ensureVisible(self.map_canvas.itemsBoundingRect())
 
     def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')

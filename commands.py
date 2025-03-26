@@ -5,9 +5,22 @@ import copy
 import time
 
 class DeleteObjectsCmd(QUndoCommand):
-    def __init__(self, map_objects, description):
+    def __init__(self, map_objects_to_be_removed, map_objects, description):
         super(DeleteObjectsCmd, self).__init__(description)
+        self.map_objects_to_be_removed = map_objects_to_be_removed
         self.map_objects = map_objects
+
+    def redo(self):
+        for map_obj in self.map_objects_to_be_removed:
+            scene = map_obj.scene()
+            scene.removeItem(map_obj)
+            self.map_objects.remove_map_object(map_obj)
+
+    def undo(self):
+        for map_obj in self.map_objects_to_be_removed:
+            scene = map_obj.scene()
+            scene.addItem(map_obj)
+            self.map_objects.add_map_object(map_obj)
 
 
 class InsertNodeCmd(QUndoCommand):

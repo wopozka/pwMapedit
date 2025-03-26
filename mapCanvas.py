@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraph
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt5.QtCore import QPointF, Qt
 import platform
+
+import commands
 import modes
 import math
 import projection
@@ -134,9 +136,10 @@ class mapCanvas(QGraphicsScene):
     def delete_object(self):
         mode = self.get_pw_mapedit_mode()
         if mode == 'select_objects':
-            if len(self.selectedItems()) == 1:
-                self.properties_dock.set_map_object_id(self.selectedItems()[0])
-                self.properties_dock.fill_map_object_properties()
+            if len(self.selectedItems()):
+                command = commands.DeleteObjectsCmd(self.selectedItems(),
+                                                    self.parent.map_objects, 'Usuwanie obiektu z mapy')
+                self.undo_redo_stack.push(command)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
