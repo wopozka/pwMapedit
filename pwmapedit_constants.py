@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from enum import Enum, auto
 
 MAP_OBJECT_POI = '[POI]'
 MAP_OBJECT_POLYLINE = '[POLYLINE]'
@@ -12,3 +13,16 @@ MAP_OBJECT_END = '[END]'
 IGNORE_TRANSFORMATION_TRESHOLD = 1
 SCALE_WITHOUT_LABELS = 0.5
 SCALE_WITHOUT_POIS = 0.25
+
+class Tools(Enum):
+    ZOOM_MAP = auto()
+    SELECT_OBJECTS = auto()
+    ROTATE_OBJECTS = auto()
+    EDIT_NODES = auto()
+    CREATE_POINT = auto()
+    CREATE_POLYLINE = auto()
+    CREATE_POLYLINE_CIRCLE = auto()
+    CREATE_POLYGON = auto()
+    CREATE_POLYGON_STRIPE = auto()
+    CREATE_POLYGON_RECTANGLE = auto()
+    CREATE_POLYGON_DISC = auto()
