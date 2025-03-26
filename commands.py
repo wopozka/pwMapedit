@@ -4,6 +4,12 @@ from PyQt5.QtCore import QPointF
 import copy
 import time
 
+class DeleteObjectsCmd(QUndoCommand):
+    def __init__(self, map_objects, description):
+        super(DeleteObjectsCmd, self).__init__(description)
+        self.map_objects = map_objects
+
+
 class InsertNodeCmd(QUndoCommand):
     def __init__(self, map_object, index, pos, polygons, description):
         super(InsertNodeCmd, self).__init__(description)

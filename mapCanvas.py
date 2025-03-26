@@ -131,6 +131,13 @@ class mapCanvas(QGraphicsScene):
         else:
             pass
 
+    def delete_object(self):
+        mode = self.get_pw_mapedit_mode()
+        if mode == 'select_objects':
+            if len(self.selectedItems()) == 1:
+                self.properties_dock.set_map_object_id(self.selectedItems()[0])
+                self.properties_dock.fill_map_object_properties()
+
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
         self.delete('all')

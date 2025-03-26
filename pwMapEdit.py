@@ -283,6 +283,7 @@ class pwMapeditPy(QMainWindow):
         self.map_level_action_group = None
         self.pw_mapedit_mode = ''
         self.map_level_actions = list()
+        self.delete_key_action = None
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.initialize()
         self.generate_shortcuts()
@@ -556,14 +557,23 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_3)
         self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
+        self.delete_key_action = QShortcut(QKeySequence.Delete, self)
+        self.delete_key_action.activated.connect(self.map_canvas.delete_object)
+
 
     def disable_maplevel_shortcuts(self):
         for shorcut in self.map_level_actions:
             shorcut.setEnabled(False)
 
+    def disable_delete_key(self):
+        self.delete_key_action.setEnabled(False)
+
     def enable_maplevel_shortcuts(self):
         for shorcut in self.map_level_actions:
             shorcut.setEnabled(True)
+
+    def enbale_delete_key(self):
+        self.delete_key_action.setEnabled(True)
 
     def open_file(self):
         aaa = QFileDialog.getOpenFileName(self, 'File to open')
