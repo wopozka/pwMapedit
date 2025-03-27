@@ -854,6 +854,9 @@ class BasicMapItem(object):
         """
         # super(BasicMapItem, self).__init__()
         self._id = map_obj_id
+        # used for marking objects that were removed from map. For undo/redo actions it is easier to mark object as
+        # removed then to copy it and then remove.
+        self._deleted = False
         self.projection = None
         self.map_objects_properties = None
         if projection is not None:
@@ -977,8 +980,10 @@ class BasicMapItem(object):
     def get_type(self):
         return self.type
 
-    # setters
+    def is_deleted(self):
+        return self._deleted
 
+    # setters
     def set_comment(self, _comments):
         if self.obj_comment is None:
             self.obj_comment = list()
@@ -1051,6 +1056,9 @@ class BasicMapItem(object):
         self.data0.add_nodes_from_string(data012345, data012345_val)
         self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
         return
+
+    def set_deleted(self):
+        self._deleted = True
 
     def set_dirindicator(self, value):
         if value == False:
@@ -1130,6 +1138,9 @@ class BasicMapItem(object):
             self.obj_bounding_box['E'] = max(self.obj_bounding_box['E'], obj_bb['E'])
 
         return
+
+    def set_undeleted(self):
+        self._deleted = False
 
     # niepotrzebne?
     def get_hlevels(self, level_for_data):

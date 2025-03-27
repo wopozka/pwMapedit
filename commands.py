@@ -14,13 +14,13 @@ class DeleteObjectsCmd(QUndoCommand):
         for map_obj in self.map_objects_to_be_removed:
             scene = map_obj.scene()
             scene.removeItem(map_obj)
-            self.map_objects.remove_map_object(map_obj)
+            self.map_objects.set_deleted(map_obj)
 
     def undo(self):
         for map_obj in self.map_objects_to_be_removed:
             scene = map_obj.scene()
+            self.map_objects.unset_deleted(map_obj)
             scene.addItem(map_obj)
-            self.map_objects.add_map_object(map_obj)
 
 
 class InsertNodeCmd(QUndoCommand):

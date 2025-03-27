@@ -176,8 +176,11 @@ class mapData(object):
         else:
             self.mapObjectsList.append(map_object)
 
-    def remove_map_object(self, map_object):
-        self.mapObjectsList[map_object.get_id()] = None
+    def set_map_object_deleted(self, map_object):
+        self.mapObjectsList[map_object.get_id()].set_deleted()
+
+    def unset_map_object_deleted(self, map_object):
+        self.mapObjectsList[map_object.get_id()].unset_deleted()
 
     def set_projection(self, _projection):
         self.projection = _projection
