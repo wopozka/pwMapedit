@@ -13,6 +13,7 @@ from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS
 import commands
 import itertools
+import pwmapedit_constants
 
 Numbers_Definition = namedtuple('Numbers_Definition',
                                 ['left_side_numbering_style',
@@ -1443,7 +1444,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def hoverEnterEvent(self, event):
         mode = self.scene().get_pw_mapedit_mode()
-        if mode == 'select_objects' and not self.isSelected() and self.highlight_when_hoverover():
+        if (mode == pwmapedit_constants.Tools.SELECT_OBJECTS and not self.isSelected()
+                and self.highlight_when_hoverover()):
             self.add_hovered_shape()
         super().hoverEnterEvent(event)
 
@@ -1937,10 +1939,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def mouseMoveEvent(self, event):
         mode = self.scene().get_pw_mapedit_mode()
         # trybie edytuj nody zachowuj sie standardowo
-        if mode == 'edit_nodes':
+        if mode == pwmapedit_constants.Tools.EDIT_NODES:
             super().mouseMoveEvent(event)
             return
-        if mode == 'select_objects':
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
@@ -1948,14 +1950,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().mousePressEvent(event)
         self.remove_hovered_shape()
         mode = self.scene().get_pw_mapedit_mode()
-        if mode =='edit_nodes':
+        if mode == pwmapedit_constants.Tools.EDIT_NODES:
             if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
                 dist, pos, index = self.closest_point_to_poly(event.pos())
                 print(dist, pos, index)
                 if index[1] >= 0 and dist <= self.threshold():
                     self.insert_point(index, pos)
                     return
-        elif mode == 'select_objects':
+        elif mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.recorded_pos = self.pos()
 
     def mouseReleaseEvent(self, event):
@@ -1964,7 +1966,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self._closest_node_circle = None
         self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
-        if mode == 'select_objects':
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.pos() != self.recorded_pos:
                 self.command_move_item()
         self.recorded_pos = None

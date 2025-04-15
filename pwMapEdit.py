@@ -18,7 +18,6 @@ import pwmapedit_constants
 import misc_functions
 import web_layers
 import tempfile
-import time
 
 class MapUndoStack(QUndoStack):
     def __init__(self, parent):
@@ -493,16 +492,16 @@ class pwMapeditPy(QMainWindow):
         # tools_action.append(QAction('&Drag map', self))
         # tools_action[-1].setData('drag_map')
         tools_action.append(QAction('&Zoom map', self))
-        tools_action[-1].setData('zoom_map')
+        tools_action[-1].setData(pwmapedit_constants.Tools.ZOOM_MAP)
         tools_action.append(QAction('&Select objects', self))
-        tools_action[-1].setData('select_objects')
+        tools_action[-1].setData(pwmapedit_constants.Tools.SELECT_OBJECTS)
         tools_action.append(QAction('&Rotate object', self))
-        tools_action[-1].setData('rotate_objects')
+        tools_action[-1].setData(pwmapedit_constants.Tools.ROTATE_OBJECTS)
         tools_action.append(QAction('&Edit nodes', self))
-        tools_action[-1].setData('edit_nodes')
+        tools_action[-1].setData(pwmapedit_constants.Tools.EDIT_NODES)
         for act in tools_action:
             act.setCheckable(True)
-            if act.data() == 'select_objects':
+            if act.data() == pwmapedit_constants.Tools.SELECT_OBJECTS:
                 act.setChecked(True)
             act.triggered.connect(self.menu_tools_set_mode)
         return tuple(tools_action)

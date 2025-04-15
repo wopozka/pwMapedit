@@ -17,7 +17,7 @@ import misc_functions
 import os.path
 import map_items
 import map_object_properties
-from singleton_store import Store
+import pwmapedit_constants
 from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
@@ -135,7 +135,7 @@ class mapCanvas(QGraphicsScene):
 
     def delete_object(self):
         mode = self.get_pw_mapedit_mode()
-        if mode == 'select_objects':
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if len(self.selectedItems()):
                 command = commands.DeleteObjectsCmd(self.selectedItems(),
                                                     self.parent.map_objects, 'Usuwanie obiektu z mapy')
@@ -208,11 +208,11 @@ class mapCanvas(QGraphicsScene):
     def selection_change_actions(self):
         self.properties_dock.set_dock_off()
         mode = self.get_pw_mapedit_mode()
-        if mode == 'select_objects':
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if len(self.selectedItems()) == 1:
                 self.properties_dock.set_map_object_id(self.selectedItems()[0])
                 self.properties_dock.fill_map_object_properties()
-        elif mode == 'edit_nodes':
+        elif mode == pwmapedit_constants.Tools.EDIT_NODES:
             selected_items = self.selectedItems()
             print(selected_items, self.selected_objects)
             if any(isinstance(a, QGraphicsPixmapItem) for a in selected_items):
