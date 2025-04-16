@@ -509,21 +509,21 @@ class pwMapeditPy(QMainWindow):
     def _create_object_actions(self):
         obj_actions = list()
         obj_actions.append(QAction('&Point', self))
-        obj_actions[-1].setData('create_point')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POINT)
         obj_actions.append(None)
         obj_actions.append(QAction('&Polyline', self))
-        obj_actions[-1].setData('create_polyline')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE)
         obj_actions.append(QAction('&Polyline: circle', self))
-        obj_actions[-1].setData('create_polyline_circle')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE)
         obj_actions.append(None)
         obj_actions.append(QAction('&Polygon', self))
-        obj_actions[-1].setData('create_polygon')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON)
         obj_actions.append(QAction('&Polygon: stripe', self))
-        obj_actions[-1].setData('create_polygon_stripe')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE)
         obj_actions.append(QAction('&Polygon: rectangle', self))
-        obj_actions[-1].setData('create_polygon_rectangle')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_RECTANGLE)
         obj_actions.append(QAction('&Polygon: disc', self))
-        obj_actions[-1].setData('create_polygon_dics')
+        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_DISC)
         for act in obj_actions:
             if act is None:
                 continue
@@ -623,6 +623,9 @@ class pwMapeditPy(QMainWindow):
         self.map_objects.set_projection(self.projection)
         self.map_objects.set_map_objects_properties(self.map_objects_properties)
         return
+
+    def get_mapedit_mode(self):
+        return self.pw_mapedit_mode
 
     def menu_zoom_in_command(self):
         self.view.zoom_in_command()

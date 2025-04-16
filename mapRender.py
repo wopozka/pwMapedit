@@ -164,6 +164,8 @@ class mapRender(QGraphicsView):
             self.set_status_bar(event=event)
 
     def mousePressEvent(self, event):
+        # support for tools
+        print(self.parent.get_pw_mapedit_mode())
         # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
         if event.button() == Qt.RightButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)

@@ -50,7 +50,7 @@ class mapCanvas(QGraphicsScene):
         return self.self.views()[0].get_item_ignores_transformations()
 
     def get_pw_mapedit_mode(self):
-        return self.parent.pw_mapedit_mode
+        return self.parent.get_mapedit_mode()
 
     def get_viewer_scale(self):
         # if there is a view connected return real scale
