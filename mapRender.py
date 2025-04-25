@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QGraphicsView
 from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
 from PyQt5.QtGui import QMouseEvent
 import math
+
+import pwmapedit_constants
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 import os.path
 import urllib.request
@@ -166,6 +168,17 @@ class mapRender(QGraphicsView):
     def mousePressEvent(self, event):
         # support for tools
         print(self.parent.get_pw_mapedit_mode())
+        mode = self.parent.get_pw_mapedit_mode()
+        if self._right_mouse_button_event_position is not None and event.button() == Qt.LeftButton:
+            if mode == pwmapedit_constants.Tools.CREATE_POINT:
+                pass
+            elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
+                pass
+            elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                pass
+            else:
+                pass
+
         # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
         if event.button() == Qt.RightButton:
             self.setDragMode(QGraphicsView.ScrollHandDrag)
