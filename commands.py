@@ -5,6 +5,23 @@ import copy
 import time
 import pwmapedit_constants
 
+class CreateNewPoiCmd(QUndoCommand):
+    def __init__(self, new_poi_map_object, map_objects, scene, description):
+        super(CreateNewPoiCmd, self).__init__(description)
+        self.new_poi_map_object = new_poi_map_object
+        self.map_objects = map_objects
+        self.scene = scene
+
+    def redo(self):
+        self.map_objects.add_map_object(self.new_poi_map_object)
+        self.scene.draw_object_on_map(self.new_poi_map_object)
+
+
+    def undo(self):
+        self.scene.removeItem(self.new_poi_map_object)
+        self.map_objects.set_map_object_deleted(self.new_poi_map_object)
+
+
 class DeleteObjectsCmd(QUndoCommand):
     def __init__(self, map_objects_to_be_removed, map_objects, description):
         super(DeleteObjectsCmd, self).__init__(description)

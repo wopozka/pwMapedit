@@ -195,7 +195,7 @@ class mapRender(QGraphicsView):
         if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
             position = self.mapToScene(event.pos())
             if mode == pwmapedit_constants.Tools.CREATE_POINT:
-                self.parent.create_poi(position)
+                self.parent.command_create_poi(position)
             elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
                 pass
             elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
