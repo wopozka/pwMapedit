@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import calendar
+from collections import OrderedDict
 
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
@@ -45,6 +46,19 @@ class mapCanvas(QGraphicsScene):
 
         self.web_layer_graphics = None
         self.web_layer_graphic_zoom = -1
+
+    def create_poi(self, position):
+        # creates new POI object
+        new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self.map_objects_properties,
+                                        projection=self.projection)
+        _pos = self.projection.canvas_to_geo(position.x(), position.y())
+        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): str(_pos)})
+        new_poi.set_data('', obj_data)
+        new_poi.set_mp_data()
+        self.parent.map_objects.add_map_object(new_poi)
+        print('rysuje poi', position, _pos)
+        self.draw_object_on_map(new_poi)
+        new_poi.setSelected(True)
 
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()

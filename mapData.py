@@ -171,6 +171,9 @@ class mapData(object):
         return self.map_filename
 
     def add_map_object(self, map_object):
+        # dla nowych obiektow id moze byc ustawione na None, wtedy przypisz pierwszy wolny
+        if map_object.get_id() is None:
+           map_object.set_id(self.get_object_id())
         if map_object.get_id() < len(self.mapObjectsList) and self.mapObjectsList[map_object.get_id()] is None:
             self.mapObjectsList[map_object.get_id()] = map_object
         else:
