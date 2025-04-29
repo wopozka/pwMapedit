@@ -59,19 +59,20 @@ class mapCanvas(QGraphicsScene):
 
         # closest node circle
         self._closest_node_circle = None
+        self._stick_to_neighbours_nodes = False
 
-    def closest_point_to_point(self, event_pos):
+    def closest_point_to_point(self, event_pos, excluded_item=None):
         circle = QPainterPath()
         circle.addEllipse(event_pos, 30, 30)
-        items_under_circle = self.scene().items(circle)
-        if self in items_under_circle:
-            items_under_circle.remove(self)
+        items_under_circle = self.items(circle)
+        if excluded_item in items_under_circle:
+            items_under_circle.remove(excluded_item)
         items_under_circle = [a for a in items_under_circle if (isinstance(a, map_items.PolylineQGraphicsPathItem)
                                                                 or isinstance(a, map_items.PolygonQGraphicsPathItem))]
         if items_under_circle:
             point_node_dist = []
             for item_under_c in items_under_circle:
-                for polygon in self.get_polygons_from_path(item_under_c.path()):
+                for polygon in item_under_c.get_polygons_from_path(item_under_c.path()):
                     for point in polygon:
                         point_event_l = QLineF(event_pos, point)
                         if point_event_l.length() <= self.closest_node_min_distance:
@@ -101,6 +102,9 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI')
         self.undo_redo_stack.push(command)
 
+    def stick_to_neighbours(self):
+        return self._stick_to_neighbours_nodes
+
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()
 
@@ -122,6 +126,18 @@ class mapCanvas(QGraphicsScene):
         left_top_corner = viewer.mapToScene(viewer.sceneRect().upperLeft())
         right_bottom_corner = viewer.mapToScene(viewer.sceneRect().bottomRight())
         print(left_top_corner, right_bottom_corner)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self._stick_to_neighbours_nodes = True
+            print('Wlaczam przyciaganie')
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Control:
+            self._stick_to_neighbours_nodes = False
+            print('wylaczam przyciaganie')
+        super().keyReleaseEvent(event)
 
     def set_canvas_rectangle(self, map_bounding_box):
         start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])

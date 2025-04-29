@@ -1606,7 +1606,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.recorded_pos = None
         self._mouse_press_timestamp = None
         self._closest_node_circle = None
-        self._drag_to_closest_node = False
 
     @staticmethod
     def accept_map_level_change():
@@ -1730,7 +1729,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.InsertNodeCmd(self, index, pos, polygons, 'Dodaj nod')
         self.scene().undo_redo_stack.push(command)
 
-    def command_move_grip(self, grip):
+    def command_move_grip2(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
@@ -1744,16 +1743,16 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if self._closest_node_circle is not None:
             self.scene().removeItem(self._closest_node_circle)
             self._closest_node_circle = None
-        if self._drag_to_closest_node:
+        if self.scene().stick_to_neighbours():
             self.closest_point_to_point(grip.pos())
         # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
         # dociągnięty
-        if self._drag_to_closest_node and self._closest_node_circle is not None:
+        if self.scene().stick_to_neighbours() and self._closest_node_circle is not None:
             grip.setPos(self._closest_node_circle.pos())
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
         self.scene().undo_redo_stack.push(command)
 
-    def command_move_grip1(self, grip):
+    def command_move_grip(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
             return
@@ -1765,11 +1764,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         # usuń kółko dociągające, bo jeśli jest może być już niepotrzebne przy self._drag_to_closes_node == False
         self.scene().closest_node_circle_remove()
-        if self._drag_to_closest_node:
-            self.scene().closest_point_to_point(grip.pos())
+        if self.scene().stick_to_neighbours():
+            self.scene().closest_point_to_point(grip.pos(), excluded_item=self)
         # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
         # dociągnięty
-        if self._drag_to_closest_node and self.scene().closest_node_circle_position() is not None:
+        if self.scene().stick_to_neighbours() and self.scene().closest_node_circle_position() is not None:
             grip.setPos(self.scene().closest_node_circle_position())
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
         self.scene().undo_redo_stack.push(command)
@@ -1947,15 +1946,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return True
         return False
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Control:
-            self._drag_to_closest_node = True
-        super().keyPressEvent(event)
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Control:
-            self._drag_to_closest_node = False
-        super().keyReleaseEvent(event)
+    # def keyPressEvent(self, event):
+    #     if event.key() == Qt.Key_Control:
+    #         self._drag_to_closest_node = True
+    #     super().keyPressEvent(event)
+    #
+    # def keyReleaseEvent(self, event):
+    #     if event.key() == Qt.Key_Control:
+    #         self._drag_to_closest_node = False
+    #     super().keyReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
         mode = self.scene().get_pw_mapedit_mode()
@@ -1982,9 +1981,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.recorded_pos = self.pos()
 
     def mouseReleaseEvent(self, event):
-        if self._closest_node_circle is not None:
-            self.scene().removeItem(self._closest_node_circle)
-            self._closest_node_circle = None
+        print('closest node circle remove')
+        self.scene().closest_node_circle_remove()
+        # if self._closest_node_circle is not None:
+        #     self.scene().removeItem(self._closest_node_circle)
+        #     self._closest_node_circle = None
         self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
@@ -2896,7 +2897,7 @@ class GripItem(QGraphicsPathItem):
             self.scene().removeItem(self.parent._closest_node_circle)
             self.parent._closest_node_circle = None
         # to samo dla modyfikatora ctrl,
-        self.parent._drag_to_closest_node = False
+        self.parent._stick_to_neighbours_nodes = False
 
     def keyPressEvent(self, event):
         if event.text() == 'n':
