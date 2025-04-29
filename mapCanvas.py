@@ -3,10 +3,11 @@
 import calendar
 from collections import OrderedDict
 
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPathItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipseItem, QGraphicsPolygonItem,
+                             QGraphicsRectItem, QGraphicsItem)
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
-from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtCore import QPointF, Qt, QLineF
 import platform
 
 import commands
@@ -23,6 +24,15 @@ from datetime import datetime
 
 class mapCanvas(QGraphicsScene):
     web_layer_z_value = 1
+    closest_node_circle_definition = QGraphicsEllipseItem(- 10, - 10, 20, 20)
+    closest_node_circle_definition.setZValue(150)
+    closest_node_circle_definition.setPen(QPen(QColor("blue")))
+    closest_node_circle_definition.setBrush(QBrush(QColor("blue")))
+    closest_node_circle_definition.setFlag(QGraphicsPathItem.ItemIgnoresTransformations, True)
+    closest_node_circle_definition.setOpacity(0.5)
+    closest_node_min_distance = 15
+    closest_node_circle_pen = QPen(QColor("blue"))
+    closest_node_circle_brush = QBrush(QColor("blue"))
     """The main map canvas definitions residue here"""
     def __init__(self, parent, *args, projection=None, undo_redo_stack=None, **kwargs):
         self.parent = parent
@@ -46,6 +56,31 @@ class mapCanvas(QGraphicsScene):
 
         self.web_layer_graphics = None
         self.web_layer_graphic_zoom = -1
+
+        # closest node circle
+        self._closest_node_circle = None
+
+    def closest_point_to_point(self, event_pos):
+        circle = QPainterPath()
+        circle.addEllipse(event_pos, 30, 30)
+        items_under_circle = self.scene().items(circle)
+        if self in items_under_circle:
+            items_under_circle.remove(self)
+        items_under_circle = [a for a in items_under_circle if (isinstance(a, map_items.PolylineQGraphicsPathItem)
+                                                                or isinstance(a, map_items.PolygonQGraphicsPathItem))]
+        if items_under_circle:
+            point_node_dist = []
+            for item_under_c in items_under_circle:
+                for polygon in self.get_polygons_from_path(item_under_c.path()):
+                    for point in polygon:
+                        point_event_l = QLineF(event_pos, point)
+                        if point_event_l.length() <= self.closest_node_min_distance:
+                            point_node_dist.append(point_event_l)
+            if point_node_dist:
+                closes_point = sorted(point_node_dist, key=lambda a: a.length())[0]
+                self._closest_node_circle = self.closest_node_circle_definition
+                self._closest_node_circle.setPos(closes_point.p2())
+                self.addItem(self._closest_node_circle)
 
     def command_create_poi(self, position):
         # creates new POI object
