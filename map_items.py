@@ -1567,12 +1567,12 @@ class HoveredShapePainterPath(QGraphicsPathItem):
 class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps
     decorated_z_value = 100
-    closest_node_circle = QGraphicsEllipseItem(- 10, - 10, 20, 20)
-    closest_node_circle.setZValue(150)
-    closest_node_circle.setPen(QPen(QColor("blue")))
-    closest_node_circle.setBrush(QBrush(QColor("blue")))
-    closest_node_circle.setFlag(QGraphicsPathItem.ItemIgnoresTransformations, True)
-    closest_node_circle.setOpacity(0.5)
+    closest_node_circle_definition = QGraphicsEllipseItem(- 10, - 10, 20, 20)
+    closest_node_circle_definition.setZValue(150)
+    closest_node_circle_definition.setPen(QPen(QColor("blue")))
+    closest_node_circle_definition.setBrush(QBrush(QColor("blue")))
+    closest_node_circle_definition.setFlag(QGraphicsPathItem.ItemIgnoresTransformations, True)
+    closest_node_circle_definition.setOpacity(0.5)
     closest_node_min_distance = 15
     closest_node_circle_pen = QPen(QColor("blue"))
     closest_node_circle_brush = QBrush(QColor("blue"))
@@ -1657,7 +1657,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                             point_node_dist.append(point_event_l)
             if point_node_dist:
                 closes_point = sorted(point_node_dist, key=lambda a: a.length())[0]
-                self._closest_node_circle = self.closest_node_circle
+                self._closest_node_circle = self.closest_node_circle_definition
                 self._closest_node_circle.setPos(closes_point.p2())
                 self.scene().addItem(self._closest_node_circle)
 
