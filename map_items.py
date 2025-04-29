@@ -2925,6 +2925,9 @@ class GripItem(QGraphicsPathItem):
         else:
             super().mousePressEvent(event)
 
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+
     def wheelEvent(self, event):
         print('kolko myszy')
         if event.modifiers() == Qt.ControlModifier:

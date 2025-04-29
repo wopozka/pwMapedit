@@ -136,6 +136,7 @@ class mapCanvas(QGraphicsScene):
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Control:
             self._stick_to_neighbours_nodes = False
+            self.closest_node_circle_remove()
             print('wylaczam przyciaganie')
         super().keyReleaseEvent(event)
 
