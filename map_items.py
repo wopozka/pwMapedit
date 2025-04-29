@@ -1753,6 +1753,27 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.MoveGripCmd(self, grip, 'przesun wezel')
         self.scene().undo_redo_stack.push(command)
 
+    def command_move_grip1(self, grip):
+        print('ruszam')
+        if grip not in self.node_grip_items:
+            return
+        polygons = self.get_polygons_from_path(self.path())
+        grip_poly_num, grip_coord_num = grip.grip_indexes
+        try:
+            polygons[grip_poly_num][grip_coord_num] = grip.pos()
+        except IndexError:
+            return
+        # usuń kółko dociągające, bo jeśli jest może być już niepotrzebne przy self._drag_to_closes_node == False
+        self.scene().closest_node_circle_remove()
+        if self._drag_to_closest_node:
+            self.scene().closest_point_to_point(grip.pos())
+        # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
+        # dociągnięty
+        if self._drag_to_closest_node and self.scene().closest_node_circle_position() is not None:
+            grip.setPos(self.scene().closest_node_circle_position())
+        command = commands.MoveGripCmd(self, grip, 'przesun wezel')
+        self.scene().undo_redo_stack.push(command)
+
     def command_move_item(self):
         command = commands.SelectModeMoveItem(self, 'Przesun poly', self.pos())
         self.scene().undo_redo_stack.push(command)

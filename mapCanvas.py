@@ -82,6 +82,14 @@ class mapCanvas(QGraphicsScene):
                 self._closest_node_circle.setPos(closes_point.p2())
                 self.addItem(self._closest_node_circle)
 
+    def closest_node_circle_remove(self):
+        if self._closest_node_circle is not None:
+            self.removeItem(self._closest_node_circle)
+            self._closest_node_circle = None
+
+    def closest_node_circle_position(self):
+        return None if self._closest_node_circle is None else self._closest_node_circle.pos()
+
     def command_create_poi(self, position):
         # creates new POI object
         new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self.map_objects_properties,
