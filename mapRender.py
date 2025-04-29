@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 from urllib.error import URLError
 
-from PyQt5.QtWidgets import QGraphicsView
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsPathItem
 from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
-from PyQt5.QtGui import QMouseEvent
+from PyQt5.QtGui import QMouseEvent, QPainterPath, QPolygonF, QBrush
 import math
 
 import pwmapedit_constants
@@ -81,6 +81,8 @@ class mapRender(QGraphicsView):
         self._right_mouse_button_event_position = None
         self.web_layer = None
         self.currently_downloading_web_layer_files = set()
+        self._poly_creation_nodes = None
+        self._poly_creation_drawn_poly = None
 
     def get_corners_geo_coordinates(self):
         left_top_corner = self.mapToScene(0, 0)
@@ -162,12 +164,26 @@ class mapRender(QGraphicsView):
             # self.weblayers_get_picture_names()
             self.weblayers_put_background_weblayer_pictures()
         else:
+            mode = self.parent.get_pw_mapedit_mode()
+            if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                if self._poly_creation_nodes is not None:
+                    if self._poly_creation_drawn_poly is None:
+                        self._poly_creation_drawn_poly = QGraphicsPathItem()
+                        self.scene().addItem(self._poly_creation_drawn_poly)
+                    qpp = QPainterPath()
+                    qpp.addPolygon(QPolygonF(self._poly_creation_nodes + [self.mapToScene(event.pos())]))
+                    if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                        qpp.closeSubpath()
+                    self._poly_creation_drawn_poly.setPath(qpp)
+                    if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                        self._poly_creation_drawn_poly.setBrush(Qt.yellow)
+
+
             super(mapRender, self).mouseMoveEvent(event)
             self.set_status_bar(event=event)
 
     def mousePressEvent(self, event):
         # support for tools
-        print(self.parent.get_pw_mapedit_mode())
         mode = self.parent.get_pw_mapedit_mode()
         if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
             if mode == pwmapedit_constants.Tools.CREATE_POINT:
@@ -196,10 +212,11 @@ class mapRender(QGraphicsView):
             position = self.mapToScene(event.pos())
             if mode == pwmapedit_constants.Tools.CREATE_POINT:
                 self.parent.command_create_poi(position)
-            elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
-                pass
-            elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                pass
+            elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                if self._poly_creation_nodes is None:
+                    self._poly_creation_nodes = [position]
+                else:
+                    self._poly_creation_nodes.append(position)
             else:
                 pass
         # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
