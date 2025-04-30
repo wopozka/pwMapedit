@@ -65,7 +65,7 @@ class mapCanvas(QGraphicsScene):
         circle = QPainterPath()
         circle.addEllipse(event_pos, 30, 30)
         items_under_circle = self.items(circle)
-        if excluded_item in items_under_circle:
+        if excluded_item is not None and excluded_item in items_under_circle:
             items_under_circle.remove(excluded_item)
         items_under_circle = [a for a in items_under_circle if (isinstance(a, map_items.PolylineQGraphicsPathItem)
                                                                 or isinstance(a, map_items.PolygonQGraphicsPathItem))]
