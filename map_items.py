@@ -1910,6 +1910,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def highlight_when_hoverover(self):
         if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
             return False
+        if not self.mode_allows_selection():
+            return False
         return True
 
     def hoverEnterEvent(self, event):
@@ -1956,6 +1958,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     #         self._drag_to_closest_node = False
     #     super().keyReleaseEvent(event)
 
+    def mode_allows_selection(self):
+        if self.scene().get_pw_mapedit_mode() in (pwmapedit_constants.Tools.CREATE_POINT,
+                                                  pwmapedit_constants.Tools.CREATE_POLYLINE,
+                                                  pwmapedit_constants.Tools.CREATE_POLYGON):
+            return False
+        return True
+
     def mouseMoveEvent(self, event):
         mode = self.scene().get_pw_mapedit_mode()
         # trybie edytuj nody zachowuj sie standardowo
@@ -1966,6 +1975,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
+        # jesli jestes w trybie tworzenia obiektow, nie rob nic tutaj
+        if not self.mode_allows_selection():
+            return
         self._mouse_press_timestamp = time.time()
         super().mousePressEvent(event)
         self.remove_hovered_shape()
@@ -1981,6 +1993,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.recorded_pos = self.pos()
 
     def mouseReleaseEvent(self, event):
+        # jesli jestes w trybie tworzenia obiektow, nie rob nic tutaj
+        if not self.mode_allows_selection():
+            return
         print('closest node circle remove')
         self.scene().closest_node_circle_remove()
         # if self._closest_node_circle is not None:
