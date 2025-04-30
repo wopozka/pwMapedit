@@ -102,6 +102,26 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI')
         self.undo_redo_stack.push(command)
 
+    def command_create_polyline(self, coordinates):
+        new_poly = map_items.PolylineQGraphicsPathItem(None,
+                                                       map_objects_properties=self.map_objects_properties,
+                                                       projection=self.projection)
+        print(coordinates)
+        data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
+        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
+        new_poly.set_data('', obj_data)
+        print(obj_data)
+
+    def command_create_polygon(self, coordinates):
+        new_poly = map_items.PolygonQGraphicsPathItem(None,
+                                                       map_objects_properties=self.map_objects_properties,
+                                                       projection=self.projection)
+        data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
+        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
+        new_poly.set_data('', obj_data)
+        print(obj_data)
+
+
     def stick_to_neighbours(self):
         return self._stick_to_neighbours_nodes
 

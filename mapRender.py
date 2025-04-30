@@ -178,6 +178,10 @@ class mapRender(QGraphicsView):
                         self._poly_creation_nodes = None
             elif event.key() == Qt.Key_Space:
                 print(self._poly_creation_nodes)
+                if mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
+                    self.parent.command_create_polyline(self._poly_creation_nodes)
+                elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                    self.parent.command_create_polygon(self._poly_creation_nodes)
                 self._poly_creation_nodes = None
                 self.scene().removeItem(self._poly_creation_drawn_poly)
                 self._poly_creation_drawn_poly = None
