@@ -191,6 +191,8 @@ class mapRender(QGraphicsView):
 
     # new events definitions:
     def mouseMoveEvent(self, event):
+        if self.scene() is None:
+            return
         self._mouse_scene_coordinates = self.mapToScene(event.pos())
         if event.buttons() == Qt.RightButton:
             super(mapRender, self).mouseMoveEvent(event)
@@ -209,6 +211,7 @@ class mapRender(QGraphicsView):
                     if self._poly_creation_drawn_poly is None:
                         self._poly_creation_drawn_poly = QGraphicsPathItem()
                         self.scene().addItem(self._poly_creation_drawn_poly)
+                        self._poly_creation_drawn_poly.setZValue(pwmapedit_constants.NEW_OBJECT_CREATION_Z_VAL)
                     qpp = QPainterPath()
                     qpp.addPolygon(QPolygonF(self._poly_creation_nodes + [self.mapToScene(event.pos())]))
                     if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
@@ -228,7 +231,8 @@ class mapRender(QGraphicsView):
             self.set_status_bar(event=event)
 
     def mousePressEvent(self, event):
-
+        if self.scene() is None:
+            return
         # w przypadku gdy klikniesz prawym przyciskiem myszy to emulujesz drag mode. Wtedy mousePressEvent jest
         # generowany ponownie z handmade_eventem, ale chcemy tylko aby super() zostało wywołane
         if self._hand_made_right_button_press_event:
@@ -255,10 +259,12 @@ class mapRender(QGraphicsView):
                                              event.buttons(), Qt.KeyboardModifiers())
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
-
+        # klikniecie na obiekt powinno go podswietlic - zaznaczyc.
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if self.scene() is None:
+            return
         if self._hand_made_right_button_release_event:
             self._hand_made_right_button_release_event = False
         else:
