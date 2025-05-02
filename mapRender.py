@@ -97,8 +97,8 @@ class mapRender(QGraphicsView):
     def get_item_ignores_transformations(self):
         return self.item_ignores_transformations
 
-    def get_pw_mapedit_mode(self):
-        return self.parent.pw_mapedit_mode
+    # def get_pw_mapedit_mode(self):
+    #     return self.parent.pw_mapedit_mode
 
     def set_ruler(self, ruler):
         self.ruler = ruler
@@ -158,7 +158,7 @@ class mapRender(QGraphicsView):
             self.scene().remove_web_layer_graphics()
 
     def keyPressEvent(self, event):
-        mode = self.parent.get_pw_mapedit_mode()
+        mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
             # if self._poly_creation_nodes is not None:
             if self.scene().closest_node_circle_position() is not None:
@@ -179,9 +179,9 @@ class mapRender(QGraphicsView):
             elif event.key() == Qt.Key_Space:
                 print(self._poly_creation_nodes)
                 if mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
-                    self.parent.command_create_polyline(self._poly_creation_nodes)
+                    self.scene().command_create_polyline(self._poly_creation_nodes)
                 elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                    self.parent.command_create_polygon(self._poly_creation_nodes)
+                    self.scene().command_create_polygon(self._poly_creation_nodes)
                 self._poly_creation_nodes = None
                 self.scene().removeItem(self._poly_creation_drawn_poly)
                 self._poly_creation_drawn_poly = None
@@ -202,7 +202,7 @@ class mapRender(QGraphicsView):
             self.scene().closest_node_circle_remove()
             if self.scene().stick_to_neighbours():
                 self.scene().closest_point_to_point(self.mapToScene(event.pos()), excluded_item=None)
-            mode = self.parent.get_pw_mapedit_mode()
+            mode = self.scene().get_pw_mapedit_mode()
             if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
                 # jesli nody nowo utworzonego polygonu i polyline sa obecne wtedy go stworz
                 if self._poly_creation_nodes is not None:
@@ -235,7 +235,7 @@ class mapRender(QGraphicsView):
             self._hand_made_right_button_press_event = False
         else:
             # support for tools
-            mode = self.parent.get_pw_mapedit_mode()
+            mode = self.scene().get_pw_mapedit_mode()
             if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
                 if mode == pwmapedit_constants.Tools.CREATE_POINT:
                     pass
@@ -262,7 +262,7 @@ class mapRender(QGraphicsView):
         if self._hand_made_right_button_release_event:
             self._hand_made_right_button_release_event = False
         else:
-            mode = self.parent.get_pw_mapedit_mode()
+            mode = self.scene().get_pw_mapedit_mode()
             print(self._right_mouse_button_event_position)
             if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
                 print('rysuje')
@@ -271,7 +271,7 @@ class mapRender(QGraphicsView):
                 else:
                     position = self.mapToScene(event.pos())
                 if mode == pwmapedit_constants.Tools.CREATE_POINT:
-                    self.parent.command_create_poi(position)
+                    self.scene().command_create_poi(position)
                 elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
                     if self._poly_creation_nodes is None:
                         self._poly_creation_nodes = [position]

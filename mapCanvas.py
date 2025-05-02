@@ -110,7 +110,10 @@ class mapCanvas(QGraphicsScene):
         data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
-        print(obj_data)
+        new_poly.set_mp_data()
+        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline')
+        self.undo_redo_stack.push(command)
+
 
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,
@@ -119,7 +122,9 @@ class mapCanvas(QGraphicsScene):
         data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
-        print(obj_data)
+        new_poly.set_mp_data()
+        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon')
+        self.undo_redo_stack.push(command)
 
 
     def stick_to_neighbours(self):
