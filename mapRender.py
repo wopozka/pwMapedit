@@ -7,6 +7,7 @@ from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, 
 from PyQt5.QtGui import QMouseEvent, QPainterPath, QPolygonF, QBrush
 import math
 
+import map_items
 import pwmapedit_constants
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
 import os.path
@@ -260,7 +261,18 @@ class mapRender(QGraphicsView):
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
         # klikniecie na obiekt powinno go podswietlic - zaznaczyc.
-        super().mousePressEvent(event)
+        items_under_cursor = self.items(event.pos())
+        print(items_under_cursor)
+        if not items_under_cursor:
+            super().mousePressEvent(event)
+        elif len(items_under_cursor) == 1:
+            super().mousePressEvent(event)
+        elif isinstance(items_under_cursor[0], map_items.HoveredShapePainterPath):
+            super().mousePressEvent(event)
+        else:
+            if self.scene() is not None:
+                self.scene().clearSelection()
+            items_under_cursor[1].setSelected(True)
 
     def mouseReleaseEvent(self, event):
         if self.scene() is None:
