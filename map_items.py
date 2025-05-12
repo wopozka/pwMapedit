@@ -1588,11 +1588,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     _accept_map_level_change = True
 
     def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
-        self.hovered = False
-        # super(PolyQGraphicsPathItem, self).__init__(map_objects_properties=map_objects_properties,
-        #                                             projection=projection)
         BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, projection=projection)
         QGraphicsPathItem.__init__(self)
+        self.hovered = False
+        self.hover_enter_for_create_mode = False
         self.orig_pen = None
         self.node_grip_items = list()
         self.node_grip_hovered = False
@@ -1910,8 +1909,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def highlight_when_hoverover(self):
         if self.scene().get_viewer_scale() * 10 < IGNORE_TRANSFORMATION_TRESHOLD:
             return False
-        if not self.mode_allows_selection():
-            return False
+        # if not self.mode_allows_selection():
+        #     return False
         return True
 
     def hoverEnterEvent(self, event):
@@ -1922,6 +1921,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setCursor(QCursor(Qt.CrossCursor))
             return
         self.hovered = True
+        mode = self.scene().get_pw_mapedit_mode()
+        if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+            self.hover_enter_for_create_mode = True
+            self.update()
+            return
         if not self.isSelected():
             self.add_hovered_shape()
 
@@ -1931,6 +1935,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setCursor(QCursor(Qt.ArrowCursor))
             return
         self.hovered = False
+        mode = self.scene().get_pw_mapedit_mode()
+        if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+            self.hover_enter_for_create_mode = False
+            self.update()
+            return
         if not self.isSelected():
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
@@ -2015,13 +2024,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected or self.decorated():
+        if option.state & QStyle.State_Selected or self.decorated() or self.hover_enter_for_create_mode:
+            # print(self.hover_enter_for_create_mode)
             self.setOpacity(0.5)
         else:
-            self.setOpacity(1)
+            if self.opacity() < 1:
+                self.setOpacity(1)
         if option.state & QStyle.State_Selected or self.decorated():
             self.setPen(self.selected_pen)
-        elif self.hovered and not self.node_grip_items:
+        elif self.hovered and not self.hover_enter_for_create_mode and not self.node_grip_items:
             self.setPen(self.hovered_over_pen)
         else:
             self.setPen(self.orig_pen)

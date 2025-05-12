@@ -234,13 +234,13 @@ class mapRender(QGraphicsView):
     def mousePressEvent(self, event):
         if self.scene() is None:
             return
+        mode = self.scene().get_pw_mapedit_mode()
         # w przypadku gdy klikniesz prawym przyciskiem myszy to emulujesz drag mode. Wtedy mousePressEvent jest
         # generowany ponownie z handmade_eventem, ale chcemy tylko aby super() zostało wywołane
         if self._hand_made_right_button_press_event:
             self._hand_made_right_button_press_event = False
         else:
             # support for tools
-            mode = self.scene().get_pw_mapedit_mode()
             if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
                 if mode == pwmapedit_constants.Tools.CREATE_POINT:
                     pass
@@ -260,19 +260,25 @@ class mapRender(QGraphicsView):
                                              event.buttons(), Qt.KeyboardModifiers())
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
-        # klikniecie na obiekt powinno go podswietlic - zaznaczyc.
-        items_under_cursor = self.items(event.pos())
-        print(items_under_cursor)
-        if not items_under_cursor:
-            super().mousePressEvent(event)
-        elif len(items_under_cursor) == 1:
-            super().mousePressEvent(event)
-        elif isinstance(items_under_cursor[0], map_items.HoveredShapePainterPath):
-            super().mousePressEvent(event)
+        # klikniecie na obiekt powinno go podswietlic - zaznaczyc. Ale tylo w trybie select albo nodes
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS or mode == pwmapedit_constants.Tools.EDIT_NODES:
+            items_under_cursor = self.items(event.pos())
+            print(items_under_cursor)
+            if not items_under_cursor:
+                super().mousePressEvent(event)
+            elif len(items_under_cursor) == 1:
+                super().mousePressEvent(event)
+            elif isinstance(items_under_cursor[0], map_items.HoveredShapePainterPath):
+                super().mousePressEvent(event)
+            else:
+                if self.scene() is not None:
+                    self.scene().clearSelection()
+                if items_under_cursor:
+                    items_under_cursor[1].setSelected(True)
         else:
-            if self.scene() is not None:
-                self.scene().clearSelection()
-            items_under_cursor[1].setSelected(True)
+            print('mode aktualne:', mode)
+            super().mousePressEvent(event)
+
 
     def mouseReleaseEvent(self, event):
         if self.scene() is None:
