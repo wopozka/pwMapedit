@@ -2032,7 +2032,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self.setOpacity(1)
         if option.state & QStyle.State_Selected or self.decorated():
             self.setPen(self.selected_pen)
-        elif self.hovered and not self.hover_enter_for_create_mode and not self.node_grip_items:
+        elif self.hovered and not self.hover_enter_for_create_mode and not self.decorated():
             self.setPen(self.hovered_over_pen)
         else:
             self.setPen(self.orig_pen)
