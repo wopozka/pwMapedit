@@ -264,23 +264,25 @@ class mapRender(QGraphicsView):
                 self.mousePressEvent(handmade_event)
         # klikniecie na obiekt powinno go podswietlic - zaznaczyc. Ale tylo w trybie select albo nodes
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS or mode == pwmapedit_constants.Tools.EDIT_NODES:
-            items_under_cursor = self.items(event.pos())
-            if (not items_under_cursor or isinstance(items_under_cursor[0], map_items.GripItem) or
-                    isinstance(items_under_cursor[0], map_items.PoiAsPixmap) or len(items_under_cursor) == 1):
+            items_under_cursor = [item for item in self.items(event.pos()) if
+                                  (isinstance(item, map_items.PolylineQGraphicsPathItem) or
+                                   isinstance(item, map_items.PolygonQGraphicsPathItem))]
+            if not items_under_cursor or len(items_under_cursor) == 1:
                 super().mousePressEvent(event)
                 return
             else:
-                if isinstance(items_under_cursor[0], map_items.HoveredShapePainterPath):
-                    items_under_cursor = items_under_cursor[1:]
                 if items_under_cursor != self._items_under_cursor:
+                    print('items under cursor', items_under_cursor, self._items_under_cursor)
                     self._items_under_cursor = items_under_cursor
                     self._item_under_cursor_index = None
                 if self._item_under_cursor_index is None:
                     self._item_under_cursor_index = 0
                 else:
+                    print(self._item_under_cursor_index)
                     self._item_under_cursor_index += 1
                     if self._item_under_cursor_index >= len(items_under_cursor):
                         self._item_under_cursor_index = 0
+                    print(self._item_under_cursor_index)
 
                 self.scene().clearSelection()
                 self._items_under_cursor[self._item_under_cursor_index].setSelected(True)
@@ -298,7 +300,7 @@ class mapRender(QGraphicsView):
                 #         items_under_cursor[1].setSelected(True)
         else:
             print('mode aktualne:', mode)
-        super().mousePressEvent(event)
+            super().mousePressEvent(event)
 
 
     def mouseReleaseEvent(self, event):
