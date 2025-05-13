@@ -241,6 +241,8 @@ class mapRender(QGraphicsView):
         # generowany ponownie z handmade_eventem, ale chcemy tylko aby super() zostało wywołane
         if self._hand_made_right_button_press_event:
             self._hand_made_right_button_press_event = False
+            super().mousePressEvent(event)
+            return
         else:
             # support for tools
             if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
@@ -262,6 +264,7 @@ class mapRender(QGraphicsView):
                                              event.buttons(), Qt.KeyboardModifiers())
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
+                return
         # klikniecie na obiekt powinno go podswietlic - zaznaczyc. Ale tylo w trybie select albo nodes
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS or mode == pwmapedit_constants.Tools.EDIT_NODES:
             items_under_cursor = [item for item in self.items(event.pos()) if
@@ -285,7 +288,7 @@ class mapRender(QGraphicsView):
                     print(self._item_under_cursor_index)
 
                 self.scene().clearSelection()
-                self._items_under_cursor[self._item_under_cursor_index].setSelected(True)
+                self._items_under_cursor[self._item_under_cursor_index].mousePressEvent(event)
 
                 # if not items_under_cursor:
                 #     super().mousePressEvent(event)
@@ -308,6 +311,8 @@ class mapRender(QGraphicsView):
             return
         if self._hand_made_right_button_release_event:
             self._hand_made_right_button_release_event = False
+            super().mouseReleaseEvent(event)
+            return
         else:
             mode = self.scene().get_pw_mapedit_mode()
             print(self._right_mouse_button_event_position)
@@ -335,6 +340,7 @@ class mapRender(QGraphicsView):
                 handmade_event = QMouseEvent(QEvent.MouseButtonRelease, QPointF(event.pos()), Qt.LeftButton,
                                              event.buttons(), Qt.KeyboardModifiers())
                 self.mouseReleaseEvent(handmade_event)
+                return
         super().mouseReleaseEvent(event)
 
 
