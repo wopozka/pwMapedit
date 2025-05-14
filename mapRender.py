@@ -100,8 +100,10 @@ class mapRender(QGraphicsView):
     def get_item_ignores_transformations(self):
         return self.item_ignores_transformations
 
-    # def get_pw_mapedit_mode(self):
-    #     return self.parent.pw_mapedit_mode
+    def get_current_mouse_geo_coordinates(self):
+        x = self._curent_scene_mouse_coords.x()
+        y = self._curent_scene_mouse_coords.y()
+        return self.projection.canvas_to_geo(x, y)
 
     def set_ruler(self, ruler):
         self.ruler = ruler

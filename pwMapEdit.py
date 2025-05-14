@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatu
     QProgressBar, QLabel
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QClipboard
 import sys
 import mapData
 import mapCanvas
@@ -538,6 +538,10 @@ class pwMapeditPy(QMainWindow):
         self.weblayers_cache_folder.cleanup()
         super().closeEvent(event)
 
+    def copy_action(self):
+        lat, lon = self.view.get_current_mouse_geo_coordinates()
+        QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
+
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
         scale_down.activated.connect(self.menu_zoom_out_command)
@@ -545,6 +549,8 @@ class pwMapeditPy(QMainWindow):
         scale_up.activated.connect(self.menu_zoom_in_command)
         cancel_selection = QShortcut(QKeySequence('Escape'), self)
         cancel_selection.activated.connect(self.map_canvas.clearSelection)
+        copy_action = QShortcut(QKeySequence('Ctrl+C'), self)
+        copy_action.activated.connect(self.copy_action)
         self.map_level_actions.append(QShortcut(QKeySequence('0'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_0)
         self.map_level_actions.append(QShortcut(QKeySequence('1'), self))
