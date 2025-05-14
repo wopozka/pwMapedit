@@ -541,6 +541,7 @@ class pwMapeditPy(QMainWindow):
         super().closeEvent(event)
 
     def copy_action(self):
+        print(self.focusWidget())
         lat, lon = self.view.get_current_mouse_geo_coordinates()
         QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
 
