@@ -712,7 +712,10 @@ class pwMapeditPy(QMainWindow):
                                                          cache_folder=self.weblayers_cache_folder.name))
 
     def paste_action(self):
-        print(QApplication.clipboard().mimeData().hasImage())
+        for mime_format in QApplication.clipboard().mimeData().formats():
+            if QApplication.clipboard().mimeData().hasFormat(mime_format):
+                print('mime format', mime_format)
+                print(QApplication.clipboard().mimeData().data(mime_format))
         print(QApplication.clipboard().text())
 
     def update_progress_bar(self, command, value):
