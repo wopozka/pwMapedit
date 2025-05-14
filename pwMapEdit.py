@@ -462,6 +462,8 @@ class pwMapeditPy(QMainWindow):
         edit_actions[-1].setShortcut(QKeySequence.Copy)
         edit_actions[-1].triggered.connect(self.copy_action)
         edit_actions.append(QAction('&Paste', self))
+        edit_actions[-1].setShortcut(QKeySequence.Paste)
+        edit_actions[-1].triggered.connect(self.paste_action)
         edit_actions.append(QAction('&Paste here', self))
         edit_actions.append(QAction('&Delete', self))
         edit_actions.append(None)
@@ -708,6 +710,10 @@ class pwMapeditPy(QMainWindow):
             self.view.set_web_layer(None)
             self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
                                                          cache_folder=self.weblayers_cache_folder.name))
+
+    def paste_action(self):
+        print(QApplication.clipboard().mimeData().hasImage())
+        print(QApplication.clipboard().text())
 
     def update_progress_bar(self, command, value):
         if command == 'set_maximum':
