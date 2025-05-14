@@ -61,6 +61,13 @@ class mapCanvas(QGraphicsScene):
         self._closest_node_circle = None
         self._stick_to_neighbours_nodes = False
 
+    def clearSelection(self):
+        print('clear selection called')
+        for item in self.selectedItems():
+            if item.zValue() > pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
+                item.setZValue(item.zValue() - pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
+        super().clearSelection()
+
     def closest_point_to_point(self, event_pos, excluded_item=None):
         circle = QPainterPath()
         circle.addEllipse(event_pos, 30, 30)

@@ -1922,7 +1922,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         self.hovered = True
         mode = self.scene().get_pw_mapedit_mode()
-        if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+        if (mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON or
+                mode == pwmapedit_constants.Tools.EDIT_NODES):
             self.hover_enter_for_create_mode = True
             self.update()
             return
@@ -1936,7 +1937,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         self.hovered = False
         mode = self.scene().get_pw_mapedit_mode()
-        if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+        if (mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON or
+                mode == pwmapedit_constants.Tools.EDIT_NODES):
             self.hover_enter_for_create_mode = False
             self.update()
             return
@@ -2731,6 +2733,7 @@ class PolylineAddressNumber(MapLabels):
         self.hovered_shape.setPen(hovered_over_pen)
 
     def hoverEnterEvent(self, event):
+        print('hover enter')
         self.setFocus(True)
         self.grabKeyboard()
         self.parent.hoverLeaveEvent(event)
@@ -2742,6 +2745,7 @@ class PolylineAddressNumber(MapLabels):
         self.scene().disable_maplevel_shortcuts()
 
     def hoverLeaveEvent(self, event):
+        print('hover leave')
         self.clearFocus()
         self.ungrabKeyboard()
         self.scene().removeItem(self.hovered_shape)
@@ -2764,6 +2768,13 @@ class PolylineAddressNumber(MapLabels):
 
     def keyReleaseEvent(self, event):
         pass
+
+    def mousePressEvent(self, event):
+        # do nothing
+        return
+
+    def mouseReleaseEvent(self, event):
+        return
 
     def paint(self, painter, option, widget):
         self.set_pos(self.position)

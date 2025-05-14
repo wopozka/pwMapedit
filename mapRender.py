@@ -267,44 +267,64 @@ class mapRender(QGraphicsView):
                 return
         # klikniecie na obiekt powinno go podswietlic - zaznaczyc. Ale tylo w trybie select albo nodes
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS or mode == pwmapedit_constants.Tools.EDIT_NODES:
-            items_under_cursor = [item for item in self.items(event.pos()) if
-                                  (isinstance(item, map_items.PolylineQGraphicsPathItem) or
-                                   isinstance(item, map_items.PolygonQGraphicsPathItem))]
-            if not items_under_cursor or len(items_under_cursor) == 1:
+            items_under_cursor = self.items(event.pos())
+            if not items_under_cursor:
+                # nie rozumiem dlaczego super().mousePressEvent() nie czysci zaznaczenia, gdy klikniemy na pustym ekarnie
+                # dlatego wolam clearSelection() osobno
+                self.scene().clearSelection()
+                super().mousePressEvent(event)
+                return
+            elif isinstance(items_under_cursor[0], map_items.GripItem):
                 super().mousePressEvent(event)
                 return
             else:
-                if items_under_cursor != self._items_under_cursor:
-                    print('items under cursor', items_under_cursor, self._items_under_cursor)
-                    self._items_under_cursor = items_under_cursor
-                    self._item_under_cursor_index = None
-                if self._item_under_cursor_index is None:
-                    self._item_under_cursor_index = 0
+                # przypadku gdy klikamy w trybie EDIT_NODES na na krawędzi selectedItem wtedy przepuść event dalej
+                # bo może chcemy dodać nowy wezel
+                if (mode == pwmapedit_constants.Tools.EDIT_NODES and self.scene().selectedItems() and
+                        self.scene().selectedItems()[0].cursor() == Qt.CrossCursor):
+                    super().mousePressEvent(event)
+                    return
+                items_under_cursor = [item for item in items_under_cursor if
+                                      (isinstance(item, map_items.PolylineQGraphicsPathItem) or
+                                       isinstance(item, map_items.PolygonQGraphicsPathItem) or
+                                       isinstance(item, map_items.PoiAsPixmap)
+                                       )]
+
+                if not items_under_cursor:
+                    super().mousePressEvent(event)
+                    return
+                elif len(items_under_cursor) == 1:
+                    if items_under_cursor[0] not in self.scene().selectedItems():
+                        if event.modifiers() != Qt.ControlModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
+                            self.scene().clearSelection()
+                        if items_under_cursor[0].zValue() < pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
+                            new_z_value = (items_under_cursor[0].zValue() +
+                                           pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
+                            items_under_cursor[0].setZValue(new_z_value)
+                    super().mousePressEvent(event)
+                    return
                 else:
-                    print(self._item_under_cursor_index)
-                    self._item_under_cursor_index += 1
-                    if self._item_under_cursor_index >= len(items_under_cursor):
+                    if items_under_cursor != self._items_under_cursor:
+                        self._items_under_cursor = items_under_cursor
+                        self._item_under_cursor_index = None
+                    if self._item_under_cursor_index is None:
                         self._item_under_cursor_index = 0
-                    print(self._item_under_cursor_index)
-
-                self.scene().clearSelection()
-                self._items_under_cursor[self._item_under_cursor_index].mousePressEvent(event)
-
-                # if not items_under_cursor:
-                #     super().mousePressEvent(event)
-                # elif len(items_under_cursor) == 1:
-                #     super().mousePressEvent(event)
-                # elif isinstance(items_under_cursor[0], map_items.HoveredShapePainterPath):
-                #     super().mousePressEvent(event)
-                # else:
-                #     if self.scene() is not None:
-                #         self.scene().clearSelection()
-                #     if items_under_cursor:
-                #         items_under_cursor[1].setSelected(True)
+                    else:
+                        self._item_under_cursor_index += 1
+                        if self._item_under_cursor_index >= len(items_under_cursor):
+                            self._item_under_cursor_index = 0
+                    if event.modifiers() != Qt.ShiftModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
+                        self.scene().clearSelection()
+                    if (self._items_under_cursor[self._item_under_cursor_index].zValue() <
+                            pwmapedit_constants.SELECTED_OBJECT_Z_VAL):
+                        new_z_value = (self._items_under_cursor[self._item_under_cursor_index].zValue() +
+                                       pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
+                        self._items_under_cursor[self._item_under_cursor_index].setZValue(new_z_value)
+                    super().mousePressEvent(event)
+                    return
         else:
             print('mode aktualne:', mode)
-            super().mousePressEvent(event)
-
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.scene() is None:
