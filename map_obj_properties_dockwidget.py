@@ -703,6 +703,13 @@ class ExtrasTable(QTableWidget):
     def add_row_below(self, event):
         self.insertRow(self.currentRow() + 1)
 
+    def copy(self):
+        print(self.selectedIndexes())
+        print(self.selectedItems())
+
+    def cut(self):
+        pass
+
     def clear_contents(self):
         self.clearContents()
         self.current_table_content.clear()
@@ -723,6 +730,9 @@ class ExtrasTable(QTableWidget):
             if key and '=' not in key and value:
                 extras_data.append((key, value,))
         return extras_data
+
+    def paste(self):
+        pass
 
     def save_current_content(self):
         self.current_table_content = self.get_current_content()

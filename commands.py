@@ -373,7 +373,12 @@ class UpdateLabel123(QUndoCommand):
         super(UpdateLabel123, self).__init__(description + str(label_num))
         self.map_object = map_object
         self.new_label = new_label
-        self.old_label = map_object.get_label1()
+        if label_num == 1:
+            self.old_label = map_object.get_label1()
+        elif label_num == 2:
+            self.old_label = map_object.get_label2()
+        else:
+            self.old_label = map_object.get_label3()
         self.label_num = label_num
 
     def redo(self):
