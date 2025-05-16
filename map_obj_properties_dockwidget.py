@@ -759,7 +759,16 @@ class ExtrasTable(QTableWidget):
             _data = mime_data.text()
         else:
             return
-        print(_data)
+        # wklejaj od tej pozycji do końca
+        cur_row = self.currentRow()
+        for row_num, row_content in enumerate(_data):
+            row = row_num + cur_row
+            if row >= self.rowCount():
+                self.insertRow(self.rowCount())
+            if row_content[0]:
+                self.setItem(row, 0, QTableWidgetItem(row_content[0]))
+            if row_content[1]:
+                self.setItem(row, 1, QTableWidgetItem(row_content[1]))
 
     def save_current_content(self):
         self.current_table_content = self.get_current_content()
