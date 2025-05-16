@@ -127,6 +127,6 @@ polygon_type_2_name = {
     0x51: ('Water', 'Swamp', 'mokradła'),
     0x52: ('Land', 'Tundra', ''),
     0x53: ('Water', 'Sand', 'piach wydmy i wysypiska'),
-    0x1101e: ('Cusom', 'Separation zone', 'strefa rozgraniczenia'),
-    0x1101f: ('Cusom', 'Separation zone', 'strefa rozgraniczenia')
+    0x1101e: ('Custom', 'Separation zone', 'strefa rozgraniczenia'),
+    0x1101f: ('Custom', 'Separation zone', 'strefa rozgraniczenia')
 }
