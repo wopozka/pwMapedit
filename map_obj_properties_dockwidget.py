@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
-                             QPushButton, QGroupBox, QCompleter)
+                             QPushButton, QGroupBox, QCompleter, QApplication)
 from PyQt5.QtWidgets import QFormLayout, QTabWidget
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
 from PyQt5.QtGui import QIcon
 from enum import Enum
-from collections import OrderedDict
+import json
 import map_items
 
 
@@ -85,7 +85,6 @@ class MapObjPropDock(QDockWidget):
         # pozostałe elementy - Extras
         extras_label = QLabel('Extras', dock_widget)
         self.extras_table = ExtrasTable(3, 2, dock_widget)
-        self.extras_table.setHorizontalHeaderLabels(['Key', 'Label'])
         self.extras_table.cellChanged.connect(self.command_extras_table_changed)
         extras_box = QVBoxLayout()
         extras_box.addWidget(extras_label)
@@ -671,6 +670,7 @@ class MapObjPropDock(QDockWidget):
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
+        self.setHorizontalHeaderLabels(['Klucz', 'Wartość'])
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
         self.current_table_content = list()
 
@@ -704,8 +704,27 @@ class ExtrasTable(QTableWidget):
         self.insertRow(self.currentRow() + 1)
 
     def copy(self):
-        print(self.selectedIndexes())
-        print(self.selectedItems())
+        cells_indexes_to_copy = [(cell.row(), cell.column(),) for cell in self.selectedIndexes()]
+        copy_content = []
+        text_copy = ''
+        for row in range(self.rowCount()):
+            key = ''
+            value = ''
+            if (row, 0) in cells_indexes_to_copy:
+                key = self.item(row, 0).text()
+            if (row, 1) in cells_indexes_to_copy:
+                value = self.item(row, 1).text()
+            if key or value:
+                copy_content.append([key, value,])
+                text_copy += f'{key}\t{value}\n'
+        if copy_content or text_copy:
+            table_mime_data = QMimeData()
+            table_mime_data_str = json.dumps(copy_content)
+            print(table_mime_data_str)
+            table_mime_data.setData('application/json', QByteArray(table_mime_data_str.encode('utf-8')))
+            table_mime_data.setText(text_copy)
+            return table_mime_data
+        return None
 
     def cut(self):
         pass
@@ -731,8 +750,16 @@ class ExtrasTable(QTableWidget):
                 extras_data.append((key, value,))
         return extras_data
 
-    def paste(self):
-        pass
+    def paste(self, mime_data=None):
+        if mime_data is None:
+            mime_data = QApplication.clipboard().mimeData()
+        if mime_data and mime_data.hasFormat('application/json'):
+            _data = json.loads(mime_data.data('application/json').data().decode('utf-8'))
+        elif mime_data and mime_data.hasText():
+            _data = mime_data.text()
+        else:
+            return
+        print(_data)
 
     def save_current_content(self):
         self.current_table_content = self.get_current_content()

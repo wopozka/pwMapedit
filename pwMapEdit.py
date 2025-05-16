@@ -543,9 +543,12 @@ class pwMapeditPy(QMainWindow):
         super().closeEvent(event)
 
     def copy_action(self):
-        self.focusWidget().copy()
-        lat, lon = self.view.get_current_mouse_geo_coordinates()
-        QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
+        if self.focusWidget() is not None and hasattr(self.focusWidget(), 'copy'):
+            print('ustawiam copy z tabeli')
+            QApplication.clipboard().setMimeData(self.focusWidget().copy())
+        else:
+            lat, lon = self.view.get_current_mouse_geo_coordinates()
+            QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
 
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
@@ -712,11 +715,14 @@ class pwMapeditPy(QMainWindow):
                                                          cache_folder=self.weblayers_cache_folder.name))
 
     def paste_action(self):
-        for mime_format in QApplication.clipboard().mimeData().formats():
-            if QApplication.clipboard().mimeData().hasFormat(mime_format):
-                print('mime format', mime_format)
-                print(QApplication.clipboard().mimeData().data(mime_format))
-        print(QApplication.clipboard().text())
+        widget_paste_data = self.focusWidget()
+        if widget_paste_data is not None and hasattr(widget_paste_data, 'paste'):
+            widget_paste_data.paste(mime_data=QApplication.clipboard().mimeData())
+        else:
+            for mime_format in QApplication.clipboard().mimeData().formats():
+                if QApplication.clipboard().mimeData().hasFormat(mime_format):
+                    print('mime format', mime_format)
+                    print(QApplication.clipboard().mimeData().data(mime_format))
 
     def update_progress_bar(self, command, value):
         if command == 'set_maximum':
