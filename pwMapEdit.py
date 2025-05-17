@@ -544,7 +544,6 @@ class pwMapeditPy(QMainWindow):
 
     def copy_action(self):
         if self.focusWidget() is not None and hasattr(self.focusWidget(), 'copy'):
-            print('ustawiam copy z tabeli')
             QApplication.clipboard().setMimeData(self.focusWidget().copy())
         else:
             lat, lon = self.view.get_current_mouse_geo_coordinates()

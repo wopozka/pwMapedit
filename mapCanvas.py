@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipse
                              QGraphicsRectItem, QGraphicsItem)
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
-from PyQt5.QtCore import QPointF, Qt, QLineF
+from PyQt5.QtCore import QPointF, Qt, QLineF, QMimeData
 import platform
 
 import commands
@@ -133,6 +133,29 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon')
         self.undo_redo_stack.push(command)
 
+    def copy(self):
+        print('copy canvas')
+        if not self.selectedItems():
+            print('brak zaznaczonych obiektow')
+            return
+        items_defs = []
+        for item in self.selectedItems():
+            if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
+                    isinstance(item, map_items.PolygonQGraphicsPathItem)):
+                item_def = item.to_mp_record()
+                item_def.append('[END]')
+                items_defs.append(item_def)
+        if not items_defs:
+            print('zaznaczone obiekty nie sa typu poi, polyline i polygon')
+            return
+        str_def = ''
+        for item_def in items_defs:
+            str_def += '\n'.join(item_def)
+            str_def += '\n\n'
+        item_mime_data = QMimeData()
+        item_mime_data.setText(str_def)
+        print(str_def)
+        return item_mime_data
 
     def stick_to_neighbours(self):
         return self._stick_to_neighbours_nodes

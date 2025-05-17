@@ -90,6 +90,9 @@ class mapRender(QGraphicsView):
         self._items_under_cursor = []
         self._item_under_cursor_index = None
 
+    def copy(self):
+        return self.scene().copy()
+
     def delete(self):
         self.scene().delete()
 
