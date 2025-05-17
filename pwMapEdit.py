@@ -568,8 +568,14 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
         self.delete_key_action = QShortcut(QKeySequence.Delete, self)
-        self.delete_key_action.activated.connect(self.map_canvas.delete_object)
+        self.delete_key_action.activated.connect(self.delete)
 
+
+    def delete(self):
+        print(self.focusWidget())
+        if self.focusWidget() is not None and hasattr(self.focusWidget(), 'delete'):
+            self.focusWidget().delete()
+        return
 
     def disable_maplevel_shortcuts(self):
         for shorcut in self.map_level_actions:

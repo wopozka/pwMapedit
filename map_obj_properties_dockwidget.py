@@ -687,6 +687,16 @@ class ExtrasTable(QTableWidget):
         delete_row_action.triggered.connect(self.remove_row)
         res = menu.exec_(event.globalPos())
 
+    def delete(self):
+        for item in self.selectedItems():
+            item.setText('')
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Down:
+            if self.currentRow() == self.rowCount() - 1:
+                self.add_row_below(event)
+        super().keyPressEvent(event)
+
     def remove_row(self, event):
         cur_row = self.currentRow()
         self.removeRow(self.currentRow())

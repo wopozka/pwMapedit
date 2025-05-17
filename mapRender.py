@@ -90,6 +90,9 @@ class mapRender(QGraphicsView):
         self._items_under_cursor = []
         self._item_under_cursor_index = None
 
+    def delete(self):
+        self.scene().delete()
+
     def get_corners_geo_coordinates(self):
         left_top_corner = self.mapToScene(0, 0)
         right_bottom_corner = self.mapToScene(self.viewport().size().width(), self.viewport().size().height())

@@ -11,7 +11,7 @@ from PyQt5.QtCore import QPointF, Qt, QLineF
 import platform
 
 import commands
-import modes
+# import modes
 import math
 import projection
 import tempfile
@@ -237,7 +237,7 @@ class mapCanvas(QGraphicsScene):
         else:
             pass
 
-    def delete_object(self):
+    def delete(self):
         mode = self.get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if len(self.selectedItems()):
