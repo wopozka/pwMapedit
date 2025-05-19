@@ -31,11 +31,11 @@ class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
     def __init__(self, latitude=None, longitude=None, x=None, y=None, projection=None):
         # self.acuracy = 10000
-        self.projection = None
+        self._projection = None
         if projection is not None:
-            self.projection = projection
+            self._projection = projection
         if latitude is not None and longitude is not None:
-            _x, _y = self.projection.geo_to_canvas(latitude, longitude)
+            _x, _y = self._projection.geo_to_canvas(latitude, longitude)
         elif x is not None and y is not None:
             _x = x
             _y = y
@@ -51,7 +51,7 @@ class Node(QPointF):
         self._numbers_definitions = None
 
     def copy(self):
-        aaa = Node(x=self.x(), y=self.y(), projection=self.projection)
+        aaa = Node(x=self.x(), y=self.y(), projection=self._projection)
         if self._numbers_definitions is not None:
             aaa.set_numbers_definition(copy.copy(self._numbers_definitions))
         if self._hlevel_definition is not None:
@@ -69,11 +69,11 @@ class Node(QPointF):
         return self._hlevel_definition
 
     def get_geo_coordinates(self):
-        return self.projection.canvas_to_geo(self.x(), self.y())
+        return self._projection.canvas_to_geo(self.x(), self.y())
 
     def get_canvas_coords(self):
         return self.x(), self.y()
-        # return self.projection.geo_to_canvas(self.latitude, self.longitude)
+        # return self._projection.geo_to_canvas(self.latitude, self.longitude)
 
     def get_canvas_coords_as_qpointf(self):
         return self
@@ -156,7 +156,7 @@ class Node(QPointF):
 class Data_X(object):
     precision = 0
     def __init__(self, projection=None):
-        self.projection = projection
+        self._projection = projection
         # dane mozna by przechowywac w slownikach, ale poniewaz jest ich duzo, dlatego pod wzgledem przechowywania
         # uzycie list bedzie sporo bardziej efektywne pod wzgledem wielkosci pamieci. Jako ze mapy moga byc duze, moze
         # miec to znaczenia.
@@ -278,12 +278,12 @@ class Data_X(object):
             if not precision:
                 precision = max(len(latitude.split('.', 1)[1]), len(longitude.split('.', 1)[1]))
             self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
+            coords.append(Node(latitude=latitude, longitude=longitude, projection=self._projection))
         self.precision = max(self.precision, precision)
         return coords
 
     def copy(self):
-        d_copy = Data_X(self.projection)
+        d_copy = Data_X(self._projection)
         d_copy._bounding_box_N = self._bounding_box_N
         d_copy._bounding_box_S = self._bounding_box_S
         d_copy.bounding_box_W = self._bounding_box_W
@@ -719,7 +719,7 @@ class Data_X(object):
 
     def insert_node_at_position(self, data_level, polynum, index, x, y):
         polygon = self._poly_data_points[data_level][polynum]
-        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self.projection)] + polygon[index:]
+        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self._projection)] + polygon[index:]
         self._poly_data_points[data_level][polynum] = polygon_mod
 
     def reverse_poly(self, data_level):
@@ -845,7 +845,7 @@ class Data_X(object):
 # tutaj chyba lepiej byloby uzyc QPainterPath
 # class BasicMapItem(QGraphicsItemGroup):
 class BasicMapItem(object):
-    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         """
         basic map items properties, derived map items inherit from it
         Parameters
@@ -858,12 +858,12 @@ class BasicMapItem(object):
         # used for marking objects that were removed from map. For undo/redo actions it is easier to mark object as
         # removed then to copy it and then remove.
         self._deleted = False
-        self.projection = None
-        self.map_objects_properties = None
-        if projection is not None:
-            self.projection = projection
+        self._projection = None
+        self._map_objects_properties = None
+        if _projection is not None:
+            self._projection = _projection
         if map_objects_properties is not None:
-            self.map_objects_properties = map_objects_properties
+            self._map_objects_properties = map_objects_properties
         self.obj_comment = None
         self.type = None
         self.label1 = None
@@ -903,7 +903,7 @@ class BasicMapItem(object):
         for a in coordlist.split('),('):
             latitude, longitude = a.split(',')
             self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Node(latitude=latitude, longitude=longitude, projection=self.projection))
+            coords.append(Node(latitude=latitude, longitude=longitude, projection=self._projection))
         return coords
 
     def get_comment(self):
@@ -1053,7 +1053,7 @@ class BasicMapItem(object):
 
     def set_datax(self, data012345, data012345_val):
         if self.data0 is None:
-            self.data0 = Data_X(projection=self.projection)
+            self.data0 = Data_X(projection=self._projection)
         self.data0.add_nodes_from_string(data012345, data012345_val)
         self.set_obj_bounding_box(self.data0.get_obj_bounding_box())
         return
@@ -1238,9 +1238,9 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
     # basic class for poi without pixmap icon
     _accept_map_level_change = True
 
-    def __init__(self, map_objects_properties=None, projection=None):
+    def __init__(self, map_objects_properties=None, _projection=None):
         # super(PoiAsPath, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPathItem.__init__(self)
         self.label = None
         self._mp_data = [None, None, None, None, None]
@@ -1274,7 +1274,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
             if not data:
                 continue
             if self.path().isEmpty():
-                self.setPath(self.map_objects_properties.get_poi_icon(self.get_type()))
+                self.setPath(self._map_objects_properties.get_poi_icon(self.get_type()))
             level = int(given_level[-1])
             # creates qpainterpaths for polylines at given Data level
             node = data[0]
@@ -1290,7 +1290,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
             self.label = PoiLabel(label, self)
 
     def set_brush(self):
-        brush = self.map_objects_properties.get_nonpixmap_poi_brush(self.get_type())
+        brush = self._map_objects_properties.get_nonpixmap_poi_brush(self.get_type())
         if brush:
             self.setBrush(brush)
 
@@ -1305,9 +1305,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True
 
     # basic class for poi with pixmap icon
-    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPixmapItem.__init__(self)
         self.recorded_pos = None
         self.label = None
@@ -1414,10 +1414,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
                 self.current_data_x = level
 
     def set_projection(self, _projection):
-        self.projection = _projection
+        self._projection = _projection
 
     def set_map_objects_properties(self, _map_objects_properties):
-        self.map_objects_properties = _map_objects_properties
+        self._map_objects_properties = _map_objects_properties
 
     def add_label(self):
         label = self.get_label1()
@@ -1430,7 +1430,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         pass
 
     def set_pixmap(self):
-        self.setPixmap(self.map_objects_properties.get_poi_icon(self.get_type()))
+        self.setPixmap(self._map_objects_properties.get_poi_icon(self.get_type()))
 
     @staticmethod
     def to_mp_record_header():
@@ -1478,9 +1478,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
     _accept_map_level_change = True
 
-    def __init__(self, map_objects_properties=None, projection=None):
+    def __init__(self, map_objects_properties=None, _projection=None):
         # super(AddrLabel, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, projection=projection)
+        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsSimpleTextItem.__init__(self)
         self.setZValue(20)
         self.setText('__tmp__')
@@ -1587,8 +1587,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     _threshold = None
     _accept_map_level_change = True
 
-    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
-        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, projection=projection)
+    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
+        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPathItem.__init__(self)
         self.hovered = False
         self.hover_enter_for_create_mode = False
@@ -2122,10 +2122,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().setPen(pen)
 
     def set_projection(self, _projection):
-        self.projection = _projection
+        self._projection = _projection
 
     def set_map_objects_properties(self, _map_objects_properties):
-        self.map_objects_properties = _map_objects_properties
+        self._map_objects_properties = _map_objects_properties
 
     def _shape(self):
         stroker = QPainterPathStroker()
@@ -2177,9 +2177,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.add_items_after_new_map_level_set()
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
-    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         super(PolylineQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
-                                                        projection=projection)
+                                                        _projection=_projection)
         self.arrow_head_items = []
         self.hlevel_labels = None
         self.housenumber_labels = None
@@ -2370,7 +2370,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_pen(self):
         self.orig_pen = None
-        pen = self.map_objects_properties.get_polyline_qpen(self.get_type())
+        pen = self._map_objects_properties.get_polyline_qpen(self.get_type())
         self.setPen(pen)
 
     def remove_items_before_new_map_level_set(self):
@@ -2514,9 +2514,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
-    def __init__(self, map_obj_id, map_objects_properties=None, projection=None):
+    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         super(PolygonQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
-                                                       projection=projection)
+                                                       _projection=_projection)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
 
@@ -2552,16 +2552,16 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             self.remove_label()
 
     def set_brush(self):
-        color = self.map_objects_properties.get_polygon_fill_colour(self.get_type())
+        color = self._map_objects_properties.get_polygon_fill_colour(self.get_type())
         self.setBrush(QBrush(color))
 
     def set_pen(self):
         self.orig_pen = None
-        pen = self.map_objects_properties.get_polygon_qpen(self.get_type())
+        pen = self._map_objects_properties.get_polygon_qpen(self.get_type())
         self.setPen(pen)
 
     def set_z_value(self):
-        self.setZValue(self.map_objects_properties.get_polygon_z_value(self.get_type()))
+        self.setZValue(self._map_objects_properties.get_polygon_z_value(self.get_type()))
 
     def add_items_after_new_map_level_set(self):
         self.add_label()
@@ -3066,7 +3066,7 @@ class MapRuler(QGraphicsPathItem):
 
     def __init__(self,  map_render, projection):
         self.map_render = map_render
-        self.projection = projection
+        self._projection = projection
         super().__init__()
         self.geo_distance = None
         self.distance_label = None
@@ -3128,9 +3128,9 @@ class MapRuler(QGraphicsPathItem):
             return
         point1 = self.map_render.mapToScene(self.screen_coord_1)
         point2 = self.map_render.mapToScene(self.screen_coord_2)
-        start_point = self.projection.canvas_to_geo(point1.x(), point1.y())
-        end_point = self.projection.canvas_to_geo(point2.x(), point2.y())
-        # end_point1 = self.projection.canvas_to_geo(point1.x() + 1, point1.y())
+        start_point = self._projection.canvas_to_geo(point1.x(), point1.y())
+        end_point = self._projection.canvas_to_geo(point2.x(), point2.y())
+        # end_point1 = self._projection.canvas_to_geo(point1.x() + 1, point1.y())
         self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
         # print(misc_functions.vincenty_distance(start_point, end_point1))
 

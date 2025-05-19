@@ -371,6 +371,8 @@ class mapRender(QGraphicsView):
                 return
         super().mouseReleaseEvent(event)
 
+    def paste(self, mime_data):
+        return self.scene().paste(mime_data)
 
     def weblayers_download_error(self, tile_url):
         # if for any reason file will not be downloaded from web, remove the file from currently downloaded files

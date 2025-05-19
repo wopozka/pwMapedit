@@ -112,15 +112,15 @@ class mapData(object):
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(self.get_object_id(),
                                                    map_objects_properties=self.map_objects_properties,
-                                                   projection=self.projection)
+                                                   _projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(self.get_object_id(),
                                                                  map_objects_properties=self.map_objects_properties,
-                                                                 projection=self.projection)
+                                                                 _projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(self.get_object_id(),
                                                                 map_objects_properties=self.map_objects_properties,
-                                                                projection=self.projection)
+                                                                _projection=self.projection)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
                 pass
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:

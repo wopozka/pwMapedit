@@ -58,7 +58,7 @@ OBJ_TO_MP_TEST = (
 @pytest.mark.parametrize('target, answer', OBJ_TO_MP_TEST)
 def test_obj_to_mp_record(target, answer):
     _projection = projection.Mercator(None)
-    basic_map_item = map_items.BasicMapItem(1, map_objects_properties=None, projection=_projection)
+    basic_map_item = map_items.BasicMapItem(1, map_objects_properties=None, _projection=_projection)
     poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(target)
     basic_map_item.set_data(obj_comment, obj_data)
     assert basic_map_item.to_mp_record() == answer

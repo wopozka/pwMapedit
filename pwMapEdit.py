@@ -123,7 +123,7 @@ class MapFileOpener(QObject):
             poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=_map_object_properties,
-                                                   projection=_projection)
+                                                   _projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
                 # map_canvas.draw_object_on_map(map_object)
@@ -132,7 +132,7 @@ class MapFileOpener(QObject):
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(None,
                                                                  map_objects_properties=_map_object_properties,
-                                                                 projection=_projection)
+                                                                 _projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
                 # map_canvas.draw_object_on_map(map_object)
@@ -141,7 +141,7 @@ class MapFileOpener(QObject):
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(None,
                                                                 map_objects_properties=_map_object_properties,
-                                                                projection=_projection)
+                                                                _projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
                 # map_canvas.draw_object_on_map(map_object)

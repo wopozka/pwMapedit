@@ -4,7 +4,7 @@ import calendar
 from collections import OrderedDict
 
 from PyQt5.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipseItem, QGraphicsPolygonItem,
-                             QGraphicsRectItem, QGraphicsItem)
+                             QGraphicsRectItem, QGraphicsItem, QApplication)
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt5.QtCore import QPointF, Qt, QLineF, QMimeData
@@ -39,10 +39,10 @@ class mapCanvas(QGraphicsScene):
         self.properties_dock = self.parent.properties_dock
         super(mapCanvas, self).__init__(*args, **kwargs)
         self.undo_redo_stack = undo_redo_stack
-        self.projection = None
+        self._projection = None
         if projection is not None:
-            self.projection = projection
-        self.map_objects_properties = map_object_properties.MapObjectsProperties()
+            self._projection = projection
+        self._map_objects_properties = map_object_properties.MapObjectsProperties()
         # self.apply_bindings()
         self.operatingSystem = platform.system()
         self.polygonFill = 'solid' #there are 2 options avialable here, solid and transparent
@@ -62,20 +62,20 @@ class mapCanvas(QGraphicsScene):
         self._stick_to_neighbours_nodes = False
 
     def change_projection(self, proj, map_bounding_box, map_object_list):
-        old_proj = self.projection
+        old_proj = self._projection
         if proj == 'UTM':
             newProj = projection.UTM(map_bounding_box)
             if not newProj.calculate_data_offset():
-                self.projection = newProj
-                print(self.projection.projectionName)
+                self._projection = newProj
+                print(self._projection.projectionName)
                 self.remove_all_objects_from_map()
                 self.draw_all_objects_on_map(map_object_list)
                 return 0
             else:
                 return 1
         elif proj == 'Mercator':
-            self.projection = projection.Mercator(map_bounding_box)
-            print(self.projection.projectionName)
+            self._projection = projection.Mercator(map_bounding_box)
+            print(self._projection.projectionName)
             self.remove_all_objects_from_map()
             self.draw_all_objects_on_map(map_object_list)
             return 0
@@ -121,9 +121,9 @@ class mapCanvas(QGraphicsScene):
 
     def command_create_poi(self, position):
         # creates new POI object
-        new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self.map_objects_properties,
-                                        projection=self.projection)
-        _pos = self.projection.canvas_to_geo(position.x(), position.y())
+        new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
+                                        _projection=self._projection)
+        _pos = self._projection.canvas_to_geo(position.x(), position.y())
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): str(_pos)})
         new_poi.set_data('', obj_data)
         new_poi.set_mp_data()
@@ -132,10 +132,10 @@ class mapCanvas(QGraphicsScene):
 
     def command_create_polyline(self, coordinates):
         new_poly = map_items.PolylineQGraphicsPathItem(None,
-                                                       map_objects_properties=self.map_objects_properties,
-                                                       projection=self.projection)
+                                                       map_objects_properties=self._map_objects_properties,
+                                                       _projection=self._projection)
         print(coordinates)
-        data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
+        data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
@@ -145,13 +145,25 @@ class mapCanvas(QGraphicsScene):
 
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,
-                                                       map_objects_properties=self.map_objects_properties,
-                                                       projection=self.projection)
-        data0 = ','.join([str(self.projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
+                                                      map_objects_properties=self._map_objects_properties,
+                                                      _projection=self._projection)
+        data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon')
+        self.undo_redo_stack.push(command)
+
+    def command_paste_poi(self, copied_poi_def):
+        command = commands.CreateNewPoiCmd(copied_poi_def, self.parent.map_objects, self, 'Wklej POI')
+        self.undo_redo_stack.push(command)
+
+    def command_paste_polygon(self, copied_poly_def):
+        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polyline')
+        self.undo_redo_stack.push(command)
+
+    def command_paste_polyline(self, copied_poly_def):
+        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polygon')
         self.undo_redo_stack.push(command)
 
     def copy(self):
@@ -267,8 +279,36 @@ class mapCanvas(QGraphicsScene):
         self.update_idletasks()
         print('usuniete')
 
-    def paste(self):
-        pass
+    def paste(self, mime_data=None):
+        print('paste dla canvas')
+        if mime_data is None:
+            mime_data = QApplication.clipboard().mimeData()
+        if mime_data.hasText():
+            poi_poly_type, obj_comment, obj_data = (
+                misc_functions.map_strings_record_to_dict_record(mime_data.text().split('\n')))
+            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+                map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
+                                                   _projection=self._projection)
+                map_object.set_data(obj_comment, obj_data)
+                map_object.set_mp_data()
+                self.command_paste_poi(map_object)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+                map_object = map_items.PolylineQGraphicsPathItem(None,
+                                                                 map_objects_properties=self._map_objects_properties,
+                                                                 _projection=self._projection)
+                map_object.set_data(obj_comment, obj_data)
+                map_object.set_mp_data()
+                self.command_paste_polyline(map_object)
+            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+                map_object = map_items.PolygonQGraphicsPathItem(None,
+                                                                map_objects_properties=self._map_objects_properties,
+                                                                _projection=self._projection)
+                map_object.set_data(obj_comment, obj_data)
+                map_object.set_mp_data()
+                self.command_paste_polygon(map_object)
+            else:
+                return
+
 
     def remove_web_layer_graphics(self):
         if self.web_layer_graphics is None:
@@ -343,8 +383,8 @@ class mapCanvas(QGraphicsScene):
                 obj.decorate()
 
     def set_canvas_rectangle(self, map_bounding_box):
-        start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
-        end_x, end_y = self.projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
+        start_x, start_y = self._projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
+        end_x, end_y = self._projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
         self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
@@ -369,8 +409,8 @@ class mapCanvas(QGraphicsScene):
                 print(f'FileNotFoundError: nie znalazłem pliku: {tile_def.file_path}.')
             return
         web_layer_pic = QGraphicsPixmapItem(pixmap)
-        x, y = self.projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
-        x2, y2 = self.projection.geo_to_canvas(tile_def.right_bott_lat, tile_def.right_bott_lon)
+        x, y = self._projection.geo_to_canvas(tile_def.left_top_lat, tile_def.left_top_lon)
+        x2, y2 = self._projection.geo_to_canvas(tile_def.right_bott_lat, tile_def.right_bott_lon)
         web_layer_pic.setPos(x, y)
         # tu raz dostałem division by zero, wiec czasami obrazek nie zaladuje sie, nie wiadomo czemu. Trzeba
         # sprawdzac czy nie null
@@ -382,4 +422,4 @@ class mapCanvas(QGraphicsScene):
         self.undo_redo_stack = undo_redo_stack
 
     def set_projection(self, _projection):
-        self.projection = _projection
+        self._projection = _projection

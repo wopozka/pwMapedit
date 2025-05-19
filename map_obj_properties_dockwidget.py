@@ -305,9 +305,9 @@ class MapObjPropDock(QDockWidget):
                     self.type_selector.setItemData(cur_index, poi_type)
             else:
                 if isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
-                    poly_types = self.map_object_id.map_objects_properties.get_line_type_names()
+                    poly_types = self.map_object_id._map_objects_properties.get_line_type_names()
                 else:
-                    poly_types = self.map_object_id.map_objects_properties.get_polygon_type_names()
+                    poly_types = self.map_object_id._map_objects_properties.get_polygon_type_names()
                 cur_index = -1
                 for  poly_type, val in poly_types.items():
                     cur_index += 1
