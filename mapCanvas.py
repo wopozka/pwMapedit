@@ -61,6 +61,27 @@ class mapCanvas(QGraphicsScene):
         self._closest_node_circle = None
         self._stick_to_neighbours_nodes = False
 
+    def change_projection(self, proj, map_bounding_box, map_object_list):
+        old_proj = self.projection
+        if proj == 'UTM':
+            newProj = projection.UTM(map_bounding_box)
+            if not newProj.calculate_data_offset():
+                self.projection = newProj
+                print(self.projection.projectionName)
+                self.remove_all_objects_from_map()
+                self.draw_all_objects_on_map(map_object_list)
+                return 0
+            else:
+                return 1
+        elif proj == 'Mercator':
+            self.projection = projection.Mercator(map_bounding_box)
+            print(self.projection.projectionName)
+            self.remove_all_objects_from_map()
+            self.draw_all_objects_on_map(map_object_list)
+            return 0
+        else:
+            return 0
+
     def clearSelection(self):
         print('clear selection called')
         for item in self.selectedItems():
@@ -165,6 +186,40 @@ class mapCanvas(QGraphicsScene):
                                                     self.parent.map_objects, 'Usuwanie obiektu z mapy')
                 self.undo_redo_stack.push(command)
 
+    def disable_maplevel_shortcuts(self):
+        self.parent.disable_maplevel_shortcuts()
+
+    def draw_all_objects_on_map(self, obj_list):
+        for num, obj in enumerate(obj_list):
+            self.draw_object_on_map(obj)
+        # print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
+        #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
+
+    def draw_object_on_map(self, mapobject):
+        if isinstance(mapobject, map_items.PoiAsPath) or isinstance(mapobject, map_items.PoiAsPixmap) \
+                or isinstance(mapobject, map_items.AddrLabel):
+            self.addItem(mapobject)
+            mapobject.add_label()
+            mapobject.set_map_level()
+        elif isinstance(mapobject, map_items.PolylineQGraphicsPathItem):
+            self.addItem(mapobject)
+            if mapobject.get_param('DirIndicator'):
+                mapobject.set_mp_dir_indicator(True)
+            mapobject.add_label()
+            # if mapobject.get_param('EndLevel'):
+            #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
+            mapobject.set_map_level()
+            mapobject.set_pen()
+        elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
+            mapobject.set_z_value()
+            mapobject.set_pen()
+            mapobject.set_brush()
+            self.addItem(mapobject)
+            mapobject.add_label()
+            mapobject.set_map_level()
+        else:
+            pass
+
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()
 
@@ -206,66 +261,11 @@ class mapCanvas(QGraphicsScene):
             print('wylaczam przyciaganie')
         super().keyReleaseEvent(event)
 
-    def disable_maplevel_shortcuts(self):
-        self.parent.disable_maplevel_shortcuts()
-
-    def draw_all_objects_on_map(self, obj_list):
-        for num, obj in enumerate(obj_list):
-            self.draw_object_on_map(obj)
-        # print('Ilosc wszystkich polygonow: %s, ilosc dodanych: %s, ilosć odjetych: %s.'
-        #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
-
-    def draw_object_on_map(self, mapobject):
-        if isinstance(mapobject, map_items.PoiAsPath) or isinstance(mapobject, map_items.PoiAsPixmap) \
-                or isinstance(mapobject, map_items.AddrLabel):
-            self.addItem(mapobject)
-            mapobject.add_label()
-            mapobject.set_map_level()
-        elif isinstance(mapobject, map_items.PolylineQGraphicsPathItem):
-            self.addItem(mapobject)
-            if mapobject.get_param('DirIndicator'):
-                mapobject.set_mp_dir_indicator(True)
-            mapobject.add_label()
-            # if mapobject.get_param('EndLevel'):
-            #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
-            mapobject.set_map_level()
-            mapobject.set_pen()
-        elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
-            mapobject.set_z_value()
-            mapobject.set_pen()
-            mapobject.set_brush()
-            self.addItem(mapobject)
-            mapobject.add_label()
-            mapobject.set_map_level()
-        else:
-            pass
-
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
         self.delete('all')
         self.update_idletasks()
         print('usuniete')
-
-    def change_projection(self, proj, map_bounding_box, map_object_list):
-        old_proj = self.projection
-        if proj == 'UTM':
-            newProj = projection.UTM(map_bounding_box)
-            if not newProj.calculate_data_offset():
-                self.projection = newProj
-                print(self.projection.projectionName)
-                self.remove_all_objects_from_map()
-                self.draw_all_objects_on_map(map_object_list)
-                return 0
-            else:
-                return 1
-        elif proj == 'Mercator':
-            self.projection = projection.Mercator(map_bounding_box)
-            print(self.projection.projectionName)
-            self.remove_all_objects_from_map()
-            self.draw_all_objects_on_map(map_object_list)
-            return 0
-        else:
-            return 0
 
     def paste(self):
         pass
