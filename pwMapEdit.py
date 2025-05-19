@@ -26,15 +26,25 @@ class MapUndoStack(QUndoStack):
         self.redo_button = None
         super(MapUndoStack, self).__init__(parent)
 
-    def set_undo_button(self, undo_button):
-        self.undo_button = undo_button
+    def push(self, command, q_undo_command=None):
+        super().push(command)
+        self.undo_button.setToolTip(self.undoText())
+
+    def redo(self):
+        super().redo()
+        self.undo_button.setToolTip(self.undoText())
+        self.redo_button.setToolTip(self.redoText())
 
     def set_redo_button(self, redo_button):
         self.redo_button = redo_button
 
-    def push(self, command, q_undo_command=None):
-        super().push(command)
+    def set_undo_button(self, undo_button):
+        self.undo_button = undo_button
+
+    def undo(self):
+        super().undo()
         self.undo_button.setToolTip(self.undoText())
+        self.redo_button.setToolTip(self.redoText())
 
 
 class MapFileOpener(QObject):
