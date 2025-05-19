@@ -292,7 +292,7 @@ class MapObjPropDock(QDockWidget):
             self.type_selector.clear()
             if isinstance(self.map_object_id, map_items.PoiAsPixmap):
                 cur_index = -1
-                for poi_type, val in self.map_object_id.map_objects_properties.get_poi_type_name_alias().items():
+                for poi_type, val in self.map_object_id._map_objects_properties.get_poi_type_name_alias().items():
                     cur_index += 1
                     icon = QIcon(val[0])
                     p_type = str(hex(poi_type)) + ' '
