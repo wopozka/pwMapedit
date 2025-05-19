@@ -284,8 +284,11 @@ class mapCanvas(QGraphicsScene):
         if mime_data is None:
             mime_data = QApplication.clipboard().mimeData()
         if mime_data.hasText():
+            m_data = [a for a in mime_data.text().split('\n') if a]
+            if m_data[-1] == '[END]':
+                m_data.pop(-1)
             poi_poly_type, obj_comment, obj_data = (
-                misc_functions.map_strings_record_to_dict_record(mime_data.text().split('\n')))
+                misc_functions.map_strings_record_to_dict_record(m_data))
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                                    _projection=self._projection)
