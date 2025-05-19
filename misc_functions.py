@@ -75,13 +75,14 @@ def return_icon_definition(icon_def):
 
 def map_strings_record_to_dict_record(map_strings_record):
     """
-    converst map object record to dictionary record form. As some of keys can appear more than once, the dictionary
+    converst map object record to dictionary record form. As some keys can appear more than once, the dictionary
     key is tuple: (line_num, key)
     Parameters
     ----------
-    map_strings_record: list of strings in a form ['POI_POLY=POI', 'Type=0x000'...]
+    map_strings_record: list of strings in a form ['[POI]', 'Type=0x000'...]
 
-    Returns OrderedDict {line_num: commment1, line_num: comment2...,}, OrderedDict {(0, POI_POLY): POI: (1, Type): 0x000...}
+    Returns tuple('[POI]/[POLYLINE]/[PPLYGON]'), list({commment1, comment2...,],
+            OrderedDict {(0, Type): 0x000. (1, Label): xxx, ...}
     -------
     """
     record_dict = OrderedDict()
