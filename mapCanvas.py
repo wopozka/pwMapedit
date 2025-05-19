@@ -157,14 +157,31 @@ class mapCanvas(QGraphicsScene):
         print(str_def)
         return item_mime_data
 
-    def stick_to_neighbours(self):
-        return self._stick_to_neighbours_nodes
+    def delete(self):
+        mode = self.get_pw_mapedit_mode()
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            if len(self.selectedItems()):
+                command = commands.DeleteObjectsCmd(self.selectedItems(),
+                                                    self.parent.map_objects, 'Usuwanie obiektu z mapy')
+                self.undo_redo_stack.push(command)
 
     def get_item_ignores_transformations(self):
         return self.self.views()[0].get_item_ignores_transformations()
 
+    def get_map_level(self):
+        return self.current_map_level
+
     def get_pw_mapedit_mode(self):
         return self.parent.get_mapedit_mode()
+
+    def get_undo_redo_stack(self):
+        return self.undo_redo_stack
+
+    def get_viewer_corners_geo_coordinates(self):
+        viewer = self.views()[0]
+        left_top_corner = viewer.mapToScene(viewer.sceneRect().upperLeft())
+        right_bottom_corner = viewer.mapToScene(viewer.sceneRect().bottomRight())
+        print(left_top_corner, right_bottom_corner)
 
     def get_viewer_scale(self):
         # if there is a view connected return real scale
@@ -175,12 +192,6 @@ class mapCanvas(QGraphicsScene):
 
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
-
-    def get_viewer_corners_geo_coordinates(self):
-        viewer = self.views()[0]
-        left_top_corner = viewer.mapToScene(viewer.sceneRect().upperLeft())
-        right_bottom_corner = viewer.mapToScene(viewer.sceneRect().bottomRight())
-        print(left_top_corner, right_bottom_corner)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
@@ -195,12 +206,8 @@ class mapCanvas(QGraphicsScene):
             print('wylaczam przyciaganie')
         super().keyReleaseEvent(event)
 
-    def set_canvas_rectangle(self, map_bounding_box):
-        start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
-        end_x, end_y = self.projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
-        self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
-        # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
-        return
+    def disable_maplevel_shortcuts(self):
+        self.parent.disable_maplevel_shortcuts()
 
     def draw_all_objects_on_map(self, obj_list):
         for num, obj in enumerate(obj_list):
@@ -211,31 +218,10 @@ class mapCanvas(QGraphicsScene):
     def draw_object_on_map(self, mapobject):
         if isinstance(mapobject, map_items.PoiAsPath) or isinstance(mapobject, map_items.PoiAsPixmap) \
                 or isinstance(mapobject, map_items.AddrLabel):
-            # group_item = QGraphicsItemGroup()
-            # nodes = mapobject.obj_datax_get('Data0')[0]
-            # x, y = nodes[0].get_canvas_coords()
-            # poi_icon = self.map_objects_properties.get_poi_icon(mapobject.get_param('Type'))
-            # if isinstance(poi_icon, QPainterPath):
-            #     poi_icon_brush = self.map_objects_properties.get_nonpixmap_poi_brush(mapobject.get_param('Type'))
-            # elif isinstance(poi_icon, QPixmap):
-            #     poi_icon_brush = False
-            # elif isinstance(poi_icon, str):
-            #     poi_icon_brush = False
-            # mapobject.set_mp_data()
-            # if isinstance(poi_icon_brush, QBrush):
-            #     mapobject.setBrush(poi_icon_brush)
             self.addItem(mapobject)
             mapobject.add_label()
             mapobject.set_map_level()
         elif isinstance(mapobject, map_items.PolylineQGraphicsPathItem):
-            # https://stackoverflow.com/questions/47061629/how-can-i-color-qpainterpath-subpaths-differently
-            # pomysl jak narysowac  roznokolorowe może dla mostow inne grubosci?
-            # polyline_path_item = map_items.PolylineQGraphicsPathItem(self.projection)
-            # for data_x in mp_data_range:
-            #     if mapobject.get_datax(data_x):
-            # mapobject.set_mp_data()
-            #    if mapobject.get_hlevels(data_x):
-            # mapobject.set_mp_hlevels()
             self.addItem(mapobject)
             if mapobject.get_param('DirIndicator'):
                 mapobject.set_mp_dir_indicator(True)
@@ -245,28 +231,14 @@ class mapCanvas(QGraphicsScene):
             mapobject.set_map_level()
             mapobject.set_pen()
         elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
-            # polygon = map_items.PolygonQGraphicsPathItem(self.projection)
-            # for data_x in mp_data_range:
-            #     if mapobject.get_datax(data_x):
-            # mapobject.set_mp_data()
             mapobject.set_z_value()
             mapobject.set_pen()
             mapobject.set_brush()
             self.addItem(mapobject)
             mapobject.add_label()
-            # if mapobject.get_param('EndLevel'):
-            #     polygon.set_mp_end_level(mapobject.get_param('EndLevel'))
             mapobject.set_map_level()
         else:
             pass
-
-    def delete(self):
-        mode = self.get_pw_mapedit_mode()
-        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
-            if len(self.selectedItems()):
-                command = commands.DeleteObjectsCmd(self.selectedItems(),
-                                                    self.parent.map_objects, 'Usuwanie obiektu z mapy')
-                self.undo_redo_stack.push(command)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
@@ -295,6 +267,17 @@ class mapCanvas(QGraphicsScene):
         else:
             return 0
 
+    def paste(self):
+        pass
+
+    def remove_web_layer_graphics(self):
+        if self.web_layer_graphics is None:
+            return
+        for graphic_item in self.web_layer_graphics:
+            self.removeItem(self.web_layer_graphics[graphic_item])
+        self.web_layer_graphics.clear()
+        self.web_layer_graphics = None
+
     def set_map_level(self, map_level):
         self.setFocus(False)
         if isinstance(map_level, str):
@@ -320,14 +303,8 @@ class mapCanvas(QGraphicsScene):
         print('num screen items: %s' % len(map_items))
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
-    def get_map_level(self):
-        return self.current_map_level
-
-    def get_undo_redo_stack(self):
-        return self.undo_redo_stack
-
-    def disable_maplevel_shortcuts(self):
-        self.parent.disable_maplevel_shortcuts()
+    def stick_to_neighbours(self):
+        return self._stick_to_neighbours_nodes
 
     def enable_maplevel_shortcuts(self):
         self.parent.enable_maplevel_shortcuts()
@@ -365,13 +342,12 @@ class mapCanvas(QGraphicsScene):
             for obj in self.selected_objects:
                 obj.decorate()
 
-    def remove_web_layer_graphics(self):
-        if self.web_layer_graphics is None:
-            return
-        for graphic_item in self.web_layer_graphics:
-            self.removeItem(self.web_layer_graphics[graphic_item])
-        self.web_layer_graphics.clear()
-        self.web_layer_graphics = None
+    def set_canvas_rectangle(self, map_bounding_box):
+        start_x, start_y = self.projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
+        end_x, end_y = self.projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
+        self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
+        # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
+        return
 
     def set_web_layer_graphic(self, tile_def, zoom):
         if zoom != self.web_layer_graphic_zoom:
