@@ -1,4 +1,5 @@
 icon_types = {
+    0x0000: ('Unknown', 'Unknown'),
     0x0100: ('Cities', 'Large city (> 10M)'),
     0x0200: ('Cities', 'Large city (5-10M)'),
     0x0300: ('Cities', 'Large city (2-5M)'),

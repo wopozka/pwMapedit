@@ -74,6 +74,7 @@ line_type_2_name = {
 }
 
 polygon_type_2_name = {
+    0x0: ('Unknown', 'Unknown', 'nieznany'),
     0x1: ('Cities', 'City', 'miasto duże powyżej 200tys'),
     0x2: ('Cities', 'City', 'miasto małe'),
     0x3: ('Cities', 'Rural housing area', 'obszar zamieszkały'),
