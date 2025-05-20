@@ -78,7 +78,6 @@ class mapRender(QGraphicsView):
         self.projection = None
         if projection is not None:
             self.projection = projection
-        self._left_mouse_button_press_scene_coords = None
         self._right_mouse_button_event_position = None
         self._hand_made_right_button_press_event = False
         self._hand_made_right_button_release_event = False
@@ -244,8 +243,6 @@ class mapRender(QGraphicsView):
     def mousePressEvent(self, event):
         if self.scene() is None:
             return
-        if event.button() == Qt.LeftButton:
-            self._left_mouse_button_press_scene_coords = self.mapToScene(event.pos())
         mode = self.scene().get_pw_mapedit_mode()
         # w przypadku gdy klikniesz prawym przyciskiem myszy to emulujesz drag mode. Wtedy mousePressEvent jest
         # generowany ponownie z handmade_eventem, ale chcemy tylko aby super() zostało wywołane

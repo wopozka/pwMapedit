@@ -6,11 +6,12 @@ import time
 import pwmapedit_constants
 
 class CreateNewPoiCmd(QUndoCommand):
-    def __init__(self, new_poi_map_object, map_objects, scene, description):
+    def __init__(self, new_poi_map_object, map_objects, scene, description, mouse_scene_pos=None):
         super(CreateNewPoiCmd, self).__init__(description)
         self.new_poi_map_object = new_poi_map_object
         self.map_objects = map_objects
         self.scene = scene
+        self.mouse_scene_pos = mouse_scene_pos
 
     def redo(self):
         self.map_objects.add_map_object(self.new_poi_map_object)
@@ -22,11 +23,12 @@ class CreateNewPoiCmd(QUndoCommand):
         self.map_objects.set_map_object_deleted(self.new_poi_map_object)
 
 class CreateNewPolyCmd(QUndoCommand):
-    def __init__(self, new_poi_map_object, map_objects, scene, description):
+    def __init__(self, new_poi_map_object, map_objects, scene, description, mouse_scene_pos=None):
         super(CreateNewPolyCmd, self).__init__(description)
         self.new_poi_map_object = new_poi_map_object
         self.map_objects = map_objects
         self.scene = scene
+        self.mouse_scene_pos = mouse_scene_pos
 
     def redo(self):
         self.map_objects.add_map_object(self.new_poi_map_object)

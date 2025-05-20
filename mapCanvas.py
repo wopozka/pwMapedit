@@ -7,14 +7,14 @@ from PyQt5.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipse
                              QGraphicsRectItem, QGraphicsItem, QApplication)
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
-from PyQt5.QtCore import QPointF, Qt, QLineF, QMimeData
+from PyQt5.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray
 import platform
 
 import commands
 # import modes
 import math
 import projection
-import tempfile
+import json
 import misc_functions
 import os.path
 import map_items
@@ -127,7 +127,8 @@ class mapCanvas(QGraphicsScene):
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): str(_pos)})
         new_poi.set_data('', obj_data)
         new_poi.set_mp_data()
-        command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI')
+        command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI',
+                                           mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
 
     def command_create_polyline(self, coordinates):
@@ -139,7 +140,8 @@ class mapCanvas(QGraphicsScene):
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
-        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline')
+        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline',
+                                            mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
 
     def command_create_polygon(self, coordinates):
@@ -150,19 +152,23 @@ class mapCanvas(QGraphicsScene):
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
-        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon')
+        command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon',
+                                            mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
 
-    def command_paste_poi(self, copied_poi_def):
-        command = commands.CreateNewPoiCmd(copied_poi_def, self.parent.map_objects, self, 'Wklej POI')
+    def command_paste_poi(self, copied_poi_def, mouse_scene_pos):
+        command = commands.CreateNewPoiCmd(copied_poi_def, self.parent.map_objects, self, 'Wklej POI',
+                                           mouse_scene_pos=mouse_scene_pos)
         self.undo_redo_stack.push(command)
 
-    def command_paste_polygon(self, copied_poly_def):
-        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polyline')
+    def command_paste_polygon(self, copied_poly_def, mouse_scene_pos):
+        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polyline',
+                                            mouse_scene_pos=mouse_scene_pos)
         self.undo_redo_stack.push(command)
 
-    def command_paste_polyline(self, copied_poly_def):
-        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polygon')
+    def command_paste_polyline(self, copied_poly_def, mouse_scene_pos):
+        command = commands.CreateNewPolyCmd(copied_poly_def, self.parent.map_objects, self, 'Wklej Polygon',
+                                            mouse_scene_pos=mouse_scene_pos)
         self.undo_redo_stack.push(command)
 
     def copy(self):
@@ -174,7 +180,8 @@ class mapCanvas(QGraphicsScene):
         for item in self.selectedItems():
             if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
                     isinstance(item, map_items.PolygonQGraphicsPathItem)):
-                item_def = item.to_mp_record()
+                m_pos = [f'MouseScenePos={item._mouse_release_scene_pos.x()},{item._mouse_release_scene_pos.y()}']
+                item_def = m_pos + item.to_mp_record()
                 item_def.append('[END]')
                 items_defs.append(item_def)
         if not items_defs:
@@ -182,11 +189,13 @@ class mapCanvas(QGraphicsScene):
             return
         str_def = ''
         for item_def in items_defs:
-            str_def += '\n'.join(item_def)
-            str_def += '\n\n'
+            for i_def in item_def:
+                if not i_def.startswith('MouseScenePos='):
+                    str_def += i_def + '\n'
+            str_def += '\n'
         item_mime_data = QMimeData()
+        item_mime_data.setData('application/json', QByteArray(json.dumps(items_defs).encode('utf-8')))
         item_mime_data.setText(str_def)
-        print(str_def)
         return item_mime_data
 
     def delete(self):
@@ -282,32 +291,43 @@ class mapCanvas(QGraphicsScene):
         print('paste dla canvas')
         if mime_data is None:
             mime_data = QApplication.clipboard().mimeData()
-        if mime_data.hasText():
-            m_data = [a for a in mime_data.text().split('\n') if a]
-            if m_data[-1] == '[END]':
-                m_data.pop(-1)
+        if mime_data.hasFormat('application/json'):
+            m_data = json.loads(mime_data.data('application/json').data().decode('utf-8'))
+        elif mime_data.hasText():
+            m_data = []
+            for s_record in mime_data.text().split('[END]'):
+                if not s_record.strip():
+                    continue
+                m_data.append(s_record.split('\n'))
+
+        for s_data in m_data:
+            mouse_scene_pos = None
+            if s_data[0].startswith('MouseScenePos='):
+                x, y = s_data[0].split('=')[1].split(',')
+                mouse_scene_pos = QPointF(float(x), float(y))
+                s_data = s_data[1:]
             poi_poly_type, obj_comment, obj_data = (
-                misc_functions.map_strings_record_to_dict_record(m_data))
+                misc_functions.map_strings_record_to_dict_record(s_data))
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                                    _projection=self._projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
-                self.command_paste_poi(map_object)
+                self.command_paste_poi(map_object, mouse_scene_pos)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(None,
                                                                  map_objects_properties=self._map_objects_properties,
                                                                  _projection=self._projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
-                self.command_paste_polyline(map_object)
+                self.command_paste_polyline(map_object, mouse_scene_pos)
             elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(None,
                                                                 map_objects_properties=self._map_objects_properties,
                                                                 _projection=self._projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
-                self.command_paste_polygon(map_object)
+                self.command_paste_polygon(map_object, mouse_scene_pos)
             else:
                 return
 

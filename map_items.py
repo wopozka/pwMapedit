@@ -1461,7 +1461,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def mouseReleaseEvent(self, event):
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
-        self._mouse_release_scene_pos = self.mapToScene(self.event())
+        self._mouse_release_scene_pos = self.mapToScene(event.pos())
         if self.pos() != self.recorded_pos:
             self.command_move_poi()
             self.recorded_pos = None
