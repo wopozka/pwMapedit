@@ -142,7 +142,6 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline')
         self.undo_redo_stack.push(command)
 
-
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,
                                                       map_objects_properties=self._map_objects_properties,
