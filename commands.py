@@ -16,27 +16,44 @@ class CreateNewPoiCmd(QUndoCommand):
     def redo(self):
         self.map_objects.add_map_object(self.new_poi_map_object)
         self.scene.draw_object_on_map(self.new_poi_map_object)
-
+        if self.mouse_scene_pos is not None:
+            cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
+            new_pos = cur_mouse_scene_pos - self.mouse_scene_pos
+            self.new_poi_map_object.setPos(new_pos)
 
     def undo(self):
         self.scene.removeItem(self.new_poi_map_object)
         self.map_objects.set_map_object_deleted(self.new_poi_map_object)
 
+
 class CreateNewPolyCmd(QUndoCommand):
-    def __init__(self, new_poi_map_object, map_objects, scene, description, mouse_scene_pos=None):
+    def __init__(self, new_poly_map_object, map_objects, scene, description, mouse_scene_pos=None):
         super(CreateNewPolyCmd, self).__init__(description)
-        self.new_poi_map_object = new_poi_map_object
+        self.new_poly_map_object = new_poly_map_object
         self.map_objects = map_objects
         self.scene = scene
         self.mouse_scene_pos = mouse_scene_pos
 
     def redo(self):
-        self.map_objects.add_map_object(self.new_poi_map_object)
-        self.scene.draw_object_on_map(self.new_poi_map_object)
+        self.map_objects.add_map_object(self.new_poly_map_object)
+        self.scene.draw_object_on_map(self.new_poly_map_object)
+        if self.mouse_scene_pos is not None:
+            cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
+            new_pos = cur_mouse_scene_pos - self.mouse_scene_pos
+            self.new_poly_map_object.setPos(new_pos)
+            polygons = self.new_poly_map_object.get_polygons_from_path(self.new_poly_map_object.mapToScene(self.new_poly_map_object.path()))
+            data_level = self.new_poly_map_object.current_data_x
+            for polygon_num, polygon in enumerate(polygons):
+                for coord_num, pos in enumerate(polygon):
+                    self.new_poly_map_object.data0.update_node_coordinates(data_level, polygon_num, coord_num, pos)
+            self.new_poly_map_object.setPath(self.new_poly_map_object.create_painter_path(polygons))
+            self.new_poly_map_object.setPos(0, 0)
+            self.new_poly_map_object.update_items_after_obj_move()
+
 
     def undo(self):
-        self.scene.removeItem(self.new_poi_map_object)
-        self.map_objects.set_map_object_deleted(self.new_poi_map_object)
+        self.scene.removeItem(self.new_poly_map_object)
+        self.map_objects.set_map_object_deleted(self.new_poly_map_object)
 
 
 class DeleteObjectsCmd(QUndoCommand):

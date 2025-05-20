@@ -85,7 +85,6 @@ class mapRender(QGraphicsView):
         self.currently_downloading_web_layer_files = set()
         self._poly_creation_nodes = None
         self._poly_creation_drawn_poly = None
-        self._mouse_scene_coordinates = None
         self._items_under_cursor = []
         self._item_under_cursor_index = None
 
@@ -116,7 +115,7 @@ class mapRender(QGraphicsView):
     def set_main_window_status_bar(self, status_bar):
         self.main_window_status_bar = status_bar
 
-    def curent_scene_mouse_coords(self):
+    def current_scene_mouse_coords(self):
         return self._curent_scene_mouse_coords
 
     def curent_view_mouse_coords(self):
@@ -143,11 +142,9 @@ class mapRender(QGraphicsView):
         msg_view_render = 'view_render scale: %.3f, ' % self.map_scale
         msg_map_scale = 'map scale: 1:%.0f' % self.ruler.get_map_scale()
         if event is not None:
-            self._curent_view_mouse_coords = event.pos()
-            self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
-            x = self._curent_scene_mouse_coords.x()
-            y = self._curent_scene_mouse_coords.y()
-            lon, lat = self.projection.canvas_to_geo(x, y)
+            lon, lat = self.get_current_mouse_geo_coordinates()
+            x = self.current_scene_mouse_coords().x()
+            y = self.current_scene_mouse_coords().y()
             msg_coords = '(%.7f, %.7f), (%.1f, %.1f), ' % (lon, lat, x, -y)
             # self.main_window_status_bar.showMessage(msg_coords + msg_view_render + msg_map_scale)
             self.main_window_status_bar.set_info_text(msg_coords + msg_view_render + msg_map_scale)
@@ -174,7 +171,7 @@ class mapRender(QGraphicsView):
             if self.scene().closest_node_circle_position() is not None:
                 position = self.scene().closest_node_circle_position()
             else:
-                position = self._mouse_scene_coordinates
+                position = self.current_scene_mouse_coords()
             if event.key() == Qt.Key_A:
                 if self._poly_creation_nodes is None:
                     self._poly_creation_nodes = [position]
@@ -203,7 +200,8 @@ class mapRender(QGraphicsView):
     def mouseMoveEvent(self, event):
         if self.scene() is None:
             return
-        self._mouse_scene_coordinates = self.mapToScene(event.pos())
+        self._curent_view_mouse_coords = event.pos()
+        self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
         if event.buttons() == Qt.RightButton:
             super(mapRender, self).mouseMoveEvent(event)
             if self.ruler is not None:
@@ -441,7 +439,7 @@ class mapRender(QGraphicsView):
         self.setInteractive(False)
         previous_map_scale = self.get_map_scale()
         center_coords = self.mapToScene(self.width() // 2, self.height() // 2)
-        curent_mouse_coords = self.curent_scene_mouse_coords()
+        curent_mouse_coords = self.current_scene_mouse_coords()
         mouse_center_vector = center_coords - curent_mouse_coords
         mouse_center_vector_lenght = math.sqrt(mouse_center_vector.x() ** 2 + mouse_center_vector.y() ** 2)
         self.set_map_scale(1.1)
