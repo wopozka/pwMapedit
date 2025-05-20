@@ -1310,6 +1310,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPixmapItem.__init__(self)
         self.recorded_pos = None
+        self._mouse_release_scene_pos = None
         self.label = None
         self._mp_data = [None, None, None, None, None]
         # self._mp_end_level = 0
@@ -1459,6 +1460,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
+        self._mouse_release_scene_pos = self.mapToScene(self.event())
         if self.pos() != self.recorded_pos:
             self.command_move_poi()
             self.recorded_pos = None
@@ -1603,6 +1606,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.current_data_x = 0
         self.decorated_poly_nums = None
         self.recorded_pos = None
+        self._mouse_release_scene_pos = None
         self._mouse_press_timestamp = None
         self._closest_node_circle = None
 
@@ -2007,6 +2011,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # jesli jestes w trybie tworzenia obiektow, nie rob nic tutaj
         if not self.mode_allows_selection():
             return
+        # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
+        self._mouse_release_scene_pos = self.mapToScene(event.pos())
         print('closest node circle remove')
         self.scene().closest_node_circle_remove()
         # if self._closest_node_circle is not None:
