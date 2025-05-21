@@ -1848,7 +1848,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         print('dekoruje polygon', 'type_polygon', self.is_polygon())
         if self.decorated():
             self.undecorate()
-        self.setZValue(self.zValue() + self.decorated_z_value)
+        # self.setZValue(self.zValue() + self.decorated_z_value)
         # elapsed = datetime.now()
         # polygons = self.path().toSubpathPolygons()
         polygons = self.get_polygons_from_path(self.path())
@@ -2151,7 +2151,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def undecorate(self):
         print('usuwam dekoracje, %s punktow' % len(self.node_grip_items))
-        self.setZValue(self.zValue() - 100)
+        # self.setZValue(self.zValue() - 100)
+        if self.zValue() > pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
+            self.set_z_value()
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.remove_interpolated_house_numbers()
         for grip_item in self.node_grip_items:
@@ -2965,7 +2967,6 @@ class GripItem(QGraphicsPathItem):
     def mouseMoveEvent(self, event):
         polygons_under_cursor = [a for a in self.scene().items(self.mapToScene(event.pos())) if
                                  isinstance(a, PolygonQGraphicsPathItem)]
-        print(polygons_under_cursor)
         if polygons_under_cursor:
             if self._polygon_to_restore_opaque is None:
                 self._polygon_to_restore_opaque = polygons_under_cursor[0]
