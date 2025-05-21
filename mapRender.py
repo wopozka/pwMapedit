@@ -302,10 +302,7 @@ class mapRender(QGraphicsView):
                     if items_under_cursor[0] not in self.scene().selectedItems():
                         if event.modifiers() != Qt.ControlModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
                             self.scene().clearSelection()
-                        if items_under_cursor[0].zValue() < pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
-                            new_z_value = (items_under_cursor[0].zValue() +
-                                           pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
-                            items_under_cursor[0].setZValue(new_z_value)
+                        items_under_cursor[0].set_selection_z_value()
                     super().mousePressEvent(event)
                     return
                 else:

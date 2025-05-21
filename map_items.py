@@ -1317,7 +1317,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self._mp_label = None
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
-        self.setZValue(20)
+        self.set_z_value()
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
         self.current_data_x = 4
@@ -1419,6 +1419,13 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def set_map_objects_properties(self, _map_objects_properties):
         self._map_objects_properties = _map_objects_properties
+
+    def set_z_value(self):
+        self.setZValue(20)
+
+    def set_selection_z_value(self):
+        if self.zValue() < pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
+            self.setZValue(self.zValue() + pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
 
     def add_label(self):
         label = self.get_label1()
@@ -2122,6 +2129,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def set_z_value(self):
         return
 
+    def set_selection_z_value(self):
+        if self.zValue() < pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
+            self.setZValue(self.zValue() + pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
+
     def setPen(self, pen):
         if self.orig_pen is None:
             self.orig_pen = pen
@@ -2195,7 +2206,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
         self._mp_dir_indicator = False
-        self.setZValue(10)
+        self.set_z_value()
         self.setAcceptHoverEvents(True)
         self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
 
@@ -2380,6 +2391,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.orig_pen = None
         pen = self._map_objects_properties.get_polyline_qpen(self.get_type())
         self.setPen(pen)
+
+    def set_z_value(self):
+        self.setZValue(10)
 
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:

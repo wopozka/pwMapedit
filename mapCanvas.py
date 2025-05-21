@@ -86,8 +86,9 @@ class mapCanvas(QGraphicsScene):
         print('clear selection called')
         print(self.selectedItems())
         for item in self.selectedItems():
-            if item.zValue() > pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
-                item.set_z_value()
+            if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
+                    isinstance(item, map_items.PolygonQGraphicsPathItem)):
+                    item.set_z_value()
         super().clearSelection()
 
     def closest_point_to_point(self, event_pos, excluded_item=None):
