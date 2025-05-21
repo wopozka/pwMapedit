@@ -89,13 +89,12 @@ class MapFileOpener(QObject):
 
         # after removal of attachments we can measure the lenght of the whole file
         zawartosc_pliku_mp_len = len(zawartosc_pliku_mp)
-        b = 0
+        b = -1
         self.progress.emit('set_maximum', zawartosc_pliku_mp_len)
         # first lets skip the file header
         # map_canvas = mapCanvas.mapCanvas(self.parent, 0, 0, 400, 200, projection=self.projection,
         #                                  undo_redo_stack=self.undo_redo_stack)
         while b < zawartosc_pliku_mp_len:
-            # print(b)
             if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
                 b += 1
                 map_objects.map_header.append(zawartosc_pliku_mp[b])
@@ -201,8 +200,9 @@ class MapFileSaver(QObject):
                 self.progress.emit('set_maximum', self.map_objects.records_number())
                 map_file.writelines(self.map_objects.map_header)
                 for map_object_num, map_object in enumerate(self.map_objects.get_all_map_objects()):
-                    map_file.writelines([a + '\n' for a in map_object.to_mp_record()])
-                    map_file.writelines(['[END]\n', '\n'])
+                    if not map_object.is_deleted():
+                        map_file.writelines([a + '\n' for a in map_object.to_mp_record()])
+                        map_file.writelines(['[END]\n', '\n'])
                     self.progress.emit('set_value', map_object_num + 1)
         except FileNotFoundError:
             pass

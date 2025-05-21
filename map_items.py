@@ -1300,6 +1300,8 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
     def undecorate(self):
         pass
 
+    def unset_deleted(self):
+        self._deleted = False
 
 class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True

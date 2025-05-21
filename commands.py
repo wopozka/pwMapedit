@@ -66,11 +66,11 @@ class DeleteObjectsCmd(QUndoCommand):
     def redo(self):
         for map_obj in self.map_objects_to_be_removed:
             self.scene.removeItem(map_obj)
-            self.map_objects.set_map_object_deleted(map_obj)
+            map_obj.set_deleted()
 
     def undo(self):
         for map_obj in self.map_objects_to_be_removed:
-            self.map_objects.set_map_object_deleted(map_obj)
+            map_obj.set_undeleted()
             self.scene.addItem(map_obj)
 
 
