@@ -264,6 +264,16 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
         self.connect_numbering_widgets_signals()
 
+        hlevel_gb = QGroupBox('3D na węźle')
+        node_properties_layout.addWidget(hlevel_gb)
+        hlevel_layout = QFormLayout()
+        hlevel_gb.setLayout(hlevel_layout)
+        self.node_hlevel = QComboBox()
+        self.node_hlevel.addItem('Brak')
+        for a in range(-2, 16):
+            self.node_hlevel.addItem(str(a))
+        self.connect_hlevel_widget_signals()
+        hlevel_layout.addRow('Węzeł ma 3d', self.node_hlevel)
         node_widget_layout.addStretch()
         self.switch_on_numerations_fields()
         self.set_dock_off()
@@ -424,21 +434,24 @@ class MapObjPropDock(QDockWidget):
         self.tab_widget.update()
 
     def fill_map_object_properties_node_when_selected(self):
+        # w tym przypadku map_object_id jest grip_item, więc musimy się dopytać grip_item o dane odnośnie numeracji
+        # oraz hlevel
         if self.map_object_id.node_grip_has_numeration():
             self.node_has_numeration.setChecked(True)
             print(self.map_object_id.node_grip_get_numeration())
-            self.fill_map_object_properties_node(self.map_object_id.node_grip_get_numeration())
+            self.fill_map_object_properties_node_numeration(self.map_object_id.node_grip_get_numeration())
         else:
             self.node_has_numeration.setChecked(False)
             self.clear_numeration_fields()
             self.switch_off_numerations_fields()
+        self.fill_map_object_properties_node_hlevel(self.map_object_id.node_grip_get_hlevel())
 
-    def fill_map_object_properties_node(self, definition):
-        print(definition)
+    def fill_map_object_properties_node_numeration(self, number_definition):
+        print(number_definition)
         self.disconnect_numbering_widgets_signals()
-        if definition is not None:
+        if number_definition is not None:
             self.switch_on_numerations_fields()
-            num_dict = definition._asdict()
+            num_dict = number_definition._asdict()
             for key in num_dict:
                 if 'left' in key:
                     side_of_road = self.left_side_num_data
@@ -457,11 +470,19 @@ class MapObjPropDock(QDockWidget):
                         side_of_road[key].set_empty_not_allowed()
         self.connect_numbering_widgets_signals()
 
+    def fill_map_object_properties_node_hlevel(self, hlevel_definition):
+        self.disconnect_hlevel_widget_signal()
+        if hlevel_definition is None:
+            self.node_hlevel.setCurrentIndex(0)
+        else:
+            self.node_hlevel.setCurrentIndex(int(hlevel_definition) + 3)
+        self.connect_hlevel_widget_signals()
+
     def switch_on_of_numerations(self, val):
         if val:
             self.switch_on_numerations_fields()
             numeration = self.map_object_id.node_grip_get_calculated_numeration()
-            self.fill_map_object_properties_node(numeration)
+            self.fill_map_object_properties_node_numeration(numeration)
             self.command_set_numeration_to_node()
         else:
             self.clear_numeration_fields()
@@ -486,6 +507,12 @@ class MapObjPropDock(QDockWidget):
     def command_dirindicator_changed(self):
         print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
+
+    def command_hlevel_changed(self):
+        if self.node_hlevel.currentIndex() > 0:
+            self.map_object_id.node_grip_set_hlevel(self.node_hlevel.itemText(self.node_hlevel.currentIndex()))
+        else:
+            self.map_object_id.node_grip_set_hlevel(None)
 
     def command_label1_entry_edited(self):
         if not self.labels_changed():
@@ -574,6 +601,12 @@ class MapObjPropDock(QDockWidget):
                     val.currentIndexChanged.connect(self.command_numeration_style_edited)
                 else:
                     val.signals.comment_changed.connect(self.command_set_numeration_to_node)
+
+    def connect_hlevel_widget_signals(self):
+        self.node_hlevel.currentIndexChanged.connect(self.command_hlevel_changed)
+
+    def disconnect_hlevel_widget_signal(self):
+        self.node_hlevel.currentIndexChanged.disconnect()
 
     def disconnect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):

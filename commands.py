@@ -326,6 +326,42 @@ class SelectModeRouteParams(QUndoCommand):
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
+class SetHlevelToNode(QUndoCommand):
+    def __init__(self, map_object, grip, hlevel, description):
+        super(SetHlevelToNode, self).__init__(description)
+        self.grip = grip
+        self.poly_num, self.node_num = grip.grip_indexes
+        self.pos = grip.pos()
+        self.poly_num, self.node_num = grip.grip_indexes
+        self.map_object = map_object
+        self.data_level = map_object.current_data_x
+        self.new_hlevel_definition = hlevel
+        self.old_hlevel_definition = self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
+                                                                      self.node_num, False).get_hlevel_definition()
+
+    def redo(self):
+        self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
+                                            self.node_num, False).set_hlevel_definition(self.new_hlevel_definition)
+        self.map_object.update_hlevel_labels()
+        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
+            if not (self.grip in self.map_object.scene().items(self.pos) and self.grip.isSelected()):
+                self.map_object.scene().clearSelection()
+                self.map_object.setSelected(True)
+                # self.map_object.decorate()
+                self.map_object.scene().views()[0].centerOn(self.pos)
+
+
+    def undo(self):
+        self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
+                                            self.node_num, False).set_hlevel_definition(self.old_hlevel_definition)
+        self.map_object.update_hlevel_labels()
+        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+            # self.map_object.decorate()
+            self.map_object.scene().views()[0].centerOn(self.pos)
+
+
 class SetNumbersToNode(QUndoCommand):
     def __init__(self, map_object, grip, num_definition, description):
         super(SetNumbersToNode, self).__init__(description)

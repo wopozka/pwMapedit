@@ -1828,6 +1828,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def command_set_numeration_to_node(self, grip, num_definition):
         return
 
+    def command_set_hlevel_to_node(self, grip, hlevel):
+        return
+
     def command_set_route_params(self, route_params_values):
         return
 
@@ -2304,6 +2307,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_set_numeration_to_node(self, grip, num_definition):
         command = commands.SetNumbersToNode(self, grip, num_definition, 'Ustaw numeracje dla wezla')
+        self.scene().undo_redo_stack.push(command)
+
+    def command_set_hlevel_to_node(self, grip, hlevel):
+        command = commands.SetHlevelToNode(self, grip, hlevel, 'Ustaw hlevel dla wezla')
         self.scene().undo_redo_stack.push(command)
 
     def command_set_route_params(self, route_params_values):
@@ -2939,8 +2946,16 @@ class GripItem(QGraphicsPathItem):
         poly_num, node_num = self.grip_indexes
         return self.parent.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
 
+    def node_grip_get_hlevel(self):
+        data_level = self.parent.current_data_x
+        poly_num, node_num = self.grip_indexes
+        return self.parent.data0.get_poly_node(data_level, poly_num, node_num, False).get_hlevel_definition()
+
     def node_grip_set_numeration(self, numeration):
         self.parent.command_set_numeration_to_node(self, numeration)
+
+    def node_grip_set_hlevel(self, hlevel):
+        self.parent.command_set_hlevel_to_node(self, hlevel)
 
     def hoverEnterEvent(self, event):
         self.setFocus(True)
