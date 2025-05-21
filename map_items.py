@@ -2874,6 +2874,9 @@ class GripItem(QGraphicsPathItem):
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
+        # gdy klikniemy na grip wtedy polygon pod spodem staje sie transparentny. Trzeba go zapamietać, aby usunąć
+        # w przypadku gdy grip opuści go
+        self._polygon_to_restore_opaque = None
 
     def is_first_grip(self):
         return self.grip_indexes[1] == 0
@@ -2958,6 +2961,26 @@ class GripItem(QGraphicsPathItem):
                 self.hlevel = hl
             self.parent.update_hlevel_in_node(self, hl)
         super().keyPressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        polygons_under_cursor = [a for a in self.scene().items(self.mapToScene(event.pos())) if
+                                 isinstance(a, PolygonQGraphicsPathItem)]
+        print(polygons_under_cursor)
+        if polygons_under_cursor:
+            if self._polygon_to_restore_opaque is None:
+                self._polygon_to_restore_opaque = polygons_under_cursor[0]
+                self._polygon_to_restore_opaque.hover_enter_for_create_mode = True
+            else:
+                if self._polygon_to_restore_opaque != polygons_under_cursor[0]:
+                    self._polygon_to_restore_opaque.hover_enter_for_create_mode = False
+                    self._polygon_to_restore_opaque = polygons_under_cursor[0]
+                    self._polygon_to_restore_opaque.hover_enter_for_create_mode = True
+        else:
+            if self._polygon_to_restore_opaque is not None:
+                self._polygon_to_restore_opaque.hover_enter_for_create_mode = False
+                self._polygon_to_restore_opaque = None
+        super().mouseMoveEvent(event)
+
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
