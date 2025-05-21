@@ -508,10 +508,12 @@ class pwMapeditPy(QMainWindow):
         tools_action[-1].setData(pwmapedit_constants.Tools.ZOOM_MAP)
         tools_action.append(QAction('&Select objects', self))
         tools_action[-1].setData(pwmapedit_constants.Tools.SELECT_OBJECTS)
+        tools_action[-1].setShortcut(QKeySequence('s'))
         tools_action.append(QAction('&Rotate object', self))
         tools_action[-1].setData(pwmapedit_constants.Tools.ROTATE_OBJECTS)
         tools_action.append(QAction('&Edit nodes', self))
         tools_action[-1].setData(pwmapedit_constants.Tools.EDIT_NODES)
+        tools_action[-1].setShortcut(QKeySequence('m'))
         for act in tools_action:
             act.setCheckable(True)
             if act.data() == pwmapedit_constants.Tools.SELECT_OBJECTS:
@@ -523,14 +525,17 @@ class pwMapeditPy(QMainWindow):
         obj_actions = list()
         obj_actions.append(QAction('&Point', self))
         obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POINT)
+        obj_actions[-1].setShortcut(QKeySequence('a'))
         obj_actions.append(None)
         obj_actions.append(QAction('&Polyline', self))
         obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE)
+        obj_actions[-1].setShortcut(QKeySequence('b'))
         obj_actions.append(QAction('&Polyline: circle', self))
         obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE)
         obj_actions.append(None)
         obj_actions.append(QAction('&Polygon', self))
         obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON)
+        obj_actions[-1].setShortcut(QKeySequence('f'))
         obj_actions.append(QAction('&Polygon: stripe', self))
         obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE)
         obj_actions.append(QAction('&Polygon: rectangle', self))
@@ -719,6 +724,7 @@ class pwMapeditPy(QMainWindow):
 
     def menu_tools_set_mode(self):
         self.map_canvas.clearSelection()
+        self.view.delete_created_poly_shape()
         self.pw_mapedit_mode = self.tools_actions_group.checkedAction().data()
         print(self.pw_mapedit_mode)
 

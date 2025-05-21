@@ -94,6 +94,12 @@ class mapRender(QGraphicsView):
     def delete(self):
         self.scene().delete()
 
+    def delete_created_poly_shape(self):
+        self._poly_creation_nodes = None
+        if self._poly_creation_drawn_poly is not None:
+            self.scene().removeItem(self._poly_creation_drawn_poly)
+        self._poly_creation_drawn_poly = None
+
     def get_corners_geo_coordinates(self):
         left_top_corner = self.mapToScene(0, 0)
         right_bottom_corner = self.mapToScene(self.viewport().size().width(), self.viewport().size().height())
@@ -172,26 +178,24 @@ class mapRender(QGraphicsView):
                 position = self.scene().closest_node_circle_position()
             else:
                 position = self.current_scene_mouse_coords()
-            if event.key() == Qt.Key_A:
+            if event.key() == Qt.Key_Insert:
                 if self._poly_creation_nodes is None:
                     self._poly_creation_nodes = [position]
                 else:
                     self._poly_creation_nodes.append(position)
-            elif event.key() == Qt.Key_D:
+            elif event.key() == Qt.Key_Backspace:
                 if self._poly_creation_nodes is not None:
                     if len(self._poly_creation_nodes) > 1:
                         self._poly_creation_nodes.pop()
                     else:
                         self._poly_creation_nodes = None
-            elif event.key() == Qt.Key_Space:
+            elif event.key() == Qt.Key_Return:
                 print(self._poly_creation_nodes)
                 if mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
                     self.scene().command_create_polyline(self._poly_creation_nodes)
                 elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
                     self.scene().command_create_polygon(self._poly_creation_nodes)
-                self._poly_creation_nodes = None
-                self.scene().removeItem(self._poly_creation_drawn_poly)
-                self._poly_creation_drawn_poly = None
+                self.delete_created_poly_shape()
 
         print('key pressed', event.key())
         super().keyPressEvent(event)
@@ -227,6 +231,7 @@ class mapRender(QGraphicsView):
                     self._poly_creation_drawn_poly.setPath(qpp)
                     if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
                         self._poly_creation_drawn_poly.setBrush(Qt.yellow)
+                        self._poly_creation_drawn_poly.setOpacity(0.5)
                 else:
                     # w przeciwnym przypadku oznacza to ze usunales wszystkie nody, usun tez nowo utworzony obiekt
                     # ale tylko w przypadku gdy on istnieje
@@ -317,11 +322,7 @@ class mapRender(QGraphicsView):
                             self._item_under_cursor_index = 0
                     if event.modifiers() != Qt.ShiftModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
                         self.scene().clearSelection()
-                    if (self._items_under_cursor[self._item_under_cursor_index].zValue() <
-                            pwmapedit_constants.SELECTED_OBJECT_Z_VAL):
-                        new_z_value = (self._items_under_cursor[self._item_under_cursor_index].zValue() +
-                                       pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
-                        self._items_under_cursor[self._item_under_cursor_index].setZValue(new_z_value)
+                    self._items_under_cursor[self._item_under_cursor_index].set_selection_z_value()
                     super().mousePressEvent(event)
                     return
         else:
