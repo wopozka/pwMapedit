@@ -38,7 +38,7 @@ class MapObjPropDock(QDockWidget):
         self.current_address_vals = []
         # tab_widget.setTabPosition(QTabWidget.West)
         dock_widget = QWidget()
-        self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Glowny')
+        self.tab_names_vs_index['glowny'] = self.tab_widget.addTab(dock_widget, 'Główny')
         dock_box = QVBoxLayout()
         self.setWidget(self.tab_widget)
         dock_widget.setLayout(dock_box)
@@ -56,8 +56,10 @@ class MapObjPropDock(QDockWidget):
         self.label3_entry = QLineEdit(dock_widget)
         self.label3_entry.editingFinished.connect(self.command_label3_entry_edited)
         type_labels_layout.addRow('Label3', self.label3_entry)
-        self.end_level = QLineEdit(dock_widget)
-        self.end_level.editingFinished.connect(self.command_end_level_entry_edited)
+        self.end_level = QComboBox(dock_widget)
+        for a in range(5):
+            self.end_level.addItem(str(a))
+        self.connect_end_level_widget_signals()
         type_labels_layout.addRow('EndLevel', self.end_level)
 
         dock_box.addLayout(type_labels_layout)
@@ -354,10 +356,12 @@ class MapObjPropDock(QDockWidget):
                     self.poly_direction.setChecked(True)
                 else:
                     self.poly_direction.setChecked(False)
+            self.disconnect_end_level_widget_signal()
             if self.map_object_id.get_endlevel():
-                self.end_level.setText(str(self.map_object_id.get_endlevel()))
+                self.end_level.setCurrentIndex(self.map_object_id.get_endlevel())
             else:
-                self.end_level.clear()
+                self.end_level.setCurrentIndex(0)
+            self.connect_end_level_widget_signals()
             if self.map_object_id.get_comment():
                 self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
             else:
@@ -532,8 +536,8 @@ class MapObjPropDock(QDockWidget):
         if self.map_object_id is not None:
             self.map_object_id.command_update_labels(3, self.label3_entry.text())
 
-    def command_end_level_entry_edited(self):
-        return
+    def command_end_level_changed(self):
+        print(self.end_level.currentText())
 
     def command_extras_table_changed(self, row, column):
         if not self.extras_table.is_table_modified():
@@ -594,6 +598,9 @@ class MapObjPropDock(QDockWidget):
     def command_type_changed(self, new_index):
         self.map_object_id.command_update_type(self.type_selector.itemData(new_index))
 
+    def connect_end_level_widget_signals(self):
+        self.end_level.currentIndexChanged.connect(self.command_end_level_changed)
+
     def connect_numbering_widgets_signals(self):
         for left_right in (self.left_side_num_data, self.right_side_num_data):
             for key, val in left_right.items():
@@ -604,6 +611,9 @@ class MapObjPropDock(QDockWidget):
 
     def connect_hlevel_widget_signals(self):
         self.node_hlevel.currentIndexChanged.connect(self.command_hlevel_changed)
+
+    def disconnect_end_level_widget_signal(self):
+        self.end_level.currentIndexChanged.disconnect()
 
     def disconnect_hlevel_widget_signal(self):
         self.node_hlevel.currentIndexChanged.disconnect()
