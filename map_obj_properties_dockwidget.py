@@ -57,7 +57,7 @@ class MapObjPropDock(QDockWidget):
         self.label3_entry.editingFinished.connect(self.command_label3_entry_edited)
         type_labels_layout.addRow('Label3', self.label3_entry)
         self.end_level = QComboBox(dock_widget)
-        for a in range(5):
+        for a in range(6):
             self.end_level.addItem(str(a))
         self.connect_end_level_widget_signals()
         type_labels_layout.addRow('EndLevel', self.end_level)
@@ -509,7 +509,6 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
 
     def command_dirindicator_changed(self):
-        print(self.poly_direction.checkState())
         self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
 
     def command_hlevel_changed(self):
@@ -537,7 +536,7 @@ class MapObjPropDock(QDockWidget):
             self.map_object_id.command_update_labels(3, self.label3_entry.text())
 
     def command_end_level_changed(self):
-        print(self.end_level.currentText())
+        self.map_object_id.command_update_endlevel(int(self.end_level.currentText()))
 
     def command_extras_table_changed(self, row, column):
         if not self.extras_table.is_table_modified():

@@ -286,7 +286,7 @@ class Data_X(object):
         d_copy = Data_X(self._projection)
         d_copy._bounding_box_N = self._bounding_box_N
         d_copy._bounding_box_S = self._bounding_box_S
-        d_copy.bounding_box_W = self._bounding_box_W
+        d_copy._bounding_box_W = self._bounding_box_W
         d_copy._bounding_box_E = self._bounding_box_E
         d_copy._data_levels = copy.copy(self._data_levels)
         d_copy._last_data_level = self._last_data_level
@@ -665,7 +665,7 @@ class Data_X(object):
 
     def get_obj_bounding_box(self):
         return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
-                'W': self._bounding_box_E}
+                'W': self._bounding_box_W}
 
     def get_poly_node(self, data_level, poly_num, node_num, qpointsf):
         # zwraca nody dla konkretnego polygonu
@@ -1351,6 +1351,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         command = commands.UpdateExtras(self, new_extras, 'Zmiana extras')
         self.scene().undo_redo_stack.push(command)
 
+    def command_update_endlevel(self, new_endlevel):
+        command = commands.SelectModeSetEndlevel(self, new_endlevel, 'Zmiana endlevel')
+        self.scene().undo_redo_stack.push(command)
+
     def command_update_labels(self, label_num, new_label):
         command = commands.UpdateLabel123(self, label_num, new_label, 'Zmień label')
         self.scene().undo_redo_stack.push(command)
@@ -1836,6 +1840,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def command_update_comment(self, new_comment):
         command = commands.UpdateComment(self, new_comment, 'Zmiana komentarza')
+        self.scene().undo_redo_stack.push(command)
+
+    def command_update_endlevel(self, new_endlevel):
+        command = commands.SelectModeSetEndlevel(self, new_endlevel, 'Zmiana endlevel')
         self.scene().undo_redo_stack.push(command)
 
     def command_update_labels(self, label_num, new_label):

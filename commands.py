@@ -303,6 +303,28 @@ class SelectModeSetDirindicator(QUndoCommand):
             self.map_object.setSelected(True)
 
 
+class SelectModeSetEndlevel(QUndoCommand):
+    def __init__(self, map_object, endlevel, description):
+        super(SelectModeSetEndlevel, self).__init__(description)
+        self.map_object = map_object
+        self.old_endlevel = map_object.get_endlevel()
+        self.new_endlevel = endlevel
+
+    def redo(self):
+        self.map_object.set_endlevel(self.new_endlevel)
+        self.map_object.set_map_level()
+        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+    def undo(self):
+        self.map_object.set_endlevel(self.old_endlevel)
+        self.map_object.set_map_level()
+        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            self.map_object.scene().clearSelection()
+            self.map_object.setSelected(True)
+
+
 class SelectModeRouteParams(QUndoCommand):
     def __init__(self, map_object, route_params):
         super(SelectModeRouteParams, self).__init__('modyfikacja RouteParams')
