@@ -2264,19 +2264,23 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                 if house_numbers.left_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
-                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self))
+                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self,
+                                                     interpolated=False))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
-                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self))
+                    adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self,
+                                                     interpolated=False))
                 if house_numbers.right_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
                     position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
-                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self))
+                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self,
+                                                     interpolated=False))
                 if house_numbers.right_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
                     position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
-                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self))
+                    adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self,
+                                                     interpolated=False))
         if adr:
             self.housenumber_labels = adr
         else:
@@ -2290,7 +2294,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
             if interpolated_numbers is not None:
                 for num_def in interpolated_numbers:
-                    ihn.append(PolylineAddressNumber(num_def[0], num_def[1], self))
+                    ihn.append(PolylineAddressNumber(num_def[0], num_def[1], self, interpolated=True))
         if ihn:
             self.interpolated_house_numbers_labels = ihn
         else:
@@ -2343,7 +2347,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             right_side_number_after = 'right_side_number_after'
             right_side_number_before = 'right_side_number_before'
         else:
-            position_at_line_segment = 5 / line_segment_vector.length()
+            position_at_line_segment = 15 / line_segment_vector.length()
             left_side_number_before = 'right_side_number_before'
             left_side_number_after = 'right_side_number_after'
             right_side_number_after = 'left_side_number_after'
@@ -2373,12 +2377,17 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def get_interpolated_housenumbers(self, data_level, poly_num):
         inter_num = self.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
         numbers = []
-        for num_def in inter_num['left']:
-            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
-            numbers.append((vector.unitVector(), num_def.number,))
-        for num_def in inter_num['right']:
-            vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
-            numbers.append((vector.unitVector(), num_def.number,))
+        for side in ('left', 'right',):
+            for num_def in inter_num[side]:
+                vector = QLineF(num_def.position, num_def.vector.p2()).normalVector()
+                if side == 'right':
+                    vector = vector.normalVector().normalVector()
+                number_vector = vector.unitVector()
+                number_vector.setLength(number_vector.length() * 10)
+                numbers.append((number_vector, num_def.number,))
+        # for num_def in inter_num['right']:
+        #     vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
+        #     numbers.append((vector.unitVector(), num_def.number,))
         return numbers
 
     def set_mp_data(self):
@@ -2743,20 +2752,24 @@ class PolygonLabel(MapLabels):
 class PolylineAddressNumber(MapLabels):
     _accept_map_level_change = False
 
-    def __init__(self, position, text, parent):
+    def __init__(self, position, text, parent, interpolated=False):
         self.parent = parent
         self.grip_mode = False
         self.position = position
+        self.current_scale = None
         super(PolylineAddressNumber, self).__init__(str(text), parent)
         self.setText(str(text))
         qm_font = QFont()
         qm_font.setPointSize(6)
         self.setFont(qm_font)
-        self.setBrush(QBrush(QColor('blue')))
+        if interpolated:
+            self.setBrush(QBrush(QColor('red')))
+        else:
+            self.setBrush(QBrush(QColor('blue')))
         # _, _, pheight, pwidth = self.boundingRect().getRect()
         # self.setTransformOriginPoint(pheight / 2, pwidth / 2)
         self.set_transformation_flag()
-        self.set_pos(self.position)
+        self.set_pos()
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
@@ -2815,38 +2828,29 @@ class PolylineAddressNumber(MapLabels):
     def mouseReleaseEvent(self, event):
         return
 
+    def needs_reposition(self):
+        if self.current_scale is None or self.current_scale != self.scene().get_viewer_scale():
+            self.current_scale = self.scene().get_viewer_scale()
+            return True
+        return False
+
     def paint(self, painter, option, widget):
-        self.set_pos(self.position)
+        self.set_pos()
         super().paint(painter, option, widget)
 
-    def set_pos(self, position):
+    def set_pos(self):
         # workoround dla setPos, tak aby mozna wykorzystac wektor jako wspolrzedna, a nie tylko sam punkt
         # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
         # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skale
-        angle_corr = self.angle_correction()
-        # print(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
-        # self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
-        self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr / self.scene().get_viewer_scale())
+        if self.needs_reposition():
+            _, _, pwidth, pheight = self.boundingRect().getRect()
+            text_center = QPointF(-pwidth/2, -pheight/2)
+            self.setPos(self.position.pointAt(1 / self.current_scale) + text_center / self.current_scale)
+        # if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+        #     self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
+        # else:
+        #     self.setPos(position.p2() + angle_corr)
         return
-        if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-            self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
-        else:
-            self.setPos(position.p2() + angle_corr)
-
-    def angle_correction(self):
-        vector_angle = self.position.angle()
-        _, _, pwidth, pheight = self.boundingRect().getRect()
-        return QPointF(-pwidth/2, -pheight/2)
-        if 0 < vector_angle <= 45:
-            return QPointF(0, -pheight)
-        elif 45 < vector_angle <= 135:
-            return QPointF(pwidth, 0)
-        elif 135 < vector_angle <= 225:
-            return QPointF(pwidth, pheight)
-        elif 225 < vector_angle <= 315:
-            return QPointF(pwidth, 0)
-        else:
-            return QPointF(0, 0)
 
 
 class PolylineLevelNumber(MapLabels):
