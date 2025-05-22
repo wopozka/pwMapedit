@@ -180,7 +180,6 @@ class ReversePolylineCmd(QUndoCommand):
 
 
 class MoveGripCmd(QUndoCommand):
-    command_id = 1
     def __init__(self, map_object, grip, description,):
         super(MoveGripCmd, self).__init__(description)
         self.index = grip.grip_indexes
@@ -192,7 +191,7 @@ class MoveGripCmd(QUndoCommand):
         self.cmd_time = time.time()
 
     def id(self):
-        return self.command_id
+        return self.mapobject.get_id()
 
     def redo(self):
         polygons = self.map_object.get_polygons_from_path(self.map_object.path())
