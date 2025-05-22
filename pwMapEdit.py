@@ -305,6 +305,12 @@ class pwMapeditPy(QMainWindow):
         self.open_save_thread = None
         self.worker_file_parser = None
         self.menu_tools_set_mode()
+        self._last_background_action = None
+
+    def background_on_of(self):
+        if self._last_background_action is None:
+            self._last_background_action = self.weblayers_actions_group.actions()[0]
+        self._last_background_action.triggered()
 
 
     def initialize(self):
@@ -583,6 +589,8 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
         self.delete_key_action = QShortcut(QKeySequence.Delete, self)
         self.delete_key_action.activated.connect(self.delete)
+        background_picture = QShortcut(QKeySequence(Qt.Key_E), self)
+        background_picture.activated.connect(self.background_on_of)
 
 
     def delete(self):
@@ -731,6 +739,7 @@ class pwMapeditPy(QMainWindow):
     def menu_weblayer_set_weblayer(self):
         self.view.set_web_layer(None)
         if self.weblayers_actions_group.checkedAction() is not None:
+            self._last_background_action = self.weblayers_actions_group.checkedAction()
             self.view.set_web_layer(None)
             self.view.set_web_layer(web_layers.WebLayers(self.weblayers_actions_group.checkedAction().data(),
                                                          cache_folder=self.weblayers_cache_folder.name))
