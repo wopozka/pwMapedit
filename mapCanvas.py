@@ -243,7 +243,7 @@ class mapCanvas(QGraphicsScene):
             pass
 
     def get_item_ignores_transformations(self):
-        return self.self.views()[0].get_item_ignores_transformations()
+        return self.views()[0].get_item_ignores_transformations()
 
     def get_map_level(self):
         return self.current_map_level
@@ -353,7 +353,10 @@ class mapCanvas(QGraphicsScene):
         start = datetime.now().replace(microsecond=0)
         # self.views()[0].setInteractive(False)
         map_items = self.items()
-        one_perc = len(map_items) // 100
+        if len(map_items) < 100:
+            one_perc = 1
+        else:
+            one_perc = len(map_items) // 100
         self.parent.update_progress_bar('set_maximum', len(map_items))
         self.parent.update_progress_bar('set_value', 0)
         for item_num, item in enumerate(map_items):
