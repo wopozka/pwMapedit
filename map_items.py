@@ -2265,22 +2265,22 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_before, self,
-                                                     interpolated=False))
+                                                     side='left', interpolated=False))
                 if house_numbers.left_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
                     position = self.get_numbers_position(line_segment_vector, 'left_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.left_side_number_after, self,
-                                                     interpolated=False))
+                                                     side='left', interpolated=False))
                 if house_numbers.right_side_number_before is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num - 1]
                     position = self.get_numbers_position(line_segment_vector, 'right_side_number_before')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_before, self,
-                                                     interpolated=False))
+                                                     side='right', interpolated=False))
                 if house_numbers.right_side_number_after is not None:
                     line_segment_vector = polygons_vectors[polygon_num][polygon_node_num]
                     position = self.get_numbers_position(line_segment_vector, 'right_side_number_after')
                     adr.append(PolylineAddressNumber(position, house_numbers.right_side_number_after, self,
-                                                     interpolated=False))
+                                                     side='right', interpolated=False))
         if adr:
             self.housenumber_labels = adr
         else:
@@ -2294,7 +2294,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             interpolated_numbers = self.get_interpolated_housenumbers(self.current_data_x, polygon_num)
             if interpolated_numbers is not None:
                 for num_def in interpolated_numbers:
-                    ihn.append(PolylineAddressNumber(num_def[0], num_def[1], self, interpolated=True))
+                    ihn.append(PolylineAddressNumber(num_def[0], num_def[1], self,
+                                                     side=num_def[2], interpolated=True))
         if ihn:
             self.interpolated_house_numbers_labels = ihn
         else:
@@ -2384,7 +2385,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                     vector = vector.normalVector().normalVector()
                 number_vector = vector.unitVector()
                 number_vector.setLength(number_vector.length() * 10)
-                numbers.append((number_vector, num_def.number,))
+                numbers.append((number_vector, num_def.number, side))
         # for num_def in inter_num['right']:
         #     vector = QLineF(num_def.position, num_def.vector.p2()).normalVector().normalVector().normalVector()
         #     numbers.append((vector.unitVector(), num_def.number,))
@@ -2752,7 +2753,7 @@ class PolygonLabel(MapLabels):
 class PolylineAddressNumber(MapLabels):
     _accept_map_level_change = False
 
-    def __init__(self, position, text, parent, interpolated=False):
+    def __init__(self, position, text, parent, side='left', interpolated=False):
         self.parent = parent
         self.grip_mode = False
         self.position = position
@@ -2762,10 +2763,16 @@ class PolylineAddressNumber(MapLabels):
         qm_font = QFont()
         qm_font.setPointSize(6)
         self.setFont(qm_font)
-        if interpolated:
-            self.setBrush(QBrush(QColor('red')))
+        if side == 'left':
+            if interpolated:
+                self.setBrush(QBrush(pwmapedit_constants.LEFT_SIDE_NUM_INTER))
+            else:
+                self.setBrush(QBrush(pwmapedit_constants.LEFT_SIDE_NUM_MAIN))
         else:
-            self.setBrush(QBrush(QColor('blue')))
+            if interpolated:
+                self.setBrush(QBrush(pwmapedit_constants.RIGHT_SIDE_NUM_INTER))
+            else:
+                self.setBrush(QBrush(pwmapedit_constants.RIGHT_SIDE_NUM_MAIN))
         # _, _, pheight, pwidth = self.boundingRect().getRect()
         # self.setTransformOriginPoint(pheight / 2, pwidth / 2)
         self.set_transformation_flag()
