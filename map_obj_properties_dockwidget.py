@@ -266,7 +266,7 @@ class MapObjPropDock(QDockWidget):
         right_side_numbering.addRow('Państwo', self.right_side_num_data['right_side_country'])
         self.connect_numbering_widgets_signals()
 
-        hlevel_gb = QGroupBox('3D na węźle')
+        hlevel_gb = QGroupBox('Hlevel na węźle')
         node_properties_layout.addWidget(hlevel_gb)
         hlevel_layout = QFormLayout()
         hlevel_gb.setLayout(hlevel_layout)
@@ -275,7 +275,7 @@ class MapObjPropDock(QDockWidget):
         for a in range(-2, 16):
             self.node_hlevel.addItem(str(a))
         self.connect_hlevel_widget_signals()
-        hlevel_layout.addRow('Węzeł ma 3d', self.node_hlevel)
+        hlevel_layout.addRow('Hlevel dla węzła', self.node_hlevel)
         node_widget_layout.addStretch()
         self.switch_on_numerations_fields()
         self.set_dock_off()
