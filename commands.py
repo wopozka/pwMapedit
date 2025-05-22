@@ -191,7 +191,7 @@ class MoveGripCmd(QUndoCommand):
         self.cmd_time = time.time()
 
     def id(self):
-        return self.mapobject.get_id()
+        return self.map_object.get_id()
 
     def redo(self):
         polygons = self.map_object.get_polygons_from_path(self.map_object.path())

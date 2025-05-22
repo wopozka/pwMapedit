@@ -2823,10 +2823,30 @@ class PolylineAddressNumber(MapLabels):
         # workoround dla setPos, tak aby mozna wykorzystac wektor jako wspolrzedna, a nie tylko sam punkt
         # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
         # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skale
+        angle_corr = self.angle_correction()
+        # print(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
+        # self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
+        self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr / self.scene().get_viewer_scale())
+        return
         if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-            self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()))
+            self.setPos(position.pointAt(1 / self.scene().get_viewer_scale()) + angle_corr)
         else:
-            self.setPos(position.p2())
+            self.setPos(position.p2() + angle_corr)
+
+    def angle_correction(self):
+        vector_angle = self.position.angle()
+        _, _, pwidth, pheight = self.boundingRect().getRect()
+        return QPointF(-pwidth/2, -pheight/2)
+        if 0 < vector_angle <= 45:
+            return QPointF(0, -pheight)
+        elif 45 < vector_angle <= 135:
+            return QPointF(pwidth, 0)
+        elif 135 < vector_angle <= 225:
+            return QPointF(pwidth, pheight)
+        elif 225 < vector_angle <= 315:
+            return QPointF(pwidth, 0)
+        else:
+            return QPointF(0, 0)
 
 
 class PolylineLevelNumber(MapLabels):
@@ -2938,6 +2958,9 @@ class GripItem(QGraphicsPathItem):
 
     def boundingRect(self):
         return self._boundingRect
+
+    def get_id(self):
+        return self.parent.get_id()
 
     def node_grip_has_numeration(self):
         data_level = self.parent.current_data_x
