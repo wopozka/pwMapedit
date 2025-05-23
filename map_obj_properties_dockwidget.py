@@ -402,7 +402,7 @@ class MapObjPropDock(QDockWidget):
                         outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
                         outer_poly.setText(1, 'Outer')
                         poly_pp.addPolygon(data_level_polygons[poly_num])
-                        outer_poly.setData(2, Qt.EditRole, poly_pp)
+                        outer_poly.setData(2, Qt.UserRole, poly_pp)
                         if not self.map_object_id.is_polygon():
                             outer_poly = None
                         continue
@@ -412,7 +412,7 @@ class MapObjPropDock(QDockWidget):
                         poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
                     poly_pp1 = QPainterPath()
                     poly_pp1.addPolygon(data_level_polygons[poly_num])
-                    poly_item.setData(2, Qt.EditRole, poly_pp1)
+                    poly_item.setData(2, Qt.UserRole, poly_pp1)
                     if poly_pp.contains(poly_pp1):
                         outer_poly.addChild(poly_item)
                         poly_item.setText(1, 'Inner')
@@ -733,7 +733,7 @@ class MapObjPropDock(QDockWidget):
         self.connect_numbering_widgets_signals()
 
     def elements_item_highlighted(self):
-        ppp = self.elements_table.selectedItems()[0].data(2, Qt.EditRole)
+        ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
         self.map_object_id.scene().highlight_element(ppp)
 
 class ExtrasTable(QTableWidget):
