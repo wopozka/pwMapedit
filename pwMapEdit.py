@@ -3,7 +3,7 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
     QProgressBar, QLabel
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack, QInputDialog
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtGui import QKeySequence, QClipboard
 import sys
@@ -570,6 +570,19 @@ class pwMapeditPy(QMainWindow):
             lat, lon = self.view.get_current_mouse_geo_coordinates()
             QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
 
+    def go_to_position(self):
+        go_to_position, ok = QInputDialog.getText(self, 'Idź do współrzędnych', 'Format współrzędnych: 55.123456, 38.123456 (<lat, lon>)')
+        if ok:
+            try:
+                lat, lon = go_to_position.split(',')
+                lat = float(lat)
+                lon = float(lon)
+                if -90 <= lat <= 90 and -180 <= lon <= 180:
+                    x, y = self.projection.geo_to_canvas(lat, lon)
+                    self.view.centerOn(x, y)
+            except ValueError:
+                pass
+
     def generate_shortcuts(self):
         scale_down = QShortcut(QKeySequence('-'), self)
         scale_down.activated.connect(self.menu_zoom_out_command)
@@ -591,6 +604,8 @@ class pwMapeditPy(QMainWindow):
         self.delete_key_action.activated.connect(self.delete)
         background_picture = QShortcut(QKeySequence(Qt.Key_E), self)
         background_picture.activated.connect(self.background_on_of)
+        go_to_position_action = QShortcut(QKeySequence('Ctrl+g'), self)
+        go_to_position_action.activated.connect(self.go_to_position)
 
 
     def delete(self):
