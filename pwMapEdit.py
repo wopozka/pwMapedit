@@ -106,16 +106,16 @@ class MapFileOpener(QObject):
         # we skipped the header, but at the same time we might have skipped
         # the first comment, try to recover it
 
-        print(map_objects.map_header)
+        # print(map_objects.map_header)
         while b >= 0:
-            print(zawartosc_pliku_mp[b])
+            # print(zawartosc_pliku_mp[b])
             if zawartosc_pliku_mp[b].strip().startswith(';'):
                 b -= 1
                 del(map_objects.map_header[-1])
             else:
                 break
 
-        print(map_objects.map_header)
+        # print(map_objects.map_header)
         print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
         self.progress.emit('set_value', b)
         objs_to_draw = []

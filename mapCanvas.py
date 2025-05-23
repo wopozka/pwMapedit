@@ -176,8 +176,10 @@ class mapCanvas(QGraphicsScene):
     def copy(self):
         print('copy canvas')
         if not self.selectedItems():
-            print('brak zaznaczonych obiektow')
-            return
+            lat, lon = self.views()[0].get_current_mouse_geo_coordinates()
+            item_mime_data = QMimeData()
+            item_mime_data.setText(f'{lat:.6f},{lon:.6f}')
+            return item_mime_data
         items_defs = []
         for item in self.selectedItems():
             if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
@@ -301,6 +303,8 @@ class mapCanvas(QGraphicsScene):
                 if not s_record.strip():
                     continue
                 m_data.append(s_record.split('\n'))
+        else:
+            return
 
         for s_data in m_data:
             mouse_scene_pos = None
@@ -308,8 +312,7 @@ class mapCanvas(QGraphicsScene):
                 x, y = s_data[0].split('=')[1].split(',')
                 mouse_scene_pos = QPointF(float(x), float(y))
                 s_data = s_data[1:]
-            poi_poly_type, obj_comment, obj_data = (
-                misc_functions.map_strings_record_to_dict_record(s_data))
+            poi_poly_type, obj_comment, obj_data = (misc_functions.map_strings_record_to_dict_record(s_data))
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                                    _projection=self._projection)
@@ -410,8 +413,9 @@ class mapCanvas(QGraphicsScene):
                 obj.decorate()
 
     def set_canvas_rectangle(self, map_bounding_box):
-        start_x, start_y = self._projection.geo_to_canvas(map_bounding_box['N'], map_bounding_box['W'])
-        end_x, end_y = self._projection.geo_to_canvas(map_bounding_box['S'], map_bounding_box['E'])
+        cor = 0.001
+        start_x, start_y = self._projection.geo_to_canvas(map_bounding_box['N'] + cor, map_bounding_box['W'] - cor)
+        end_x, end_y = self._projection.geo_to_canvas(map_bounding_box['S'] - cor, map_bounding_box['E'] + cor)
         self.setSceneRect(start_x, start_y, end_x-start_x, end_y-start_y)
         # print('start_x: %s, start_y: %s, end_x: %s, end_y: %s' %(start_x, start_y, end_x, end_y))
         return
