@@ -61,6 +61,9 @@ class mapCanvas(QGraphicsScene):
         self._closest_node_circle = None
         self._stick_to_neighbours_nodes = False
 
+        # highlighted element
+        self._highlighted_element = None
+
     def change_projection(self, proj, map_bounding_box, map_object_list):
         old_proj = self._projection
         if proj == 'UTM':
@@ -83,6 +86,8 @@ class mapCanvas(QGraphicsScene):
             return 0
 
     def clearSelection(self):
+        # jesli mamy podswietlony element (map_obj_properties_dockwidget, elements) to usun go
+        self.remove_highlighted_element()
         print('clear selection called')
         print(self.selectedItems())
         for item in self.selectedItems():
@@ -272,6 +277,12 @@ class mapCanvas(QGraphicsScene):
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
 
+    def highlight_element(self, element_path):
+        self.remove_highlighted_element()
+        self._highlighted_element = QGraphicsPathItem()
+        self._highlighted_element.setPath(element_path)
+        self.addItem(self._highlighted_element)
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
             self._stick_to_neighbours_nodes = True
@@ -336,6 +347,10 @@ class mapCanvas(QGraphicsScene):
             else:
                 return
 
+    def remove_highlighted_element(self):
+        if self._highlighted_element is not None:
+            self.removeItem(self._highlighted_element)
+            self._highlighted_element = None
 
     def remove_web_layer_graphics(self):
         if self.web_layer_graphics is None:

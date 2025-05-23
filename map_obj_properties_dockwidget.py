@@ -112,6 +112,7 @@ class MapObjPropDock(QDockWidget):
         elements_widgets = QWidget()
         self.tab_names_vs_index['elements'] = self.tab_widget.addTab(elements_widgets, 'Elements')
         self.elements_table = QTreeWidget()
+        self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
         elements_layout_box = QVBoxLayout()
         elements_widgets.setLayout(elements_layout_box)
         elements_layout_box.addWidget(self.elements_table)
@@ -393,24 +394,34 @@ class MapObjPropDock(QDockWidget):
                 data_item = QTreeWidgetItem(self.elements_table)
                 data_item.setText(0, str('Data' + str(data_level)))
                 poly_pp = QPainterPath()
+                outer_poly = None
                 for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
-                    poly_item = QTreeWidgetItem(data_item)
-                    lat, lot = poly[0].get_geo_coordinates()
-                    poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
-                    if not self.map_object_id.is_polygon():
-                        continue
-                    if poly_pp.isEmpty():
+                    if outer_poly is None:
+                        outer_poly = QTreeWidgetItem(data_item)
+                        lat, lot = poly[0].get_geo_coordinates()
+                        outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
+                        outer_poly.setText(1, 'Outer')
                         poly_pp.addPolygon(data_level_polygons[poly_num])
-                        poly_item.setText(1, 'Outer')
+                        outer_poly.setData(2, Qt.EditRole, poly_pp)
+                        if not self.map_object_id.is_polygon():
+                            outer_poly = None
+                        continue
                     else:
-                        poly_pp1 = QPainterPath()
-                        poly_pp1.addPolygon(data_level_polygons[poly_num])
-                        if poly_pp.contains(poly_pp1):
-                            poly_item.setText(1, 'Inner')
-                            poly_pp.addPath(poly_pp1)
-                        else:
-                            poly_item.setText(1, 'outer')
-                            poly_pp = poly_pp1
+                        poly_item = QTreeWidgetItem()
+                        lat, lot = poly[0].get_geo_coordinates()
+                        poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
+                    poly_pp1 = QPainterPath()
+                    poly_pp1.addPolygon(data_level_polygons[poly_num])
+                    poly_item.setData(2, Qt.EditRole, poly_pp1)
+                    if poly_pp.contains(poly_pp1):
+                        outer_poly.addChild(poly_item)
+                        poly_item.setText(1, 'Inner')
+                        poly_pp.addPath(poly_pp1)
+                    else:
+                        data_item.addChild(poly_item)
+                        poly_item.setText(1, 'outer')
+                        outer_poly = poly_item
+                        poly_pp = poly_pp1
 
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
@@ -721,6 +732,9 @@ class MapObjPropDock(QDockWidget):
                     val.clear()
         self.connect_numbering_widgets_signals()
 
+    def elements_item_highlighted(self):
+        ppp = self.elements_table.selectedItems()[0].data(2, Qt.EditRole)
+        self.map_object_id.scene().highlight_element(ppp)
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
