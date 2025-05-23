@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayou
 from PyQt5.QtWidgets import QFormLayout, QTabWidget
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPainterPath
 from enum import Enum
 import json
 import map_items
@@ -389,19 +389,28 @@ class MapObjPropDock(QDockWidget):
             self.elements_table.clear()
             # self.elements_table.setRowCount(0)
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+                data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
                 data_item = QTreeWidgetItem(self.elements_table)
                 data_item.setText(0, str('Data' + str(data_level)))
+                poly_pp = QPainterPath()
                 for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
                     poly_item = QTreeWidgetItem(data_item)
                     lat, lot = poly[0].get_geo_coordinates()
                     poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
-                    # row_num = data_level_num + poly_num
-                    # self.elements_table.insertRow(row_num)
-                    # self.elements_table.setItem(row_num, 0, QTableWidgetItem(str(row_num)))
-                    # self.elements_table.setItem(row_num, 1, QTableWidgetItem(str(data_level)))
-                    # lat, lot = poly[0].get_geo_coordinates()
-                    # self.elements_table.setItem(row_num, 2, QTableWidgetItem(f"{lat:.6f}, {lot:.6f}"))
-                    # self.elements_table.setItem(row_num, 3, QTableWidgetItem(str(len(poly))))
+                    if not self.map_object_id.is_polygon():
+                        continue
+                    if poly_pp.isEmpty():
+                        poly_pp.addPolygon(data_level_polygons[poly_num])
+                        poly_item.setText(1, 'Outer')
+                    else:
+                        poly_pp1 = QPainterPath()
+                        poly_pp1.addPolygon(data_level_polygons[poly_num])
+                        if poly_pp.contains(poly_pp1):
+                            poly_item.setText(1, 'Inner')
+                            poly_pp.addPath(poly_pp1)
+                        else:
+                            poly_item.setText(1, 'outer')
+                            poly_pp = poly_pp1
 
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
