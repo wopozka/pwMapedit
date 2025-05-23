@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
                              QPushButton, QGroupBox, QCompleter, QApplication)
 from PyQt5.QtWidgets import QFormLayout, QTabWidget
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
 from PyQt5.QtGui import QIcon
 from enum import Enum
@@ -111,13 +111,12 @@ class MapObjPropDock(QDockWidget):
         # karta elements,
         elements_widgets = QWidget()
         self.tab_names_vs_index['elements'] = self.tab_widget.addTab(elements_widgets, 'Elements')
-        self.elements_table = QTableWidget()
+        self.elements_table = QTreeWidget()
         elements_layout_box = QVBoxLayout()
         elements_widgets.setLayout(elements_layout_box)
         elements_layout_box.addWidget(self.elements_table)
-        self.elements_table.setRowCount(0)
-        self.elements_table.setColumnCount(6)
-        self.elements_table.setHorizontalHeaderLabels(['#', 'Level', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar', 'Typ'])
+        self.elements_table.setColumnCount(5)
+        self.elements_table.setHeaderLabels(['Level', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar', 'Typ'])
 
         # karta routing
         routing_widget = QWidget()
@@ -387,17 +386,22 @@ class MapObjPropDock(QDockWidget):
                 self.save_current_address()
 
             # wypelniamy elements:
-            self.elements_table.clearContents()
-            self.elements_table.setRowCount(0)
+            self.elements_table.clear()
+            # self.elements_table.setRowCount(0)
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+                data_item = QTreeWidgetItem(self.elements_table)
+                data_item.setText(0, str('Data' + str(data_level)))
                 for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
-                    row_num = data_level_num + poly_num
-                    self.elements_table.insertRow(row_num)
-                    self.elements_table.setItem(row_num, 0, QTableWidgetItem(str(row_num)))
-                    self.elements_table.setItem(row_num, 1, QTableWidgetItem(str(data_level)))
+                    poly_item = QTreeWidgetItem(data_item)
                     lat, lot = poly[0].get_geo_coordinates()
-                    self.elements_table.setItem(row_num, 2, QTableWidgetItem(f"{lat:.6f}, {lot:.6f}"))
-                    self.elements_table.setItem(row_num, 3, QTableWidgetItem(str(len(poly))))
+                    poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
+                    # row_num = data_level_num + poly_num
+                    # self.elements_table.insertRow(row_num)
+                    # self.elements_table.setItem(row_num, 0, QTableWidgetItem(str(row_num)))
+                    # self.elements_table.setItem(row_num, 1, QTableWidgetItem(str(data_level)))
+                    # lat, lot = poly[0].get_geo_coordinates()
+                    # self.elements_table.setItem(row_num, 2, QTableWidgetItem(f"{lat:.6f}, {lot:.6f}"))
+                    # self.elements_table.setItem(row_num, 3, QTableWidgetItem(str(len(poly))))
 
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
