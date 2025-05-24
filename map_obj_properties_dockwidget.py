@@ -387,16 +387,18 @@ class MapObjPropDock(QDockWidget):
                 self.save_current_address()
 
             # wypelniamy elements:
+            # self.elements_table.itemSelectionChanged.disconnect()
             self.elements_table.clear()
             # self.elements_table.setRowCount(0)
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
                 data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
                 data_item = QTreeWidgetItem(self.elements_table)
                 data_item.setText(0, str('Data' + str(data_level)))
-                poly_pp = QPainterPath()
+                # poly_pp = QPainterPath()
                 outer_poly = None
                 for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
                     if outer_poly is None:
+                        poly_pp = QPainterPath()
                         outer_poly = QTreeWidgetItem(data_item)
                         lat, lot = poly[0].get_geo_coordinates()
                         outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
@@ -422,6 +424,7 @@ class MapObjPropDock(QDockWidget):
                         poly_item.setText(1, 'outer')
                         outer_poly = poly_item
                         poly_pp = poly_pp1
+            # self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
 
             if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
                 self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
@@ -733,8 +736,15 @@ class MapObjPropDock(QDockWidget):
         self.connect_numbering_widgets_signals()
 
     def elements_item_highlighted(self):
-        ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
-        self.map_object_id.scene().highlight_element(ppp)
+        # jesli jest jakis element zaznaczony
+        if self.elements_table.selectedItems():
+            ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
+            self.map_object_id.scene().highlight_element(ppp, self.map_object_id.is_polygon())
+        # gdy nie ma żadnego elementu zaznaczonego to i tak wywolaj funkcję. W razie czego usuwamy podswietlony element
+        else:
+            self.map_object_id.scene().highlight_element(None, False)
+        return
+
 
 class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):

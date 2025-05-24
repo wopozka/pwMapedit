@@ -277,11 +277,22 @@ class mapCanvas(QGraphicsScene):
     def get_viewer_physicalDpiX(self):
         return self.views()[0].physicalDpiX()
 
-    def highlight_element(self, element_path):
+    def highlight_element(self, element_path, is_polygon):
         self.remove_highlighted_element()
-        self._highlighted_element = QGraphicsPathItem()
-        self._highlighted_element.setPath(element_path)
-        self.addItem(self._highlighted_element)
+        if element_path is not None:
+            self._highlighted_element = QGraphicsPathItem()
+            self._highlighted_element.setPath(element_path)
+            h_pen = QPen(Qt.darkRed)
+            h_pen.setWidth(5)
+            h_pen.setCosmetic(True)
+            self._highlighted_element.setPen(h_pen)
+            self._highlighted_element.pen().setWidth(5)
+            if is_polygon:
+                self._highlighted_element.setBrush(QBrush(Qt.darkRed))
+            self._highlighted_element.setZValue(pwmapedit_constants.HIGHLIGHTED_POLY_Z_VAL)
+            self._highlighted_element.setOpacity(0.5)
+            self.addItem(self._highlighted_element)
+            self.views()[0].centerOn(self._highlighted_element)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
