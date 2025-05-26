@@ -299,170 +299,192 @@ class MapObjPropDock(QDockWidget):
             self.fill_map_object_properties_node_when_selected()
             self.tab_widget.setCurrentIndex(self.tab_names_vs_index['nody'])
         else:
-            # wypełniamy type
-            self.type_selector.currentIndexChanged.disconnect()
-            self.type_selector.clear()
-            if isinstance(self.map_object_id, map_items.PoiAsPixmap):
-                cur_index = -1
-                for poi_type, val in self.map_object_id._map_objects_properties.get_poi_type_name_alias().items():
-                    cur_index += 1
-                    icon = QIcon(val[0])
-                    p_type = str(hex(poi_type)) + ' '
-                    category = '(' + val[1] + '), '
-                    name = val[2] + ', '
-                    aliases = val[3]
-                    self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
-                    if poi_type == self.map_object_id.get_type():
-                        self.type_selector.setCurrentIndex(cur_index)
-                    self.type_selector.setItemData(cur_index, poi_type)
-            else:
-                if isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
-                    poly_types = self.map_object_id._map_objects_properties.get_line_type_names()
-                else:
-                    poly_types = self.map_object_id._map_objects_properties.get_polygon_type_names()
-                cur_index = -1
-                for  poly_type, val in poly_types.items():
-                    cur_index += 1
-                    p_type = str(hex(poly_type)) + ' '
-                    category = '(' + val[0] + '), '
-                    name_en = val[1]
-                    name_pl = ', ' + val[2] if val[2] else ''
-                    self.type_selector.addItem(p_type + category + name_en + name_pl)
-                    if poly_type == self.map_object_id.get_type():
-                        self.type_selector.setCurrentIndex(cur_index)
-                    self.type_selector.setItemData(cur_index, poly_type)
-            self.type_selector.currentIndexChanged.connect(self.command_type_changed)
-
-            if self.map_object_id.get_label1():
-                self.label1_entry.setText(self.map_object_id.get_label1())
-            else:
-                self.label1_entry.clear()
-            if self.map_object_id.get_label2():
-                self.label2_entry.setText(self.map_object_id.get_label2())
-            else:
-                self.label2_entry.clear()
-            if self.map_object_id.get_label3():
-                self.label3_entry.setText(self.map_object_id.get_label3())
-            else:
-                self.label3_entry.clear()
-            self.save_current_labels()
-            if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
-                self.poly_direction.setDisabled(True)
-                self.reverse_direction_button.setDisabled(True)
-            else:
-                self.poly_direction.setDisabled(False)
-                self.reverse_direction_button.setDisabled(False)
-                if self.map_object_id.get_dirindicator():
-                    self.poly_direction.setChecked(True)
-                else:
-                    self.poly_direction.setChecked(False)
-            self.disconnect_end_level_widget_signal()
-            if self.map_object_id.get_endlevel():
-                self.end_level.setCurrentIndex(self.map_object_id.get_endlevel())
-            else:
-                self.end_level.setCurrentIndex(0)
-            self.connect_end_level_widget_signals()
-            if self.map_object_id.get_comment():
-                self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
-            else:
-                self.comment_text_edit.clear()
-
-            # wypelniamy adresy, ale tylko dla poi
-            if not isinstance(self.map_object_id, map_items.PoiAsPixmap):
-                self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], False)
-            else:
-                self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], True)
-                if self.map_object_id.get_street_desc():
-                    self.streetdesc.setText(self.map_object_id.get_street_desc())
-                else:
-                    self.streetdesc.clear()
-                if self.map_object_id.get_house_number():
-                    self.housenumber.setText(self.map_object_id.get_house_number())
-                else:
-                    self.housenumber.clear()
-                if self.map_object_id.get_phone_number():
-                    self.phone.setText(self.map_object_id.get_phone_number())
-                else:
-                    self.phone.clear()
-                self.save_current_address()
-
-            # wypelniamy elements:
-            # self.elements_table.itemSelectionChanged.disconnect()
-            self.elements_table.clear()
-            # self.elements_table.setRowCount(0)
-            for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
-                data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
-                data_item = QTreeWidgetItem(self.elements_table)
-                data_item.setText(0, str('Data' + str(data_level)))
-                # poly_pp = QPainterPath()
-                outer_poly = None
-                for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
-                    if outer_poly is None:
-                        poly_pp = QPainterPath()
-                        outer_poly = QTreeWidgetItem(data_item)
-                        lat, lot = poly[0].get_geo_coordinates()
-                        outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
-                        outer_poly.setText(1, 'Outer')
-                        poly_pp.addPolygon(data_level_polygons[poly_num])
-                        outer_poly.setData(2, Qt.UserRole, poly_pp)
-                        if not self.map_object_id.is_polygon():
-                            outer_poly = None
-                        continue
-                    else:
-                        poly_item = QTreeWidgetItem()
-                        lat, lot = poly[0].get_geo_coordinates()
-                        poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
-                    poly_pp1 = QPainterPath()
-                    poly_pp1.addPolygon(data_level_polygons[poly_num])
-                    poly_item.setData(2, Qt.UserRole, poly_pp1)
-                    if poly_pp.contains(poly_pp1):
-                        outer_poly.addChild(poly_item)
-                        poly_item.setText(1, 'Inner')
-                        poly_pp.addPath(poly_pp1)
-                    else:
-                        data_item.addChild(poly_item)
-                        poly_item.setText(1, 'outer')
-                        outer_poly = poly_item
-                        poly_pp = poly_pp1
-            # self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
-
-            if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
-                self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
-            else:
-                self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], True)
-                # jesli route param ma dany obiekt to wypelnij je
-                if self.map_object_id.get_route_params() is not None:
-                    routing_data = self.map_object_id.get_route_params()
-                    if all(a == 0 for a in routing_data):
-                        return
-                    for index, val in enumerate(routing_data):
-                        if index == RouteParams.speed_limit.value or index == RouteParams.route_class.value:
-                            self.route_params[index].setCurrentIndex(0)
-                            self.route_params[index].setCurrentIndex(val)
-                        else:
-                            self.route_params[index].setChecked(False)
-                            self.route_params[index].setChecked(bool(val))
-                else:
-                    # w przeciwnym wypadku ustaw wszystko jako nieustawione
-                    for route_param in RouteParams:
-                        if route_param == RouteParams.speed_limit or route_param == RouteParams.route_class:
-                            self.route_params[route_param.value].setCurrentIndex(0)
-                        else:
-                            self.route_params[route_param.value].setChecked(False)
-
-            others = self.map_object_id.get_others()
-            self.extras_table.cellChanged.disconnect()
-            if others:
-                self.extras_table.clear_contents()
-                self.extras_table.setRowCount(0)
-                self.extras_table.setRowCount(len(others) + 1)
-                for row, key_val in enumerate(others):
-                    self.extras_table.set_items(row, key_val)
-            else:
-                self.extras_table.clear_contents()
-            self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
-            self.extras_table.cellChanged.connect(self.command_extras_table_changed)
+            self.fill_map_object_properties_type()
+            self.fill_map_object_properties_labels()
+            self.fill_map_object_properties_poly_direction()
+            self.fill_map_object_properties_endlevel()
+            self.fill_map_object_properties_comment()
+            self.fill_map_object_properties_poi_address()
+            self.fill_map_object_properteies_elements()
+            self.fill_map_object_properties_routing()
+            self.fill_map_object_properties_others()
         self.tab_widget.update()
+
+
+    def fill_map_object_properties_poi_address(self):
+        if not isinstance(self.map_object_id, map_items.PoiAsPixmap):
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], False)
+        else:
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], True)
+            if self.map_object_id.get_street_desc():
+                self.streetdesc.setText(self.map_object_id.get_street_desc())
+            else:
+                self.streetdesc.clear()
+            if self.map_object_id.get_house_number():
+                self.housenumber.setText(self.map_object_id.get_house_number())
+            else:
+                self.housenumber.clear()
+            if self.map_object_id.get_phone_number():
+                self.phone.setText(self.map_object_id.get_phone_number())
+            else:
+                self.phone.clear()
+            self.save_current_address()
+
+    def fill_map_object_properties_comment(self):
+        if self.map_object_id.get_comment():
+            self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
+        else:
+            self.comment_text_edit.clear()
+
+    def fill_map_object_properteies_elements(self):
+        # sprawdzic czy nie trzeba wlaczac i wylaczac sygnalu
+        # self.elements_table.itemSelectionChanged.disconnect()
+        self.elements_table.clear()
+        for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+            data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
+            data_item = QTreeWidgetItem(self.elements_table)
+            data_item.setText(0, str('Data' + str(data_level)))
+            # poly_pp = QPainterPath()
+            outer_poly = None
+            for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
+                if outer_poly is None:
+                    poly_pp = QPainterPath()
+                    outer_poly = QTreeWidgetItem(data_item)
+                    lat, lot = poly[0].get_geo_coordinates()
+                    outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
+                    outer_poly.setText(1, 'Outer')
+                    poly_pp.addPolygon(data_level_polygons[poly_num])
+                    outer_poly.setData(2, Qt.UserRole, poly_pp)
+                    if not self.map_object_id.is_polygon():
+                        outer_poly = None
+                    continue
+                else:
+                    poly_item = QTreeWidgetItem()
+                    lat, lot = poly[0].get_geo_coordinates()
+                    poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
+                poly_pp1 = QPainterPath()
+                poly_pp1.addPolygon(data_level_polygons[poly_num])
+                poly_item.setData(2, Qt.UserRole, poly_pp1)
+                if poly_pp.contains(poly_pp1):
+                    outer_poly.addChild(poly_item)
+                    poly_item.setText(1, 'Inner')
+                    poly_pp.addPath(poly_pp1)
+                else:
+                    data_item.addChild(poly_item)
+                    poly_item.setText(1, 'outer')
+                    outer_poly = poly_item
+                    poly_pp = poly_pp1
+        # sprawdzic czy nie trzeba wlaczac i wylaczac sygnalu
+        # self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
+
+    def fill_map_object_properties_endlevel(self):
+        self.disconnect_end_level_widget_signal()
+        if self.map_object_id.get_endlevel():
+            self.end_level.setCurrentIndex(self.map_object_id.get_endlevel())
+        else:
+            self.end_level.setCurrentIndex(0)
+        self.connect_end_level_widget_signals()
+
+    def fill_map_object_properties_others(self):
+        others = self.map_object_id.get_others()
+        self.extras_table.cellChanged.disconnect()
+        if others:
+            self.extras_table.clear_contents()
+            self.extras_table.setRowCount(0)
+            self.extras_table.setRowCount(len(others) + 1)
+            for row, key_val in enumerate(others):
+                self.extras_table.set_items(row, key_val)
+        else:
+            self.extras_table.clear_contents()
+        self.tab_widget.setCurrentIndex(self.tab_names_vs_index['glowny'])
+        self.extras_table.cellChanged.connect(self.command_extras_table_changed)
+
+    def fill_map_object_properties_labels(self):
+        if self.map_object_id.get_label1():
+            self.label1_entry.setText(self.map_object_id.get_label1())
+        else:
+            self.label1_entry.clear()
+        if self.map_object_id.get_label2():
+            self.label2_entry.setText(self.map_object_id.get_label2())
+        else:
+            self.label2_entry.clear()
+        if self.map_object_id.get_label3():
+            self.label3_entry.setText(self.map_object_id.get_label3())
+        else:
+            self.label3_entry.clear()
+        self.save_current_labels()
+
+    def fill_map_object_properties_poly_direction(self):
+        if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+            self.poly_direction.setDisabled(True)
+            self.reverse_direction_button.setDisabled(True)
+        else:
+            self.poly_direction.setDisabled(False)
+            self.reverse_direction_button.setDisabled(False)
+            if self.map_object_id.get_dirindicator():
+                self.poly_direction.setChecked(True)
+            else:
+                self.poly_direction.setChecked(False)
+
+    def fill_map_object_properties_routing(self):
+        if not isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], False)
+        else:
+            self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], True)
+            # jesli route param ma dany obiekt to wypelnij je
+            if self.map_object_id.get_route_params() is not None:
+                routing_data = self.map_object_id.get_route_params()
+                if all(a == 0 for a in routing_data):
+                    return
+                for index, val in enumerate(routing_data):
+                    if index == RouteParams.speed_limit.value or index == RouteParams.route_class.value:
+                        self.route_params[index].setCurrentIndex(0)
+                        self.route_params[index].setCurrentIndex(val)
+                    else:
+                        self.route_params[index].setChecked(False)
+                        self.route_params[index].setChecked(bool(val))
+            else:
+                # w przeciwnym wypadku ustaw wszystko jako nieustawione
+                for route_param in RouteParams:
+                    if route_param == RouteParams.speed_limit or route_param == RouteParams.route_class:
+                        self.route_params[route_param.value].setCurrentIndex(0)
+                    else:
+                        self.route_params[route_param.value].setChecked(False)
+
+    def fill_map_object_properties_type(self):
+        # wypełniamy type
+        self.type_selector.currentIndexChanged.disconnect()
+        self.type_selector.clear()
+        if isinstance(self.map_object_id, map_items.PoiAsPixmap):
+            cur_index = -1
+            for poi_type, val in self.map_object_id._map_objects_properties.get_poi_type_name_alias().items():
+                cur_index += 1
+                icon = QIcon(val[0])
+                p_type = str(hex(poi_type)) + ' '
+                category = '(' + val[1] + '), '
+                name = val[2] + ', '
+                aliases = val[3]
+                self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
+                if poi_type == self.map_object_id.get_type():
+                    self.type_selector.setCurrentIndex(cur_index)
+                self.type_selector.setItemData(cur_index, poi_type)
+        else:
+            if isinstance(self.map_object_id, map_items.PolylineQGraphicsPathItem):
+                poly_types = self.map_object_id._map_objects_properties.get_line_type_names()
+            else:
+                poly_types = self.map_object_id._map_objects_properties.get_polygon_type_names()
+            cur_index = -1
+            for poly_type, val in poly_types.items():
+                cur_index += 1
+                p_type = str(hex(poly_type)) + ' '
+                category = '(' + val[0] + '), '
+                name_en = val[1]
+                name_pl = ', ' + val[2] if val[2] else ''
+                self.type_selector.addItem(p_type + category + name_en + name_pl)
+                if poly_type == self.map_object_id.get_type():
+                    self.type_selector.setCurrentIndex(cur_index)
+                self.type_selector.setItemData(cur_index, poly_type)
+        self.type_selector.currentIndexChanged.connect(self.command_type_changed)
 
     def fill_map_object_properties_node_when_selected(self):
         # w tym przypadku map_object_id jest grip_item, więc musimy się dopytać grip_item o dane odnośnie numeracji
