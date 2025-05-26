@@ -334,6 +334,12 @@ class Data_X(object):
         -------
 
         """
+        if data_level in self._data_levels and poly_num < len(self._poly_data_points[data_level]):
+            del self._poly_data_points[data_level][poly_num]
+            # jesli nie ma juz zadnych polygonow w danym data_level to usun go z listy
+            if len(self._poly_data_points[data_level]) == 0:
+                self._data_levels.remove(data_level)
+                del self._poly_data_points[data_level]
         return
 
     def delete_whole_data_level(self, data_level):

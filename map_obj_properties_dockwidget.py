@@ -111,13 +111,11 @@ class MapObjPropDock(QDockWidget):
         # karta elements,
         elements_widgets = QWidget()
         self.tab_names_vs_index['elements'] = self.tab_widget.addTab(elements_widgets, 'Elements')
-        self.elements_table = QTreeWidget()
+        self.elements_table = ElementsTable(dock_widget)
         self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
         elements_layout_box = QVBoxLayout()
         elements_widgets.setLayout(elements_layout_box)
         elements_layout_box.addWidget(self.elements_table)
-        self.elements_table.setColumnCount(5)
-        self.elements_table.setHeaderLabels(['Level', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar', 'Typ'])
 
         # karta routing
         routing_widget = QWidget()
@@ -465,26 +463,32 @@ class MapObjPropDock(QDockWidget):
         self.elements_table.clear()
         for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
             data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
-            data_item = QTreeWidgetItem(self.elements_table)
+            data_item = ElementsItem(self.elements_table)
             data_item.setText(0, str('Data' + str(data_level)))
             # poly_pp = QPainterPath()
             outer_poly = None
             for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
                 if outer_poly is None:
                     poly_pp = QPainterPath()
-                    outer_poly = QTreeWidgetItem(data_item)
+                    outer_poly = ElementsItem(data_item)
                     lat, lot = poly[0].get_geo_coordinates()
-                    outer_poly.setText(0, f"{lat:.6f}, {lot:.6f}")
+                    outer_poly.setText(0, f'Poly: {poly_num}')
                     outer_poly.setText(1, 'Outer')
+                    outer_poly.setText(2, f"{lat:.6f}, {lot:.6f}")
+                    outer_poly.setData(0, Qt.UserRole, data_level_num)
+                    outer_poly.setData(1, Qt.UserRole, poly_num)
                     poly_pp.addPolygon(data_level_polygons[poly_num])
                     outer_poly.setData(2, Qt.UserRole, poly_pp)
                     if not self.map_object_id.is_polygon():
                         outer_poly = None
                     continue
                 else:
-                    poly_item = QTreeWidgetItem()
+                    poly_item = ElementsItem()
                     lat, lot = poly[0].get_geo_coordinates()
-                    poly_item.setText(0, f"{lat:.6f}, {lot:.6f}")
+                    poly_item.setText(0, f'Poly: {poly_num}')
+                    poly_item.setText(2, f"{lat:.6f}, {lot:.6f}")
+                poly_item.setData(0, Qt.UserRole, data_level_num)
+                poly_item.setData(1, Qt.UserRole, poly_num)
                 poly_pp1 = QPainterPath()
                 poly_pp1.addPolygon(data_level_polygons[poly_num])
                 poly_item.setData(2, Qt.UserRole, poly_pp1)
@@ -759,6 +763,7 @@ class MapObjPropDock(QDockWidget):
 
     def elements_item_highlighted(self):
         # jesli jest jakis element zaznaczony
+        print(self.elements_table.currentColumn())
         if self.elements_table.selectedItems():
             ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
             self.map_object_id.scene().highlight_element(ppp, self.map_object_id.is_polygon())
@@ -1023,3 +1028,36 @@ class NumberEdit(QLineEdit):
 
     def set_empty_not_allowed(self):
         self.empty_allowed = False
+
+
+class ElementsTable(QTreeWidget):
+    def __init__(self, parent=None):
+        super(ElementsTable, self).__init__(parent)
+        self.setColumnCount(5)
+        self.setHeaderLabels(['Nr Data/Nr poly', 'Inner/Outer', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar'])
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        # self.customContextMenuRequested.connect(self.context_menu_requested)
+        # self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # self.setSortingEnabled(True)
+
+    def contextMenuEvent(self, event):
+        menu = QMenu()
+        delete_action = menu.addAction('Usuń')
+        delete_action.triggered.connect(self.command_delete_poly)
+        paste_to_action = menu.addAction('Kopiuj do')
+        # paste_text_action.triggered.connect(self.paste)
+        res = menu.exec_(event.globalPos())
+
+    def command_delete_poly(self):
+        data_level = self.currentItem().data(0, Qt.UserRole)
+        poly_num = self.currentItem().data(1, Qt.UserRole)
+        print(f'data_level: {data_level}, poly_num: {poly_num}')
+        return
+
+class ElementsItem(QTreeWidgetItem):
+    def __init__(self, parent=None):
+        super(ElementsItem, self).__init__(parent)
+        self.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+        # self.setCheckState(0, Qt.Unchecked)
+        self.setData(2, Qt.UserRole, None)  # to store QPainterPath
+
