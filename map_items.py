@@ -463,22 +463,6 @@ class Data_X(object):
         if data_level in self._data_levels:
             return self._data_levels.index(data_level)
 
-    def get_polys_for_data_level(self, data_level):
-        """
-        Returns list of polygons for given data level. Polgons are defined as Nodes
-        Parameters
-        ----------
-        data_level: int, 0, 1, 2, 3, 4
-
-        Returns: list of list of Nodes
-        -------
-
-        """
-        if data_level not in self._data_levels:
-            return tuple()
-        data_level_index = self.get_data_level_index(data_level)
-        return self._poly_data_points[data_level_index]
-
     def get_housenumbers_for_poly(self, data_level, poly_num):
         # zwraca definicje wszystkich numerow domow przypisanych do danego noda
         polys = self.get_polys_for_data_level(data_level)
@@ -581,6 +565,28 @@ class Data_X(object):
     @staticmethod
     def get_interpolated_numbers_coordinates(poly_vectors, numbers, current_num_distance=None,
                                              default_num_distance=None):
+        """
+            Oblicza pozycje interpolowanych numerów na zadanym odcinku polilinii. Funkcja rekurencyjna. Oblicza długość
+            polylinii, wylicza równą odległość pomiędzy numerami, potem kolejno oblicza pozycję numerów odcinając,
+            z długości polylinii odcinek za odcinkiem.
+
+            Parameters:
+            -----------
+            poly_vectors : list
+                Lista obiektów QLineF reprezentujących kolejne odcinki polilinii.
+            numbers : list
+                Lista numerów do rozmieszczenia na odcinku.
+            current_num_distance : float, opcjonalnie
+                Odległość od początku pierwszego odcinka do pierwszego numeru (jeśli None, zostanie wyliczona automatycznie).
+            default_num_distance : float, opcjonalnie
+                Domyślna odległość pomiędzy kolejnymi numerami (jeśli None, zostanie wyliczona na podstawie długości polilinii i liczby numerów).
+
+            Zwraca:
+            --------
+            list
+                Lista obiektów Interpolated_Number, zawierających wektor (QLineF), pozycję (QPointF) oraz numer.
+            """
+
         if not numbers:
             return []
         if default_num_distance is None:
@@ -677,8 +683,24 @@ class Data_X(object):
             return nodes_list[node_num].get_canvas_coords_as_qpointf()
         return nodes_list[node_num]
 
-    def get_poly_nodes(self, data_level, qpointsf):
-        # zwraca nody dla wszystkich polygonow danego data_level
+    def get_polys_for_data_level(self, data_level):
+        """
+        Returns list of polygons for given data level. Polgons are defined as Nodes
+        Parameters
+        ----------
+        data_level: int, 0, 1, 2, 3, 4
+
+        Returns: list of list of Nodes
+        -------
+
+        """
+        if data_level not in self._data_levels:
+            return tuple()
+        data_level_index = self.get_data_level_index(data_level)
+        return self._poly_data_points[data_level_index]
+
+    def get_all_poly_nodes(self, data_level, qpointsf):
+        # zwraca nody dla wszystkich polygonow/polylinii danego data_level
         if data_level not in self._data_levels:
             return None
         returned_data = list()
@@ -913,7 +935,7 @@ class BasicMapItem(object):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
         data_level = int(dataX[4:])
-        return self.data0.get_poly_nodes(data_level, False)
+        return self.data0.get_all_poly_nodes(data_level, False)
 
     # getters
     def get_dirindicator(self):
