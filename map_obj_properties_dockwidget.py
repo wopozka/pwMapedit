@@ -763,7 +763,6 @@ class MapObjPropDock(QDockWidget):
 
     def elements_item_highlighted(self):
         # jesli jest jakis element zaznaczony
-        print(self.elements_table.currentColumn())
         if self.elements_table.selectedItems():
             ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
             self.map_object_id.scene().highlight_element(ppp, self.map_object_id.is_polygon())

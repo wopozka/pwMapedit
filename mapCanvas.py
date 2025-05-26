@@ -281,6 +281,8 @@ class mapCanvas(QGraphicsScene):
         self.remove_highlighted_element()
         if element_path is not None:
             self._highlighted_element = QGraphicsPathItem()
+            self._highlighted_element.setFlag(QGraphicsPathItem.ItemIsSelectable, False)
+            self._highlighted_element.setFlag(QGraphicsPathItem.ItemClipsToShape, False)
             self._highlighted_element.setPath(element_path)
             h_pen = QPen(Qt.darkRed)
             h_pen.setWidth(5)
@@ -292,9 +294,10 @@ class mapCanvas(QGraphicsScene):
             self._highlighted_element.setZValue(pwmapedit_constants.HIGHLIGHTED_POLY_Z_VAL)
             self._highlighted_element.setOpacity(0.5)
             self.addItem(self._highlighted_element)
-            # print(self.views()[0].viewport().size())
-            if self._highlighted_element not in self.views()[0].items():
-                self.views()[0].centerOn(self._highlighted_element)
+            size = self.views()[0].viewport().size()
+            if self._highlighted_element not in self.views()[0].items(0,0, size.height(), size.width()):
+                # self.views()[0].centerOn(self._highlighted_element)
+                self.views()[0].ensureVisible(self._highlighted_element)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
@@ -308,6 +311,10 @@ class mapCanvas(QGraphicsScene):
             self.closest_node_circle_remove()
             print('wylaczam przyciaganie')
         super().keyReleaseEvent(event)
+
+    def mousePressEvent(self, event):
+        print('Mouse press event, items at mouse press: ', self.items(event.scenePos()))
+        super().mousePressEvent(event)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
