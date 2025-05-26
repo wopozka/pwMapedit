@@ -269,6 +269,22 @@ class Data_X(object):
             perimeter += line.length()
         return perimeter
 
+    def clean_numbers_definitions(self, data_level, polynum):
+         # update numbers definitions for nodes
+        # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
+        # pierwszy nod
+        if self._poly_data_points[data_level][polynum][0].node_has_numeration():
+            for key in ('left_side_number_before', 'right_side_number_before'):
+                self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name(key, None)
+        # ostatni nod
+        last_node = self._poly_data_points[data_level][polynum][-1]
+        if last_node.node_has_numeration():
+            for key in ('left_side_numbering_style', 'left_side_number_after', 'right_side_numbering_style',
+                        'right_side_number_after', 'left_side_zip_code',
+                        'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
+                        'right_side_city', 'right_side_region', 'right_side_country'):
+                last_node.set_numbers_definition_field_name(key, None)
+
     def coords_from_data_to_nodes(self, data_line):
         coords = []
         coordlist = data_line.strip().lstrip('(').rstrip(')')
@@ -301,33 +317,43 @@ class Data_X(object):
             d_copy._poly_data_points.append(polys_points)
         return d_copy
 
-
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
         del self._poly_data_points[data_level][polynum][index]
         self.clean_numbers_definitions(data_level, polynum)
 
+    def delete_poly_at_data_level(self, data_level, poly_num):
+        """
+        Usuwa cały polyline/polygon z danego data_level,
+        Parameters
+        ----------
+        data_level: int, 0 - Data0, 1 - Data1, 2 - Data2, 3 - Data3, 4 - Data4
+        poly_num: int, numer polyline/polygon w danym data_level
+
+        Returns
+        -------
+
+        """
+        return
+
+    def delete_whole_data_level(self, data_level):
+        """
+        Usuwa cały data_level dla danego obiektu,
+        Parameters
+        ----------
+        data_level
+
+        Returns
+        -------
+
+        """
+        return
+
     def clean_empty_numbers_definitions(self):
         for dl in self.get_data_levels():
-            for poly in self.get_polys_for_data_level(dl):
+            for poly in self.get_polys_for_data_level(dl, qpointsf=False):
                 pass
             # do dokonczenia
-
-    def clean_numbers_definitions(self, data_level, polynum):
-         # update numbers definitions for nodes
-        # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
-        # pierwszy nod
-        if self._poly_data_points[data_level][polynum][0].node_has_numeration():
-            for key in ('left_side_number_before', 'right_side_number_before'):
-                self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name(key, None)
-        # ostatni nod
-        last_node = self._poly_data_points[data_level][polynum][-1]
-        if last_node.node_has_numeration():
-            for key in ('left_side_numbering_style', 'left_side_number_after', 'right_side_numbering_style',
-                        'right_side_number_after', 'left_side_zip_code',
-                        'right_side_zip_code', 'left_side_city', 'left_side_region', 'left_side_country',
-                        'right_side_city', 'right_side_region', 'right_side_country'):
-                last_node.set_numbers_definition_field_name(key, None)
 
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
         # nie ma zadnych w wezlow z numeracja, nie rob nic
@@ -465,7 +491,7 @@ class Data_X(object):
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
         # zwraca definicje wszystkich numerow domow przypisanych do danego noda
-        polys = self.get_polys_for_data_level(data_level)
+        polys = self.get_polys_for_data_level(data_level, qpointsf=False)
         return [node.get_numbers_definition() for node in polys[poly_num]]
 
     def get_housenumber_for_node_from_interpolated_numbers(self, data_level, poly_num, start_node_idx, end_node_idx,
@@ -674,7 +700,19 @@ class Data_X(object):
                 'W': self._bounding_box_W}
 
     def get_poly_node(self, data_level, poly_num, node_num, qpointsf):
-        # zwraca nody dla konkretnego polygonu
+        """
+        zwraca konkretny nod dla konkretnego polygonu
+        Parameters
+        ----------
+        data_level: int: 0, 1, 2, 3, 4, odpowiada Data0, Data1, Data2, Data3, Data4
+        poly_num: int, number of polygon in polys, odpowiada kolejnemu polyline, polygonowi
+        node_num: int, number of node in polygon, odpowiada kolejnemu nodowi w polygonie
+        qpointsf: bool, if True, returns QPointF, otherwise returns Node
+
+        Returns
+        -------
+        Node or QPointF: depending on qpointsf parameter, returns either Node or QPointF
+        """
         if data_level not in self._data_levels:
             return None
         data_list = self._poly_data_points[self._data_levels.index(data_level)]
@@ -683,23 +721,8 @@ class Data_X(object):
             return nodes_list[node_num].get_canvas_coords_as_qpointf()
         return nodes_list[node_num]
 
-    def get_polys_for_data_level(self, data_level):
-        """
-        Returns list of polygons for given data level. Polgons are defined as Nodes
-        Parameters
-        ----------
-        data_level: int, 0, 1, 2, 3, 4
-
-        Returns: list of list of Nodes
-        -------
-
-        """
-        if data_level not in self._data_levels:
-            return tuple()
-        data_level_index = self.get_data_level_index(data_level)
-        return self._poly_data_points[data_level_index]
-
-    def get_all_poly_nodes(self, data_level, qpointsf):
+    def get_polys_for_data_level(self, data_level, qpointsf=False):
+    #   def get_all_poly_nodes(self, data_level, qpointsf=False):
         # zwraca nody dla wszystkich polygonow/polylinii danego data_level
         if data_level not in self._data_levels:
             return None
@@ -935,7 +958,7 @@ class BasicMapItem(object):
         # tymczasowo na potrzeby testow tylko jedno data
         # zwracamy liste Nodow, jesli
         data_level = int(dataX[4:])
-        return self.data0.get_all_poly_nodes(data_level, False)
+        return self.data0.get_polys_for_data_level(data_level, qpointsf=False)
 
     # getters
     def get_dirindicator(self):

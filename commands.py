@@ -161,7 +161,7 @@ class ReversePolylineCmd(QUndoCommand):
 
     def redo(self):
         self.map_object.data0.reverse_poly(self.data_level)
-        polygons = self.map_object.data0.get_polys_for_data_level(self.data_level)
+        polygons = self.map_object.data0.get_polys_for_data_level(self.data_level, qpointsf=False)
         self.map_object.setPath(self.map_object.create_painter_path(polygons))
         self.update_children()
         return
