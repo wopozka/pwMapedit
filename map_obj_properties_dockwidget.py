@@ -280,17 +280,140 @@ class MapObjPropDock(QDockWidget):
         self.switch_on_numerations_fields()
         self.set_dock_off()
 
-    def reverse_polyline(self, event):
-        print(self.map_object_id)
-        if self.map_object_id is not None:
-            self.map_object_id.command_reverse_poly()
+    def address_changed(self):
+        if [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)] != self.current_address_vals:
+            return True
+        return False
 
-    def set_map_object_id(self, obj_id):
-        if isinstance(obj_id, map_items.GripItem):
-            self.set_dock_mode_edit_nodes()
+    def clear_numeration_fields(self):
+        self.disconnect_numbering_widgets_signals()
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.setCurrentIndex(-1)
+                else:
+                    val.clear()
+        self.connect_numbering_widgets_signals()
+
+    def command_comment_changed(self):
+        self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
+
+    def command_dirindicator_changed(self):
+        self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
+
+    def command_hlevel_changed(self):
+        if self.node_hlevel.currentIndex() > 0:
+            self.map_object_id.node_grip_set_hlevel(self.node_hlevel.itemText(self.node_hlevel.currentIndex()))
         else:
-            self.set_dock_mode_select()
-        self.map_object_id = obj_id
+            self.map_object_id.node_grip_set_hlevel(None)
+
+    def command_label1_entry_edited(self):
+        if not self.labels_changed():
+            return
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(1, self.label1_entry.text())
+
+    def command_label2_entry_edited(self):
+        if not self.labels_changed():
+            return
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(2, self.label2_entry.text())
+
+    def command_label3_entry_edited(self):
+        if not self.labels_changed():
+            return
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_labels(3, self.label3_entry.text())
+
+    def command_end_level_changed(self):
+        self.map_object_id.command_update_endlevel(int(self.end_level.currentText()))
+
+    def command_extras_table_changed(self, row, column):
+        if not self.extras_table.is_table_modified():
+            return
+        if self.map_object_id is not None:
+            self.map_object_id.command_update_extras(self.extras_table.get_current_content())
+        #     print('tabela zmodyfikowan')
+        #     print(self.extras_table.get_current_content())
+        #     print('zapisuje nowy content')
+        #     self.extras_table.save_current_content()
+        # else:
+        #     print('tabela niezmodyfikowana')
+
+    def command_streetdesc_edited(self):
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.streetdesc.text(), 'StreetDesc')
+
+    def command_housenumber_edited(self):
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.housenumber.text(), 'HouseNumber')
+
+    def command_phone_edited(self):
+        if self.address_changed():
+            self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
+
+    def command_route_params_edited(self, value):
+        route_defs = list()
+        for item_num in range(len(self.route_params)):
+            if item_num == RouteParams.speed_limit.value or item_num == RouteParams.route_class.value:
+                route_defs.append(self.route_params[item_num].currentIndex())
+            else:
+                route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
+        self.map_object_id.command_set_route_params(route_defs)
+
+    def command_numeration_style_edited(self, new_index):
+        if self.left_side_num_data['left_side_numbering_style'].currentIndex() > 0:
+            if not self.left_side_num_data['left_side_number_after'].text():
+                self.left_side_num_data['left_side_number_after'].setText('0')
+            self.left_side_num_data['left_side_number_after'].set_empty_not_allowed()
+        else:
+            self.left_side_num_data['left_side_number_after'].clear()
+            self.left_side_num_data['left_side_number_after'].set_empty_allowed()
+        if self.right_side_num_data['right_side_numbering_style'].currentIndex() > 0:
+            if not self.right_side_num_data['right_side_number_after'].text():
+                self.right_side_num_data['right_side_number_after'].setText('0')
+            self.right_side_num_data['right_side_number_after'].set_empty_not_allowed()
+        else:
+            self.right_side_num_data['right_side_number_after'].clear()
+            self.right_side_num_data['right_side_number_after'].set_empty_allowed()
+        print('num style edited')
+        self.command_set_numeration_to_node()
+
+    def command_set_numeration_to_node(self):
+        print('Uaktualniam numeracje, nowa numeracja: ', self.get_node_numeration_definition_from_form())
+        # return
+        self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
+
+    def command_type_changed(self, new_index):
+        self.map_object_id.command_update_type(self.type_selector.itemData(new_index))
+
+    def connect_end_level_widget_signals(self):
+        self.end_level.currentIndexChanged.connect(self.command_end_level_changed)
+
+    def connect_numbering_widgets_signals(self):
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.currentIndexChanged.connect(self.command_numeration_style_edited)
+                else:
+                    val.signals.comment_changed.connect(self.command_set_numeration_to_node)
+
+    def connect_hlevel_widget_signal(self):
+        self.node_hlevel.currentIndexChanged.connect(self.command_hlevel_changed)
+
+    def disconnect_end_level_widget_signal(self):
+        self.end_level.currentIndexChanged.disconnect()
+
+    def disconnect_hlevel_widget_signal(self):
+        self.node_hlevel.currentIndexChanged.disconnect()
+
+    def disconnect_numbering_widgets_signals(self):
+        for left_right in (self.left_side_num_data, self.right_side_num_data):
+            for key, val in left_right.items():
+                if 'style' in key:
+                    val.currentIndexChanged.disconnect()
+                else:
+                    val.signals.comment_changed.disconnect()
 
     def fill_map_object_properties(self):
         if self.map_object_id is None:
@@ -531,149 +654,6 @@ class MapObjPropDock(QDockWidget):
             self.node_hlevel.setCurrentIndex(int(hlevel_definition) + 3)
         self.connect_hlevel_widget_signal()
 
-    def switch_on_of_numerations(self, val):
-        if val:
-            self.switch_on_numerations_fields()
-            numeration = self.map_object_id.node_grip_get_calculated_numeration()
-            self.fill_map_object_properties_node_numeration(numeration)
-            self.command_set_numeration_to_node()
-        else:
-            self.clear_numeration_fields()
-            self.switch_off_numerations_fields()
-            self.map_object_id.node_grip_set_numeration(None)
-
-    def switch_off_numerations_fields(self):
-        for num_key in self.right_side_num_data:
-            self.right_side_num_data[num_key].setEnabled(False)
-        for num_key in self.left_side_num_data:
-            self.left_side_num_data[num_key].setEnabled(False)
-
-    def switch_on_numerations_fields(self):
-        for num_key in self.right_side_num_data:
-            self.right_side_num_data[num_key].setEnabled(True)
-        for num_key in self.left_side_num_data:
-            self.left_side_num_data[num_key].setEnabled(True)
-
-    def command_comment_changed(self):
-        self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
-
-    def command_dirindicator_changed(self):
-        self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
-
-    def command_hlevel_changed(self):
-        if self.node_hlevel.currentIndex() > 0:
-            self.map_object_id.node_grip_set_hlevel(self.node_hlevel.itemText(self.node_hlevel.currentIndex()))
-        else:
-            self.map_object_id.node_grip_set_hlevel(None)
-
-    def command_label1_entry_edited(self):
-        if not self.labels_changed():
-            return
-        if self.map_object_id is not None:
-            self.map_object_id.command_update_labels(1, self.label1_entry.text())
-
-    def command_label2_entry_edited(self):
-        if not self.labels_changed():
-            return
-        if self.map_object_id is not None:
-            self.map_object_id.command_update_labels(2, self.label2_entry.text())
-
-    def command_label3_entry_edited(self):
-        if not self.labels_changed():
-            return
-        if self.map_object_id is not None:
-            self.map_object_id.command_update_labels(3, self.label3_entry.text())
-
-    def command_end_level_changed(self):
-        self.map_object_id.command_update_endlevel(int(self.end_level.currentText()))
-
-    def command_extras_table_changed(self, row, column):
-        if not self.extras_table.is_table_modified():
-            return
-        if self.map_object_id is not None:
-            self.map_object_id.command_update_extras(self.extras_table.get_current_content())
-        #     print('tabela zmodyfikowan')
-        #     print(self.extras_table.get_current_content())
-        #     print('zapisuje nowy content')
-        #     self.extras_table.save_current_content()
-        # else:
-        #     print('tabela niezmodyfikowana')
-
-    def command_streetdesc_edited(self):
-        if self.address_changed():
-            self.map_object_id.command_update_address(self.streetdesc.text(), 'StreetDesc')
-
-    def command_housenumber_edited(self):
-        if self.address_changed():
-            self.map_object_id.command_update_address(self.housenumber.text(), 'HouseNumber')
-
-    def command_phone_edited(self):
-        if self.address_changed():
-            self.map_object_id.command_update_address(self.phone.text(), 'PhoneNumber')
-
-    def command_route_params_edited(self, value):
-        route_defs = list()
-        for item_num in range(len(self.route_params)):
-            if item_num == RouteParams.speed_limit.value or item_num == RouteParams.route_class.value:
-                route_defs.append(self.route_params[item_num].currentIndex())
-            else:
-                route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
-        self.map_object_id.command_set_route_params(route_defs)
-
-    def command_numeration_style_edited(self, new_index):
-        if self.left_side_num_data['left_side_numbering_style'].currentIndex() > 0:
-            if not self.left_side_num_data['left_side_number_after'].text():
-                self.left_side_num_data['left_side_number_after'].setText('0')
-            self.left_side_num_data['left_side_number_after'].set_empty_not_allowed()
-        else:
-            self.left_side_num_data['left_side_number_after'].clear()
-            self.left_side_num_data['left_side_number_after'].set_empty_allowed()
-        if self.right_side_num_data['right_side_numbering_style'].currentIndex() > 0:
-            if not self.right_side_num_data['right_side_number_after'].text():
-                self.right_side_num_data['right_side_number_after'].setText('0')
-            self.right_side_num_data['right_side_number_after'].set_empty_not_allowed()
-        else:
-            self.right_side_num_data['right_side_number_after'].clear()
-            self.right_side_num_data['right_side_number_after'].set_empty_allowed()
-        print('num style edited')
-        self.command_set_numeration_to_node()
-
-    def command_set_numeration_to_node(self):
-        print('Uaktualniam numeracje, nowa numeracja: ', self.get_node_numeration_definition_from_form())
-        # return
-        self.map_object_id.node_grip_set_numeration(self.get_node_numeration_definition_from_form())
-
-    def command_type_changed(self, new_index):
-        self.map_object_id.command_update_type(self.type_selector.itemData(new_index))
-
-    def connect_end_level_widget_signals(self):
-        self.end_level.currentIndexChanged.connect(self.command_end_level_changed)
-
-    def connect_numbering_widgets_signals(self):
-        for left_right in (self.left_side_num_data, self.right_side_num_data):
-            for key, val in left_right.items():
-                if 'style' in key:
-                    val.currentIndexChanged.connect(self.command_numeration_style_edited)
-                else:
-                    val.signals.comment_changed.connect(self.command_set_numeration_to_node)
-
-    def connect_hlevel_widget_signal(self):
-        self.node_hlevel.currentIndexChanged.connect(self.command_hlevel_changed)
-
-    def disconnect_end_level_widget_signal(self):
-        self.end_level.currentIndexChanged.disconnect()
-
-    def disconnect_hlevel_widget_signal(self):
-        self.node_hlevel.currentIndexChanged.disconnect()
-
-    def disconnect_numbering_widgets_signals(self):
-        for left_right in (self.left_side_num_data, self.right_side_num_data):
-            for key, val in left_right.items():
-                if 'style' in key:
-                    val.currentIndexChanged.disconnect()
-                else:
-                    val.signals.comment_changed.disconnect()
-
     def get_node_numeration_definition_from_form(self):
         definition = dict()
         for left_right in (self.left_side_num_data, self.right_side_num_data):
@@ -700,16 +680,46 @@ class MapObjPropDock(QDockWidget):
                         definition[key] = None
         return map_items.Numbers_Definition(**definition)
 
-    def address_changed(self):
-        if [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)] != self.current_address_vals:
-            return True
-        return False
-
     def labels_changed(self):
         if ([a.text().strip() for a in (self.label1_entry, self.label2_entry, self.label3_entry)]
                 != self.current_labels_vals):
             return True
         return False
+
+    def reverse_polyline(self, event):
+        print(self.map_object_id)
+        if self.map_object_id is not None:
+            self.map_object_id.command_reverse_poly()
+
+    def set_map_object_id(self, obj_id):
+        if isinstance(obj_id, map_items.GripItem):
+            self.set_dock_mode_edit_nodes()
+        else:
+            self.set_dock_mode_select()
+        self.map_object_id = obj_id
+
+    def switch_on_of_numerations(self, val):
+        if val:
+            self.switch_on_numerations_fields()
+            numeration = self.map_object_id.node_grip_get_calculated_numeration()
+            self.fill_map_object_properties_node_numeration(numeration)
+            self.command_set_numeration_to_node()
+        else:
+            self.clear_numeration_fields()
+            self.switch_off_numerations_fields()
+            self.map_object_id.node_grip_set_numeration(None)
+
+    def switch_off_numerations_fields(self):
+        for num_key in self.right_side_num_data:
+            self.right_side_num_data[num_key].setEnabled(False)
+        for num_key in self.left_side_num_data:
+            self.left_side_num_data[num_key].setEnabled(False)
+
+    def switch_on_numerations_fields(self):
+        for num_key in self.right_side_num_data:
+            self.right_side_num_data[num_key].setEnabled(True)
+        for num_key in self.left_side_num_data:
+            self.left_side_num_data[num_key].setEnabled(True)
 
     def save_current_address(self):
         self.current_address_vals = [a.text().strip() for a in (self.streetdesc, self.housenumber, self.phone)]
@@ -746,16 +756,6 @@ class MapObjPropDock(QDockWidget):
                 self.tab_widget.setTabEnabled(tab_index, False)
         self.tab_widget.setTabEnabled(self.tab_names_vs_index['glowny'], False)
         self.tab_widget.update()
-
-    def clear_numeration_fields(self):
-        self.disconnect_numbering_widgets_signals()
-        for left_right in (self.left_side_num_data, self.right_side_num_data):
-            for key, val in left_right.items():
-                if 'style' in key:
-                    val.setCurrentIndex(-1)
-                else:
-                    val.clear()
-        self.connect_numbering_widgets_signals()
 
     def elements_item_highlighted(self):
         # jesli jest jakis element zaznaczony
