@@ -292,7 +292,9 @@ class mapCanvas(QGraphicsScene):
             self._highlighted_element.setZValue(pwmapedit_constants.HIGHLIGHTED_POLY_Z_VAL)
             self._highlighted_element.setOpacity(0.5)
             self.addItem(self._highlighted_element)
-            self.views()[0].centerOn(self._highlighted_element)
+            # print(self.views()[0].viewport().size())
+            if self._highlighted_element not in self.views()[0].items():
+                self.views()[0].centerOn(self._highlighted_element)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Control:
