@@ -274,7 +274,7 @@ class MapObjPropDock(QDockWidget):
         self.node_hlevel.addItem('Brak')
         for a in range(-2, 16):
             self.node_hlevel.addItem(str(a))
-        self.connect_hlevel_widget_signals()
+        self.connect_hlevel_widget_signal()
         hlevel_layout.addRow('Hlevel dla węzła', self.node_hlevel)
         node_widget_layout.addStretch()
         self.switch_on_numerations_fields()
@@ -507,7 +507,7 @@ class MapObjPropDock(QDockWidget):
             self.node_hlevel.setCurrentIndex(0)
         else:
             self.node_hlevel.setCurrentIndex(int(hlevel_definition) + 3)
-        self.connect_hlevel_widget_signals()
+        self.connect_hlevel_widget_signal()
 
     def switch_on_of_numerations(self, val):
         if val:
@@ -635,7 +635,7 @@ class MapObjPropDock(QDockWidget):
                 else:
                     val.signals.comment_changed.connect(self.command_set_numeration_to_node)
 
-    def connect_hlevel_widget_signals(self):
+    def connect_hlevel_widget_signal(self):
         self.node_hlevel.currentIndexChanged.connect(self.command_hlevel_changed)
 
     def disconnect_end_level_widget_signal(self):
