@@ -470,8 +470,10 @@ class MapObjPropDock(QDockWidget):
             poly_item = ElementsItem(data_item)
             poly_item.setText(0, 'POI')
             poly_item.setText(1, '')
-            poly_item.set(2, f"{lat:.6f}, {lon:.6f}")
-            poly_item.setData(2, Qt.UserRole, scene_coords)
+            poly_item.setText(2, f"{lat:.6f}, {lon:.6f}")
+            pp = QPainterPath()
+            pp.addEllipse(scene_coords, 10, 10)
+            poly_item.setData(2, Qt.UserRole, pp)
         else:
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
                 data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
@@ -777,7 +779,10 @@ class MapObjPropDock(QDockWidget):
         # jesli jest jakis element zaznaczony
         if self.elements_table.selectedItems():
             ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
-            self.map_object_id.scene().highlight_element(ppp, self.map_object_id.is_polygon())
+            if isinstance(self.map_object_id, map_items.PoiAsPixmap):
+                self.map_object_id.scene().highlight_element(ppp, True)
+            else:
+                self.map_object_id.scene().highlight_element(ppp, self.map_object_id.is_polygon())
         # gdy nie ma żadnego elementu zaznaczonego to i tak wywolaj funkcję. W razie czego usuwamy podswietlony element
         else:
             self.map_object_id.scene().highlight_element(None, False)
