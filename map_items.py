@@ -269,69 +269,6 @@ class Data_X(object):
             perimeter += line.length()
         return perimeter
 
-    def clean_empty_numbers_definitions(self, data_level, polynum):
-        for dl in self.get_data_levels():
-            for poly in self.get_polys_for_data_level(dl, qpointsf=False):
-                pass
-            # do dokonczenia
-
-        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
-        # nie ma zadnych w wezlow z numeracja, nie rob nic
-        if len(nodes_with_numbers) == 0:
-            return
-        # mamy jeden wezel z numeracja, trzeba na ostatnim ustawic 0, o ile nie sa ustawione
-        if len(nodes_with_numbers) == 1:
-            last_node = self._poly_data_points[data_level][polynum][-1]
-            if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
-                last_node.set_numbers_definition_field_name('left_side_number_before', None)
-            else:
-                if not last_node.node_has_numeration():
-                    last_node.set_numbers_definition_field_name('left_side_number_before', 0)
-                elif last_node.get_specific_number_definition('left_side_number_before') is None:
-                    last_node.set_numbers_definition_field_name('left_side_number_before', 0)
-            if nodes_with_numbers[0].get_specific_number_definition('right_side_number_after') is None:
-                last_node.set_numbers_definition_field_name('right_side_number_before', None)
-            else:
-                if not last_node.node_has_numeration():
-                    last_node.set_numbers_definition_field_name('right_side_number_before', 0)
-                elif last_node.get_specific_number_definition('right_side_number_before') is None:
-                    last_node.set_numbers_definition_field_name('right_side_number_before', 0)
-            return
-
-        # jesli ostatni wezel nie ma ustawionej zadnej numeracji to ja ustaw, pomoze to porzadkowac wezly
-        if not last_node.node_has_numeration():
-            last_node.set_numbers_definition_field_name('left_side_number_before', 0)
-            last_node.set_numbers_definition_field_name('right_side_number_before', 0)
-
-        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
-
-        # mamy wiele wezlow z numeracja przeorganizuj je
-        for node_num in range(len(nodes_with_numbers) - 1):
-            node_start = nodes_with_numbers[node_num]
-            node_end = nodes_with_numbers[node_num + 1]
-            if node_start.node_starts_numeration():
-                if node_start.get_specific_number_definition('left_side_number_after') is None:
-                    node_end.set_numbers_definition_field_name('left_side_number_before', None)
-                else:
-                    if node_end.get_specific_number_definition('left_side_number_before') is None:
-                        node_end.set_numbers_definition_field_name('left_side_number_before', 0)
-                if node_start.get_specific_number_definition('right_side_number_after') is None:
-                    node_end.set_numbers_definition_field_name('right_side_number_before', None)
-                else:
-                    if node_end.get_specific_number_definition('right_side_number_before') is None:
-                        node_end.set_numbers_definition_field_name('right_side_number_before', 0)
-            else:
-                # przypadek gdy dany nod zaczyna dalej numeracje. wtedy numer przed nie będzie już potrzebny
-                # jesli nod nie ma numeracji
-                if node_end.node_has_numeration() and node_end.node_starts_numeration():
-                    node_end.set_numbers_definition_field_name('left_side_number_before', None)
-                    node_end.set_numbers_definition_field_name('right_side_number_before', None)
-                else:
-                    # jesli nod nie zaczyna numeracji wyzeruj jego numeracje
-                    node_end.set_node_has_no_numeration()
-
-        return
-
     def clean_numbers_definitions(self, data_level, polynum):
         nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
         # jesli nie ma wezlow z numeracja, to nie ma co robic
