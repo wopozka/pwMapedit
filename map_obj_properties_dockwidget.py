@@ -461,46 +461,58 @@ class MapObjPropDock(QDockWidget):
         # sprawdzic czy nie trzeba wlaczac i wylaczac sygnalu
         # self.elements_table.itemSelectionChanged.disconnect()
         self.elements_table.clear()
-        for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
-            data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
+        if isinstance(self.map_object_id, map_items.PoiAsPixmap):
+            data_level = self.map_object_id.data0.get_data_levels()[0]
             data_item = ElementsItem(self.elements_table)
             data_item.setText(0, str('Data' + str(data_level)))
-            # poly_pp = QPainterPath()
-            outer_poly = None
-            for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
-                if outer_poly is None:
-                    poly_pp = QPainterPath()
-                    outer_poly = ElementsItem(data_item)
-                    lat, lot = poly[0].get_geo_coordinates()
-                    outer_poly.setText(0, f'Poly: {poly_num}')
-                    outer_poly.setText(1, 'Outer')
-                    outer_poly.setText(2, f"{lat:.6f}, {lot:.6f}")
-                    outer_poly.setData(0, Qt.UserRole, data_level_num)
-                    outer_poly.setData(1, Qt.UserRole, poly_num)
-                    poly_pp.addPolygon(data_level_polygons[poly_num])
-                    outer_poly.setData(2, Qt.UserRole, poly_pp)
-                    if not self.map_object_id.is_polygon():
-                        outer_poly = None
-                    continue
-                else:
-                    poly_item = ElementsItem()
-                    lat, lot = poly[0].get_geo_coordinates()
-                    poly_item.setText(0, f'Poly: {poly_num}')
-                    poly_item.setText(2, f"{lat:.6f}, {lot:.6f}")
-                poly_item.setData(0, Qt.UserRole, data_level_num)
-                poly_item.setData(1, Qt.UserRole, poly_num)
-                poly_pp1 = QPainterPath()
-                poly_pp1.addPolygon(data_level_polygons[poly_num])
-                poly_item.setData(2, Qt.UserRole, poly_pp1)
-                if poly_pp.contains(poly_pp1):
-                    outer_poly.addChild(poly_item)
-                    poly_item.setText(1, 'Inner')
-                    poly_pp.addPath(poly_pp1)
-                else:
-                    data_item.addChild(poly_item)
-                    poly_item.setText(1, 'outer')
-                    outer_poly = poly_item
-                    poly_pp = poly_pp1
+            scene_coords = self.map_object_id.data0.get_polys_for_data_level(data_level)[0][0]
+            lat, lon = scene_coords.get_geo_coordinates()
+            poly_item = ElementsItem(data_item)
+            poly_item.setText(0, 'POI')
+            poly_item.setText(1, '')
+            poly_item.set(2, f"{lat:.6f}, {lon:.6f}")
+            poly_item.setData(2, Qt.UserRole, scene_coords)
+        else:
+            for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+                data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
+                data_item = ElementsItem(self.elements_table)
+                data_item.setText(0, str('Data' + str(data_level)))
+                # poly_pp = QPainterPath()
+                outer_poly = None
+                for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
+                    if outer_poly is None:
+                        poly_pp = QPainterPath()
+                        outer_poly = ElementsItem(data_item)
+                        lat, lon = poly[0].get_geo_coordinates()
+                        outer_poly.setText(0, f'Poly: {poly_num}')
+                        outer_poly.setText(1, 'Outer')
+                        outer_poly.setText(2, f"{lat:.6f}, {lon:.6f}")
+                        outer_poly.setData(0, Qt.UserRole, data_level_num)
+                        outer_poly.setData(1, Qt.UserRole, poly_num)
+                        poly_pp.addPolygon(data_level_polygons[poly_num])
+                        outer_poly.setData(2, Qt.UserRole, poly_pp)
+                        if not self.map_object_id.is_polygon():
+                            outer_poly = None
+                        continue
+                    else:
+                        poly_item = ElementsItem()
+                        lat, lon = poly[0].get_geo_coordinates()
+                        poly_item.setText(0, f'Poly: {poly_num}')
+                        poly_item.setText(2, f"{lat:.6f}, {lon:.6f}")
+                    poly_item.setData(0, Qt.UserRole, data_level_num)
+                    poly_item.setData(1, Qt.UserRole, poly_num)
+                    poly_pp1 = QPainterPath()
+                    poly_pp1.addPolygon(data_level_polygons[poly_num])
+                    poly_item.setData(2, Qt.UserRole, poly_pp1)
+                    if poly_pp.contains(poly_pp1):
+                        outer_poly.addChild(poly_item)
+                        poly_item.setText(1, 'Inner')
+                        poly_pp.addPath(poly_pp1)
+                    else:
+                        data_item.addChild(poly_item)
+                        poly_item.setText(1, 'outer')
+                        outer_poly = poly_item
+                        poly_pp = poly_pp1
         # sprawdzic czy nie trzeba wlaczac i wylaczac sygnalu
         # self.elements_table.itemSelectionChanged.connect(self.elements_item_highlighted)
 
