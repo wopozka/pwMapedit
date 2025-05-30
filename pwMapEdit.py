@@ -11,6 +11,7 @@ import mapData
 import mapCanvas
 import mapRender
 import map_items
+import pwmapedit_toolbar
 import map_object_properties
 import projection
 import map_obj_properties_dockwidget
@@ -316,8 +317,8 @@ class pwMapeditPy(QMainWindow):
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
         # lets add toolbar
-        toolbar = QToolBar("My main toolbar")
-        self.addToolBar(toolbar)
+        toolbar = pwmapedit_toolbar.PwMapeditToolbar("My main toolbar", self)
+        self.addToolBar(Qt.TopToolBarArea, toolbar)
         self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
