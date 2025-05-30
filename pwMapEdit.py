@@ -307,10 +307,10 @@ class pwMapeditPy(QMainWindow):
         self.menu_tools_set_mode()
         self._last_background_action = None
 
-    def background_on_of(self):
+    def background_on_off(self):
         if self._last_background_action is None:
             self._last_background_action = self.weblayers_actions_group.actions()[0]
-        self._last_background_action.triggered()
+        self._last_background_action.trigger()
 
 
     def initialize(self):
@@ -603,7 +603,7 @@ class pwMapeditPy(QMainWindow):
         self.delete_key_action = QShortcut(QKeySequence.Delete, self)
         self.delete_key_action.activated.connect(self.delete)
         background_picture = QShortcut(QKeySequence(Qt.Key_E), self)
-        background_picture.activated.connect(self.background_on_of)
+        background_picture.activated.connect(self.background_on_off)
         go_to_position_action = QShortcut(QKeySequence('Ctrl+g'), self)
         go_to_position_action.activated.connect(self.go_to_position)
 
