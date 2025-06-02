@@ -65,3 +65,7 @@ class PwMapeditToolbar(QToolBar):
                 self.tools_action_group.addAction(self.actions[tool])
                 self.actions[tool].setCheckable(True)
                 self.actions[tool].setChecked(False)
+
+    def set_tool(self, tool):
+        if tool in self.actions:
+            self.actions[tool].setChecked(True)

@@ -294,6 +294,7 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions = list()
         self.delete_key_action = None
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
+        self.tool_bar = None
         self.initialize()
         self.generate_shortcuts()
         self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
@@ -317,8 +318,8 @@ class pwMapeditPy(QMainWindow):
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
         # lets add toolbar
-        toolbar = pwmapedit_toolbar.PwMapeditToolbar("My main toolbar", self)
-        self.addToolBar(Qt.TopToolBarArea, toolbar)
+        self.tool_bar = pwmapedit_toolbar.PwMapeditToolbar("My main toolbar", self)
+        self.addToolBar(Qt.TopToolBarArea, self.tool_bar)
         self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
@@ -404,7 +405,7 @@ class pwMapeditPy(QMainWindow):
         # Tools submenu
         tools_menu = menu.addMenu('&Tools')
         self.tools_actions_group = QActionGroup(self)
-        for action in self._create_tools_actions():
+        for action_id, action in self._create_tools_actions().items():
             if action is not None:
                 tools_menu.addAction(action)
                 self.tools_actions_group.addAction(action)
@@ -412,7 +413,7 @@ class pwMapeditPy(QMainWindow):
                 tools_menu.addSeparator()
 
         object_menu = tools_menu.addMenu('&Objects')
-        for action in self._create_object_actions():
+        for action_id, action in self._create_object_actions().items():
             if action is not None:
                 object_menu.addAction(action)
                 self.tools_actions_group.addAction(action)
@@ -508,53 +509,56 @@ class pwMapeditPy(QMainWindow):
         return select_actions
 
     def _create_tools_actions(self):
-        tools_action = list()
+        tools_action = dict()
         # tools_action.append(QAction('&Drag map', self))
         # tools_action[-1].setData('drag_map')
-        tools_action.append(QAction('&Zoom map', self))
-        tools_action[-1].setData(pwmapedit_constants.Tools.ZOOM_MAP)
-        tools_action.append(QAction('&Select objects', self))
-        tools_action[-1].setData(pwmapedit_constants.Tools.SELECT_OBJECTS)
-        tools_action[-1].setShortcut(QKeySequence('s'))
-        tools_action.append(QAction('&Rotate object', self))
-        tools_action[-1].setData(pwmapedit_constants.Tools.ROTATE_OBJECTS)
-        tools_action.append(QAction('&Edit nodes', self))
-        tools_action[-1].setData(pwmapedit_constants.Tools.EDIT_NODES)
-        tools_action[-1].setShortcut(QKeySequence('m'))
-        for act in tools_action:
+        tools_action[pwmapedit_constants.Tools.ZOOM_MAP] = QAction('&Zoom map', self)
+        tools_action[pwmapedit_constants.Tools.ZOOM_MAP].setData(pwmapedit_constants.Tools.ZOOM_MAP)
+        tools_action[pwmapedit_constants.Tools.SELECT_OBJECTS] = QAction('&Select objects', self)
+        tools_action[pwmapedit_constants.Tools.SELECT_OBJECTS].setData(pwmapedit_constants.Tools.SELECT_OBJECTS)
+        tools_action[pwmapedit_constants.Tools.SELECT_OBJECTS].setShortcut(QKeySequence('s'))
+        tools_action[pwmapedit_constants.Tools.ROTATE_OBJECTS] = QAction('&Rotate object', self)
+        tools_action[pwmapedit_constants.Tools.ROTATE_OBJECTS].setData(pwmapedit_constants.Tools.ROTATE_OBJECTS)
+        tools_action[pwmapedit_constants.Tools.EDIT_NODES] = QAction('&Edit nodes', self)
+        tools_action[pwmapedit_constants.Tools.EDIT_NODES].setData(pwmapedit_constants.Tools.EDIT_NODES)
+        tools_action[pwmapedit_constants.Tools.EDIT_NODES].setShortcut(QKeySequence('m'))
+        for act_key, act in tools_action.items():
             act.setCheckable(True)
             if act.data() == pwmapedit_constants.Tools.SELECT_OBJECTS:
                 act.setChecked(True)
             act.triggered.connect(self.menu_tools_set_mode)
-        return tuple(tools_action)
+        return tools_action
 
     def _create_object_actions(self):
-        obj_actions = list()
-        obj_actions.append(QAction('&Point', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POINT)
-        obj_actions[-1].setShortcut(QKeySequence('a'))
-        obj_actions.append(None)
-        obj_actions.append(QAction('&Polyline', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE)
-        obj_actions[-1].setShortcut(QKeySequence('b'))
-        obj_actions.append(QAction('&Polyline: circle', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE)
-        obj_actions.append(None)
-        obj_actions.append(QAction('&Polygon', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON)
-        obj_actions[-1].setShortcut(QKeySequence('f'))
-        obj_actions.append(QAction('&Polygon: stripe', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE)
-        obj_actions.append(QAction('&Polygon: rectangle', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_RECTANGLE)
-        obj_actions.append(QAction('&Polygon: disc', self))
-        obj_actions[-1].setData(pwmapedit_constants.Tools.CREATE_POLYGON_DISC)
-        for act in obj_actions:
+        separator = 0
+        obj_actions = dict()
+        obj_actions[pwmapedit_constants.Tools.CREATE_POINT] = QAction('&Point', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POINT].setData(pwmapedit_constants.Tools.CREATE_POINT)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POINT].setShortcut(QKeySequence('a'))
+        obj_actions[separator] = None
+        separator += 1
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYLINE] = QAction('&Polyline', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYLINE].setData(pwmapedit_constants.Tools.CREATE_POLYLINE)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYLINE].setShortcut(QKeySequence('b'))
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE] =QAction('&Polyline: circle', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE].setData(pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE)
+        obj_actions[separator] = None
+        separator += 1
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON] = QAction('&Polygon', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON].setData(pwmapedit_constants.Tools.CREATE_POLYGON)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON].setShortcut(QKeySequence('f'))
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE] = QAction('&Polygon: stripe', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE].setData(pwmapedit_constants.Tools.CREATE_POLYGON_STRIPE)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_RECTANGLE] = QAction('&Polygon: rectangle', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_RECTANGLE].setData(pwmapedit_constants.Tools.CREATE_POLYGON_RECTANGLE)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_DISC] = QAction('&Polygon: disc', self)
+        obj_actions[pwmapedit_constants.Tools.CREATE_POLYGON_DISC].setData(pwmapedit_constants.Tools.CREATE_POLYGON_DISC)
+        for act_key, act in obj_actions.items():
             if act is None:
                 continue
             act.setCheckable(True)
             act.triggered.connect(self.menu_tools_set_mode)
-        return tuple(obj_actions)
+        return obj_actions
 
     def close_app(self):
         self.weblayers_cache_folder.cleanup()
@@ -750,6 +754,7 @@ class pwMapeditPy(QMainWindow):
         self.map_canvas.clearSelection()
         self.view.delete_created_poly_shape()
         self.pw_mapedit_mode = self.tools_actions_group.checkedAction().data()
+        self.tool_bar.set_tool(self.pw_mapedit_mode)
         print(self.pw_mapedit_mode)
 
     def menu_weblayer_set_weblayer(self):
