@@ -11,9 +11,11 @@ class PwMapeditToolbar(QToolBar):
         self.actions['save'] = QAction('Zapisz')
         save_icon = QIcon(os.path.join(self.icons_folder, 'save_48.png'))
         self.actions['save'].setIcon(save_icon)
+        self.actions['save'].triggered.connect(self.save_map)
         self.insertAction(None, self.actions['save'])
         self.actions['open'] = QAction('Otwórz')
         self.actions['open'].setIcon(QIcon(os.path.join(self.icons_folder, 'open_48.png')))
+        self.actions['open'].triggered.connect(self.open_file)
         self.insertAction(None, self.actions['open'])
         self.addSeparator()
         self.actions['redo'] = QAction('Redo')
@@ -59,6 +61,9 @@ class PwMapeditToolbar(QToolBar):
         self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYGON])
         self.add_tools_actions_to_group()
 
+    def open_file(self):
+        self.parent().open_file()
+
     def add_tools_actions_to_group(self):
         for tool in pwmapedit_constants.Tools:
             if tool in self.actions:
@@ -66,6 +71,12 @@ class PwMapeditToolbar(QToolBar):
                 self.actions[tool].setCheckable(True)
                 self.actions[tool].setChecked(False)
 
+    def save_map(self):
+        self.parent().save_map()
+
     def set_tool(self, tool):
         if tool in self.actions:
             self.actions[tool].setChecked(True)
+
+    def tools_actions_trigered(self):
+        self.parent().toolbar_actions_trigered()
