@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QToolBar, QAction, QActionGroup
 from PyQt5.QtGui import QIcon
 import os.path
+import pwmapedit_constants
 
 class PwMapeditToolbar(QToolBar):
     def __init__(self, title, parent):
@@ -35,26 +36,32 @@ class PwMapeditToolbar(QToolBar):
         self.insertAction(None, self.actions['paste'])
         self.addSeparator()
         self.tools_action_group = QActionGroup(self)
-        self.actions['select'] = QAction('Zaznacz')
-        self.actions['select'].setIcon(QIcon(os.path.join(self.icons_folder, 'select_48.png')))
-        self.insertAction(None, self.actions['select'])
-        self.actions['edit_nodes'] = QAction('Edytuj węzły')
-        self.actions['edit_nodes'].setIcon(QIcon(os.path.join(self.icons_folder, 'nodes_48.png')))
-        self.insertAction(None, self.actions['edit_nodes'])
+        self.actions[pwmapedit_constants.Tools.SELECT_OBJECTS] = QAction('Zaznacz')
+        self.actions[pwmapedit_constants.Tools.SELECT_OBJECTS].setIcon(QIcon(os.path.join(self.icons_folder,
+                                                                                          'select_48.png')))
+        self.insertAction(None, self.actions[pwmapedit_constants.Tools.SELECT_OBJECTS])
+        self.actions[pwmapedit_constants.Tools.EDIT_NODES] = QAction('Edytuj węzły')
+        self.actions[pwmapedit_constants.Tools.EDIT_NODES].setIcon(QIcon(os.path.join(self.icons_folder,
+                                                                                      'nodes_48.png')))
+        self.insertAction(None, self.actions[pwmapedit_constants.Tools.EDIT_NODES])
         self.addSeparator()
-        self.actions['create_poi'] = QAction('Utwórz poi')
-        self.actions['create_poi'].setIcon(QIcon(os.path.join(self.icons_folder, 'create_poi_48.png')))
-        self.insertAction(None, self.actions['create_poi'])
-        self.actions['create_polyline'] = QAction('Utwórz polyline')
-        self.actions['create_polyline'].setIcon(QIcon(os.path.join(self.icons_folder, 'create_polyline_48.png')))
-        self.insertAction(None, self.actions['create_polyline'])
-        self.actions['create_polygon'] = QAction('Utwórz polygon')
-        self.actions['create_polygon'].setIcon(QIcon(os.path.join(self.icons_folder, 'create_polygon_48.png')))
-        self.insertAction(None, self.actions['create_polygon'])
+        self.actions[pwmapedit_constants.Tools.CREATE_POINT] = QAction('Utwórz poi')
+        self.actions[pwmapedit_constants.Tools.CREATE_POINT].setIcon(QIcon(os.path.join(self.icons_folder,
+                                                                                        'create_poi_48.png')))
+        self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POINT])
+        self.actions[pwmapedit_constants.Tools.CREATE_POLYLINE] = QAction('Utwórz polyline')
+        self.actions[pwmapedit_constants.Tools.CREATE_POLYLINE].setIcon(QIcon(os.path.join(self.icons_folder,
+                                                                                           'create_polyline_48.png')))
+        self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYLINE])
+        self.actions[pwmapedit_constants.Tools.CREATE_POLYGON] = QAction('Utwórz polygon')
+        self.actions[pwmapedit_constants.Tools.CREATE_POLYGON].setIcon(QIcon(os.path.join(self.icons_folder,
+                                                                                          'create_polygon_48.png')))
+        self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYGON])
         self.add_tools_actions_to_group()
 
     def add_tools_actions_to_group(self):
-        for tool in ('select', 'edit_nodes', 'create_poi', 'create_polyline', 'create_polygon'):
-            self.tools_action_group.addAction(self.actions[tool])
-            self.actions[tool].setCheckable(True)
-            self.actions[tool].setChecked(False)
+        for tool in pwmapedit_constants.Tools:
+            if tool in self.actions:
+                self.tools_action_group.addAction(self.actions[tool])
+                self.actions[tool].setCheckable(True)
+                self.actions[tool].setChecked(False)
