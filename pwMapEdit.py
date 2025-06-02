@@ -801,6 +801,9 @@ class pwMapeditPy(QMainWindow):
     def save_map_as(self):
         return
 
+    def toolbar_action_trigered(self, action_name):
+        print(action_name)
+
 if __name__ == "__main__":
 
     file_to_open = ''
