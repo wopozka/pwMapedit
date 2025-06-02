@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QToolBar, QAction
+from PyQt5.QtWidgets import QToolBar, QAction, QActionGroup
 from PyQt5.QtGui import QIcon
 import os.path
 
@@ -34,6 +34,7 @@ class PwMapeditToolbar(QToolBar):
         self.actions['paste'].setIcon(QIcon(os.path.join(self.icons_folder, 'paste_48.png')))
         self.insertAction(None, self.actions['paste'])
         self.addSeparator()
+        self.tools_action_group = QActionGroup(self)
         self.actions['select'] = QAction('Zaznacz')
         self.actions['select'].setIcon(QIcon(os.path.join(self.icons_folder, 'select_48.png')))
         self.insertAction(None, self.actions['select'])
@@ -50,3 +51,10 @@ class PwMapeditToolbar(QToolBar):
         self.actions['create_polygon'] = QAction('Utwórz polygon')
         self.actions['create_polygon'].setIcon(QIcon(os.path.join(self.icons_folder, 'create_polygon_48.png')))
         self.insertAction(None, self.actions['create_polygon'])
+        self.add_tools_actions_to_group()
+
+    def add_tools_actions_to_group(self):
+        for tool in ('select', 'edit_nodes', 'create_poi', 'create_polyline', 'create_polygon'):
+            self.tools_action_group.addAction(self.actions[tool])
+            self.actions[tool].setCheckable(True)
+            self.actions[tool].setChecked(False)
