@@ -71,7 +71,7 @@ class PwMapeditToolbar(QToolBar):
                 self.actions[tool].setCheckable(True)
                 self.actions[tool].setChecked(False)
                 self.actions[tool].setData(tool)
-                self.actions[tool].triggered.connect(self.tools_actions_trigered)
+        self.tools_action_group.triggered.connect(self.tools_actions_trigered)
 
     def save_map(self):
         self.parent().save_map()
@@ -80,5 +80,5 @@ class PwMapeditToolbar(QToolBar):
         if tool in self.actions:
             self.actions[tool].setChecked(True)
 
-    def tools_actions_trigered(self):
-        self.parent().toolbar_action_trigered(self.sender().data())
+    def tools_actions_trigered(self, action_button):
+        self.parent().toolbar_action_trigered(action_button.data())

@@ -295,6 +295,7 @@ class pwMapeditPy(QMainWindow):
         self.delete_key_action = None
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.tool_bar = None
+        self.tools_action = dict()
         self.initialize()
         self.generate_shortcuts()
         self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
@@ -409,14 +410,17 @@ class pwMapeditPy(QMainWindow):
             if action is not None:
                 tools_menu.addAction(action)
                 self.tools_actions_group.addAction(action)
+                self.tools_action[action_id] = action
             else:
                 tools_menu.addSeparator()
+
 
         object_menu = tools_menu.addMenu('&Objects')
         for action_id, action in self._create_object_actions().items():
             if action is not None:
                 object_menu.addAction(action)
                 self.tools_actions_group.addAction(action)
+                self.tools_action[action_id] = action
             else:
                 object_menu.addSeparator()
 
@@ -802,7 +806,7 @@ class pwMapeditPy(QMainWindow):
         return
 
     def toolbar_action_trigered(self, action_name):
-        print(action_name)
+        self.tools_action[action_name].trigger()
 
 if __name__ == "__main__":
 
