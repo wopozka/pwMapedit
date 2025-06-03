@@ -623,8 +623,6 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_3)
         self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
-        self.delete_key_action = QShortcut(QKeySequence.Delete, self)
-        self.delete_key_action.activated.connect(self.delete)
         background_picture = QShortcut(QKeySequence(Qt.Key_E), self)
         background_picture.activated.connect(self.background_on_off)
         go_to_position_action = QShortcut(QKeySequence('Ctrl+g'), self)
