@@ -3,7 +3,7 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
     QProgressBar, QLabel
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack, QInputDialog
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack, QInputDialog, QMessageBox
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtGui import QKeySequence, QClipboard
 import sys
@@ -25,17 +25,26 @@ class MapUndoStack(QUndoStack):
         self.parent = parent
         self.undo_buttons = None
         self.redo_buttons = None
+        self.file_modificaton_number = 0
         super(MapUndoStack, self).__init__(parent)
+
+    def file_needs_saving(self):
+        return True if self.file_modificaton_number else False
+
+    def file_saved(self):
+        self.file_modificaton_number = 0
 
     def push(self, command, q_undo_command=None):
         super().push(command)
         for undo_button in self.undo_buttons:
             undo_button.setToolTip(self.undoText())
+        self.file_modificaton_number += 1
 
     def redo(self):
+        if self.canRedo():
+            self.file_modificaton_number += 1
         super().redo()
         self.set_buttons_tooltips()
-
 
     def set_redo_button(self, redo_button):
         if self.redo_buttons is None:
@@ -50,6 +59,8 @@ class MapUndoStack(QUndoStack):
             self.undo_buttons.append(undo_button)
 
     def undo(self):
+        if self.canUndo():
+            self.file_modificaton_number -= 1
         super().undo()
         self.set_buttons_tooltips()
 
@@ -579,12 +590,23 @@ class pwMapeditPy(QMainWindow):
         return obj_actions
 
     def close_app(self):
-        self.weblayers_cache_folder.cleanup()
         self.close()
 
     def closeEvent(self, event):
-        self.weblayers_cache_folder.cleanup()
-        super().closeEvent(event)
+        close_app = True
+        if self.undo_redo_stack.file_needs_saving():
+            ask_yes_no = QMessageBox(self)
+            ask_yes_no.setWindowTitle('Zamykanie aplikacji')
+            ask_yes_no.setText('Plik niezapisany. Czy na pewno zamknąć?')
+            ask_yes_no.setStandardButtons(QMessageBox.Ok| QMessageBox.Cancel)
+            return_value = ask_yes_no.exec()
+            if return_value == QMessageBox.Cancel:
+                close_app = False
+        if close_app:
+            self.weblayers_cache_folder.cleanup()
+            super().closeEvent(event)
+        else:
+            event.ignore()
 
     def copy_action(self):
         if self.focusWidget() is not None and hasattr(self.focusWidget(), 'copy'):
@@ -813,6 +835,7 @@ class pwMapeditPy(QMainWindow):
             self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
             self.worker_file_parser.progress.connect(self.update_progress_bar)
             self.open_save_thread.start()
+            self.undo_redo_stack.file_saved()
 
     def save_map_as(self):
         return
