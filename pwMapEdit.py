@@ -23,30 +23,41 @@ import tempfile
 class MapUndoStack(QUndoStack):
     def __init__(self, parent):
         self.parent = parent
-        self.undo_button = None
-        self.redo_button = None
+        self.undo_buttons = None
+        self.redo_buttons = None
         super(MapUndoStack, self).__init__(parent)
 
     def push(self, command, q_undo_command=None):
         super().push(command)
-        self.undo_button.setToolTip(self.undoText())
+        for undo_button in self.undo_buttons:
+            undo_button.setToolTip(self.undoText())
 
     def redo(self):
         super().redo()
-        self.undo_button.setToolTip(self.undoText())
-        self.redo_button.setToolTip(self.redoText())
+        self.set_buttons_tooltips()
+
 
     def set_redo_button(self, redo_button):
-        self.redo_button = redo_button
+        if self.redo_buttons is None:
+            self.redo_buttons = [redo_button]
+        else:
+            self.redo_buttons.append(redo_button)
 
     def set_undo_button(self, undo_button):
-        self.undo_button = undo_button
+        if self.undo_buttons is None:
+            self.undo_buttons = [undo_button]
+        else:
+            self.undo_buttons.append(undo_button)
 
     def undo(self):
         super().undo()
-        self.undo_button.setToolTip(self.undoText())
-        self.redo_button.setToolTip(self.redoText())
+        self.set_buttons_tooltips()
 
+    def set_buttons_tooltips(self):
+        for undo_button in self.undo_buttons:
+            undo_button.setToolTip(self.undoText())
+        for redo_button in self.redo_buttons:
+            redo_button.setToolTip(self.redoText())
 
 class MapFileOpener(QObject):
     # class for reading the file in background
@@ -321,6 +332,8 @@ class pwMapeditPy(QMainWindow):
         # lets add toolbar
         self.tool_bar = pwmapedit_toolbar.PwMapeditToolbar("My main toolbar", self)
         self.addToolBar(Qt.TopToolBarArea, self.tool_bar)
+        self.undo_redo_stack.set_redo_button(self.tool_bar.get_redo_button())
+        self.undo_redo_stack.set_undo_button(self.tool_bar.get_undo_button())
         self.setStatusBar(self.status_bar)
         self.generate_menus()
         self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
@@ -355,7 +368,6 @@ class pwMapeditPy(QMainWindow):
         select_menu = edit_menu.addMenu('&Select')
         edit_menu.addAction(QAction('&Unselect', self))
         edit_menu.addAction(QAction('&Find', self))
-        edit_menu.addAction(QAction('&Delete', self))
 
         # Select submenu
         for action in self._create_select_actions():
@@ -488,6 +500,8 @@ class pwMapeditPy(QMainWindow):
         edit_actions[-1].triggered.connect(self.paste_action)
         edit_actions.append(QAction('&Paste here', self))
         edit_actions.append(QAction('&Delete', self))
+        edit_actions[-1].setShortcut(QKeySequence.Delete)
+        edit_actions[-1].triggered.connect(self.delete)
         edit_actions.append(None)
         return edit_actions
 
