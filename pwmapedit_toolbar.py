@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import QToolBar, QAction, QActionGroup
+from PyQt5.QtWidgets import QToolBar, QAction, QActionGroup, QComboBox
 from PyQt5.QtGui import QIcon
 import os.path
 import pwmapedit_constants
 
 class PwMapeditToolbar(QToolBar):
+    maps_scales_to_select = (3000, 2000, 1500, 1000, 700, 500, 300, 200, 150, 100, 70, 50, 30, 20, 15, 10, 7, 5, 3, 2, 1.5, 1,
+                   0.7, 0.5, 0.3, 0.2, 0.15, 0.1, 0.07, 0.05, 0.03, 0.02, 0.015, 0.01,)
     def __init__(self, title, parent):
         self.actions = {}
         self.icons_folder = os.path.join('icons', 'toolbar_icons')
@@ -42,6 +44,8 @@ class PwMapeditToolbar(QToolBar):
         self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYLINE])
         self.actions[pwmapedit_constants.Tools.CREATE_POLYGON] = QAction('Utwórz polygon')
         self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYGON])
+        self.scale_selector = self.create_scale_selector()
+        self.insertWidget(None, self.scale_selector)
         self.set_actions_icons()
         self.add_tools_actions_to_group()
 
@@ -68,6 +72,15 @@ class PwMapeditToolbar(QToolBar):
 
     def save_map(self):
         self.parent().save_map()
+
+    def create_scale_selector(self):
+        scale_km = QComboBox()
+        for km in self.maps_scales_to_select:
+            if km < 1:
+                scale_km.addItem(f'{1000 * km} m')
+            else:
+                scale_km.addItem(f'{km} km')
+        return scale_km
 
     def set_actions_icons(self):
         self.actions['save'].setIcon(QIcon(os.path.join(self.icons_folder, 'save_48.png')))
