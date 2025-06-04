@@ -3217,8 +3217,9 @@ class MapRuler(QGraphicsPathItem):
     brush = QBrush(Qt.black)
     ruler = QPainterPath()
     screen_coord_1 = QPoint(10, 10)
-    screen_coord_2 = QPoint(50, 10)
+    # screen_coord_2 = QPoint(50, 10)
     _accept_map_level_change = False
+    cm_per_inch = 2.54
 
     def __init__(self,  map_render, projection):
         self.map_render = map_render
@@ -3226,9 +3227,9 @@ class MapRuler(QGraphicsPathItem):
         super().__init__()
         self.geo_distance = None
         self.distance_label = None
-        self.draw_ruler()
         self.screen_dpi = self.map_render.physicalDpiX()
         print('Screen dpi: ', self.screen_dpi)
+        self.draw_ruler()
 
     @staticmethod
     def accept_map_level_change():
@@ -3238,7 +3239,8 @@ class MapRuler(QGraphicsPathItem):
         if self.distance_label is not None:
             self.remove_distance_label()
         point1 = self.map_render.mapToScene(self.screen_coord_1)
-        point2 = self.map_render.mapToScene(self.screen_coord_2)
+        # point2 = self.map_render.mapToScene(self.screen_coord_2)
+        point2 = self.calculate_point_2()
         self.calculate_geo_distance()
         # x = point1.x()
         # y_mod = point1.y() * 0.9
@@ -3283,17 +3285,20 @@ class MapRuler(QGraphicsPathItem):
         if self.geo_distance is not None:
             return
         point1 = self.map_render.mapToScene(self.screen_coord_1)
-        point2 = self.map_render.mapToScene(self.screen_coord_2)
+        point2 = self.calculate_point_2()
         start_point = self._projection.canvas_to_geo(point1.x(), point1.y())
         end_point = self._projection.canvas_to_geo(point2.x(), point2.y())
         # end_point1 = self._projection.canvas_to_geo(point1.x() + 1, point1.y())
         self.geo_distance = misc_functions.vincenty_distance(start_point, end_point)
         # print(misc_functions.vincenty_distance(start_point, end_point1))
 
+    def calculate_point_2(self):
+        point2 = self.screen_coord_1 + QPoint(int(self.screen_dpi/self.cm_per_inch), 0)
+        return self.map_render.mapToScene(point2)
+
     def get_map_scale(self):
         self.calculate_geo_distance()
-        return self.geo_distance / ((self.screen_coord_2.x() - self.screen_coord_1.x()) /
-                                    self.map_render.physicalDpiX() * 2.54 / 100)
+        return self.geo_distance * 100
 
 
 class PolygonAnnotation(QGraphicsPolygonItem):

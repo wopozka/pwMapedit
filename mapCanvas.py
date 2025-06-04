@@ -448,6 +448,7 @@ class mapCanvas(QGraphicsScene):
                 obj.decorate()
 
     def set_canvas_rectangle(self, map_bounding_box):
+        # o ile stopni rozszerzamy bounding box, aby nie bylo problemu z rysowaniem
         cor = 0.001
         start_x, start_y = self._projection.geo_to_canvas(map_bounding_box['N'] + cor, map_bounding_box['W'] - cor)
         end_x, end_y = self._projection.geo_to_canvas(map_bounding_box['S'] - cor, map_bounding_box['E'] + cor)
