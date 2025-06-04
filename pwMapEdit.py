@@ -331,6 +331,9 @@ class pwMapeditPy(QMainWindow):
         self.worker_file_parser = None
         self.menu_tools_set_mode()
         self._last_background_action = None
+        self.setAttribute(Qt.WA_NativeWindow)
+        print('window handle: ', self.window().windowHandle())
+        self.window().windowHandle().screenChanged.connect(self.screen_changed)
 
     def background_on_off(self):
         if self._last_background_action is None:
@@ -839,6 +842,9 @@ class pwMapeditPy(QMainWindow):
 
     def save_map_as(self):
         return
+
+    def screen_changed(self, screen):
+        print(self.view.physicalDpiX())
 
     def toolbar_action_trigered(self, action_name):
         self.tools_action[action_name].trigger()
