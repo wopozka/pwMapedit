@@ -44,6 +44,7 @@ class PwMapeditToolbar(QToolBar):
         self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYLINE])
         self.actions[pwmapedit_constants.Tools.CREATE_POLYGON] = QAction('Utwórz polygon')
         self.insertAction(None, self.actions[pwmapedit_constants.Tools.CREATE_POLYGON])
+        self.addSeparator()
         self.scale_selector = self.create_scale_selector()
         self.insertWidget(None, self.scale_selector)
         self.set_actions_icons()
