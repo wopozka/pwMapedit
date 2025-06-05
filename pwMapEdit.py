@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QAction, QActionGroup, \
-    QProgressBar, QLabel
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QShortcut, QUndoStack, QInputDialog, QMessageBox
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
-from PyQt5.QtGui import QKeySequence, QClipboard
+from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QProgressBar, QLabel
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QInputDialog, QMessageBox
+from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread
+from PyQt6.QtGui import QKeySequence, QClipboard, QAction, QActionGroup, QShortcut, QUndoStack
 import sys
 import mapData
 import mapCanvas
