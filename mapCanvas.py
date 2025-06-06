@@ -28,7 +28,7 @@ class mapCanvas(QGraphicsScene):
     closest_node_circle_definition.setZValue(150)
     closest_node_circle_definition.setPen(QPen(QColor("blue")))
     closest_node_circle_definition.setBrush(QBrush(QColor("blue")))
-    closest_node_circle_definition.setFlag(QGraphicsPathItem.ItemIgnoresTransformations, True)
+    closest_node_circle_definition.setFlag(QGraphicsPathItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
     closest_node_circle_definition.setOpacity(0.5)
     closest_node_min_distance = 15
     closest_node_circle_pen = QPen(QColor("blue"))

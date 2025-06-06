@@ -1647,7 +1647,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     closest_node_circle_brush = QBrush(QColor("blue"))
     selected_pen = QPen(QColor("red"))
     selected_pen.setCosmetic(True)
-    selected_pen.setStyle(Qt.DotLine)
+    selected_pen.setStyle(Qt.PenStyle.DotLine)
     selected_pen.setWidth(4)
     hovered_over_pen = QPen(QColor('red'))
     hovered_over_pen.setWidth(1)
@@ -3155,8 +3155,8 @@ class GripItem(QGraphicsPathItem):
 
 
 class DirectionArrowHead(QGraphicsPathItem):
-    pen = QPen(Qt.black, 1)
-    brush = QBrush(Qt.black)
+    pen = QPen(Qt.GlobalColor.black, 1)
+    brush = QBrush(Qt.GlobalColor.black)
     # pen.setCosmetic(True)
     _accept_map_level_change = False
 
@@ -3212,9 +3212,9 @@ class MapRulerLabel(QGraphicsSimpleTextItem):
 
 
 class MapRuler(QGraphicsPathItem):
-    pen = QPen(Qt.black, 2)
+    pen = QPen(Qt.GlobalColor.black, 2)
     pen.setCosmetic(True)
-    brush = QBrush(Qt.black)
+    brush = QBrush(Qt.GlobalColor.black)
     ruler = QPainterPath()
     screen_coord_1 = QPoint(10, 10)
     # screen_coord_2 = QPoint(50, 10)
@@ -3305,7 +3305,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
     # https://stackoverflow.com/questions/77350670/how-to-insert-a-vertex-into-a-qgraphicspolygonitem
     _threshold = None
     _pen = QPen(QColor("green"), 2)
-    normalBrush = QBrush(Qt.NoBrush)
+    normalBrush = QBrush(Qt.BrushStyle.NoBrush)
     hoverBrush = QBrush(QColor(255, 0, 0, 100))
 
     def __init__(self, *args):

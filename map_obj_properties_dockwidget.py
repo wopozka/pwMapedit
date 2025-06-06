@@ -794,7 +794,7 @@ class ExtrasTable(QTableWidget):
     def __init__(self, rows, columns, parent):
         super(ExtrasTable, self).__init__(rows, columns, parent)
         self.setHorizontalHeaderLabels(['Klucz', 'Wartość'])
-        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
         self.current_table_content = list()
 
     # https://stackoverflow.com/questions/65371143/create-a-context-menu-with-pyqt5
@@ -918,18 +918,18 @@ class TypeComboBox(QComboBox):
     def __init__(self, parent=None):
         super(TypeComboBox, self).__init__(parent)
 
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setEditable(True)
 
         # add a filter model to filter matching items
         self.pFilterModel = QSortFilterProxyModel(self)
-        self.pFilterModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.pFilterModel.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.pFilterModel.setSourceModel(self.model())
 
         # add a completer, which uses the filter model
         self.completer = QCompleter(self.pFilterModel, self)
         # always show all (filtered) completions
-        self.completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self.completer.setCompletionMode(QCompleter.CompletionMode.UnfilteredPopupCompletion)
         self.setCompleter(self.completer)
 
         # connect signals
@@ -1052,7 +1052,7 @@ class ElementsTable(QTreeWidget):
         super(ElementsTable, self).__init__(parent)
         self.setColumnCount(5)
         self.setHeaderLabels(['Nr Data/Nr poly', 'Inner/Outer', 'Lat/Lon 1 punkt', 'Węzły', 'Obszar'])
-        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
         # self.customContextMenuRequested.connect(self.context_menu_requested)
         # self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         # self.setSortingEnabled(True)

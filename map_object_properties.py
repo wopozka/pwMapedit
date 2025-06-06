@@ -1,9 +1,9 @@
 import os.path
 import glob
 import json
-from PyQt5.QtGui import QPixmap, QColor, QPen, QFont, QBrush, QPainterPath
-from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
+from PyQt6.QtGui import QPixmap, QColor, QPen, QFont, QBrush, QPainterPath
+from PyQt6.QtCore import Qt, QPointF
+# from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsTextItem
 
 import map_items
 from icons.type_aliases import type_2_alias
@@ -26,7 +26,7 @@ class MapObjectsProperties(object):
 
         # polylines definitions
         #dictionary where key is Type
-        self.polyline_properties_colour = {0: Qt.black,
+        self.polyline_properties_colour = {0: Qt.GlobalColor.black,
                                           0x1: QColor('#0000ff'), # Motorway
                                           0x2: QColor('#cc00ff'), # Principal Highway
                                           0x3: QColor('#bd3020'), # Principal Highway
@@ -35,21 +35,21 @@ class MapObjectsProperties(object):
                                           0x6: QColor('#404040'), # Residential street
                                           0x7: QColor('#909090'), # Alleyway
                                           0x8: QColor('#ff6500'), # highway ramp low speed
-                                          0x9: Qt.blue,           # highway ramp high speed
+                                          0x9: Qt.GlobalColor.blue,           # highway ramp high speed
                                           0xa: QColor('lightgrey'), # unpaved road
                                           0xb: QColor('#ffff8b'),  # highway connector
                                           0xc: QColor('darkorange'), # rondo
                                           0xd: QColor('brown'), # bike route
                                           0xe: QColor('#bd3020'), # tunel
                                           0xf: QColor('lightgrey'), # unpaved 4x4
-                                          0x14: Qt.black, # railroad
+                                          0x14: Qt.GlobalColor.black, # railroad
                                           0x15: QColor('#bdca8b'), # coastline
                                           0x16: QColor('#bd6520'), # walkway
-                                          0x18: Qt.blue,
-                                          0x19: Qt.green,  # timezone
+                                          0x18: Qt.GlobalColor.blue,
+                                          0x19: Qt.GlobalColor.green,  # timezone
                                           0x1a: QColor('#00ffff"'),
                                           0x1c: QColor('gray'),
-                                          0x1f: Qt.blue, # rzeka
+                                          0x1f: Qt.GlobalColor.blue, # rzeka
                                           0x20: QColor("#AAAA00"),  # elevation minor land contour
                                           0x21: QColor("#AAAA00"),  # elevation interm land contour
                                           0x22: QColor("#AAAA00"),  # elevation major land contour
@@ -57,31 +57,31 @@ class MapObjectsProperties(object):
                                           0x24: QColor('#39caff'),  # elevation interm depth contour
                                           0x25: QColor('#39caff'),  # elevation major depth contour
                                           0x26: QColor('#39caff'),  # strumień okresowy
-                                          0x27: Qt.blue,            # airport runway centerline
-                                          0x28: Qt.gray,            # oil or water pipeline
-                                          0x29: Qt.black,           # power line
-                                          0x2a: Qt.red,             # marine boundary
+                                          0x27: Qt.GlobalColor.blue,            # airport runway centerline
+                                          0x28: Qt.GlobalColor.gray,            # oil or water pipeline
+                                          0x29: Qt.GlobalColor.black,           # power line
+                                          0x2a: Qt.GlobalColor.red,             # marine boundary
                                           0x2b: QColor('#FAA500'),  # marine hazard
-                                          0x2f: Qt.blue, # znak drogowy
-                                          0x4b: Qt.red,
+                                          0x2f: Qt.GlobalColor.blue, # znak drogowy
+                                          0x4b: Qt.GlobalColor.red,
                                           0x10e00: QColor('#ff0000'),  # hiking trial red
                                           0x10e01: QColor('#ffff41'),  # hiking trial yellow
                                           0x10e02: QColor('#399520'),  # hiking trial green
                                           0x10e03: QColor('#3965ff'),  # hiking trial blue
-                                          0x10e04: Qt.black,           # hiking trial czarny
+                                          0x10e04: Qt.GlobalColor.black,           # hiking trial czarny
                                           0x10e07: QColor('#a959a9"'), # hiking trial multicolor
-                                          0x10e08: Qt.red,             # rowerowy czerwony
+                                          0x10e08: Qt.GlobalColor.red,             # rowerowy czerwony
                                           0x10e09: QColor('#ffff41'),  # rowerowy zolty
                                           0x10e0a: QColor('#ffff41'),  # rowerowy zielony
                                           0x10e0b: QColor('#3965ff'),  # rowerowy niebieski
-                                          0x10e0c: Qt.black,           # rowerowy czarny
+                                          0x10e0c: Qt.GlobalColor.black,           # rowerowy czarny
                                           0x10e0d: QColor('#a959a9'),  # rowerowy inny
-                                          0x10e0f: Qt.black,           # trial other
+                                          0x10e0f: Qt.GlobalColor.black,           # trial other
                                           0x10e10: QColor('#0000ff'),  # tramwaj
                                           0x10e11: QColor('#39caff'),  # planowana ulica
                                           0x10e12: QColor('#39caff'),  # planowana
                                           0x10e13: QColor('#e80020'),  # w budowie
-                                          0x10e14: Qt.black,  # railroad
+                                          0x10e14: Qt.GlobalColor.black,  # railroad
                                           0x10e15: QColor('#a4a4a4')
                                          }
 
@@ -125,37 +125,37 @@ class MapObjectsProperties(object):
                                           0x10e15: 3,
                                         }
 
-        self.polyline_properties_dash = {0xa: Qt.DotLine,
-                                        0xd: Qt.DotLine,
-                                        0x14: Qt.DashLine,
-                                        0x1c: Qt.DashDotLine,
-                                        0x16: Qt.DashLine,
-                                        0x18: Qt.DashLine,
-                                        0x21: Qt.DotLine,
-                                        0x22: Qt.DashLine,
-                                        0x23: Qt.DashLine,
-                                        0x28: Qt.DotLine,
-                                        0x2a: Qt.DashLine,
-                                        0x2b: Qt.DashLine,
-                                        0x4b: Qt.DashLine,
-                                        0x10e00: Qt.DashLine,
-                                        0x10e01: Qt.DashLine,
-                                        0x10e02: Qt.DashLine,
-                                        0x10e03: Qt.DashLine,
-                                        0x10e04: Qt.DashLine,
-                                        0x10e07: Qt.DashLine,
-                                        0x10e08: Qt.DotLine,
-                                        0x10e09: Qt.DotLine,
-                                        0x10e0a: Qt.DotLine,
-                                        0x10e0b: Qt.DotLine,
-                                        0x10e0c: Qt.DotLine,
-                                        0x10e0d: Qt.DotLine,
-                                        0x10e0f: Qt.DotLine,
-                                        0x10e11: Qt.DashLine,
-                                        0x10e12: Qt.DashLine,
-                                        0x10e13: Qt.DashLine,
-                                        0x10e14: Qt.DashLine,
-                                        0x10e15: Qt.DashLine,
+        self.polyline_properties_dash = {0xa: Qt.PenStyle.DotLine,
+                                        0xd: Qt.PenStyle.DotLine,
+                                        0x14: Qt.PenStyle.DashLine,
+                                        0x1c: Qt.PenStyle.DashDotLine,
+                                        0x16: Qt.PenStyle.DashLine,
+                                        0x18: Qt.PenStyle.DashLine,
+                                        0x21: Qt.PenStyle.DotLine,
+                                        0x22: Qt.PenStyle.DashLine,
+                                        0x23: Qt.PenStyle.DashLine,
+                                        0x28: Qt.PenStyle.DotLine,
+                                        0x2a: Qt.PenStyle.DashLine,
+                                        0x2b: Qt.PenStyle.DashLine,
+                                        0x4b: Qt.PenStyle.DashLine,
+                                        0x10e00: Qt.PenStyle.DashLine,
+                                        0x10e01: Qt.PenStyle.DashLine,
+                                        0x10e02: Qt.PenStyle.DashLine,
+                                        0x10e03: Qt.PenStyle.DashLine,
+                                        0x10e04: Qt.PenStyle.DashLine,
+                                        0x10e07: Qt.PenStyle.DashLine,
+                                        0x10e08: Qt.PenStyle.DotLine,
+                                        0x10e09: Qt.PenStyle.DotLine,
+                                        0x10e0a: Qt.PenStyle.DotLine,
+                                        0x10e0b: Qt.PenStyle.DotLine,
+                                        0x10e0c: Qt.PenStyle.DotLine,
+                                        0x10e0d: Qt.PenStyle.DotLine,
+                                        0x10e0f: Qt.PenStyle.DotLine,
+                                        0x10e11: Qt.PenStyle.DashLine,
+                                        0x10e12: Qt.PenStyle.DashLine,
+                                        0x10e13: Qt.PenStyle.DashLine,
+                                        0x10e14: Qt.PenStyle.DashLine,
+                                        0x10e15: Qt.PenStyle.DashLine,
                                        }
 
         # self.polyline_type_vs_name = self.create_polyline_type_vs_name()
@@ -178,13 +178,13 @@ class MapObjectsProperties(object):
                                                0x13: QColor('#bd656a'),
                                                0x14: QColor('#7bff00'),
                                                0x15: QColor('#7bff00'),
-                                               0x16: Qt.green,
+                                               0x16: Qt.GlobalColor.green,
                                                0x17: QColor('#39ff00'),
                                                0x18: QColor('#39ca20'),
                                                0x19: QColor('#ffba84'),
                                                0x1a: QColor('#C5C5C5'),
-                                               0x28: Qt.blue,
-                                               0x29: Qt.blue,
+                                               0x28: Qt.GlobalColor.blue,
+                                               0x29: Qt.GlobalColor.blue,
                                                0x32: QColor('#3995ff'),
                                                0x3b: QColor('#3995ff'),
                                                0x3c: QColor('#3995ff'),
@@ -419,24 +419,24 @@ class MapObjectsProperties(object):
 
     def create_nonpixmap_brushes(self):
         non_pixmaps = {}
-        non_pixmaps[0x100] = QBrush(Qt.black)
+        non_pixmaps[0x100] = QBrush(Qt.GlobalColor.black)
         non_pixmaps[0x200] = False
-        non_pixmaps[0x300] = QBrush(Qt.black)
+        non_pixmaps[0x300] = QBrush(Qt.GlobalColor.black)
         non_pixmaps[0x400] = False
-        non_pixmaps[0x500] = QBrush(Qt.black)
-        non_pixmaps[0x600] = QBrush(Qt.black)
-        non_pixmaps[0x700] = QBrush(Qt.black)
+        non_pixmaps[0x500] = QBrush(Qt.GlobalColor.black)
+        non_pixmaps[0x600] = QBrush(Qt.GlobalColor.black)
+        non_pixmaps[0x700] = QBrush(Qt.GlobalColor.black)
         non_pixmaps[0x800] = False
         non_pixmaps[0x900] = False
-        non_pixmaps[0xa00] = QBrush(Qt.black)
-        non_pixmaps[0xb00] = QBrush(Qt.black)
+        non_pixmaps[0xa00] = QBrush(Qt.GlobalColor.black)
+        non_pixmaps[0xb00] = QBrush(Qt.GlobalColor.black)
         non_pixmaps[0xc00] = False
-        non_pixmaps[0xd00] = QBrush(Qt.black)
-        non_pixmaps[0xe00] = QBrush(Qt.black)
-        non_pixmaps[0xf00] = QBrush(Qt.black)
+        non_pixmaps[0xd00] = QBrush(Qt.GlobalColor.black)
+        non_pixmaps[0xe00] = QBrush(Qt.GlobalColor.black)
+        non_pixmaps[0xf00] = QBrush(Qt.GlobalColor.black)
         non_pixmaps[0x1000] = False
         non_pixmaps[0x1100] = False
-        non_pixmaps[0x2800] = QBrush(Qt.black)
+        non_pixmaps[0x2800] = QBrush(Qt.GlobalColor.black)
         return non_pixmaps
 
     @staticmethod
