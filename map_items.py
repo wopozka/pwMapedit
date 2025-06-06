@@ -1302,7 +1302,7 @@ class PoiAsPath(BasicMapItem, QGraphicsPathItem):
         self._current_map_level = 4
         # self.icon = icon
         self.setZValue(20)
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.current_data_x = 4
         self.set_brush()
 
@@ -1373,7 +1373,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
         self.set_z_value()
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setAcceptHoverEvents(True)
         self.current_data_x = 4
         self.set_transformation_flag()
@@ -1558,7 +1558,7 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
         self._mp_label = ''
         # setting level 4, makes it easier to handle levels when file is loaded
         self._current_map_level = 4
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.current_data_x = 4
         self.set_transformation_flag()
 
@@ -2231,7 +2231,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # self.setZValue(self.zValue() - 100)
         if self.zValue() > pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
             self.set_z_value()
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.remove_interpolated_house_numbers()
         for grip_item in self.node_grip_items:
             if grip_item is not None:
@@ -2274,7 +2274,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self._mp_dir_indicator = False
         self.set_z_value()
         self.setAcceptHoverEvents(True)
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
 
     def add_arrow_heads(self):
         if not self._mp_dir_indicator:
@@ -2619,7 +2619,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         super(PolygonQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
                                                        _projection=_projection)
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setAcceptHoverEvents(True)
 
     def command_update_type(self, new_type):
@@ -2973,7 +2973,7 @@ class GripItem(QGraphicsPathItem):
         self.adr_labels = []
         self.setPos(pos)
         self.setParentItem(parent)
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable
                       | QGraphicsItem.ItemSendsGeometryChanges | QGraphicsItem.ItemIgnoresParentOpacity)
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
@@ -3268,7 +3268,7 @@ class MapRuler(QGraphicsPathItem):
         # print(self.geo_distance / (40 / self.map_render.physicalDpiX() * 2.54 / 100))
         self.distance_label = MapRulerLabel(label, self)
         self.distance_label.setPos(point1)
-        self.distance_label.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        self.distance_label.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
 
     def remove_distance_label(self):
         self.scene().removeItem(self.distance_label)
@@ -3310,8 +3310,8 @@ class PolygonAnnotation(QGraphicsPolygonItem):
 
     def __init__(self, *args):
         super().__init__()
-        self.setFlags(QGraphicsItem.ItemIsSelectable | QGraphicsItem.ItemIsMovable
-                      | QGraphicsItem.ItemSendsGeometryChanges)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable
+                      | QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setPen(self._pen)

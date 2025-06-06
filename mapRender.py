@@ -206,7 +206,7 @@ class mapRender(QGraphicsView):
             return
         self._curent_view_mouse_coords = event.pos()
         self._curent_scene_mouse_coords = self.mapToScene(self._curent_view_mouse_coords)
-        if event.buttons() == Qt.RightButton:
+        if event.buttons() == Qt.MouseButton.RightButton:
             super(mapRender, self).mouseMoveEvent(event)
             if self.ruler is not None:
                 self.ruler.move_to()
@@ -255,7 +255,7 @@ class mapRender(QGraphicsView):
             return
         else:
             # support for tools
-            if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
+            if self._right_mouse_button_event_position is None and event.button() == Qt.MouseButton.LeftButton:
                 if mode == pwmapedit_constants.Tools.CREATE_POINT:
                     pass
                 elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
@@ -266,12 +266,12 @@ class mapRender(QGraphicsView):
                     pass
 
             # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
-            if event.button() == Qt.RightButton:
+            if event.button() == Qt.MouseButton.RightButton:
                 self._hand_made_right_button_press_event = True
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
                 self._right_mouse_button_event_position = event.pos()
-                handmade_event = QMouseEvent(QEvent.MouseButtonPress, QPointF(event.pos()), Qt.LeftButton,
-                                             event.buttons(), Qt.KeyboardModifiers())
+                handmade_event = QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(event.pos()), Qt.MouseButton.LeftButton,
+                                             event.buttons(), Qt.KeyboardModifier.KeyboardModifiers())
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
                 return
@@ -339,7 +339,7 @@ class mapRender(QGraphicsView):
         else:
             mode = self.scene().get_pw_mapedit_mode()
             print(self._right_mouse_button_event_position)
-            if self._right_mouse_button_event_position is None and event.button() == Qt.LeftButton:
+            if self._right_mouse_button_event_position is None and event.button() == Qt.MouseButton.LeftButton:
                 print('rysuje')
                 if self.scene().closest_node_circle_position() is not None:
                     position = self.scene().closest_node_circle_position()
@@ -355,13 +355,13 @@ class mapRender(QGraphicsView):
                 else:
                     pass
             # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
-            if event.button() == Qt.RightButton:
+            if event.button() == Qt.MouseButton.RightButton:
                 self._right_mouse_button_event_position = None
                 self._hand_made_right_button_release_event = True
                 self.setDragMode(QGraphicsView.NoDrag)
                 self.setInteractive(True)
-                handmade_event = QMouseEvent(QEvent.MouseButtonRelease, QPointF(event.pos()), Qt.LeftButton,
-                                             event.buttons(), Qt.KeyboardModifiers())
+                handmade_event = QMouseEvent(QEvent.Type.MouseButtonRelease, QPointF(event.pos()), Qt.MouseButton.LeftButton,
+                                             event.buttons(), Qt.KeyboardModifier.KeyboardModifiers())
                 self.mouseReleaseEvent(handmade_event)
                 return
         super().mouseReleaseEvent(event)

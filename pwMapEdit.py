@@ -320,7 +320,7 @@ class pwMapeditPy(QMainWindow):
         self.tools_action = dict()
         self.initialize()
         self.generate_shortcuts()
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.properties_dock)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.properties_dock)
         self.map_objects = None
         self.map_objects_properties = map_object_properties.MapObjectsProperties()
         # as reading of file is done in separate thread, we need to know whether all objects were already drawn
@@ -331,7 +331,7 @@ class pwMapeditPy(QMainWindow):
         self.worker_file_parser = None
         self.menu_tools_set_mode()
         self._last_background_action = None
-        self.setAttribute(Qt.WA_NativeWindow)
+        self.setAttribute(Qt.WidgetAttribute.WA_NativeWindow)
         print('window handle: ', self.window().windowHandle())
         self.window().windowHandle().screenChanged.connect(self.screen_changed)
 
@@ -648,7 +648,7 @@ class pwMapeditPy(QMainWindow):
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_3)
         self.map_level_actions.append(QShortcut(QKeySequence('4'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_4)
-        background_picture = QShortcut(QKeySequence(Qt.Key_E), self)
+        background_picture = QShortcut(QKeySequence(Qt.Key.Key_E), self)
         background_picture.activated.connect(self.background_on_off)
         go_to_position_action = QShortcut(QKeySequence('Ctrl+g'), self)
         go_to_position_action.activated.connect(self.go_to_position)
