@@ -1575,12 +1575,12 @@ class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
         if self.scene() is None:
             return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 return True
         else:
-            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
 
@@ -3314,7 +3314,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable
                       | QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
-        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setPen(self._pen)
         self.gripItems = []
         if len(args) == 1:
@@ -3434,7 +3434,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         self.setBrush(self.normalBrush)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
+        if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.MouseButton.ShiftModifier:
             dist, pos, index = self.closestPointToPoly(event.pos())
             if index >= 0 and dist <= self.threshold():
                 self.insertPoint(index, pos)
