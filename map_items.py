@@ -2240,7 +2240,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.set_hover_over_for_address_labels(False)
         self.hoverLeaveEvent(None)
         self.decorated_poly_nums = None
-        self.setCursor(QCursor(Qt.ArrowCursor))
+        self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
     def update_label_pos(self):
         return
@@ -2942,7 +2942,7 @@ class PolylineLevelNumber(MapLabels):
     def paint(self, painter, option, widget):
         if self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
             self.setPos(self.position)
-            brush = QBrush(Qt.CursorShape.yellow)
+            brush = QBrush(Qt.GlobalColor.yellow)
             painter.setBrush(brush)
             a, b, c, d = self.boundingRect().getRect()
             painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
@@ -2974,7 +2974,7 @@ class GripItem(QGraphicsPathItem):
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable
-                      | QGraphicsItem.GraphicsItemChange.ItemSendsGeometryChanges
+                      | QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges
                       | QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
         self.setAcceptHoverEvents(True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -3395,8 +3395,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
             line = QLineF(p1, p2)
             inters = QPointF()
             # create a perpendicular line that starts at the given pos
-            perp = QLineF.fromPolar(
-                self.threshold(), line.angle() + 90).translated(pos)
+            perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(pos)
             if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
                 # no intersection, reverse the perpendicular line by 180°
                 perp.setAngle(perp.angle() + 180)
