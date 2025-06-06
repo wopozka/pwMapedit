@@ -4,11 +4,11 @@ import misc_functions
 import copy
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
-from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
+# from PyQt5.QtWidgets import QGraphicsItemGroup
+from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsEllipseItem
-from PyQt5.QtCore import QPointF, Qt, QLineF, QPoint
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
+from PyQt6.QtCore import QPointF, Qt, QLineF, QPoint
+from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
 from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS
 import commands
@@ -1435,12 +1435,12 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         if self.scene() is None:
             return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 return True
         else:
-            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
 
@@ -1640,7 +1640,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     closest_node_circle_definition.setZValue(150)
     closest_node_circle_definition.setPen(QPen(QColor("blue")))
     closest_node_circle_definition.setBrush(QBrush(QColor("blue")))
-    closest_node_circle_definition.setFlag(QGraphicsPathItem.ItemIgnoresTransformations, True)
+    closest_node_circle_definition.setFlag(QGraphicsPathItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
     closest_node_circle_definition.setOpacity(0.5)
     closest_node_min_distance = 15
     closest_node_circle_pen = QPen(QColor("blue"))

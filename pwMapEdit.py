@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# https://www.riverbankcomputing.com/static/Docs/PyQt6/index.html
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QProgressBar, QLabel
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QInputDialog, QMessageBox
 from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread

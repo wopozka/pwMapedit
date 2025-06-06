@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 from urllib.error import URLError
 
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsPathItem
-from PyQt5.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
-from PyQt5.QtGui import QMouseEvent, QPainterPath, QPolygonF, QBrush
+from PyQt6.QtWidgets import QGraphicsView, QGraphicsPathItem
+from PyQt6.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
+from PyQt6.QtGui import QMouseEvent, QPainterPath, QPolygonF, QBrush
 import math
 
 import map_items

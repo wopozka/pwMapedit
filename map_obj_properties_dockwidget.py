@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
+from PyQt6.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayout, QComboBox, QLineEdit, QCheckBox,
                              QPushButton, QGroupBox, QCompleter, QApplication)
-from PyQt5.QtWidgets import QFormLayout, QTabWidget
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem
-from PyQt5.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
-from PyQt5.QtGui import QIcon, QPainterPath
+from PyQt6.QtWidgets import QFormLayout, QTabWidget
+from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
+from PyQt6.QtGui import QIcon, QPainterPath
 from enum import Enum
 import json
 import map_items

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from enum import Enum, auto
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import Qt
 
 MAP_OBJECT_POI = '[POI]'
 MAP_OBJECT_POLYLINE = '[POLYLINE]'
@@ -17,10 +17,10 @@ SCALE_WITHOUT_POIS = 0.25
 NEW_OBJECT_CREATION_Z_VAL = 200
 SELECTED_OBJECT_Z_VAL = 1000
 HIGHLIGHTED_POLY_Z_VAL = 2000
-LEFT_SIDE_NUM_MAIN = Qt.blue
-LEFT_SIDE_NUM_INTER = Qt.red
-RIGHT_SIDE_NUM_MAIN = Qt.blue
-RIGHT_SIDE_NUM_INTER = Qt.red
+LEFT_SIDE_NUM_MAIN = Qt.GlobalColor.blue
+LEFT_SIDE_NUM_INTER = Qt.GlobalColor.red
+RIGHT_SIDE_NUM_MAIN = Qt.GlobalColor.blue
+RIGHT_SIDE_NUM_INTER = Qt.GlobalColor.red
 
 class Tools(Enum):
     ZOOM_MAP = auto()

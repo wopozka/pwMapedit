@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import QUndoCommand, QUndoStack
-from PyQt5.QtGui import QPainterPath
-from PyQt5.QtCore import QPointF
+from PyQt6.QtGui import QPainterPath, QUndoCommand, QUndoStack
+from PyQt6.QtCore import QPointF
 import copy
 import time
 import pwmapedit_constants

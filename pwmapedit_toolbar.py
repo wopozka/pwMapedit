@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QToolBar, QAction, QActionGroup, QComboBox
-from PyQt5.QtGui import QIcon
+from PyQt6.QtWidgets import QToolBar, QAction, QActionGroup, QComboBox
+from PyQt6.QtGui import QIcon
 import os.path
 import pwmapedit_constants
 

@@ -3,8 +3,7 @@
 from collections import OrderedDict
 import pwmapedit_constants
 import math
-from PyQt5.QtGui import QPainterPath, QPolygonF
-from PyQt5.QtCore import QPointF, QLineF
+from PyQt6.QtCore import QPointF
 
 def read_icons_from_skin_file(skin_filename):
     """

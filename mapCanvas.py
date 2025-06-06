@@ -3,11 +3,11 @@
 import calendar
 from collections import OrderedDict
 
-from PyQt5.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipseItem, QGraphicsPolygonItem,
+from PyQt6.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipseItem, QGraphicsPolygonItem,
                              QGraphicsRectItem, QGraphicsItem, QApplication)
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
-from PyQt5.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
-from PyQt5.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray
+from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
+from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
+from PyQt6.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray
 import platform
 
 import commands
