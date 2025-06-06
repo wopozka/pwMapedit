@@ -855,7 +855,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     # poniższe nie działa ale zmienna pomaga
     # https://doc.qt.io/archives/qt-5.15/highdpi.html
-    app.setAttribute(Qt.AA_EnableHighDpiScaling)
+    # app.setAttribute(Qt.AA_EnableHighDpiScaling)
     w = pwMapeditPy(None, file_to_open)
     w.show()
     app.exec()
