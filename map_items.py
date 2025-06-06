@@ -1757,10 +1757,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
                 perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(event_pos)
-                if line.intersect(perp, inters) != QLineF.BoundedIntersection:
+                if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
                     # no intersection, reverse the perpendicular line by 180°
                     perp.setAngle(perp.angle() + 180)
-                    if line.intersect(perp, inters) != QLineF.BoundedIntersection:
+                    if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
                         # the pos is not within the line extent, ignore it
                         p1 = p2
                         continue
@@ -1939,8 +1939,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             #     self.node_grip_items.append(None)
         self.set_hover_over_for_address_labels(True)
         self.add_interpolated_housenumber_labels()
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
-        self.setCursor(QCursor(Qt.CrossCursor))
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
+        self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
 
     def decorate(self):
         # to be redefined in polyline and polygon classes
@@ -1995,7 +1995,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if not self.highlight_when_hoverover():
             return
         if self.decorated():
-            self.setCursor(QCursor(Qt.CrossCursor))
+            self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
             return
         self.hovered = True
         mode = self.scene().get_pw_mapedit_mode()
@@ -2010,7 +2010,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def hoverLeaveEvent(self, event):
         # print('hoverLeave')
         if self.decorated():
-            self.setCursor(QCursor(Qt.ArrowCursor))
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
             return
         self.hovered = False
         mode = self.scene().get_pw_mapedit_mode()
@@ -2071,7 +2071,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.remove_hovered_shape()
         mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.EDIT_NODES:
-            if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
+            if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
                 dist, pos, index = self.closest_point_to_poly(event.pos())
                 print(dist, pos, index)
                 if index[1] >= 0 and dist <= self.threshold():
@@ -2850,7 +2850,7 @@ class PolylineAddressNumber(MapLabels):
         self.grabKeyboard()
         self.parent.hoverLeaveEvent(event)
         self.cursor_before_hoverover = self.cursor()
-        self.setCursor(QCursor(Qt.IBeamCursor))
+        self.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
         super().hoverEnterEvent(event)
         self.add_hovered_shape()
         self.last_keyboard_press_time = 0
@@ -2942,7 +2942,7 @@ class PolylineLevelNumber(MapLabels):
     def paint(self, painter, option, widget):
         if self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
             self.setPos(self.position)
-            brush = QBrush(Qt.yellow)
+            brush = QBrush(Qt.CursorShape.yellow)
             painter.setBrush(brush)
             a, b, c, d = self.boundingRect().getRect()
             painter.drawRect(int(a), int(b), int(c) + 1, int(d) + 1)
@@ -2974,9 +2974,10 @@ class GripItem(QGraphicsPathItem):
         self.setPos(pos)
         self.setParentItem(parent)
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable
-                      | QGraphicsItem.ItemSendsGeometryChanges | QGraphicsItem.ItemIgnoresParentOpacity)
+                      | QGraphicsItem.GraphicsItemChange.ItemSendsGeometryChanges
+                      | QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
         self.setAcceptHoverEvents(True)
-        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setPath(self.square)
         if self.is_first_grip():
             self.setPen(self._first_grip_pen)
@@ -2985,7 +2986,7 @@ class GripItem(QGraphicsPathItem):
         self.setZValue(100)
         self._setHover(False)
         self.hover_drag_mode = False
-        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         # self.set_transformation_flag()
         _text = str(self.grip_indexes)
         text = QGraphicsSimpleTextItem(_text, self)
@@ -3002,7 +3003,7 @@ class GripItem(QGraphicsPathItem):
         return False
 
     def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionHasChanged:
+        if change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
             self.parent.move_grip(self)
         return super().itemChange(change, value)
 
@@ -3110,10 +3111,10 @@ class GripItem(QGraphicsPathItem):
 
 
     def mousePressEvent(self, event):
-        if (event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier):
+        if (event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ControlModifier):
             self.parent.setSelected(True)
             self.parent.remove_grip(self)
-        elif (event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier):
+        elif (event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ShiftModifier):
             print('z shiftem')
         else:
             super().mousePressEvent(event)
@@ -3123,7 +3124,7 @@ class GripItem(QGraphicsPathItem):
 
     def wheelEvent(self, event):
         print('kolko myszy')
-        if event.modifiers() == Qt.ControlModifier:
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             pass
         else:
             super().wheelEvent(event)
@@ -3136,12 +3137,12 @@ class GripItem(QGraphicsPathItem):
         if self.scene() is None:
             return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 return True
         else:
-            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
 
@@ -3396,10 +3397,10 @@ class PolygonAnnotation(QGraphicsPolygonItem):
             # create a perpendicular line that starts at the given pos
             perp = QLineF.fromPolar(
                 self.threshold(), line.angle() + 90).translated(pos)
-            if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+            if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
                 # no intersection, reverse the perpendicular line by 180°
                 perp.setAngle(perp.angle() + 180)
-                if line.intersects(perp, inters) != QLineF.BoundedIntersection:
+                if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
                     # the pos is not within the line extent, ignore it
                     p1 = p2
                     continue
