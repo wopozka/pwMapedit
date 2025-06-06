@@ -345,12 +345,12 @@ class MapObjectsProperties(object):
         if poi_type in self.non_pixmap_brushes:
             return self.non_pixmap_brushes[poi_type]
         else:
-            return QBrush(Qt.red)
+            return QBrush(Qt.GlobalColor.red)
 
     def get_polyline_colour(self, poly_type):
         if poly_type in self.polyline_properties_colour:
             return self.polyline_properties_colour[poly_type]
-        return Qt.black
+        return Qt.GlobalColor.black
 
     def get_polyline_width(self, poly_type):
         pline_width_multiplicity = 1
@@ -361,7 +361,7 @@ class MapObjectsProperties(object):
     def get_polyline_dash(self, poly_type):
         if poly_type in self.polyline_properties_dash:
             return self.polyline_properties_dash[poly_type]
-        return Qt.SolidLine
+        return Qt.PenStyle.SolidLine
 
     def get_polygon_fill_colour(self, poly_type):
         if poly_type in self.polygon_properties_fill_colour:

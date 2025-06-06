@@ -268,10 +268,10 @@ class mapRender(QGraphicsView):
             # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5
             if event.button() == Qt.MouseButton.RightButton:
                 self._hand_made_right_button_press_event = True
-                self.setDragMode(QGraphicsView.ScrollHandDrag)
+                self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
                 self._right_mouse_button_event_position = event.pos()
                 handmade_event = QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(event.pos()), Qt.MouseButton.LeftButton,
-                                             event.buttons(), Qt.KeyboardModifier.KeyboardModifiers())
+                                             event.buttons(), event.modifiers())
                 self.setInteractive(False)
                 self.mousePressEvent(handmade_event)
                 return
@@ -305,7 +305,7 @@ class mapRender(QGraphicsView):
                     return
                 elif len(items_under_cursor) == 1:
                     if items_under_cursor[0] not in self.scene().selectedItems():
-                        if event.modifiers() != Qt.ControlModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
+                        if event.modifiers() != Qt.KeyboardModifier.ControlModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
                             self.scene().clearSelection()
                         items_under_cursor[0].set_selection_z_value()
                     super().mousePressEvent(event)
@@ -320,7 +320,7 @@ class mapRender(QGraphicsView):
                         self._item_under_cursor_index += 1
                         if self._item_under_cursor_index >= len(items_under_cursor):
                             self._item_under_cursor_index = 0
-                    if event.modifiers() != Qt.ShiftModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
+                    if event.modifiers() != Qt.KeyboardModifier.ShiftModifier or mode == pwmapedit_constants.Tools.EDIT_NODES:
                         self.scene().clearSelection()
                     self._items_under_cursor[self._item_under_cursor_index].set_selection_z_value()
                     super().mousePressEvent(event)
@@ -358,10 +358,10 @@ class mapRender(QGraphicsView):
             if event.button() == Qt.MouseButton.RightButton:
                 self._right_mouse_button_event_position = None
                 self._hand_made_right_button_release_event = True
-                self.setDragMode(QGraphicsView.NoDrag)
+                self.setDragMode(QGraphicsView.DragMode.NoDrag)
                 self.setInteractive(True)
                 handmade_event = QMouseEvent(QEvent.Type.MouseButtonRelease, QPointF(event.pos()), Qt.MouseButton.LeftButton,
-                                             event.buttons(), Qt.KeyboardModifier.KeyboardModifiers())
+                                             event.buttons(), event.modifiers())
                 self.mouseReleaseEvent(handmade_event)
                 return
         super().mouseReleaseEvent(event)
@@ -418,7 +418,7 @@ class mapRender(QGraphicsView):
                     pool.start(worker)
 
     def wheelEvent(self, event):
-        if event.modifiers() == Qt.ControlModifier:
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             if event.angleDelta().y() < 0:
                 # self.zoom_out_funct()
                 self.zoom_out_command()

@@ -601,9 +601,9 @@ class pwMapeditPy(QMainWindow):
             ask_yes_no = QMessageBox(self)
             ask_yes_no.setWindowTitle('Zamykanie aplikacji')
             ask_yes_no.setText('Plik niezapisany. Czy na pewno zamknąć?')
-            ask_yes_no.setStandardButtons(QMessageBox.Ok| QMessageBox.Cancel)
+            ask_yes_no.setStandardButtons(QMessageBox.StandardButton.Ok| QMessageBox.StandardButton.Cancel)
             return_value = ask_yes_no.exec()
-            if return_value == QMessageBox.Cancel:
+            if return_value == QMessageBox.StandardButton.Cancel:
                 close_app = False
         if close_app:
             self.weblayers_cache_folder.cleanup()

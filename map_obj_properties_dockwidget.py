@@ -490,10 +490,10 @@ class MapObjPropDock(QDockWidget):
                         outer_poly.setText(0, f'Poly: {poly_num}')
                         outer_poly.setText(1, 'Outer')
                         outer_poly.setText(2, f"{lat:.6f}, {lon:.6f}")
-                        outer_poly.setData(0, Qt.UserRole, data_level_num)
-                        outer_poly.setData(1, Qt.UserRole, poly_num)
+                        outer_poly.setData(0, Qt.ItemDataRole.UserRole, data_level_num)
+                        outer_poly.setData(1, Qt.ItemDataRole.UserRole, poly_num)
                         poly_pp.addPolygon(data_level_polygons[poly_num])
-                        outer_poly.setData(2, Qt.UserRole, poly_pp)
+                        outer_poly.setData(2, Qt.ItemDataRole.UserRole, poly_pp)
                         if not self.map_object_id.is_polygon():
                             outer_poly = None
                         continue
@@ -502,11 +502,11 @@ class MapObjPropDock(QDockWidget):
                         lat, lon = poly[0].get_geo_coordinates()
                         poly_item.setText(0, f'Poly: {poly_num}')
                         poly_item.setText(2, f"{lat:.6f}, {lon:.6f}")
-                    poly_item.setData(0, Qt.UserRole, data_level_num)
-                    poly_item.setData(1, Qt.UserRole, poly_num)
+                    poly_item.setData(0, Qt.ItemDataRole.UserRole, data_level_num)
+                    poly_item.setData(1, Qt.ItemDataRole.UserRole, poly_num)
                     poly_pp1 = QPainterPath()
                     poly_pp1.addPolygon(data_level_polygons[poly_num])
-                    poly_item.setData(2, Qt.UserRole, poly_pp1)
+                    poly_item.setData(2, Qt.ItemDataRole.UserRole, poly_pp1)
                     if poly_pp.contains(poly_pp1):
                         outer_poly.addChild(poly_item)
                         poly_item.setText(1, 'Inner')
@@ -779,7 +779,7 @@ class MapObjPropDock(QDockWidget):
     def elements_item_highlighted(self):
         # jesli jest jakis element zaznaczony
         if self.elements_table.selectedItems():
-            ppp = self.elements_table.selectedItems()[0].data(2, Qt.UserRole)
+            ppp = self.elements_table.selectedItems()[0].data(2, Qt.ItemDataRole.UserRole)
             if isinstance(self.map_object_id, map_items.PoiAsPixmap):
                 self.map_object_id.scene().highlight_element(ppp, True)
             else:
@@ -1066,15 +1066,15 @@ class ElementsTable(QTreeWidget):
         res = menu.exec_(event.globalPos())
 
     def command_delete_poly(self):
-        data_level = self.currentItem().data(0, Qt.UserRole)
-        poly_num = self.currentItem().data(1, Qt.UserRole)
+        data_level = self.currentItem().data(0, Qt.ItemDataRole.UserRole)
+        poly_num = self.currentItem().data(1, Qt.ItemDataRole.UserRole)
         print(f'data_level: {data_level}, poly_num: {poly_num}')
         return
 
 class ElementsItem(QTreeWidgetItem):
     def __init__(self, parent=None):
         super(ElementsItem, self).__init__(parent)
-        self.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
+        self.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
         # self.setCheckState(0, Qt.Unchecked)
-        self.setData(2, Qt.UserRole, None)  # to store QPainterPath
+        self.setData(2, Qt.ItemDataRole.UserRole, None)  # to store QPainterPath
 

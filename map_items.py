@@ -2105,20 +2105,20 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def paint(self, painter, option, widget=None):
-        if option.state & QStyle.State_Selected or self.decorated() or self.hover_enter_for_create_mode:
+        if option.state & QStyle.StateFlag.State_Selected or self.decorated() or self.hover_enter_for_create_mode:
             # print(self.hover_enter_for_create_mode)
             self.setOpacity(0.5)
         else:
             if self.opacity() < 1:
                 self.setOpacity(1)
-        if option.state & QStyle.State_Selected or self.decorated():
+        if option.state & QStyle.StateFlag.State_Selected or self.decorated():
             self.setPen(self.selected_pen)
         elif self.hovered and not self.hover_enter_for_create_mode and not self.decorated():
             self.setPen(self.hovered_over_pen)
         else:
             self.setPen(self.orig_pen)
         saved_option = option
-        saved_option.state = QStyle.State_None
+        saved_option.state = QStyle.StateFlag.State_None
         super().paint(painter, saved_option, widget=widget)
 
     def update_arrow_heads(self):
@@ -2735,12 +2735,12 @@ class MapLabels(QGraphicsSimpleTextItem):
         if self.scene() is None:
             return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 return True
         else:
-            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
 
@@ -2833,7 +2833,7 @@ class PolylineAddressNumber(MapLabels):
         self.hovered_shape = None
         self.last_keyboard_press_time = None
         self.cursor_before_hoverover = None
-        self.setFlag(QGraphicsItem.ItemIgnoresParentOpacity, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity, True)
 
     def add_hovered_shape(self):
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
@@ -2935,7 +2935,7 @@ class PolylineLevelNumber(MapLabels):
         scale = 1
         # przypadku gdy skalowanie sie wylacza - powyżej ustalonej skali, wtedy nalezy caly czas przeliczac
         # punkt umieszczenia numeru i pomniejszac go proporcjonalnie do skali
-        if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
+        if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
             scale = self.scene().get_viewer_scale()
         self.setPos(position + QPointF(-pwidth/scale/2, -pheight/scale/2))
 
@@ -3184,12 +3184,12 @@ class DirectionArrowHead(QGraphicsPathItem):
         if self.scene() is None:
             return False
         if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
+            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
                 return True
         else:
-            if bool(self.flags() & QGraphicsItem.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.ItemIgnoresTransformations, False)
+            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
+                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
 
