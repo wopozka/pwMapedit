@@ -360,7 +360,8 @@ class Data_X(object):
                 precision = max(len(latitude.split('.', 1)[1]), len(longitude.split('.', 1)[1]))
             self.set_obj_bounding_box(float(latitude), float(longitude))
             coords.append(Node(latitude=latitude, longitude=longitude, projection=self._projection))
-        self.precision = max(self.precision, precision)
+        if precision <= 6:
+            Data_X.precision = max(Data_X.precision, precision)
         return coords
 
     def copy(self):
