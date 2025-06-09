@@ -1287,76 +1287,7 @@ class Restriction(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
-
-
-class PoiAsPath(BasicMapItem, QGraphicsPathItem):
-    # basic class for poi without pixmap icon
-    _accept_map_level_change = True
-
-    def __init__(self, map_objects_properties=None, _projection=None):
-        # super(PoiAsPath, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, _projection=_projection)
-        QGraphicsPathItem.__init__(self)
-        self.label = None
-        self._mp_data = [None, None, None, None, None]
-        # self._mp_end_level = 0
-        # setting level 4, makes it easier to handle levels when file is loaded
-        self._current_map_level = 4
-        # self.icon = icon
-        self.setZValue(20)
-        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
-        self.current_data_x = 4
-        self.set_brush()
-
-    @staticmethod
-    def accept_map_level_change():
-        return True
-
-    def set_map_level(self):
-        level = self.scene().get_map_level()
-        if self._mp_data[level] is not None:
-            self.setPos(self._mp_data[level])
-            self.setVisible(True)
-        elif self._mp_data[level] is None and self.get_endlevel() < level:
-            self.setVisible(False)
-        elif self._mp_data[level] is None and self.get_endlevel() >= level:
-            self.setVisible(True)
-        return
-
-    def set_mp_data(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_datax(given_level)
-            if not data:
-                continue
-            if self.path().isEmpty():
-                self.setPath(self._map_objects_properties.get_poi_icon(self.get_type()))
-            level = int(given_level[-1])
-            # creates qpainterpaths for polylines at given Data level
-            node = data[0]
-            x, y = node[0].get_canvas_coords()
-            self._mp_data[level] = QPointF(x, y)
-            if self.pos().isNull():
-                self.setPos(self._mp_data[level])
-                self.current_data_x = level
-
-    def add_label(self):
-        label = self.get_label1()
-        if label is not None and label:
-            self.label = PoiLabel(label, self)
-
-    def set_brush(self):
-        brush = self._map_objects_properties.get_nonpixmap_poi_brush(self.get_type())
-        if brush:
-            self.setBrush(brush)
-
-    def decorate(self):
-        pass
-
-    def undecorate(self):
-        pass
-
-    def unset_deleted(self):
-        self._deleted = False
+        
 
 class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True
