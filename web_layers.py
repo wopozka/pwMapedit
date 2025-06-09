@@ -86,6 +86,7 @@ class WebLayers(object):
                     'Raster&STYLES=&EXCEPTIONS=xml&WIDTH=256&HEIGHT=256&'
                     f'BBOX={right_bottom_lat:.5f},{left_top_lon:.5f},{left_top_lat:.5f},{right_bottom_lon:.5f}&'
                     'CRS=EPSG:4326&SERVICE=WMS')
+        return None
 
     def get_tiles_paths(self, left_top_lat, left_top_lon, right_bottom_lat, right_bottom_lon):
         tiles_path = list()
