@@ -474,7 +474,7 @@ class MapObjPropDock(QDockWidget):
             pp = QPainterPath()
             print(self.map_object_id.boundingRect())
             pp.addEllipse(scene_coords, 10, 10)
-            poly_item.setData(2, Qt.UserRole, pp)
+            poly_item.setData(2, Qt.ItemDataRole.UserRole, pp)
         else:
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
                 data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()

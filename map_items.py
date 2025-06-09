@@ -1690,10 +1690,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
                 perp = QLineF.fromPolar(self.threshold(), line.angle() + 90).translated(event_pos)
-                if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
+                intersection_type, inters = line.intersects(perp)
+                if intersection_type != QLineF.IntersectionType.BoundedIntersection:
                     # no intersection, reverse the perpendicular line by 180°
                     perp.setAngle(perp.angle() + 180)
-                    if line.intersects(perp, inters) != QLineF.IntersectionType.BoundedIntersection:
+                    intersection_type1, inters = line.intersects(perp)
+                    if intersection_type1 != QLineF.IntersectionType.BoundedIntersection:
                         # the pos is not within the line extent, ignore it
                         p1 = p2
                         continue
@@ -2779,7 +2781,7 @@ class PolylineAddressNumber(MapLabels):
 
     def hoverEnterEvent(self, event):
         print('hover enter')
-        self.setFocus(True)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
         self.parent.hoverLeaveEvent(event)
         self.cursor_before_hoverover = self.cursor()
@@ -2987,7 +2989,7 @@ class GripItem(QGraphicsPathItem):
         self.parent.command_set_hlevel_to_node(self, hlevel)
 
     def hoverEnterEvent(self, event):
-        self.setFocus(True)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
         self.scene().disable_maplevel_shortcuts()
         super().hoverEnterEvent(event)

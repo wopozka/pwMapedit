@@ -380,7 +380,7 @@ class mapCanvas(QGraphicsScene):
         self.web_layer_graphics = None
 
     def set_map_level(self, map_level):
-        self.setFocus(False)
+        self.clearFocus()
         if isinstance(map_level, str):
             map_level = int(map_level)
         if map_level == self.current_map_level:
