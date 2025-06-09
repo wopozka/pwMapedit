@@ -195,7 +195,7 @@ class mapCanvas(QGraphicsScene):
                 items_defs.append(item_def)
         if not items_defs:
             print('zaznaczone obiekty nie sa typu poi, polyline i polygon')
-            return
+            return None
         str_def = ''
         for item_def in items_defs:
             for i_def in item_def:
@@ -225,8 +225,7 @@ class mapCanvas(QGraphicsScene):
         #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject):
-        if isinstance(mapobject, map_items.PoiAsPath) or isinstance(mapobject, map_items.PoiAsPixmap) \
-                or isinstance(mapobject, map_items.AddrLabel):
+        if isinstance(mapobject, map_items.PoiAsPixmap) or isinstance(mapobject, map_items.AddrLabel):
             self.addItem(mapobject)
             mapobject.add_label()
             mapobject.set_map_level()
@@ -390,22 +389,22 @@ class mapCanvas(QGraphicsScene):
         self.clearSelection()
         start = datetime.now().replace(microsecond=0)
         # self.views()[0].setInteractive(False)
-        map_items = self.items()
-        if len(map_items) < 100:
+        _map_items = self.items()
+        if len(_map_items) < 100:
             one_perc = 1
         else:
-            one_perc = len(map_items) // 100
-        self.parent.update_progress_bar('set_maximum', len(map_items))
+            one_perc = len(_map_items) // 100
+        self.parent.update_progress_bar('set_maximum', len(_map_items))
         self.parent.update_progress_bar('set_value', 0)
-        for item_num, item in enumerate(map_items):
+        for item_num, item in enumerate(_map_items):
             if item._accept_map_level_change:
                 item.set_map_level()
             if item_num % one_perc == 0:
                 self.parent.update_progress_bar('set_value', item_num)
                 # self.parent.update()
         # self.views()[0].setInteractive(True)
-        self.parent.update_progress_bar('set_value', len(map_items))
-        print('num screen items: %s' % len(map_items))
+        self.parent.update_progress_bar('set_value', len(_map_items))
+        print('num screen items: %s' % len(_map_items))
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
     def stick_to_neighbours(self):

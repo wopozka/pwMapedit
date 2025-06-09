@@ -619,7 +619,8 @@ class pwMapeditPy(QMainWindow):
             QApplication.clipboard().setText('%.7f, %.7f' %  (lat, lon))
 
     def go_to_position(self):
-        go_to_position, ok = QInputDialog.getText(self, 'Idź do współrzędnych', 'Format współrzędnych: 55.123456, 38.123456 (<lat, lon>)')
+        go_to_position, ok = QInputDialog.getText(self, 'Idź do współrzędnych',
+                                                  'Format współrzędnych: 55.123456, 38.123456 (<lat, lon>)')
         if ok:
             try:
                 lat, lon = go_to_position.split(',')

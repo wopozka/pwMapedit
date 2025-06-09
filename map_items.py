@@ -1287,7 +1287,7 @@ class Restriction(object):
     def __init__(self, map_comment_data=None, map_elem_data=None):
         super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
         self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})
-        
+
 
 class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True
