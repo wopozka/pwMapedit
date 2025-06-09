@@ -4,8 +4,8 @@ import os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 import map_items
 import projection
-from PyQt5.QtGui import QPainterPath, QPolygonF
-from PyQt5.QtCore import QPointF, QLineF
+from PyQt6.QtGui import QPainterPath, QPolygonF
+from PyQt6.QtCore import QPointF, QLineF
 
 DATA_TEST = (
     (('Data0=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',), [0]),

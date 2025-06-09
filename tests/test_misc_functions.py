@@ -6,8 +6,8 @@ import map_items
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 import misc_functions
-from PyQt5.QtGui import QPainterPath, QPolygonF
-from PyQt5.QtCore import QPointF, QLineF
+from PyQt6.QtGui import QPainterPath, QPolygonF
+from PyQt6.QtCore import QPointF, QLineF
 
 
 TEST_RETURN_ICON_DEFINITION = ((['Type=0x15', 'SubType=0x00', 'Marine=Y', 'string1=0x04,Map', 'string2=0x15,Mapa',
