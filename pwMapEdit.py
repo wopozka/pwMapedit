@@ -350,7 +350,7 @@ class pwMapeditPy(QMainWindow):
         self.undo_redo_stack.set_undo_button(self.tool_bar.get_undo_button())
         self.setStatusBar(self.status_bar)
         self.generate_menus()
-        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, projection=self.projection,
+        self.map_canvas = mapCanvas.mapCanvas(self, 0, 0, 400, 200, _projection=self.projection,
                                               undo_redo_stack=self.undo_redo_stack)
         self.view = mapRender.mapRender(self.map_canvas, projection=self.projection)
         self.view.setMouseTracking(True)

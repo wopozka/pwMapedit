@@ -34,14 +34,14 @@ class mapCanvas(QGraphicsScene):
     closest_node_circle_pen = QPen(QColor("blue"))
     closest_node_circle_brush = QBrush(QColor("blue"))
     """The main map canvas definitions residue here"""
-    def __init__(self, parent, *args, projection=None, undo_redo_stack=None, **kwargs):
+    def __init__(self, parent, *args, _projection=None, undo_redo_stack=None, **kwargs):
         self.parent = parent
         self.properties_dock = self.parent.properties_dock
         super(mapCanvas, self).__init__(*args, **kwargs)
         self.undo_redo_stack = undo_redo_stack
         self._projection = None
-        if projection is not None:
-            self._projection = projection
+        if _projection is not None:
+            self._projection = _projection
         self._map_objects_properties = map_object_properties.MapObjectsProperties()
         # self.apply_bindings()
         self.operatingSystem = platform.system()

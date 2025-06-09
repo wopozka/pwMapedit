@@ -496,6 +496,7 @@ class Data_X(object):
     def get_data_level_index(self, data_level):
         if data_level in self._data_levels:
             return self._data_levels.index(data_level)
+        return None
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
         # zwraca definicje wszystkich numerow domow przypisanych do danego noda
@@ -517,7 +518,7 @@ class Data_X(object):
 
         Returns
         -------
-        dict, {node_idx: Numbers_Definition)
+        dict, {node_idx: Numbers_Definition}
 
         """
         segment_length = sum(a.length() for a in self.get_poly_vectors(data_level, poly_num, start_node_idx,
@@ -800,7 +801,8 @@ class Data_X(object):
 
     def set_hlevel_to_node(self, data_level, poly_num, node_num, level_val):
         dl_index = self.get_data_level_index(data_level)
-        self._poly_data_points[dl_index][poly_num][node_num].set_hlevel_definition(level_val)
+        if dl_index is not None:
+            self._poly_data_points[dl_index][poly_num][node_num].set_hlevel_definition(level_val)
 
     def set_obj_bounding_box(self, latitude, longitude):
         if self._bounding_box_N is None:
@@ -909,7 +911,7 @@ class BasicMapItem(object):
         # super(BasicMapItem, self).__init__()
         self._id = map_obj_id
         # used for marking objects that were removed from map. For undo/redo actions it is easier to mark object as
-        # removed then to copy it and then remove.
+        # removed than to copy it and then remove.
         self._deleted = False
         self._projection = None
         self._map_objects_properties = None

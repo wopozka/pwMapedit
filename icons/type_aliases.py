@@ -168,7 +168,7 @@ type_2_alias = {
             '0x3002': ["dentysta", "pogotowie", "przychodnia", "szpital", "szpitale", "uzdrowisko",
                        "weterynarz", "aed"],
             '0x3003': ["ratusz"],
-            '0x3004': ["sad"],
+            '0x3004': ["sad", "areszt", "wiezienie","zaklad_karny"],
             '0x3005': ["koncert", "concert", "hall"],
             '0x3006': ["border", "toll"],
             '0x3007': ["urzad", "instytucje", "prokuratura"],

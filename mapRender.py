@@ -178,18 +178,18 @@ class mapRender(QGraphicsView):
                 position = self.scene().closest_node_circle_position()
             else:
                 position = self.current_scene_mouse_coords()
-            if event.key() == Qt.Key_Insert:
+            if event.key() == Qt.Key.Key_Insert:
                 if self._poly_creation_nodes is None:
                     self._poly_creation_nodes = [position]
                 else:
                     self._poly_creation_nodes.append(position)
-            elif event.key() == Qt.Key_Backspace:
+            elif event.key() == Qt.Key.Key_Backspace:
                 if self._poly_creation_nodes is not None:
                     if len(self._poly_creation_nodes) > 1:
                         self._poly_creation_nodes.pop()
                     else:
                         self._poly_creation_nodes = None
-            elif event.key() == Qt.Key_Return:
+            elif event.key() == Qt.Key.Key_Return:
                 print(self._poly_creation_nodes)
                 if mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
                     self.scene().command_create_polyline(self._poly_creation_nodes)
@@ -230,7 +230,7 @@ class mapRender(QGraphicsView):
                         qpp.closeSubpath()
                     self._poly_creation_drawn_poly.setPath(qpp)
                     if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                        self._poly_creation_drawn_poly.setBrush(Qt.yellow)
+                        self._poly_creation_drawn_poly.setBrush(Qt.GlobalColor.yellow)
                         self._poly_creation_drawn_poly.setOpacity(0.5)
                 else:
                     # w przeciwnym przypadku oznacza to ze usunales wszystkie nody, usun tez nowo utworzony obiekt
@@ -291,7 +291,7 @@ class mapRender(QGraphicsView):
                 # przypadku gdy klikamy w trybie EDIT_NODES na na krawędzi selectedItem wtedy przepuść event dalej
                 # bo może chcemy dodać nowy wezel
                 if (mode == pwmapedit_constants.Tools.EDIT_NODES and self.scene().selectedItems() and
-                        self.scene().selectedItems()[0].cursor() == Qt.CrossCursor):
+                        self.scene().selectedItems()[0].cursor() == Qt.CursorShape.CrossCursor):
                     super().mousePressEvent(event)
                     return
                 items_under_cursor = [item for item in items_under_cursor if
@@ -404,7 +404,7 @@ class mapRender(QGraphicsView):
                 self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
             else:
                 tile_url = self.web_layer.get_tile_url(tile_def.xtile, tile_def.ytile)
-                if tile_url not in self.currently_downloading_web_layer_files:
+                if tile_url is not None and tile_url not in self.currently_downloading_web_layer_files:
                     self.currently_downloading_web_layer_files.add(tile_url)
                     directory = Path(os.path.dirname(tile_def.file_path))
                     if not directory.exists():
