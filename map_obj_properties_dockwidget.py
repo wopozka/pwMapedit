@@ -808,14 +808,14 @@ class ExtrasTable(QTableWidget):
         add_row_action_above.triggered.connect(self.add_row_below)
         delete_row_action = menu.addAction('Usun wiersz')
         delete_row_action.triggered.connect(self.remove_row)
-        res = menu.exec_(event.globalPos())
+        res = menu.exec(event.globalPos())
 
     def delete(self):
         for item in self.selectedItems():
             item.setText('')
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Down:
+        if event.key() == Qt.Key.Key_Down:
             if self.currentRow() == self.rowCount() - 1:
                 self.add_row_below(event)
         super().keyPressEvent(event)
