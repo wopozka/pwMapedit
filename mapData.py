@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import string
-import sys
-
 import misc_functions
 import pwmapedit_constants
 import map_items
-# from PyQt5.QtGui import QPainterPath, QPixmap
-# from collections import OrderedDict
-# import projection as coordinates_projection
-# from singleton_store import Store
-# # from PyQt5.QtSvg import QGraphicsSvgItem
-# from PyQt5.QtWidgets import QGraphicsItemGroup
 
 
 class mapData(object):

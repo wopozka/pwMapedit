@@ -933,7 +933,7 @@ class TypeComboBox(QComboBox):
         self.setCompleter(self.completer)
 
         # connect signals
-        self.lineEdit().textEdited[str].connect(self.pFilterModel.setFilterFixedString)
+        self.lineEdit().textEdited.connect(self.pFilterModel.setFilterFixedString)
         self.completer.activated.connect(self.on_completer_activated)
 
     # on selection of an item from the completer, select the corresponding item from combobox
@@ -941,7 +941,7 @@ class TypeComboBox(QComboBox):
         if text:
             index = self.findText(text)
             self.setCurrentIndex(index)
-            self.activated[str].emit(self.itemText(index))
+            self.activated.emit(index)
 
     # on model change, update the models of the filter and completer as well
     def setModel(self, model):

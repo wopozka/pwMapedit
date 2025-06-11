@@ -487,6 +487,7 @@ class pwMapeditPy(QMainWindow):
         file_actions[-1].triggered.connect(self.save_map)
         file_actions[-1].setShortcut(QKeySequence.StandardKey.Save)
         file_actions.append(QAction('&Save map as', self))
+        file_actions[-1].triggered.connect(self.save_map_as)
         file_actions[-1].setShortcut(QKeySequence.StandardKey.SaveAs)
         file_actions.append(None)
         file_actions.append(QAction('&Import', self))
@@ -699,7 +700,6 @@ class pwMapeditPy(QMainWindow):
             self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
             self.open_save_thread.start()
 
-
     def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
         if self.view.scene() is not None:
@@ -833,21 +833,32 @@ class pwMapeditPy(QMainWindow):
             self.status_bar.reset_progress_bar()
         return
 
+    def _save_map(self):
+        self.open_save_thread = QThread()
+        self.worker_file_parser = MapFileSaver(self, self.map_objects)
+        self.worker_file_parser.moveToThread(self.open_save_thread)
+        self.open_save_thread.started.connect(self.worker_file_parser.run)
+        self.worker_file_parser.finished.connect(self.open_save_thread.quit)
+        self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
+        self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
+        self.worker_file_parser.progress.connect(self.update_progress_bar)
+        self.open_save_thread.start()
+        self.undo_redo_stack.file_saved()
+
     def save_map(self):
-        if self.map_objects is not None and self.map_objects.contains_data():
-            self.open_save_thread = QThread()
-            self.worker_file_parser = MapFileSaver(self, self.map_objects)
-            self.worker_file_parser.moveToThread(self.open_save_thread)
-            self.open_save_thread.started.connect(self.worker_file_parser.run)
-            self.worker_file_parser.finished.connect(self.open_save_thread.quit)
-            self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
-            self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
-            self.worker_file_parser.progress.connect(self.update_progress_bar)
-            self.open_save_thread.start()
+        if (self.undo_redo_stack.file_needs_saving() and self.map_objects is not None
+                and self.map_objects.contains_data()):
+            self._save_map()
             self.undo_redo_stack.file_saved()
 
     def save_map_as(self):
-        return
+        if self.map_objects is not None and self.map_objects.contains_data():
+            file_name= QFileDialog.getSaveFileName(self, 'Zapisz mapę jako',
+                                                   self.map_objects.get_map_file_name(),
+                                                   'Pliki map (*.mp *.MP, *.txt)')
+            self.map_objects.set_map_file_name(file_name[0])
+            self._save_map()
+            self.undo_redo_stack.file_saved()
 
     def screen_changed(self, screen):
         print(self.view.physicalDpiX())
