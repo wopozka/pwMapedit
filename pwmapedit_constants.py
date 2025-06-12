@@ -21,6 +21,7 @@ LEFT_SIDE_NUM_MAIN = Qt.GlobalColor.blue
 LEFT_SIDE_NUM_INTER = Qt.GlobalColor.red
 RIGHT_SIDE_NUM_MAIN = Qt.GlobalColor.blue
 RIGHT_SIDE_NUM_INTER = Qt.GlobalColor.red
+MINIMAL_GEO_DISTANCE = 7 # 7 meters
 
 class Tools(Enum):
     ZOOM_MAP = auto()

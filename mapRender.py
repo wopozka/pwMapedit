@@ -14,7 +14,6 @@ import os.path
 import urllib.request
 from web_layers import WebLayerTile
 from pathlib import Path
-from math import sqrt
 
 import misc_functions
 from singleton_store import Store
@@ -250,10 +249,22 @@ class mapRender(QGraphicsView):
                         print('rysujemy elipse')
                         rx = self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x()
                         ry = self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y()
-                        r_circle = sqrt(rx ** 2 + ry ** 2)
-                        print(r_circle)
+                        r_circle = math.sqrt(rx ** 2 + ry ** 2)
+                        # print(r_circle)
                         qpp.addEllipse(self.mapToScene(event.pos()), r_circle, r_circle)
                         self._poly_creation_drawn_poly.setPath(qpp)
+                        try:
+                            vincenty_r = misc_functions.vincenty_distance(
+                                self.projection.canvas_to_geo(self._poly_creation_nodes[0].x(),
+                                                              self._poly_creation_nodes[0].y()),
+                                self.projection.canvas_to_geo(self.mapToScene(event.pos()).x(),
+                                                              self.mapToScene(event.pos()).y()))
+                        except ZeroDivisionError:
+                            vincenty_r = 0
+                        if vincenty_r:
+                            r_corelator = vincenty_r / pwmapedit_constants.MINIMAL_GEO_DISTANCE
+                            sinus = (0.5 * r_circle / r_corelator)/r_circle
+                            print(r_corelator, sinus)
 
                 else:
                     # w przeciwnym przypadku oznacza to ze usunales wszystkie nody, usun tez nowo utworzony obiekt
