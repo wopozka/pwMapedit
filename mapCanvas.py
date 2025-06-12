@@ -96,7 +96,7 @@ class mapCanvas(QGraphicsScene):
                     item.set_z_value()
         super().clearSelection()
 
-    def closest_point_to_point(self, event_pos, excluded_item=None):
+    def closest_node_circle_draw(self, event_pos, excluded_item=None):
         circle = QPainterPath()
         circle.addEllipse(event_pos, 30, 30)
         items_under_circle = self.items(circle)
@@ -150,6 +150,9 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline',
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
+
+    def command_create_polyline_circle(self, coordinates):
+        print(coordinates)
 
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,

@@ -14,6 +14,7 @@ import os.path
 import urllib.request
 from web_layers import WebLayerTile
 from pathlib import Path
+from math import sqrt
 
 import misc_functions
 from singleton_store import Store
@@ -192,10 +193,19 @@ class mapRender(QGraphicsView):
             elif event.key() == Qt.Key.Key_Return:
                 print(self._poly_creation_nodes)
                 if mode == pwmapedit_constants.Tools.CREATE_POLYLINE:
-                    self.scene().command_create_polyline(self._poly_creation_nodes)
+                    if self._poly_creation_nodes is not None and len(self._poly_creation_nodes) > 1:
+                        self.scene().command_create_polyline(self._poly_creation_nodes)
+                        self.delete_created_poly_shape()
                 elif mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                    self.scene().command_create_polygon(self._poly_creation_nodes)
-                self.delete_created_poly_shape()
+                    if self._poly_creation_nodes is not None and len(self._poly_creation_nodes) > 2:
+                        self.scene().command_create_polygon(self._poly_creation_nodes)
+                        self.delete_created_poly_shape()
+                # elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
+                #     if self.scene().closest_node_circle_position() is not None:
+                #         self._poly_creation_nodes.append(self.scene().closest_node_circle_position())
+                #     else:
+                #         self._poly_creation_nodes.append(self.mapToScene(event.pos()))
+                #     self.scene().command_create_polyline_circle(self._poly_creation_nodes)
 
         print('key pressed', event.key())
         super().keyPressEvent(event)
@@ -215,30 +225,42 @@ class mapRender(QGraphicsView):
         else:
             self.scene().closest_node_circle_remove()
             if self.scene().stick_to_neighbours():
-                self.scene().closest_point_to_point(self.mapToScene(event.pos()), excluded_item=None)
+                self.scene().closest_node_circle_draw(self.mapToScene(event.pos()), excluded_item=None)
             mode = self.scene().get_pw_mapedit_mode()
-            if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+            if mode in (pwmapedit_constants.Tools.CREATE_POLYLINE, pwmapedit_constants.Tools.CREATE_POLYGON,
+                        pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE):
                 # jesli nody nowo utworzonego polygonu i polyline sa obecne wtedy go stworz
                 if self._poly_creation_nodes is not None:
+                    # jesli nie ma niczego narysowanego to utworz nowy obiekt
                     if self._poly_creation_drawn_poly is None:
                         self._poly_creation_drawn_poly = QGraphicsPathItem()
                         self.scene().addItem(self._poly_creation_drawn_poly)
                         self._poly_creation_drawn_poly.setZValue(pwmapedit_constants.NEW_OBJECT_CREATION_Z_VAL)
+                    # tworzymy painterpath dla nowego obiektu
                     qpp = QPainterPath()
-                    qpp.addPolygon(QPolygonF(self._poly_creation_nodes + [self.mapToScene(event.pos())]))
-                    if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                        qpp.closeSubpath()
-                    self._poly_creation_drawn_poly.setPath(qpp)
-                    if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
-                        self._poly_creation_drawn_poly.setBrush(Qt.GlobalColor.yellow)
-                        self._poly_creation_drawn_poly.setOpacity(0.5)
+                    if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                        qpp.addPolygon(QPolygonF(self._poly_creation_nodes + [self.mapToScene(event.pos())]))
+                        if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                            qpp.closeSubpath()
+                        self._poly_creation_drawn_poly.setPath(qpp)
+                        if mode == pwmapedit_constants.Tools.CREATE_POLYGON:
+                            self._poly_creation_drawn_poly.setBrush(Qt.GlobalColor.yellow)
+                            self._poly_creation_drawn_poly.setOpacity(0.5)
+                    elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
+                        print('rysujemy elipse')
+                        rx = abs(self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x())
+                        ry = abs(self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y())
+                        r_circle = sqrt(rx ** 2 + ry ** 2)
+                        print(r_circle)
+                        qpp.addEllipse(self.mapToScene(event.pos()), r_circle, r_circle)
+                        self._poly_creation_drawn_poly.setPath(qpp)
+
                 else:
                     # w przeciwnym przypadku oznacza to ze usunales wszystkie nody, usun tez nowo utworzony obiekt
                     # ale tylko w przypadku gdy on istnieje
                     if self._poly_creation_drawn_poly is not None:
                         self.scene().removeItem(self._poly_creation_drawn_poly)
                         self._poly_creation_drawn_poly = None
-
 
             super(mapRender, self).mouseMoveEvent(event)
             self.set_status_bar(event=event)
@@ -352,6 +374,13 @@ class mapRender(QGraphicsView):
                         self._poly_creation_nodes = [position]
                     else:
                         self._poly_creation_nodes.append(position)
+                elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
+                    if self._poly_creation_nodes is None:
+                        self._poly_creation_nodes = [position]
+                    else:
+                        self._poly_creation_nodes.append(position)
+                        self.scene().command_create_polyline_circle(self._poly_creation_nodes)
+                        self.delete_created_poly_shape()
                 else:
                     pass
             # https://stackoverflow.com/questions/55642436/change-scrollhanddrag-form-left-click-to-middle-click-pyqt5

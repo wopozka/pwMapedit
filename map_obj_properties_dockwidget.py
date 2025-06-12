@@ -472,7 +472,6 @@ class MapObjPropDock(QDockWidget):
             poly_item.setText(1, '')
             poly_item.setText(2, f"{lat:.6f}, {lon:.6f}")
             pp = QPainterPath()
-            print(self.map_object_id.boundingRect())
             pp.addEllipse(scene_coords, 10, 10)
             poly_item.setData(2, Qt.ItemDataRole.UserRole, pp)
         else:

@@ -1770,7 +1770,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # usuń kółko dociągające, bo jeśli jest może być już niepotrzebne przy self._drag_to_closes_node == False
         self.scene().closest_node_circle_remove()
         if self.scene().stick_to_neighbours():
-            self.scene().closest_point_to_point(grip.pos(), excluded_item=self)
+            self.scene().closest_node_circle_draw(grip.pos(), excluded_item=self)
         # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
         # dociągnięty
         if self.scene().stick_to_neighbours() and self.scene().closest_node_circle_position() is not None:

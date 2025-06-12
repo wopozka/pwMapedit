@@ -180,7 +180,7 @@ def great_circle_distance(coord1, coord2):
 
 def vincenty_distance(coord1, coord2):
     """
-    calculates distance betwen two earth points
+    calculates distance between two earth points
     Parameters
     ----------
     coord1: tuple(latitude, longitude)
