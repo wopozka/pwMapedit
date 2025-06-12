@@ -248,8 +248,8 @@ class mapRender(QGraphicsView):
                             self._poly_creation_drawn_poly.setOpacity(0.5)
                     elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
                         print('rysujemy elipse')
-                        rx = abs(self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x())
-                        ry = abs(self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y())
+                        rx = self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x()
+                        ry = self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y()
                         r_circle = sqrt(rx ** 2 + ry ** 2)
                         print(r_circle)
                         qpp.addEllipse(self.mapToScene(event.pos()), r_circle, r_circle)
