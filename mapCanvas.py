@@ -142,7 +142,6 @@ class mapCanvas(QGraphicsScene):
         new_poly = map_items.PolylineQGraphicsPathItem(None,
                                                        map_objects_properties=self._map_objects_properties,
                                                        _projection=self._projection)
-        print(coordinates)
         data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)

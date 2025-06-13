@@ -3,8 +3,8 @@
 from urllib.error import URLError
 
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsPathItem
-from PyQt6.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable
-from PyQt6.QtGui import QMouseEvent, QPainterPath, QPolygonF, QBrush
+from PyQt6.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable, QLineF
+from PyQt6.QtGui import QMouseEvent, QPainterPath, QPolygonF, QFont
 import math
 
 import map_items
@@ -246,13 +246,14 @@ class mapRender(QGraphicsView):
                             self._poly_creation_drawn_poly.setBrush(Qt.GlobalColor.yellow)
                             self._poly_creation_drawn_poly.setOpacity(0.5)
                     elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
-                        print('rysujemy elipse')
+                        print('rysujemy okrag')
+                        # liczymy promien okregu
                         rx = self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x()
                         ry = self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y()
                         r_circle = math.sqrt(rx ** 2 + ry ** 2)
-                        # print(r_circle)
+                        # rysujemy okrag
                         qpp.addEllipse(self.mapToScene(event.pos()), r_circle, r_circle)
-                        self._poly_creation_drawn_poly.setPath(qpp)
+                        # obliczamy jaką geo odległość ma promień okręgu
                         try:
                             vincenty_r = misc_functions.vincenty_distance(
                                 self.projection.canvas_to_geo(self._poly_creation_nodes[0].x(),
@@ -262,9 +263,28 @@ class mapRender(QGraphicsView):
                         except ZeroDivisionError:
                             vincenty_r = 0
                         if vincenty_r:
+                            # patrzymy ile razy geo promień okregu jest większy od minimum
                             r_corelator = vincenty_r / pwmapedit_constants.MINIMAL_GEO_DISTANCE
-                            sinus = (0.5 * r_circle / r_corelator)/r_circle
-                            print(r_corelator, sinus)
+                            r_circle_min_geo_dist = r_circle / r_corelator
+                            min_r = 2 * r_circle_min_geo_dist / math.sqrt(3)
+                            if r_circle >= min_r:
+                                sin_1_2_alpha = 0.5 * r_circle_min_geo_dist / r_circle
+                                alpha = math.asin(2 * sin_1_2_alpha)
+                                pol_n = int(math.pi // alpha)
+                                rot_line = QLineF(self.mapToScene(event.pos()), self._poly_creation_nodes[0])
+                                self._poly_creation_nodes = self._poly_creation_nodes[:1]
+                                qpp.addText(rot_line.p2(), QFont(), '1')
+                                for edge_n in range(1, pol_n):
+                                    rot_line.setAngle(rot_line.angle() + 360/pol_n)
+                                    # print(rot_line.angle())
+                                    qpp.addText(rot_line.p2(), QFont(), str(edge_n + 1))
+                                    if edge_n != 0:
+                                        self._poly_creation_nodes.append(rot_line.p2())
+                                self._poly_creation_nodes += [self._poly_creation_nodes[0]]
+                                qpp.addPolygon(QPolygonF(self._poly_creation_nodes))
+                            else:
+                                self._poly_creation_nodes = self._poly_creation_nodes[:1]
+                        self._poly_creation_drawn_poly.setPath(qpp)
 
                 else:
                     # w przeciwnym przypadku oznacza to ze usunales wszystkie nody, usun tez nowo utworzony obiekt
@@ -389,8 +409,7 @@ class mapRender(QGraphicsView):
                     if self._poly_creation_nodes is None:
                         self._poly_creation_nodes = [position]
                     else:
-                        self._poly_creation_nodes.append(position)
-                        self.scene().command_create_polyline_circle(self._poly_creation_nodes)
+                        self.scene().command_create_polyline(self._poly_creation_nodes)
                         self.delete_created_poly_shape()
                 else:
                     pass
