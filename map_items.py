@@ -1663,6 +1663,42 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self._closest_node_circle.setPos(closes_point.p2())
                 self.scene().addItem(self._closest_node_circle)
 
+    def _closest_point_to_poly_insert_node(self, event_pos):
+        polygons = self.get_polygons_from_path(self.path())
+        intersections_for_separate_paths = list()
+        for path_num, points in enumerate(polygons):
+            p1 = points.pop(0)
+            if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
+                points.append(p1)
+            intersections = []
+            for coord_index, p2 in enumerate(points, 1):
+                line = QLineF(p1, p2)
+                inters = QPointF()
+                # create a perpendicular line that starts at the given pos
+                perp = QLineF.fromPolar(line.length(), line.angle() + 90.0).translated(event_pos)
+                intersection_type, inters = line.intersects(perp)
+                if intersection_type == QLineF.IntersectionType.NoIntersection:
+                    continue
+                elif intersection_type == QLineF.IntersectionType.UnboundedIntersection:
+                    perp = QLineF(inters, event_pos)
+                    intersection_type, inters = line.intersects(perp)
+                    if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
+                        p1 = p2
+                        continue
+                intersections.append((QLineF(event_pos, inters).length(), 'segment', (path_num, coord_index,)))
+                p1 = p2
+            if not self.is_polygon() and points[0] != points[-1]:
+                intersections.append((QLineF(event_pos, points[0]).length(), 'point', (path_num, 0,)))
+                intersections.append((QLineF(event_pos, points[-1]).length(), 'point', (path_num, -1,)))
+
+            if intersections:
+                intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
+        if intersections_for_separate_paths:
+            # return the result with the shortest distance
+            return min(intersections_for_separate_paths, key=lambda item: item[0])
+        return -1, None, (0, -1)
+
+
     def _closest_point_to_poly(self, event_pos):
         """
             Get the position along the polyline/polygon sides that is the closest
@@ -1973,10 +2009,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return False
 
     # def keyPressEvent(self, event):
-    #     if event.key() == Qt.Key_Control:
-    #         self._drag_to_closest_node = True
+    #     if self.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
+    #         dist = self._closest_point_to_poly_insert_node(self.mapToScene(event.pos()))
+    #         print(dist)
     #     super().keyPressEvent(event)
-    #
+
     # def keyReleaseEvent(self, event):
     #     if event.key() == Qt.Key_Control:
     #         self._drag_to_closest_node = False
