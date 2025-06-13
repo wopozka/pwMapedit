@@ -3,7 +3,7 @@
 
 # https://www.riverbankcomputing.com/static/Docs/PyQt6/index.html
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QProgressBar, QLabel
-from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QInputDialog, QMessageBox
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QInputDialog, QMessageBox, QStyleFactory
 from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt6.QtGui import QKeySequence, QClipboard, QAction, QActionGroup, QShortcut, QUndoStack
 import sys
@@ -870,6 +870,7 @@ if __name__ == "__main__":
 
     file_to_open = ''
     app = QApplication(sys.argv)
+    # app.setStyle(QStyleFactory.create("Fusion"))
     w = pwMapeditPy(None, file_to_open)
     w.show()
     app.exec()
