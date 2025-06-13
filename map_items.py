@@ -2042,7 +2042,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def paint(self, painter, option, widget=None):
         if option.state & QStyle.StateFlag.State_Selected or self.decorated() or self.hover_enter_for_create_mode:
-            # print(self.hover_enter_for_create_mode)
             self.setOpacity(0.5)
         else:
             if self.opacity() < 1:
