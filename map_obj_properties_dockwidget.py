@@ -297,7 +297,7 @@ class MapObjPropDock(QDockWidget):
         self.map_object_id.command_update_comment(self.comment_text_edit.toPlainText())
 
     def command_dirindicator_changed(self):
-        self.map_object_id.command_set_dirindicator(bool(self.poly_direction.checkState()))
+        self.map_object_id.command_set_dirindicator(self.poly_direction.isChecked())
 
     def command_hlevel_changed(self):
         if self.node_hlevel.currentIndex() > 0:
@@ -356,7 +356,7 @@ class MapObjPropDock(QDockWidget):
             if item_num == RouteParams.speed_limit.value or item_num == RouteParams.route_class.value:
                 route_defs.append(self.route_params[item_num].currentIndex())
             else:
-                route_defs.append(1 if self.route_params[item_num].checkState() >= 1 else 0)
+                route_defs.append(1 if self.route_params[item_num].isChecked()  else 0)
         self.map_object_id.command_set_route_params(route_defs)
 
     def command_numeration_style_edited(self, new_index):
