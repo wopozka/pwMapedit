@@ -870,7 +870,7 @@ if __name__ == "__main__":
 
     file_to_open = ''
     app = QApplication(sys.argv)
-    app.setStyle(QStyleFactory.create("Fussion"))
+    app.setStyle(QStyleFactory.create("Fusion"))
     w = pwMapeditPy(None, file_to_open)
     w.show()
     app.exec()
