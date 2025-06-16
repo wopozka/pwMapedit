@@ -305,10 +305,11 @@ class mapCanvas(QGraphicsScene):
             self._stick_to_neighbours_nodes = True
             print('Wlaczam przyciaganie')
         elif event.key() == Qt.Key.Key_Insert and self.get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            item = self.selectedItems()[0]
-            if (isinstance(item, map_items.PolylineQGraphicsPathItem) or
-                    isinstance(item, map_items.PolygonQGraphicsPathItem)):
-                print(item._closest_point_to_poly_insert_node(self.views()[0].current_scene_mouse_coords()))
+            if self.selectedItems():
+                item = self.selectedItems()[0]
+                if (isinstance(item, map_items.PolylineQGraphicsPathItem) or
+                        isinstance(item, map_items.PolygonQGraphicsPathItem)):
+                    print(item._closest_point_to_poly_insert_node(self.views()[0].current_scene_mouse_coords()))
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event):

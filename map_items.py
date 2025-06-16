@@ -1663,37 +1663,25 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self.scene().addItem(self._closest_node_circle)
 
     def _closest_point_to_poly_insert_node(self, event_pos):
+        float_tolerance = 0.000001
         polygons = self.get_polygons_from_path(self.path())
         intersections_for_separate_paths = list()
         for path_num, points in enumerate(polygons):
             # jesli punkt wskaznik myszy jest w poblizu ostatniego albo pierwszego wezla, wtedy sprawdz, bo byc moze
             # trzeba przedluzyc polilinię. Zrób to tylko w przypadku gdy polilinia jest otwarta
-
+            intersections = []
             if (not self.is_polygon()) and (points[0] != points[-1]):
-                p1_p0_vect = QLineF(points[1], points[0])
-                p0_event_pos_vect = QLineF(points[0], event_pos)
-                pend_1_2_vect = QLineF(points[-2], points[-1])
-                pend1_event_pos_vect = QLineF(points[-1], event_pos)
-                print(p1_p0_vect.angle(), p0_event_pos_vect.angle(), pend_1_2_vect.angle(), pend1_event_pos_vect.angle())
-                if ((p1_p0_vect.angle() - 90 >= p0_event_pos_vect.angle() >= p1_p0_vect.angle() + 90) and
-                        (pend_1_2_vect.angle() - 90 >= pend1_event_pos_vect.angle() >= pend_1_2_vect.angle() + 90)):
-                    print('oba powyzej 90')
-                    if p0_event_pos_vect.length() < pend1_event_pos_vect.length():
-                        # insert before first point
-                        return p0_event_pos_vect.length(), 'point', (path_num, 0,)
-                    else:
-                        return pend1_event_pos_vect.length(), 'point', (path_num, -1,)
-                elif p1_p0_vect.angle() - 90 >= p0_event_pos_vect.angle() >= p1_p0_vect.angle() + 90:
-                    print('blizej pierwszego wezla', p1_p0_vect.angle(), p0_event_pos_vect.angle())
-                    return p0_event_pos_vect.length(), 'point', (path_num, 0,)
-                elif pend_1_2_vect.angle() - 90 >= pend1_event_pos_vect.angle() >= pend_1_2_vect.angle() + 90:
-                    print('blizej koncowego wezla', pend_1_2_vect.angle(), pend1_event_pos_vect.angle())
-                    return pend1_event_pos_vect.length(), 'point', (path_num, -1,)
+                for pair in ((1, 0), (-2, -1,)):
+                    vect = QLineF(points[pair[0]], points[pair[1]])
+                    n_vect= vect.normalVector()
+                    inter_type, inter_point = vect.intersects(n_vect)
+                    event_vect = QLineF(inter_point, event_pos)
+                    if (vect.p1() - event_vect.p1()).x() <= float_tolerance and (vect.p2() - event_vect.p2()).y() <= float_tolerance:
+                        intersections.append((QLineF(points[pair[1]], event_pos).length(), 'point', (path_num, pair[1],)),)
 
             p1 = points.pop(0)
             if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
                 points.append(p1)
-            intersections = []
             for coord_index, p2 in enumerate(points, 1):
                 #distance to point
                 point_to_point_dist = QLineF(event_pos, p2).length()
