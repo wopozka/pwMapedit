@@ -213,7 +213,6 @@ class Data_X(object):
         data_level: int, 0, 1, 2, 3, 4, odpowiada Data0, Data1, Data2, Data3, Data4
         poly_num: int, 0, 1, 2, 3, 4..., kolejny numer polyline/polygon
         definition: string: definicja Numbers w pliku mp
-        Returns: None
         -------
         """
         num_data = definition.split(',')
