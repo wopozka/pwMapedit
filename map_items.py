@@ -1681,9 +1681,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
         """
         float_tolerance = 0.000001
+        print('event pos', event_pos)
         polygons = self.get_polygons_from_path(self.path())
         intersections_for_separate_paths = list()
         for path_num, points in enumerate(polygons):
+            print('points', points)
             # jesli punkt wskaznik myszy jest w poblizu ostatniego albo pierwszego wezla, wtedy sprawdz, bo byc moze
             # trzeba przedluzyc polilinię. Zrób to tylko w przypadku gdy polilinia jest otwarta
             intersections = []
@@ -1692,18 +1694,18 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     print(pair)
                     vect = QLineF(points[pair[0]], points[pair[1]])
                     vect1 = QLineF(points[pair[0]], points[pair[1]])
-                    vect1.translate(event_pos)
+                    vect1.translate(event_pos - vect.p1())
                     n_vect= vect.normalVector()
                     print(n_vect, vect)
-                    n_vect.translate(vect.p2())
+                    n_vect.translate(vect.dx(), vect.dy())
                     print(n_vect, vect)
                     inter_type, inter_point = vect1.intersects(n_vect)
                     print(inter_point)
                     event_vect = QLineF(inter_point, event_pos)
                     vect = vect.unitVector()
                     vect.translate(-vect.p1())
-                    event_vect = event_vect.unitVector()
                     event_vect.translate(-event_vect.p1())
+                    event_vect = event_vect.unitVector()
                     print(vect, event_vect)
                     if (vect.p2().x() * event_vect.p2().x() >= 0)  and (vect.p2().y() * event_vect.p2().y() >=0):
                         print('Dodaje node numer: ', pair[1])
