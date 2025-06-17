@@ -25,6 +25,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
 
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 Interpolated_Number = namedtuple('Interpolated_Number', ['vector', 'position', 'number'])
+Closest_Point = namedtuple('Closest_Point', ['distance', 'segment_pos', 'path_num', 'coord_index'])
 
 
 class Node(QPointF):
@@ -773,7 +774,12 @@ class Data_X(object):
 
     def insert_node_at_position(self, data_level, polynum, index, x, y):
         polygon = self._poly_data_points[data_level][polynum]
-        polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self._projection)] + polygon[index:]
+        if index == 0:
+            polygon_mod = [Node(x=x, y=y, projection=self._projection)] + polygon
+        elif index == -1:
+            polygon_mod = polygon + [Node(x=x, y=y, projection=self._projection)]
+        else:
+            polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self._projection)] + polygon[index:]
         self._poly_data_points[data_level][polynum] = polygon_mod
 
     def reverse_poly(self, data_level):
@@ -1663,6 +1669,17 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 self.scene().addItem(self._closest_node_circle)
 
     def _closest_point_to_poly_insert_node(self, event_pos):
+        """
+        Get the position along polyline/polygon where to insert a new node when insert key is pressed
+        Parameters
+        ----------
+        event_pos: event position in scene coordinates
+
+        Returns
+        -------
+        return: Closest_Point(distance, is_segment, path_num, insertion_index)
+
+        """
         float_tolerance = 0.000001
         polygons = self.get_polygons_from_path(self.path())
         intersections_for_separate_paths = list()
@@ -1680,16 +1697,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                             (vect.p2() - event_vect.p2()).y() <= float_tolerance and
                             (vect.p1() - event_vect.p1()).y() <= float_tolerance and
                             (vect.p2() - event_vect.p2()).y() <= float_tolerance):
-                        intersections.append((QLineF(points[pair[1]], event_pos).length(),
-                                              'point', (path_num, pair[1],)),)
-
+                        intersections.append(Closest_Point(QLineF(points[pair[1]], event_pos).length(),
+                                                           None, path_num, pair[1]))
             p1 = points.pop(0)
             if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
                 points.append(p1)
             for coord_index, p2 in enumerate(points, 1):
                 #distance to point
                 point_to_point_dist = QLineF(event_pos, p2).length()
-                intersections.append((point_to_point_dist, 'segment', (path_num, coord_index,),))
+                intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
                 line = QLineF(p1, p2)
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
@@ -1703,15 +1719,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
                         p1 = p2
                         continue
-                intersections.append((QLineF(event_pos, inters).length(), 'segment', (path_num, coord_index,)))
+                intersections.append(Closest_Point(QLineF(event_pos, inters).length(), 1,
+                                                   path_num, coord_index))
                 p1 = p2
             if intersections:
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
             # return the result with the shortest distance
             return min(intersections_for_separate_paths, key=lambda item: item[0])
-        return -1, None, (0, -1)
-
+        return Closest_Point(-1, None, 0, -1)
 
     def _closest_point_to_poly(self, event_pos):
         """
@@ -1753,7 +1769,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 # get the distance between the given pos and the found intersection
                 # point, then add it, the intersection and the insertion index to
                 # the intersection list
-                intersections.append((QLineF(event_pos, inters).length(), inters, (path_num, coord_index,)))
+                intersections.append(Closest_Point(QLineF(event_pos, inters).length(), inters,
+                                                   path_num, coord_index))
                 p1 = p2
             if intersections:
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
@@ -1761,7 +1778,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if intersections_for_separate_paths:
             # return the result with the shortest distance
             return min(intersections_for_separate_paths, key=lambda item: item[0])
-        return -1, QPointF(), (0, -1)
+        return Closest_Point(-1, QPointF(), 0, -1)
 
     def closest_point_to_poly(self, event_pos):
         # redefined in derived classes
@@ -1771,9 +1788,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.UpdateExtras(self, new_extras, 'Zmiana extras')
         self.scene().undo_redo_stack.push(command)
 
-    def command_insert_point(self, index, pos):
+    def command_insert_point(self, path_num, coord_num, pos):
         # index is always > 0, so the first element will always be moveTo
-        path_num, coord_num = index
         polygons = self.get_polygons_from_path(self.path())
         try:
             polygon = polygons[path_num]
@@ -1781,7 +1797,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             polygons[path_num] = polygon_modified
         except IndexError:
             return
-        command = commands.InsertNodeCmd(self, index, pos, polygons, 'Dodaj nod')
+        command = commands.InsertNodeCmd(self, path_num, coord_num, pos, polygons, 'Dodaj nod')
         self.scene().undo_redo_stack.push(command)
 
     def command_move_grip2(self, grip):
@@ -2009,9 +2025,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
 
-    # to be override in other classes
-    def insert_point(self, index, pos):
-        return
+    def insert_key_pressed(self, event_pos):
+        point_def = self._closest_point_to_poly_insert_node(event_pos)
+        print(point_def)
+        self.command_insert_point(point_def.path_num, point_def.coord_index, event_pos)
+
+    def insert_point(self, path_num, coord_num, pos):
+        self.command_insert_point(path_num, coord_num, pos)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -2059,10 +2079,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.EDIT_NODES:
             if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-                dist, pos, index = self.closest_point_to_poly(event.pos())
-                print(dist, pos, index)
-                if index[1] >= 0 and dist <= self.threshold():
-                    self.insert_point(index, pos)
+                closest_point = self.closest_point_to_poly(event.pos())
+                print(closest_point)
+                if closest_point.coord_index >= 0 and closest_point.distance <= self.threshold():
+                    self.insert_point(closest_point.path_num, closest_point.coord_index, closest_point.segment_pos)
                     return
         elif mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.recorded_pos = self.pos()
@@ -2589,8 +2609,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         if grip in self.node_grip_items:
             self.command_remove_point(grip)
 
-    def insert_point(self, index, pos):
-        self.command_insert_point(index, pos)
+    # def insert_point(self, index, pos):
+    #     self.command_insert_point(index, pos)
 
     @staticmethod
     def is_point_removal_possible(num_elems_in_path):
@@ -2696,8 +2716,8 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         # return misc_functions.closest_point_to_poly(event_pos, polygons, self.threshold(), type_polygon=True)
         return self._closest_point_to_poly(event_pos)
 
-    def insert_point(self, index, pos):
-        self.command_insert_point(index, pos)
+    # def insert_point(self, index, pos):
+    #     self.command_insert_point(index, pos)
 
 
 class MapLabels(QGraphicsSimpleTextItem):

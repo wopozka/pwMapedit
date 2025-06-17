@@ -74,12 +74,13 @@ class DeleteObjectsCmd(QUndoCommand):
 
 
 class InsertNodeCmd(QUndoCommand):
-    def __init__(self, map_object, index, pos, polygons, description):
+    def __init__(self, map_object, path_num, coord_num, pos, polygons, description):
         super(InsertNodeCmd, self).__init__(description)
         self.data0_copy = map_object.data0.copy()
         self.path_copy = QPainterPath(map_object.path())
         self.map_object = map_object
-        self.path_num, self.coord_num = index
+        self.path_num = path_num
+        self.coord_num = coord_num
         self.pos = pos
         self.polygons = polygons
         self.data_level = self.map_object.current_data_x

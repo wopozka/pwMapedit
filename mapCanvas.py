@@ -309,7 +309,9 @@ class mapCanvas(QGraphicsScene):
                 item = self.selectedItems()[0]
                 if (isinstance(item, map_items.PolylineQGraphicsPathItem) or
                         isinstance(item, map_items.PolygonQGraphicsPathItem)):
-                    print(item._closest_point_to_poly_insert_node(self.views()[0].current_scene_mouse_coords()))
+                    item.insert_key_pressed(self.views()[0].current_scene_mouse_coords())
+                elif isinstance(item, map_items.GripItem):
+                    item.parent.insert_key_pressed(self.views()[0].current_scene_mouse_coords())
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event):
