@@ -1691,24 +1691,24 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             intersections = []
             if (not self.is_polygon()) and (points[0] != points[-1]):
                 for pair in ((1, 0), (-2, -1,)):
-                    print(pair)
+                    # print(pair)
                     vect = QLineF(points[pair[0]], points[pair[1]])
                     vect1 = QLineF(points[pair[0]], points[pair[1]])
                     vect1.translate(event_pos - vect.p1())
                     n_vect= vect.normalVector()
-                    print(n_vect, vect)
+                    # print(n_vect, vect)
                     n_vect.translate(vect.dx(), vect.dy())
-                    print(n_vect, vect)
+                    # print(n_vect, vect)
                     inter_type, inter_point = vect1.intersects(n_vect)
-                    print(inter_point)
+                    # print(inter_point)
                     event_vect = QLineF(inter_point, event_pos)
                     vect = vect.unitVector()
                     vect.translate(-vect.p1())
                     event_vect.translate(-event_vect.p1())
                     event_vect = event_vect.unitVector()
-                    print(vect, event_vect)
+                    # print(vect, event_vect)
                     if (vect.p2().x() * event_vect.p2().x() >= 0)  and (vect.p2().y() * event_vect.p2().y() >=0):
-                        print('Dodaje node numer: ', pair[1])
+                        # print('Dodaje node numer: ', pair[1])
                         # print(vect.p2().x() * event_vect.p2().x() >= 0, vect.p2().y() * event_vect.p2().y() >=0)
                         intersections.append(Closest_Point(QLineF(points[pair[1]], event_pos).length(),
                                                            None, path_num, pair[1]))
@@ -1736,6 +1736,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                                                    path_num, coord_index))
                 p1 = p2
             if intersections:
+                print(intersections)
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
             # return the result with the shortest distance
