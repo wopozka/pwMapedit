@@ -1676,8 +1676,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     n_vect= vect.normalVector()
                     inter_type, inter_point = vect.intersects(n_vect)
                     event_vect = QLineF(inter_point, event_pos)
-                    if (vect.p1() - event_vect.p1()).x() <= float_tolerance and (vect.p2() - event_vect.p2()).y() <= float_tolerance:
-                        intersections.append((QLineF(points[pair[1]], event_pos).length(), 'point', (path_num, pair[1],)),)
+                    if ((vect.p1() - event_vect.p1()).x() <= float_tolerance and
+                            (vect.p2() - event_vect.p2()).y() <= float_tolerance and
+                            (vect.p1() - event_vect.p1()).y() <= float_tolerance and
+                            (vect.p2() - event_vect.p2()).y() <= float_tolerance):
+                        intersections.append((QLineF(points[pair[1]], event_pos).length(),
+                                              'point', (path_num, pair[1],)),)
 
             p1 = points.pop(0)
             if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
@@ -1685,7 +1689,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             for coord_index, p2 in enumerate(points, 1):
                 #distance to point
                 point_to_point_dist = QLineF(event_pos, p2).length()
-                intersections.append((point_to_point_dist, 'point', (path_num, coord_index,),))
+                intersections.append((point_to_point_dist, 'segment', (path_num, coord_index,),))
                 line = QLineF(p1, p2)
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
@@ -1701,10 +1705,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                         continue
                 intersections.append((QLineF(event_pos, inters).length(), 'segment', (path_num, coord_index,)))
                 p1 = p2
-            if not self.is_polygon() and points[0] != points[-1]:
-                intersections.append((QLineF(event_pos, points[0]).length(), 'point', (path_num, 0,)))
-                intersections.append((QLineF(event_pos, points[-1]).length(), 'point', (path_num, -1,)))
-
             if intersections:
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
