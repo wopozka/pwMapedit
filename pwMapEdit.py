@@ -319,6 +319,8 @@ class pwMapeditPy(QMainWindow):
         self.tool_bar = None
         self.tools_action = dict()
         self.map_ruler = None
+        self.km_vs_scale = None
+        self.current_scale_index = pwmapedit_constants.MAP_SCALE_KM.index(0.029)
         self.initialize()
         self.generate_shortcuts()
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.properties_dock)
@@ -339,7 +341,6 @@ class pwMapeditPy(QMainWindow):
         if self._last_background_action is None:
             self._last_background_action = self.weblayers_actions_group.actions()[0]
         self._last_background_action.trigger()
-
 
     def initialize(self):
         # self.protocol("WM_DELETE_WINDOW", self.Quit)
@@ -475,6 +476,10 @@ class pwMapeditPy(QMainWindow):
         self.weblayers_actions_group.addAction(geoportal_action)
         self.weblayers_actions_group.addAction(google_action)
 
+    def calculate_km_vs_scale(self, scale_1_km):
+        scales = [1 / (km * 1000 / scale_1_km) for km in pwmapedit_constants.MAP_SCALE_KM]
+        print(scales)
+        return scales
 
     def _create_file_actions(self):
         file_actions = list()
@@ -700,7 +705,6 @@ class pwMapeditPy(QMainWindow):
             self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
             self.open_save_thread.start()
 
-
     def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
         if self.view.scene() is not None:
@@ -724,6 +728,7 @@ class pwMapeditPy(QMainWindow):
             self.view.set_status_bar(event=None)
             print('map data ofset', self.projection.earth_radius)
             print(self.map_canvas.sceneRect())
+            self.km_vs_scale = self.calculate_km_vs_scale(self.map_ruler.get_map_scale())
         return
 
     def get_map_items(self, map_items):
