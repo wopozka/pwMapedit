@@ -1680,45 +1680,37 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return: Closest_Point(distance, is_segment, path_num, insertion_index)
 
         """
-        float_tolerance = 0.000001
-        print('event pos', event_pos)
         polygons = self.get_polygons_from_path(self.path())
         intersections_for_separate_paths = list()
         for path_num, points in enumerate(polygons):
-            print('points', points)
             # jesli punkt wskaznik myszy jest w poblizu ostatniego albo pierwszego wezla, wtedy sprawdz, bo byc moze
             # trzeba przedluzyc polilinię. Zrób to tylko w przypadku gdy polilinia jest otwarta
             intersections = []
             if (not self.is_polygon()) and (points[0] != points[-1]):
                 for pair in ((1, 0), (-2, -1,)):
-                    # print(pair)
                     vect = QLineF(points[pair[0]], points[pair[1]])
                     vect1 = QLineF(points[pair[0]], points[pair[1]])
                     vect1.translate(event_pos - vect.p1())
                     n_vect= vect.normalVector()
-                    # print(n_vect, vect)
                     n_vect.translate(vect.dx(), vect.dy())
-                    # print(n_vect, vect)
                     inter_type, inter_point = vect1.intersects(n_vect)
-                    # print(inter_point)
                     event_vect = QLineF(inter_point, event_pos)
                     vect = vect.unitVector()
                     vect.translate(-vect.p1())
                     event_vect.translate(-event_vect.p1())
                     event_vect = event_vect.unitVector()
-                    # print(vect, event_vect)
                     if (vect.p2().x() * event_vect.p2().x() >= 0)  and (vect.p2().y() * event_vect.p2().y() >=0):
-                        # print('Dodaje node numer: ', pair[1])
-                        # print(vect.p2().x() * event_vect.p2().x() >= 0, vect.p2().y() * event_vect.p2().y() >=0)
                         intersections.append(Closest_Point(QLineF(points[pair[1]], event_pos).length(),
                                                            None, path_num, pair[1]))
             p1 = points.pop(0)
             if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
                 points.append(p1)
             for coord_index, p2 in enumerate(points, 1):
-                #distance to point
-                point_to_point_dist = QLineF(event_pos, p2).length()
-                intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
+                # poniższe wykonaj tylko dla polygonow, albo polilinii, ale nie ostatniego noda. Ostatni nod byl juz
+                # sprawdzany wcześniej
+                if self.is_polygon() or (not self.is_polygon() and p2 != points[-1]):
+                    point_to_point_dist = QLineF(event_pos, p2).length()
+                    intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
                 line = QLineF(p1, p2)
                 inters = QPointF()
                 # create a perpendicular line that starts at the given pos
@@ -1736,7 +1728,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                                                    path_num, coord_index))
                 p1 = p2
             if intersections:
-                print(intersections)
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
             # return the result with the shortest distance
@@ -1807,7 +1798,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         polygons = self.get_polygons_from_path(self.path())
         try:
             polygon = polygons[path_num]
-            polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
+            if coord_num == 0:
+                polygon_modified = [pos] + polygon
+            elif coord_num == -1:
+                polygon_modified = polygon + [pos]
+            else:
+                polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
             polygons[path_num] = polygon_modified
         except IndexError:
             return
@@ -2041,7 +2037,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def insert_key_pressed(self, event_pos):
         point_def = self._closest_point_to_poly_insert_node(event_pos)
-        print(point_def)
         self.command_insert_point(point_def.path_num, point_def.coord_index, event_pos)
 
     def insert_point(self, path_num, coord_num, pos):
