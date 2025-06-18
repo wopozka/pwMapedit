@@ -318,6 +318,7 @@ class pwMapeditPy(QMainWindow):
         self.properties_dock = map_obj_properties_dockwidget.MapObjPropDock(self)
         self.tool_bar = None
         self.tools_action = dict()
+        self.map_ruler = None
         self.initialize()
         self.generate_shortcuts()
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.properties_dock)
@@ -326,7 +327,6 @@ class pwMapeditPy(QMainWindow):
         # as reading of file is done in separate thread, we need to know whether all objects were already drawn
         # below variable will be empty if all is drawn
         self.map_objects_to_be_drawn = set()
-        self.map_ruler = None
         self.open_save_thread = None
         self.worker_file_parser = None
         self.menu_tools_set_mode()
@@ -700,6 +700,7 @@ class pwMapeditPy(QMainWindow):
             self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
             self.open_save_thread.start()
 
+
     def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
         if self.view.scene() is not None:
@@ -719,6 +720,8 @@ class pwMapeditPy(QMainWindow):
             self.map_canvas.set_canvas_rectangle(self.map_objects.get_map_bounding_box())
             self.projection.set_map_bounding_box(self.map_objects.get_map_bounding_box())
             self.projection.calculate_data_offset()
+            self.map_ruler.scale_to()
+            self.view.set_status_bar(event=None)
             print('map data ofset', self.projection.earth_radius)
             print(self.map_canvas.sceneRect())
         return
