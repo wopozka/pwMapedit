@@ -51,8 +51,8 @@ class CreateNewPolyCmd(QUndoCommand):
 
 
     def undo(self):
-        if self.new_poly_map_object.decorated():
-            self.new_poly_map_object.undecorate()
+        if self.new_poly_map_object.isSelected():
+            self.new_poly_map_object.setSelected(False)
         self.scene.removeItem(self.new_poly_map_object)
         self.map_objects.set_map_object_deleted(self.new_poly_map_object)
 
