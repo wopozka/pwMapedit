@@ -88,13 +88,15 @@ class InsertNodeCmd(QUndoCommand):
         self.data_level = self.map_object.current_data_x
 
     def redo(self):
-        self.map_object.undecorate()
+        if self.map_object.isSelected():
+            self.map_object.setSelected(False)
+        # self.map_object.undecorate()
         self.map_object.data0.insert_node_at_position(self.data_level, self.path_num, self.coord_num,
                                                       self.pos.x(), self.pos.y())
         self.map_object.setPath(self.map_object.create_painter_path(self.polygons))
         self.update_children()
-        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.map_object.decorate()
+        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES or self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            self.map_object.setSelected(True)
         return
 
     def undo(self):
