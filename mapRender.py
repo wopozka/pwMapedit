@@ -266,10 +266,14 @@ class mapRender(QGraphicsView):
                             # patrzymy ile razy geo promień okregu jest większy od minimum
                             r_corelator = vincenty_r / pwmapedit_constants.MINIMAL_GEO_DISTANCE
                             r_circle_min_geo_dist = r_circle / r_corelator
-                            min_r = 2 * r_circle_min_geo_dist / math.sqrt(3)
-                            if r_circle >= min_r:
-                                sin_1_2_alpha = 0.5 * r_circle_min_geo_dist / r_circle
+                            # minimalny promień okregu to taki, gdzie dlugosc boku trojkata w niego wpisanego
+                            # bedzie rowna MINIMAL_GEO_DISTANCE. Kat pomiedzy promieniem a wysokoscia w takim przypadku
+                            # bedzie wynosil 30 stopni, wiec sinus kata bedzie = 0.5
+                            sin_1_2_alpha = 0.5 * r_circle_min_geo_dist / r_circle
+                            print(sin_1_2_alpha)
+                            if 0 < sin_1_2_alpha <= 0.5:
                                 alpha = math.asin(2 * sin_1_2_alpha)
+                                print(math.pi // alpha)
                                 pol_n = int(math.pi // alpha)
                                 rot_line = QLineF(self.mapToScene(event.pos()), self._poly_creation_nodes[0])
                                 self._poly_creation_nodes = self._poly_creation_nodes[:1]
