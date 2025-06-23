@@ -80,7 +80,7 @@ def map_strings_record_to_dict_record(map_strings_record):
     ----------
     map_strings_record: list of strings in a form ['[POI]', 'Type=0x000'...]
 
-    Returns tuple('[POI]/[POLYLINE]/[PPLYGON]'), list({commment1, comment2...,],
+    Returns tuple('[POI]/[POLYLINE]/[POLYGON]'), list({commment1, comment2...,],
             OrderedDict {(0, Type): 0x000. (1, Label): xxx, ...}
     -------
     """
@@ -102,6 +102,8 @@ def map_strings_record_to_dict_record(map_strings_record):
             record_dict[(line_num, key)] = val
             if key == 'Type':
                 poi_poly_type.append(int(val, 16))
+        elif line_content == '[END]':
+            break
         else:
             print('Unknown line, without =: %s' % line_content)
     return tuple(poi_poly_type), comment_list, record_dict

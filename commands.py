@@ -16,9 +16,9 @@ class CreateNewPoiCmd(QUndoCommand):
         self.map_objects.add_map_object(self.new_poi_map_object)
         self.scene.draw_object_on_map(self.new_poi_map_object)
         if self.mouse_scene_pos is not None:
+            self.new_poi_map_object.setPos(0, 0)
             cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
-            new_pos = cur_mouse_scene_pos - self.mouse_scene_pos
-            self.new_poi_map_object.setPos(new_pos)
+            self.new_poi_map_object.setPos(cur_mouse_scene_pos)
 
     def undo(self):
         self.scene.removeItem(self.new_poi_map_object)
