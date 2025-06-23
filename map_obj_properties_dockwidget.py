@@ -889,10 +889,16 @@ class ExtrasTable(QTableWidget):
             _data = json.loads(mime_data.data('application/json').data().decode('utf-8'))
         elif mime_data and mime_data.hasText():
             tmp_data = mime_data.text()
-            if '\t' in tmp_data:
-                _data = [tmp_data.split('\t', 1)]
+            if '\n' in tmp_data:
+                _data1 = [tmp_data.split('\n')]
             else:
-                _data = [[tmp_data, '']]
+                _data1 = [tmp_data]
+            _data = []
+            for _d in _data1:
+                if '\t' in _d:
+                    _data.append(_d.split('\t', 1))
+                else:
+                    _data.append([_d, ''])
         else:
             return
         # wklejaj od tej pozycji do końca
