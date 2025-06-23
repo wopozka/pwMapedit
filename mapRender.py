@@ -270,11 +270,9 @@ class mapRender(QGraphicsView):
                             # bedzie rowna MINIMAL_GEO_DISTANCE. Kat pomiedzy promieniem a wysokoscia w takim przypadku
                             # bedzie wynosil 30 stopni, wiec sinus kata bedzie = 0.5
                             sin_1_2_alpha = 0.5 * r_circle_min_geo_dist / r_circle
-                            print(sin_1_2_alpha)
                             if 0 < sin_1_2_alpha <= 0.5:
-                                alpha = math.asin(2 * sin_1_2_alpha)
-                                print(math.pi // alpha)
-                                pol_n = int(math.pi // alpha)
+                                alpha = 2 * math.asin(sin_1_2_alpha)
+                                pol_n = int(math.pi // alpha) * 2
                                 rot_line = QLineF(self.mapToScene(event.pos()), self._poly_creation_nodes[0])
                                 self._poly_creation_nodes = self._poly_creation_nodes[:1]
                                 qpp.addText(rot_line.p2(), QFont(), '1')
