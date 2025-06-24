@@ -49,7 +49,9 @@ class PwMapeditToolbar(QToolBar):
         self.insertWidget(None, self.scale_selector)
         self.addSeparator()
         self.actions['split_polyline'] = QAction('Podziel polyline')
+        self.insertAction(None, self.actions['split_polyline'])
         self.actions['merge_polyline'] = QAction('Połącz polyline/polygon')
+        self.insertAction(None, self.actions['merge_polyline'])
         self.set_actions_icons()
         self.add_tools_actions_to_group()
 
