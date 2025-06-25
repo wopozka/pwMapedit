@@ -106,6 +106,7 @@ class PwMapeditToolbar(QToolBar):
                                                                                            'create_polyline_48.png')))
         self.actions[pwmapedit_constants.Tools.CREATE_POLYGON].setIcon(QIcon(os.path.join(self.icons_folder,
                                                                                           'create_polygon_48.png')))
+        self.actions['split_polyline'].setIcon(QIcon(os.path.join(self.icons_folder, 'split_polyline_48.png')))
 
     def set_tool(self, tool):
         if tool in self.actions:
