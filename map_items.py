@@ -26,7 +26,7 @@ Numbers_Definition = namedtuple('Numbers_Definition',
 Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_point_in_the_polyline'])
 Interpolated_Number = namedtuple('Interpolated_Number', ['vector', 'position', 'number'])
 Closest_Point = namedtuple('Closest_Point', ['distance', 'segment_pos', 'path_num', 'coord_index'])
-
+Grip_Index = namedtuple('Grip_Index', ['poly_num', 'node_index'])
 
 class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
@@ -1903,6 +1903,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     def command_set_route_params(self, route_params_values):
         return
 
+    def command_split_poly(self, grip):
+        return
+
     def command_update_comment(self, new_comment):
         command = commands.UpdateComment(self, new_comment, 'Zmiana komentarza')
         self.scene().undo_redo_stack.push(command)
@@ -2397,6 +2400,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def command_set_route_params(self, route_params_values):
         command = commands.SelectModeRouteParams(self, route_params_values)
         self.scene().undo_redo_stack.push(command)
+
+    def command_split_poly(self, grip):
+        grip_indexes = grip.get_grip_indexes()
+        print(grip_indexes)
 
     def command_update_type(self, new_type):
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
@@ -2982,7 +2989,7 @@ class GripItem(QGraphicsPathItem):
 
     def __init__(self, pos, grip_indexes, hlevel, parent):
         super().__init__()
-        self.grip_indexes = grip_indexes
+        self.grip_indexes = Grip_Index(*grip_indexes)
         self.parent = parent
         self.hlevel = hlevel
         self.adr_labels = []
@@ -3003,7 +3010,7 @@ class GripItem(QGraphicsPathItem):
         self.hover_drag_mode = False
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
         # self.set_transformation_flag()
-        _text = str(self.grip_indexes)
+        _text = f'({self.grip_indexes[0]},{self.grip_indexes[1]})'
         text = QGraphicsSimpleTextItem(_text, self)
         text.setPos(1, 1)
         # self.setAttribute(Qt.WA_NoMousePropagation, False)
@@ -3041,6 +3048,9 @@ class GripItem(QGraphicsPathItem):
 
     def get_id(self):
         return self.parent.get_id()
+
+    def get_grip_indexes(self):
+        return self.self.grip_indexes
 
     def node_grip_has_numeration(self):
         data_level = self.parent.current_data_x
