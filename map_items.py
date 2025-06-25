@@ -2425,6 +2425,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def command_split_poly(self, grip):
         grip_indexes = grip.get_grip_indexes()
         print(self.data0.is_splitting_possible(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
+        print(self.data0.get_calculated_housenumber_defs_for_node(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
 
     def command_update_type(self, new_type):
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
