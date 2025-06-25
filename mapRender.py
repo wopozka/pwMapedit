@@ -432,12 +432,13 @@ class mapRender(QGraphicsView):
 
     def weblayers_download_error(self, tile_url):
         # if for any reason file will not be downloaded from web, remove the file from currently downloaded files
-        self.currently_downloading_web_layer_files.remove(tile_url)
+        if tile_url in self.currently_downloading_web_layer_files:
+            self.currently_downloading_web_layer_files.remove(tile_url)
 
     def weblayers_get_data_from_thread(self, tile_def):
         # zakonczylem pobieranie, usun informacje ze plik jest teraz w trakcie sciagania
-        self.currently_downloading_web_layer_files.remove(tile_def[0])
-
+        if tile_def[0] in self.currently_downloading_web_layer_files:
+            self.currently_downloading_web_layer_files.remove(tile_def[0])
         # jesli w trakcie sciagania obrazkow w watku wylaczymy warstwę www, wtedy sefl.web_layer będzie None
         # dodatkowo potwierdz ze obrazek jest dla danego, aktualnie wlaczonego weblayer, inaczej zignoruj
         if (self.web_layer is not None and tile_def[1] == self.web_layer.get_current_web_layer()
@@ -460,6 +461,10 @@ class mapRender(QGraphicsView):
 
     def weblayers_put_files_to_scene(self, tiles_defs):
         pool = QThreadPool.globalInstance()
+        # in case something is running
+        print('czyszcze pool')
+        pool.clear()
+        self.currently_downloading_web_layer_files.clear()
         for tile_def in tiles_defs:
             if os.path.exists(tile_def.file_path):
                 self.scene().set_web_layer_graphic(tile_def, self.web_layer.get_zoom())
