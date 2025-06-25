@@ -1144,10 +1144,10 @@ class BasicMapItem(object):
         self._deleted = True
 
     def set_dirindicator(self, value):
-        if value == False:
+        if value == False or value == '0':
             self.dirindicator = None
         else:
-            self.dirindicator = value
+            self.dirindicator = True
 
     def set_endlevel(self, value):
         if isinstance(value, str):
@@ -1261,7 +1261,7 @@ class BasicMapItem(object):
         if self.endlevel is not None and self.endlevel:
             mp_record.append('EndLevel=' + str(self.endlevel))
         if self.dirindicator is not None and self.dirindicator:
-            mp_record.append('DirIndicator=' + self.dirindicator)
+            mp_record.append('DirIndicator=1')
         if self.routeparam:
             mp_record.append('RouteParam=' + ','.join(str(a) for a in self.routeparam))
         if self.housenumber is not None and self.housenumber:
