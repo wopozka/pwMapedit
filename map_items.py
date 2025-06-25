@@ -782,6 +782,27 @@ class Data_X(object):
             polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self._projection)] + polygon[index:]
         self._poly_data_points[data_level][polynum] = polygon_mod
 
+    def is_splitting_possible(self, data_level, poly_num, node_num):
+        """
+        Checks whether splitting is possible at given node.
+        Parameters
+        ----------
+        data_level: int, data level
+        poly_num: int, number of polygon
+        node_num: int, number of node
+
+        Returns
+        -------
+        bool: True if splitting is possible, False otherwise
+        """
+        if data_level not in self._data_levels:
+            return False
+        if poly_num >= len(self._poly_data_points[data_level]):
+            return False
+        if 1 <= node_num < len(self._poly_data_points[data_level][poly_num]) - 1:
+            return True
+        return False
+
     def reverse_poly(self, data_level):
         # inverting order of nodes, which gives eg road oposite direction
         polys = self.get_polys_for_data_level(data_level)
@@ -2403,12 +2424,11 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_split_poly(self, grip):
         grip_indexes = grip.get_grip_indexes()
-        print(grip_indexes)
+        print(self.data0.is_splitting_possible(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
 
     def command_update_type(self, new_type):
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
         self.scene().undo_redo_stack.push(command)
-
 
     @staticmethod
     def get_numbers_position(line_segment_vector, subj_position, testing=False):
@@ -3050,7 +3070,7 @@ class GripItem(QGraphicsPathItem):
         return self.parent.get_id()
 
     def get_grip_indexes(self):
-        return self.self.grip_indexes
+        return self.grip_indexes
 
     def node_grip_has_numeration(self):
         data_level = self.parent.current_data_x
@@ -3082,6 +3102,7 @@ class GripItem(QGraphicsPathItem):
         self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
         self.scene().disable_maplevel_shortcuts()
+        self.scene().disable_tools_actions_shortcuts()
         super().hoverEnterEvent(event)
         self._setHover(True)
 
@@ -3089,6 +3110,7 @@ class GripItem(QGraphicsPathItem):
         self.clearFocus()
         self.ungrabKeyboard()
         self.scene().enable_maplevel_shortcuts()
+        self.scene().enable_tools_actions_shortcuts()
         super().hoverLeaveEvent(event)
         self._setHover(False)
         # w przypadku gdy grip został przesunięty bo został dociągnięty do węzła, wtedy ucieka spod myszy
@@ -3100,8 +3122,11 @@ class GripItem(QGraphicsPathItem):
         self.parent._stick_to_neighbours_nodes = False
 
     def keyPressEvent(self, event):
-        if event.text() == 'n':
-            print('wlaczam, wylaczam numeracje')
+        if event.text() == 's':
+            print('dziele polyline na tym wezle')
+            self.split_polyline()
+            event.ignore()
+            return
         elif event.text() == 'h':
             if self.hlevel is None:
                 self.parent.update_hlevel_in_node(self, 0)
@@ -3170,6 +3195,9 @@ class GripItem(QGraphicsPathItem):
                 self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
                 return True
         return False
+
+    def split_polyline(self):
+        self.parent.command_split_poly(self)
 
     def decorate(self):
         # simulate decorate, we can do it here, or design in future what to do

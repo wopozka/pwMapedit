@@ -220,6 +220,9 @@ class mapCanvas(QGraphicsScene):
     def disable_maplevel_shortcuts(self):
         self.parent.disable_maplevel_shortcuts()
 
+    def disable_tools_actions_shortcuts(self):
+        self.parent.disable_tools_actions_shortcuts()
+
     def draw_all_objects_on_map(self, obj_list):
         for num, obj in enumerate(obj_list):
             self.draw_object_on_map(obj)
@@ -249,6 +252,12 @@ class mapCanvas(QGraphicsScene):
             mapobject.set_map_level()
         else:
             pass
+
+    def enable_maplevel_shortcuts(self):
+        self.parent.enable_maplevel_shortcuts()
+
+    def enable_tools_actions_shortcuts(self):
+        self.parent.enable_tools_actions_shortcuts()
 
     def get_item_ignores_transformations(self):
         return self.views()[0].get_item_ignores_transformations()
@@ -417,11 +426,13 @@ class mapCanvas(QGraphicsScene):
         print('num screen items: %s' % len(_map_items))
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
+    def split_polyline(self):
+        if not self.selectedItems() and not isinstance(self.selectedItems()[0], map_items.GripItem):
+            return
+        self.selectedItems()[0].split_polyline()
+
     def stick_to_neighbours(self):
         return self._stick_to_neighbours_nodes
-
-    def enable_maplevel_shortcuts(self):
-        self.parent.enable_maplevel_shortcuts()
 
     def selection_change_actions(self):
         self.properties_dock.set_dock_off()

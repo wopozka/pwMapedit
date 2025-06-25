@@ -572,6 +572,14 @@ class pwMapeditPy(QMainWindow):
             act.triggered.connect(self.menu_tools_set_mode)
         return tools_action
 
+    def enable_tools_actions_shortcuts(self):
+        self.tools_action[pwmapedit_constants.Tools.SELECT_OBJECTS].setEnabled(True)
+        self.tools_action[pwmapedit_constants.Tools.EDIT_NODES].setEnabled(True)
+
+    def disable_tools_actions_shortcuts(self):
+        self.tools_action[pwmapedit_constants.Tools.SELECT_OBJECTS].setEnabled(False)
+        self.tools_action[pwmapedit_constants.Tools.EDIT_NODES].setEnabled(False)
+
     def _create_object_actions(self):
         separator = 0
         obj_actions = dict()
@@ -867,6 +875,9 @@ class pwMapeditPy(QMainWindow):
             self.map_objects.set_map_file_name(file_name[0])
             self._save_map()
             self.undo_redo_stack.file_saved()
+
+    def split_polyline(self):
+        self.map_canvas.split_polyline()
 
     def screen_changed(self, screen):
         print(self.view.physicalDpiX())

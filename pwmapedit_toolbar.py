@@ -49,6 +49,7 @@ class PwMapeditToolbar(QToolBar):
         self.insertWidget(None, self.scale_selector)
         self.addSeparator()
         self.actions['split_polyline'] = QAction('Podziel polyline')
+        self.actions['split_polyline'].triggered.connect(self.split_polyline)
         self.insertAction(None, self.actions['split_polyline'])
         self.actions['merge_polyline'] = QAction('Połącz polyline/polygon')
         self.insertAction(None, self.actions['merge_polyline'])
@@ -78,6 +79,9 @@ class PwMapeditToolbar(QToolBar):
 
     def save_map(self):
         self.parent().save_map()
+
+    def split_polyline(self):
+        self.parent().split_polyline()
 
     def create_scale_selector(self):
         scale_km = QComboBox()
