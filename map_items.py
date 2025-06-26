@@ -862,6 +862,12 @@ class Data_X(object):
         polys[1][0].set_numbers_definition(node_num_def)
         return polys
 
+    def set_poly_from_points_list(self, data_level, poly_num, poly):
+        polys = self.get_polys_for_data_level(data_level)
+        if polys and len(polys) >= poly_num:
+            polys[poly_num] = poly
+            return True
+        return False
 
     def to_mp_record(self):
         poly_points = []
