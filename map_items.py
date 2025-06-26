@@ -848,6 +848,21 @@ class Data_X(object):
                 self._bounding_box_E = longitude
         return
 
+    def split_data_x(self, data_level, poly_num, node_num):
+        if not self.is_splitting_possible(data_level, poly_num, node_num):
+            return []
+        node_num_def = self.get_calculated_housenumber_defs_for_node(data_level,poly_num, node_num)
+        polys = [[]]
+        for n_num, node in enumerate(self.get_polys_for_data_level(data_level)[poly_num]):
+            if n_num == node_num:
+                polys[-1].append(node.copy())
+                polys.append([])
+            polys[-1].append(node.copy())
+        polys[0][-1].set_numbers_definition(node_num_def)
+        polys[1][0].set_numbers_definition(node_num_def)
+        return polys
+
+
     def to_mp_record(self):
         poly_points = []
         for data_level in self.get_data_levels():
@@ -2424,8 +2439,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_split_poly(self, grip):
         grip_indexes = grip.get_grip_indexes()
-        print(self.data0.is_splitting_possible(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
-        print(self.data0.get_calculated_housenumber_defs_for_node(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
+        print(self.data0.split_data_x(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
 
     def command_update_type(self, new_type):
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
