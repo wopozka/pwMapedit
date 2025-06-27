@@ -3184,22 +3184,10 @@ class GripItem(QGraphicsPathItem):
 
     def keyPressEvent(self, event):
         if event.text() == 's':
-            print('dziele polyline na tym wezle')
+            # print('dziele polyline na tym wezle')
             self.split_polyline()
             event.ignore()
             return
-        elif event.text() == 'h':
-            if self.hlevel is None:
-                self.parent.update_hlevel_in_node(self, 0)
-                self.hlevel = 0
-            else:
-                self.parent.update_hlevel_in_node(self, None)
-                self.hlevel = None
-        elif event.text().isdigit():
-            hl = int(event.text())
-            if self.hlevel is None:
-                self.hlevel = hl
-            self.parent.update_hlevel_in_node(self, hl)
         super().keyPressEvent(event)
 
     def mouseMoveEvent(self, event):
