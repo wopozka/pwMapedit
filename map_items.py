@@ -733,7 +733,7 @@ class Data_X(object):
 
     def get_polys_for_data_level(self, data_level, qpointsf=False):
     #   def get_all_poly_nodes(self, data_level, qpointsf=False):
-        # zwraca nody dla wszystkich polygonow/polylinii danego data_level
+        # zwraca kopię nodów dla wszystkich polygonow/polylinii danego data_level
         if data_level not in self._data_levels:
             return None
         returned_data = list()
@@ -885,10 +885,13 @@ class Data_X(object):
 
     def set_poly_from_node_list(self, data_level, poly_num, poly):
         polys = self.get_polys_for_data_level(data_level)
-        if polys and len(polys) >= poly_num:
-            polys[poly_num] = poly
+        if polys and len(polys) > poly_num:
+            self._poly_data_points[data_level][poly_num] = poly
             return True
         return False
+
+    def __str__(self):
+        return f'Data Levels: {str(self._data_levels)}, Data Points: {str(self._poly_data_points)}'
 
     def to_mp_record(self):
         poly_points = []
@@ -3255,6 +3258,9 @@ class GripItem(QGraphicsPathItem):
         return False
 
     def split_polyline(self):
+        # the grip is removed on splitting, then turn shortcuts again
+        self.scene().enable_maplevel_shortcuts()
+        self.scene().enable_tools_actions_shortcuts()
         self.parent.command_split_poly(self)
 
     def decorate(self):

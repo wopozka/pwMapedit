@@ -441,14 +441,19 @@ class SplitPolylineCmd(QUndoCommand):
         self.scene.clearSelection()
         self.scene.removeItem(self.orig_map_object)
         self.scene.addItem(self.map_object1)
+        if self.map_object1.get_param('DirIndicator'):
+            self.map_object1.set_mp_dir_indicator(True)
+        self.map_object1.add_label()
+        self.map_object1.set_map_level()
+        self.map_object1.set_pen()
+
         self.scene.addItem(self.map_object2)
         if self.map_object2.get_param('DirIndicator'):
             self.map_object2.set_mp_dir_indicator(True)
         self.map_object2.add_label()
-        # if mapobject.get_param('EndLevel'):
-        #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
         self.map_object2.set_map_level()
         self.map_object2.set_pen()
+
         self.map_objects.update_map_object(self.map_object1)
         self.map_objects.add_map_object(self.map_object2)
         if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
@@ -456,6 +461,7 @@ class SplitPolylineCmd(QUndoCommand):
             self.map_object1.setSelected(True)
 
     def undo(self):
+        self.scene.clearSelection()
         self.scene.removeItem(self.map_object1)
         self.scene.removeItem(self.map_object2)
         self.scene.addItem(self.orig_map_object)
@@ -463,8 +469,14 @@ class SplitPolylineCmd(QUndoCommand):
         self.map_objects.set_map_object_deleted(self.map_object2)
         if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
                                                 pwmapedit_constants.Tools.EDIT_NODES):
-            self.scene.clearSelection()
             self.orig_map_object.setSelected(True)
+
+    def update_children(self):
+        self.map_object1.update_arrow_heads()
+        self.map_object1.update_label_pos()
+        self.map_object1.update_hlevel_labels()
+        self.map_object1.update_housenumber_labels()
+        self.map_object1.update_interpolated_housenumber_labels()
 
 
 class UpdateComment(QUndoCommand):
