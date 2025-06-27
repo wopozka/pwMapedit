@@ -3211,6 +3211,9 @@ class GripItem(QGraphicsPathItem):
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ControlModifier):
+            # hover enter event switched off shortcuts, when remove grip, enable them at first
+            self.scene().enable_maplevel_shortcuts()
+            self.scene().enable_tools_actions_shortcuts()
             self.parent.setSelected(True)
             self.parent.remove_grip(self)
         elif (event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ShiftModifier):
