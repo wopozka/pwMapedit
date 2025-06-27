@@ -865,7 +865,10 @@ class Data_X(object):
 
         if not self.is_splitting_possible(data_level, poly_num, node_num):
             return []
-        node_num_def = self.get_calculated_housenumber_defs_for_node(data_level,poly_num, node_num)
+        if self.get_poly_node(data_level, poly_num, node_num, False).node_has_numeration():
+            node_num_def = self.get_poly_node(data_level, poly_num, node_num, False).get_numbers_definition()
+        else:
+            node_num_def = self.get_calculated_housenumber_defs_for_node(data_level,poly_num, node_num)
         polys = [[]]
         for n_num, node in enumerate(self.get_polys_for_data_level(data_level)[poly_num]):
             if n_num == node_num:
