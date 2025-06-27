@@ -171,6 +171,8 @@ class mapRender(QGraphicsView):
             self.scene().remove_web_layer_graphics()
 
     def keyPressEvent(self, event):
+        if self.scene() is None:
+            return
         mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON:
             # if self._poly_creation_nodes is not None:
@@ -206,7 +208,7 @@ class mapRender(QGraphicsView):
                 #         self._poly_creation_nodes.append(self.mapToScene(event.pos()))
                 #     self.scene().command_create_polyline_circle(self._poly_creation_nodes)
 
-        print('key pressed', event.key())
+        # print('key pressed', event.key())
         super().keyPressEvent(event)
 
     # new events definitions:
