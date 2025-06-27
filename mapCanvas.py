@@ -150,9 +150,6 @@ class mapCanvas(QGraphicsScene):
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
 
-    def command_create_polyline_circle(self, coordinates):
-        print(coordinates)
-
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,
                                                       map_objects_properties=self._map_objects_properties,
@@ -361,7 +358,7 @@ class mapCanvas(QGraphicsScene):
                 x, y = s_data[0].split('=')[1].split(',')
                 mouse_scene_pos = QPointF(float(x), float(y))
                 s_data = s_data[1:]
-            poi_poly_type, obj_comment, obj_data = (misc_functions.map_strings_record_to_dict_record(s_data))
+            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(s_data)
             if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                                    _projection=self._projection)

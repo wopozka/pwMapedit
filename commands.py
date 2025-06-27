@@ -3,6 +3,7 @@ from PyQt6.QtCore import QPointF
 import copy
 import time
 import pwmapedit_constants
+import misc_functions
 
 class CreateNewPoiCmd(QUndoCommand):
     def __init__(self, new_poi_map_object, map_objects, scene, description, mouse_scene_pos=None):
@@ -425,6 +426,45 @@ class SetNumbersToNode(QUndoCommand):
             self.map_object.setSelected(True)
             # self.map_object.decorate()
             self.map_object.scene().views()[0].centerOn(self.pos)
+
+
+class SplitPolylineCmd(QUndoCommand):
+    def __init__(self, map_object, map_object1, map_object2, map_objects, description):
+        super(SplitPolylineCmd, self).__init__(description)
+        self.orig_map_object = map_object
+        self.map_object1 = map_object1
+        self.map_object2 = map_object2
+        self.scene = map_object.scene()
+        self.map_objects = map_objects
+
+    def redo(self):
+        self.scene.clearSelection()
+        self.scene.removeItem(self.orig_map_object)
+        self.scene.addItem(self.map_object1)
+        self.scene.addItem(self.map_object2)
+        if self.map_object2.get_param('DirIndicator'):
+            self.map_object2.set_mp_dir_indicator(True)
+        self.map_object2.add_label()
+        # if mapobject.get_param('EndLevel'):
+        #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
+        self.map_object2.set_map_level()
+        self.map_object2.set_pen()
+        self.map_objects.update_map_object(self.map_object1)
+        self.map_objects.add_map_object(self.map_object2)
+        if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
+                                                pwmapedit_constants.Tools.EDIT_NODES):
+            self.map_object1.setSelected(True)
+
+    def undo(self):
+        self.scene.removeItem(self.map_object1)
+        self.scene.removeItem(self.map_object2)
+        self.scene.addItem(self.orig_map_object)
+        self.map_objects.update_map_object(self.orig_map_object)
+        self.map_objects.set_map_object_deleted(self.map_object2)
+        if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
+                                                pwmapedit_constants.Tools.EDIT_NODES):
+            self.scene.clearSelection()
+            self.orig_map_object.setSelected(True)
 
 
 class UpdateComment(QUndoCommand):

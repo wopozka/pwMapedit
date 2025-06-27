@@ -181,3 +181,11 @@ class mapData(object):
 
     def set_map_objects_properties(self, _map_objects_properties):
         self.map_objects_properties = _map_objects_properties
+
+    def update_map_object(self, map_object):
+        map_object_id = map_object.get_id()
+        if map_object_id is None:
+            return
+        if map_object_id >= len(self.mapObjectsList):
+            self.mapObjectsList[map_object_id] = map_object
+        return

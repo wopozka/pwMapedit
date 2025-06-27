@@ -849,6 +849,20 @@ class Data_X(object):
         return
 
     def split_data_x(self, data_level, poly_num, node_num):
+        """
+        Split dataX for given poli at node num. As a result we get two dataX objects, the first contains everything
+        and the first part of split poly, the second contains only split part for a new poly - only one polyline
+        Parameters
+        ----------
+        data_level: 0, 1, 2, 3, 4
+        poly_num: int, number of poly
+        node_num: int, node index
+
+        Returns
+        -------
+        [dataX_1,dataX_2]] or [] in case of failure
+        """
+
         if not self.is_splitting_possible(data_level, poly_num, node_num):
             return []
         node_num_def = self.get_calculated_housenumber_defs_for_node(data_level,poly_num, node_num)
@@ -860,9 +874,16 @@ class Data_X(object):
             polys[-1].append(node.copy())
         polys[0][-1].set_numbers_definition(node_num_def)
         polys[1][0].set_numbers_definition(node_num_def)
-        return polys
+        poly1 = self.copy()
+        poly1.set_poly_from_node_list(data_level, poly_num, polys[0])
+        poly1.clean_numbers_definitions(data_level, poly_num)
+        poly2 = Data_X(projection=self._projection)
+        poly2._data_levels.append(data_level)
+        poly2._poly_data_points.append([polys[1]])
+        poly2.clean_numbers_definitions(data_level, poly_num)
+        return [poly1, poly2]
 
-    def set_poly_from_points_list(self, data_level, poly_num, poly):
+    def set_poly_from_node_list(self, data_level, poly_num, poly):
         polys = self.get_polys_for_data_level(data_level)
         if polys and len(polys) >= poly_num:
             polys[poly_num] = poly
@@ -895,7 +916,6 @@ class Data_X(object):
                         node = node_num_node[1]
                         hlevel_def.append(f'({node_num},{node.get_hlevel_definition()})')
                     poly_points.append('HLevel' + str(poly_num) + '=' + ','.join(hlevel_def))
-
         return poly_points
 
     def numbers_to_mp(self, start_node_num, start_node, end_node):
@@ -2210,9 +2230,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.scene().removeItem(self.hovered_shape_id)
             self.hovered_shape_id = None
 
-    def remove_all_hlevel_labels(self):
-        pass
-
     def remove_hlevel_labels(self, node_num):
         return
 
@@ -2445,7 +2462,26 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_split_poly(self, grip):
         grip_indexes = grip.get_grip_indexes()
-        print(self.data0.split_data_x(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index))
+        data12 = self.data0.split_data_x(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index)
+        if data12:
+            data1 = data12[0]
+            data2 = data12[1]
+            s_data = self.to_mp_record()
+            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(s_data)
+            map_object1 = PolylineQGraphicsPathItem(self.get_id(),
+                                                    map_objects_properties=self._map_objects_properties,
+                                                    _projection=self._projection)
+            map_object1.set_data(obj_comment, obj_data)
+            map_object1.data0 = data1
+            map_object1.set_mp_data()
+            map_object2 = PolylineQGraphicsPathItem(None, map_objects_properties=self._map_objects_properties,
+                                                    _projection=self._projection)
+            map_object2.set_data(obj_comment, obj_data)
+            map_object2.data0 = data2
+            map_object2.set_mp_data()
+            command = commands.SplitPolylineCmd(self, map_object1, map_object2,
+                                                self.scene().parent.map_objects, 'Podziel polyline')
+            self.scene().undo_redo_stack.push(command)
 
     def command_update_type(self, new_type):
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
@@ -2636,8 +2672,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def remove_all_hlevel_labels(self):
         # called when map level is changed, for a new maplevel we need to remove old hlevels
-        for hl in tuple(self.hlevel_labels):
-            self.scene().removeItem(hl)
+        if self.hlevel_labels is not None:
+            for hl in tuple(self.hlevel_labels):
+                self.scene().removeItem(hl)
         self.hlevel_labels = None
 
     def closest_point_to_poly(self, event_pos):
