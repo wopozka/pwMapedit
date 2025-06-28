@@ -424,7 +424,9 @@ class mapCanvas(QGraphicsScene):
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
     def split_polyline(self):
-        if not self.selectedItems() and not isinstance(self.selectedItems()[0], map_items.GripItem):
+        if not self.selectedItems():
+            return
+        elif not isinstance(self.selectedItems()[0], map_items.GripItem):
             return
         self.selectedItems()[0].split_polyline()
 
