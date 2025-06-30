@@ -1527,6 +1527,13 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self.remove_hovered_shape()
         super().hoverLeaveEvent(event)
 
+    def mouseMoveEvent(self, event):
+        if self.recorded_pos is not None and self.pos() != self.recorded_pos:
+            dist = QLineF(event.pos(), self.recorded_pos).length()
+            print(dist)
+            if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
+                super().mouseMoveEvent(event)
+
     def mousePressEvent(self, event):
         self.remove_hovered_shape()
         self.recorded_pos = self.pos()
@@ -1535,9 +1542,11 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def mouseReleaseEvent(self, event):
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = self.mapToScene(event.pos())
-        if self.pos() != self.recorded_pos:
-            self.command_move_poi()
-            self.recorded_pos = None
+        if self.recorded_pos is not None and self.pos() != self.recorded_pos:
+            dist = QLineF(self.pos(), self.recorded_pos).length()
+            if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
+                self.command_move_poi()
+                self.recorded_pos = None
         super().mouseReleaseEvent(event)
 
     def remove_hovered_shape(self):
@@ -2182,9 +2191,11 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         #     self._closest_node_circle = None
         self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
-        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
+        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS and self.recorded_pos is not None:
             if self.pos() != self.recorded_pos:
-                self.command_move_item()
+                dist = QLineF(self.pos(), self.recorded_pos).length()
+                if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
+                    self.command_move_item()
         self.recorded_pos = None
         super().mouseReleaseEvent(event)
 
