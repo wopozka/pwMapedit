@@ -1528,11 +1528,12 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         super().hoverLeaveEvent(event)
 
     def mouseMoveEvent(self, event):
-        if self.recorded_pos is not None and self.pos() != self.recorded_pos:
-            dist = QLineF(event.pos(), self.recorded_pos).length()
-            print(dist)
+        if self.recorded_pos is not None and event.pos() != self.recorded_pos:
+            dist = QLineF(self.mapToScene(event.pos()), self.recorded_pos).length()
             if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
                 super().mouseMoveEvent(event)
+        else:
+            super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
         self.remove_hovered_shape()
