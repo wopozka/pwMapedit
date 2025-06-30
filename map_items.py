@@ -1371,6 +1371,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
         BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPixmapItem.__init__(self)
+        # używane do zapisania pozycji wyjsciowej obiektu podczas przesuwania myszka
         self.recorded_pos = None
         # potrzebujemy tego aby sprawdzić czy podczas przesuwania myszką obiektu można już go ruszać
         self._mouse_press_scene_pos = None
@@ -1694,7 +1695,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self._mp_label = None
         self.current_data_x = 0
         self.decorated_poly_nums = None
+        # potrzebujemy tego aby sprawdzić czy podczas przesuwania myszką obiektu można już go ruszać
+        self._mouse_press_scene_pos = None
+        self._movable = False
+        # używane do zapisania pozycji wyjsciowej obiektu podczas przesuwania myszka
         self.recorded_pos = None
+        # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = None
         self._mouse_press_timestamp = None
         self._closest_node_circle = None
@@ -2164,7 +2170,14 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         if mode == pwmapedit_constants.Tools.EDIT_NODES:
             super().mouseMoveEvent(event)
             return
-        if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
+        elif mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            if not self._movable:
+                dist = QLineF(self.mapToScene(event.pos()), self._mouse_press_scene_pos).length()
+                if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
+                    self._movable = True
+            else:
+                super().mouseMoveEvent(event)
+        else:
             super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
@@ -2183,6 +2196,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     self.insert_point(closest_point.path_num, closest_point.coord_index, closest_point.segment_pos)
                     return
         elif mode == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            self._mouse_press_scene_pos = self.mapToScene(event.pos())
+            self._movable = False
             self.recorded_pos = self.pos()
 
     def mouseReleaseEvent(self, event):
@@ -2191,6 +2206,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             return
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = self.mapToScene(event.pos())
+        self._mouse_press_scene_pos = None
+        self._movable = False
         print('closest node circle remove')
         self.scene().closest_node_circle_remove()
         # if self._closest_node_circle is not None:
