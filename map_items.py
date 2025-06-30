@@ -1774,13 +1774,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             if self.is_polygon() and points[-1] != p1:  # identical to QPolygonF.isClosed()
                 points.append(p1)
             for coord_index, p2 in enumerate(points, 1):
-                # poniższe wykonaj tylko dla polygonow, albo polilinii, ale nie ostatniego noda. Ostatni nod byl juz
-                # sprawdzany wcześniej
-                if self.is_polygon() or (not self.is_polygon() and p2 != points[-1]):
-                    point_to_point_dist = QLineF(event_pos, p2).length()
-                    intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
                 line = QLineF(p1, p2)
-                inters = QPointF()
                 # create a perpendicular line that starts at the given pos
                 perp = QLineF.fromPolar(line.length(), line.angle() + 90.0).translated(event_pos)
                 intersection_type, inters = line.intersects(perp)
@@ -1791,6 +1785,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     perp = QLineF(inters, event_pos)
                     intersection_type, inters = line.intersects(perp)
                     if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
+                        # poniższe wykonaj tylko dla polygonow, albo polilinii,
+                        if self.is_polygon() or (not self.is_polygon()):
+                            point_to_point_dist = QLineF(event_pos, p1).length()
+                            intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index - 1))
+                            point_to_point_dist = QLineF(event_pos, p2).length()
+                            intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
                         p1 = p2
                         continue
                 intersections.append(Closest_Point(QLineF(event_pos, inters).length(), 1,
