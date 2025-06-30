@@ -186,6 +186,6 @@ class mapData(object):
         map_object_id = map_object.get_id()
         if map_object_id is None:
             return
-        if map_object_id >= len(self.mapObjectsList):
+        if map_object_id < len(self.mapObjectsList):
             self.mapObjectsList[map_object_id] = map_object
         return

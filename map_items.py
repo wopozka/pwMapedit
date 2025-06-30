@@ -1785,6 +1785,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 perp = QLineF.fromPolar(line.length(), line.angle() + 90.0).translated(event_pos)
                 intersection_type, inters = line.intersects(perp)
                 if intersection_type == QLineF.IntersectionType.NoIntersection:
+                    p1 = p2
                     continue
                 elif intersection_type == QLineF.IntersectionType.UnboundedIntersection:
                     perp = QLineF(inters, event_pos)
@@ -1796,6 +1797,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                                                    path_num, coord_index))
                 p1 = p2
             if intersections:
+                print(intersections)
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
             # return the result with the shortest distance
