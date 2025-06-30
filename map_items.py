@@ -1372,6 +1372,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
         QGraphicsPixmapItem.__init__(self)
         self.recorded_pos = None
+        # potrzebujemy tego aby sprawdzić czy podczas przesuwania myszką obiektu można już go ruszać
+        self._mouse_press_scene_pos = None
+        self._movable = False
+        # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = None
         self.label = None
         self._mp_data = [None, None, None, None, None]
@@ -1528,27 +1532,28 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         super().hoverLeaveEvent(event)
 
     def mouseMoveEvent(self, event):
-        if self.recorded_pos is not None and event.pos() != self.recorded_pos:
-            dist = QLineF(self.mapToScene(event.pos()), self.recorded_pos).length()
-            print(dist)
+        if not self._movable:
+            dist = QLineF(self.mapToScene(event.pos()), self._mouse_press_scene_pos).length()
             if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
-                super().mouseMoveEvent(event)
+                self._movable = True
         else:
             super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
         self.remove_hovered_shape()
         self.recorded_pos = self.pos()
+        self._mouse_press_scene_pos = self.mapToScene(event.pos())
+        self._movable = False
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = self.mapToScene(event.pos())
+        self._mouse_press_scene_pos = None
+        self._movable = False
         if self.recorded_pos is not None and self.pos() != self.recorded_pos:
-            dist = QLineF(self.pos(), self.recorded_pos).length()
-            if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
-                self.command_move_poi()
-                self.recorded_pos = None
+            self.command_move_poi()
+            self.recorded_pos = None
         super().mouseReleaseEvent(event)
 
     def remove_hovered_shape(self):
