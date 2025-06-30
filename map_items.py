@@ -1530,6 +1530,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def mouseMoveEvent(self, event):
         if self.recorded_pos is not None and event.pos() != self.recorded_pos:
             dist = QLineF(self.mapToScene(event.pos()), self.recorded_pos).length()
+            print(dist)
             if dist > pwmapedit_constants.MIN_MOVE_DISTANCE:
                 super().mouseMoveEvent(event)
         else:
