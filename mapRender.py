@@ -94,6 +94,7 @@ class mapRender(QGraphicsView):
     def delete(self):
         self.scene().delete()
 
+
     def delete_created_poly_shape(self):
         self._poly_creation_nodes = None
         if self._poly_creation_drawn_poly is not None:

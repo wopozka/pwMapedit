@@ -657,7 +657,7 @@ class pwMapeditPy(QMainWindow):
         scale_up = QShortcut(QKeySequence('='), self)
         scale_up.activated.connect(self.menu_zoom_in_command)
         cancel_selection = QShortcut(QKeySequence('Escape'), self)
-        cancel_selection.activated.connect(self.map_canvas.clearSelection)
+        cancel_selection.activated.connect(self.key_pressed_escape)
         self.map_level_actions.append(QShortcut(QKeySequence('0'), self))
         self.map_level_actions[-1].activated.connect(self.menu_view_set_map_level_0)
         self.map_level_actions.append(QShortcut(QKeySequence('1'), self))
@@ -748,6 +748,14 @@ class pwMapeditPy(QMainWindow):
 
     def get_mapedit_mode(self):
         return self.pw_mapedit_mode
+
+    def key_pressed_escape(self):
+        if self.get_mapedit_mode() in (pwmapedit_constants.Tools.CREATE_POLYGON,
+                                  pwmapedit_constants.Tools.CREATE_POLYLINE):
+            self.view.delete_created_poly_shape()
+        elif self.get_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
+                                  pwmapedit_constants.Tools.EDIT_NODES):
+            self.map_canvas.clearSelection()
 
     def menu_zoom_in_command(self):
         self.view.zoom_in_command()
