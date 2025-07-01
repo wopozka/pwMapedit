@@ -9,7 +9,7 @@ import math
 
 import map_items
 import pwmapedit_constants
-from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD
+from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD, WEBLAYER_DOWNLOAD_TIMEOUT
 import os.path
 import urllib.request
 from web_layers import WebLayerTile
@@ -38,7 +38,7 @@ class GetWebLayerPictureWorker(QRunnable):
     def run(self):
         req = urllib.request.Request(url=self.tile_url, headers={'User-Agent': 'pwMapedit'})
         try:
-            with urllib.request.urlopen(req) as f:
+            with urllib.request.urlopen(req, timeout=WEBLAYER_DOWNLOAD_TIMEOUT) as f:
                 content = f.read()
                 # print('obrazek przeczytany')
         except urllib.error.HTTPError as http_error:
@@ -50,6 +50,9 @@ class GetWebLayerPictureWorker(QRunnable):
             self.www_signals.download_failed.emit(self.tile_url)
         except ConnectionResetError as connection_error:
             print('Nie moglem sciagnac obrazka: ', self.tile_url)
+            self.www_signals.download_failed.emit(self.tile_url)
+        except TimeoutError as timeout_error:
+            print(f'Nie moglem sciagnac obrazka:{self.tile_url}.\nTimeoutError.')
             self.www_signals.download_failed.emit(self.tile_url)
         else:
             try:
