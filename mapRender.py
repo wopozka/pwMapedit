@@ -79,6 +79,7 @@ class mapRender(QGraphicsView):
         if projection is not None:
             self.projection = projection
         self._right_mouse_button_event_position = None
+        # wykorzystywane do emulowania drag mode przy kliknieciu prawym przyciskiem myszy
         self._hand_made_right_button_press_event = False
         self._hand_made_right_button_release_event = False
         self.web_layer = None
@@ -396,7 +397,6 @@ class mapRender(QGraphicsView):
             return
         else:
             mode = self.scene().get_pw_mapedit_mode()
-            print(self._right_mouse_button_event_position)
             if self._right_mouse_button_event_position is None and event.button() == Qt.MouseButton.LeftButton:
                 print('rysuje')
                 if self.scene().closest_node_circle_position() is not None:
