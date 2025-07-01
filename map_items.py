@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPat
 from PyQt6.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
-from pwmapedit_constants import IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS
+from pwmapedit_constants import (IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS,
+                                 SCALE_WITHOUT_SMALL_POLYS, SMALL_POLY_PERIMETER)
 import commands
 import itertools
 import pwmapedit_constants
@@ -708,6 +709,9 @@ class Data_X(object):
     def get_obj_bounding_box(self):
         return {'S': self._bounding_box_S, 'N': self._bounding_box_N, 'E': self._bounding_box_E,
                 'W': self._bounding_box_W}
+
+    def get_perimeter(self):
+        return self.poly_perimeter
 
     def get_poly_node(self, data_level, poly_num, node_num, qpointsf):
         """
@@ -1694,6 +1698,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # self._mp_end_level = 0
         self._mp_label = None
         self.current_data_x = 0
+        # przy dekorowaniu zapisujemy sobie numery poly (poly_num) tak aby później łatwiej uzyskać numery dla każdego
+        # węzła. Z reguły to 0, 1, 2, itd w zależności od ilości polylinii
         self.decorated_poly_nums = None
         # potrzebujemy tego aby sprawdzić czy podczas przesuwania myszką obiektu można już go ruszać
         self._mouse_press_scene_pos = None
@@ -2816,6 +2822,14 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def move_grip(self, grip):
         self.command_move_grip(grip)
+
+    def paint(self, painter, option, widget=None):
+        if self.scene().get_viewer_scale() <= SCALE_WITHOUT_SMALL_POLYS and self.small_poly():
+            return
+        super().paint(painter, option, widget=widget)
+
+    def small_poly(self):
+        return self.data0.get_perimeter() < SMALL_POLY_PERIMETER
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
