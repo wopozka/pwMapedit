@@ -96,7 +96,8 @@ class InsertNodeCmd(QUndoCommand):
                                                       self.pos.x(), self.pos.y())
         self.map_object.setPath(self.map_object.create_painter_path(self.polygons))
         self.update_children()
-        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES or self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+        if (self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES or
+                self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS):
             self.map_object.set_selected(True)
         return
 
