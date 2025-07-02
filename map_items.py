@@ -374,6 +374,7 @@ class Data_X(object):
         d_copy._data_levels = copy.copy(self._data_levels)
         d_copy._last_data_level = self._last_data_level
         d_copy._last_poly_data_index = self._last_poly_data_index
+        d_copy.poly_perimeter = self.poly_perimeter
         d_copy._poly_data_points = list()
         # iterujemy po wszystkich data_level
         for dl_num in range(len(self._poly_data_points)):
@@ -2118,6 +2119,8 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # print(self.zValue())
         if not self.highlight_when_hoverover():
             return
+        if not self.mode_allows_selection():
+            return
         if self.decorated():
             self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
             return
@@ -2175,11 +2178,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     #     super().keyReleaseEvent(event)
 
     def mode_allows_selection(self):
-        if self.scene().get_pw_mapedit_mode() in (pwmapedit_constants.Tools.CREATE_POINT,
-                                                  pwmapedit_constants.Tools.CREATE_POLYLINE,
-                                                  pwmapedit_constants.Tools.CREATE_POLYGON):
-            return False
-        return True
+        if self.scene().get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
+                                                  pwmapedit_constants.Tools.EDIT_NODES):
+            return True
+        return False
 
     def mouseMoveEvent(self, event):
         mode = self.scene().get_pw_mapedit_mode()
@@ -2195,7 +2197,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             else:
                 super().mouseMoveEvent(event)
         else:
-            super().mouseMoveEvent(event)
+            return
 
     def mousePressEvent(self, event):
         # jesli jestes w trybie tworzenia obiektow, nie rob nic tutaj
@@ -3017,6 +3019,9 @@ class PolylineAddressNumber(MapLabels):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity, True)
 
     def add_hovered_shape(self):
+        # w niektorych przpadkach z powodu bledu programu hovered_shape moze byc dodany dwukrotnie, dlatego
+        # tutaj na wszelki wypadek usun ten ksztalt. Jesli hovered_shape jest None to nic nie zrobi
+        self.remove_hovered_shape()
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
         hovered_color = QColor('red')
         # hovered_color.setAlpha(50)
