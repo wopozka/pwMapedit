@@ -898,7 +898,7 @@ class Data_X(object):
         return False
 
     def __str__(self):
-        return f'Data Levels: {str(self._data_levels)}, Data Points: {str(self._poly_data_points)}'
+        return f'<Data Levels: {str(self._data_levels)}, Data Points: {str(self._poly_data_points)}>'
 
     def to_mp_record(self):
         poly_points = []
@@ -1025,7 +1025,8 @@ class BasicMapItem(object):
         return str(self.type)
 
     def __str__(self):
-        return str(self.type)
+        # redefine in other classes
+        return
 
     def clear_others(self):
         self.others = None
@@ -1508,6 +1509,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def set_selection_z_value(self):
         if self.zValue() < pwmapedit_constants.SELECTED_OBJECT_Z_VAL:
             self.setZValue(self.zValue() + pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
+
+    def __str__(self):
+        return f'<POI, Object ID: {self._id}, Type: {self.type}>'
 
     def add_label(self):
         label = self.get_label1()
@@ -2637,6 +2641,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def set_z_value(self):
         self.setZValue(10)
 
+    def __str__(self):
+        return f'<POLYLINE, Object ID: {self._id}, Type: {self.type}>'
+
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:
             self.remove_arrow_heads()
@@ -2827,6 +2834,9 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_z_value(self):
         self.setZValue(self._map_objects_properties.get_polygon_z_value(self.get_type()))
+
+    def __str__(self):
+        return f'<POLYLINE, Object ID: {self._id}, Type: {self.type}>'
 
     def add_items_after_new_map_level_set(self):
         self.add_label()

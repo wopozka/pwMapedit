@@ -88,8 +88,10 @@ class mapCanvas(QGraphicsScene):
     def clearSelection(self):
         # jesli mamy podswietlony element (map_obj_properties_dockwidget, elements) to usun go
         self.remove_highlighted_element()
-        print('clear selection called')
-        print(self.selectedItems())
+        if self.selectedItems():
+            print(f'clear selection called on {",".join([str(a) for a in self.selectedItems()])} items')
+        else:
+            print('clear selection called on empty selection')
         for item in self.selectedItems():
             if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
                     isinstance(item, map_items.PolygonQGraphicsPathItem)):
@@ -328,8 +330,12 @@ class mapCanvas(QGraphicsScene):
         super().keyReleaseEvent(event)
 
     def mousePressEvent(self, event):
-        print('Mouse press event, items at mouse press: ', self.items(event.scenePos()))
+        print('Mouse press event, items at mouse press: ', [str(a) for a in self.items(event.scenePos())])
         super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        print('Mouse release event, items at mouse press: ', [str(a) for a in self.items(event.scenePos())])
+        super().mouseReleaseEvent(event)
 
     def remove_all_objects_from_map(self):
         print('usuwam wszystkie obiekty')
