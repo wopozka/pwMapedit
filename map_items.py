@@ -1495,6 +1495,13 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def set_map_objects_properties(self, _map_objects_properties):
         self._map_objects_properties = _map_objects_properties
 
+    def set_selected(self, selected):
+        if selected:
+            self.set_selection_z_value()
+        else:
+            self.set_z_value()
+        self.setSelected(selected)
+
     def set_z_value(self):
         self.setZValue(20)
 
@@ -2104,7 +2111,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return True
 
     def hoverEnterEvent(self, event):
-        # print('hoverEnter')
+        # print(self.zValue())
         if not self.highlight_when_hoverover():
             return
         if self.decorated():
@@ -2317,6 +2324,13 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     def set_pen(self):
         return
+
+    def set_selected(self, selected):
+        if selected:
+            self.set_selection_z_value()
+        else:
+            self.set_z_value()
+        self.setSelected(selected)
 
     def set_z_value(self):
         return
@@ -3240,9 +3254,8 @@ class GripItem(QGraphicsPathItem):
         if event.text() == 's':
             # print('dziele polyline na tym wezle')
             self.split_polyline()
-            event.ignore()
-            return
-        super().keyPressEvent(event)
+        else:
+            super().keyPressEvent(event)
 
     def mouseMoveEvent(self, event):
         polygons_under_cursor = [a for a in self.scene().items(self.mapToScene(event.pos())) if

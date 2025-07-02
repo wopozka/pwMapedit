@@ -53,7 +53,7 @@ class CreateNewPolyCmd(QUndoCommand):
 
     def undo(self):
         if self.new_poly_map_object.isSelected():
-            self.new_poly_map_object.setSelected(False)
+            self.new_poly_map_object.set_selected(False)
         self.scene.removeItem(self.new_poly_map_object)
         self.map_objects.set_map_object_deleted(self.new_poly_map_object)
 
@@ -90,14 +90,14 @@ class InsertNodeCmd(QUndoCommand):
 
     def redo(self):
         if self.map_object.isSelected():
-            self.map_object.setSelected(False)
+            self.map_object.set_selected(False)
         # self.map_object.undecorate()
         self.map_object.data0.insert_node_at_position(self.data_level, self.path_num, self.coord_num,
                                                       self.pos.x(), self.pos.y())
         self.map_object.setPath(self.map_object.create_painter_path(self.polygons))
         self.update_children()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES or self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
         return
 
     def undo(self):
@@ -106,7 +106,7 @@ class InsertNodeCmd(QUndoCommand):
         self.map_object.data0 = self.data0_copy.copy()
         self.map_object.setPath(QPainterPath(self.path_copy))
         self.update_children()
-        self.map_object.setSelected(True)
+        self.map_object.set_selected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.decorate()
         return
@@ -145,7 +145,7 @@ class RemoveNodeCmd(QUndoCommand):
         self.map_object.data0 = self.data0_copy.copy()
         self.map_object.setPath(QPainterPath(self.path_copy))
         self.update_children()
-        self.map_object.setSelected(True)
+        self.map_object.set_selected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.decorate()
         return
@@ -212,7 +212,7 @@ class MoveGripCmd(QUndoCommand):
         self.map_object.data0 = self.data0_copy
         self.map_object.setPath(self.path_copy)
         self.update_children()
-        self.map_object.setSelected(True)
+        self.map_object.set_selected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.decorate()
         return
@@ -257,7 +257,7 @@ class SelectModeMoveItem(QUndoCommand):
         self.map_object.data0 = self.data0_copy
         self.map_object.setPath(self.path_copy)
         self.update_children()
-        self.map_object.setSelected(True)
+        self.map_object.set_selected(True)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.decorate()
 
@@ -284,7 +284,7 @@ class SelectModeMovePoi(QUndoCommand):
         self.map_object.data0.update_node_coordinates(self.data_level, 0, 0, self.pos_copy)
         self.map_object.setPos(self.pos_copy)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
 
 
 class SelectModeSetDirindicator(QUndoCommand):
@@ -298,14 +298,14 @@ class SelectModeSetDirindicator(QUndoCommand):
         self.map_object.scene().clearSelection()
         self.map_object.set_dirindicator(self.new_dirindicator)
         self.map_object.set_mp_dir_indicator(self.new_dirindicator)
-        self.map_object.setSelected(True)
+        self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.scene().clearSelection()
         self.map_object.set_dirindicator(self.old_dirindicator)
         self.map_object.set_mp_dir_indicator(self.old_dirindicator)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
 
 
 class SelectModeSetEndlevel(QUndoCommand):
@@ -320,14 +320,14 @@ class SelectModeSetEndlevel(QUndoCommand):
         self.map_object.set_map_level()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_endlevel(self.old_endlevel)
         self.map_object.set_map_level()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
 
 
 class SelectModeRouteParams(QUndoCommand):
@@ -342,13 +342,13 @@ class SelectModeRouteParams(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_route_params(self.old_route_params)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
@@ -372,7 +372,7 @@ class SetHlevelToNode(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             if not (self.grip in self.map_object.scene().items(self.pos) and self.grip.isSelected()):
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
                 # self.map_object.decorate()
                 self.map_object.scene().views()[0].centerOn(self.pos)
 
@@ -383,7 +383,7 @@ class SetHlevelToNode(QUndoCommand):
         self.map_object.update_hlevel_labels()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
             # self.map_object.decorate()
             self.map_object.scene().views()[0].centerOn(self.pos)
 
@@ -411,7 +411,7 @@ class SetNumbersToNode(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             if not (self.grip in self.map_object.scene().items(self.pos) and self.grip.isSelected()):
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
                 # self.map_object.decorate()
                 self.map_object.scene().views()[0].centerOn(self.pos)
 
@@ -423,7 +423,7 @@ class SetNumbersToNode(QUndoCommand):
         self.map_object.update_interpolated_housenumber_labels()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
             # self.map_object.decorate()
             self.map_object.scene().views()[0].centerOn(self.pos)
 
@@ -458,7 +458,7 @@ class SplitPolylineCmd(QUndoCommand):
         self.map_objects.add_map_object(self.map_object2)
         if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
                                                 pwmapedit_constants.Tools.EDIT_NODES):
-            self.map_object1.setSelected(True)
+            self.map_object1.set_selected(True)
 
     def undo(self):
         self.scene.clearSelection()
@@ -469,7 +469,7 @@ class SplitPolylineCmd(QUndoCommand):
         self.map_objects.set_map_object_deleted(self.map_object2)
         if self.scene.get_pw_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
                                                 pwmapedit_constants.Tools.EDIT_NODES):
-            self.orig_map_object.setSelected(True)
+            self.orig_map_object.set_selected(True)
 
     def update_children(self):
         self.map_object1.update_arrow_heads()
@@ -491,13 +491,13 @@ class UpdateComment(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if not self.map_object.isSelected():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_comment(self.old_comment)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
 
 
 class UpdateLabel123(QUndoCommand):
@@ -525,7 +525,7 @@ class UpdateLabel123(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         if self.label_num == 1:
@@ -539,7 +539,7 @@ class UpdateLabel123(QUndoCommand):
 
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
@@ -568,7 +568,7 @@ class UpdateAddressComponents(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         if self.address_component == 'StreetDesc':
@@ -579,7 +579,7 @@ class UpdateAddressComponents(QUndoCommand):
             self.map_object.set_phone_number(self.old_value)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
@@ -597,7 +597,7 @@ class UpdateExtras(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.clear_others()
@@ -605,7 +605,7 @@ class UpdateExtras(QUndoCommand):
             self.map_object.set_others(*other_item)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
-            self.map_object.setSelected(True)
+            self.map_object.set_selected(True)
         self.map_object.scene().views()[0].centerOn(self.map_object)
 
 
@@ -622,7 +622,7 @@ class UpdatePoiType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_type(self.old_type)
@@ -630,7 +630,7 @@ class UpdatePoiType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def update_after_type_change(self):
         self.map_object.set_pixmap()
@@ -651,7 +651,7 @@ class UpdatePolyType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_type(self.old_type)
@@ -659,7 +659,7 @@ class UpdatePolyType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
 
 class UpdatePolygonType(QUndoCommand):
@@ -675,7 +675,7 @@ class UpdatePolygonType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def undo(self):
         self.map_object.set_type(self.old_type)
@@ -683,7 +683,7 @@ class UpdatePolygonType(QUndoCommand):
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             if self.map_object not in self.map_object.scene().selectedItems():
                 self.map_object.scene().clearSelection()
-                self.map_object.setSelected(True)
+                self.map_object.set_selected(True)
 
     def update_after_type_change(self):
         self.map_object.set_z_value()
