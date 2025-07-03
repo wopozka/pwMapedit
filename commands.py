@@ -131,14 +131,13 @@ class RemoveNodeCmd(QUndoCommand):
         self.data_level = self.map_object.current_data_x
 
     def redo(self):
+        self.map_object.scene().clearSelection()
         polygons = copy.deepcopy(self.polygons)
         polygons[self.path_num].pop(self.coord_num)
         self.map_object.data0.delete_node_at_position(self.data_level, self.path_num, self.coord_num)
         self.map_object.setPath(self.map_object.create_painter_path(polygons))
-        self.map_object.undecorate()
+        self.map_object.set_selected(True)
         self.update_children()
-        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.map_object.decorate()
 
     def undo(self):
         self.map_object.scene().clearSelection()
@@ -146,9 +145,9 @@ class RemoveNodeCmd(QUndoCommand):
         self.map_object.data0 = self.data0_copy.copy()
         self.map_object.setPath(QPainterPath(self.path_copy))
         self.update_children()
-        self.map_object.set_selected(True)
-        if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.map_object.decorate()
+        if self.map_object.scene().get_pw_mapedit_mode() in (pwmapedit_constants.Tools.EDIT_NODES,
+                                                             pwmapedit_constants.Tools.SELECT_OBJECTS):
+            self.map_object.set_selected(True)
         return
 
     def update_children(self):
