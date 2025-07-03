@@ -1729,7 +1729,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
 
     # when shape is hovered over, then around the shape is formed. Let's create it.
     def add_hovered_shape(self):
-        # elem_shape = self.shape()
+        # czasami w wyniku bledu hovered_shape moze nie byc usuniety. Dlatego wiec w przypadku gdy go tworzysz, to usun
+        # ten poprzedni.
+        self.remove_hovered_shape()
         self.hovered_shape_id = HoveredShapePainterPath(self.path())
         self.scene().addItem(self.hovered_shape_id)
         # self.hovered_shape_id.setPos(self.pos())
@@ -3019,9 +3021,6 @@ class PolylineAddressNumber(MapLabels):
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity, True)
 
     def add_hovered_shape(self):
-        # w niektorych przpadkach z powodu bledu programu hovered_shape moze byc dodany dwukrotnie, dlatego
-        # tutaj na wszelki wypadek usun ten ksztalt. Jesli hovered_shape jest None to nic nie zrobi
-        self.remove_hovered_shape()
         self.hovered_shape = QGraphicsRectItem(*self.boundingRect().getRect(), self)
         hovered_color = QColor('red')
         # hovered_color.setAlpha(50)
