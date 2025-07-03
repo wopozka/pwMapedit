@@ -139,6 +139,10 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI',
                                            mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
+        # switch to SELECT_OBJECTS
+        self.parent.toolbar_action_trigered(pwmapedit_constants.Tools.SELECT_OBJECTS)
+        # select new POI
+        new_poi.set_selected(True)
 
     def command_create_polyline(self, coordinates):
         new_poly = map_items.PolylineQGraphicsPathItem(None,
@@ -151,6 +155,10 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline',
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
+        # switch to SELECT_OBJECTS
+        self.parent.toolbar_action_trigered(pwmapedit_constants.Tools.SELECT_OBJECTS)
+        # select new polyline
+        new_poly.set_selected(True)
 
     def command_create_polygon(self, coordinates):
         new_poly = map_items.PolygonQGraphicsPathItem(None,
@@ -163,6 +171,10 @@ class mapCanvas(QGraphicsScene):
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon',
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
+        # switch to SELECT_OBJECTS
+        self.parent.toolbar_action_trigered(pwmapedit_constants.Tools.SELECT_OBJECTS)
+        # select new polygon
+        new_poly.set_selected(True)
 
     def command_paste_poi(self, copied_poi_def, mouse_scene_pos):
         command = commands.CreateNewPoiCmd(copied_poi_def, self.parent.map_objects, self, 'Wklej POI',
