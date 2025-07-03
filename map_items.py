@@ -2121,19 +2121,15 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         # print(self.zValue())
         if not self.highlight_when_hoverover():
             return
-        if not self.mode_allows_selection():
-            return
         if self.decorated():
             self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
             return
         self.hovered = True
-        mode = self.scene().get_pw_mapedit_mode()
-        if (mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON or
-                mode == pwmapedit_constants.Tools.EDIT_NODES):
+        if self.is_mode_create_mode():
             self.hover_enter_for_create_mode = True
             self.update()
             return
-        if not self.isSelected():
+        if not self.isSelected() and self.mode_allows_selection():
             self.add_hovered_shape()
 
     def hoverLeaveEvent(self, event):
@@ -2142,15 +2138,18 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
             return
         self.hovered = False
-        mode = self.scene().get_pw_mapedit_mode()
-        if (mode == pwmapedit_constants.Tools.CREATE_POLYLINE or mode == pwmapedit_constants.Tools.CREATE_POLYGON or
-                mode == pwmapedit_constants.Tools.EDIT_NODES):
+        if self.is_mode_create_mode():
             self.hover_enter_for_create_mode = False
             self.update()
             return
         if not self.isSelected():
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
+
+    def is_mode_create_mode(self):
+        mode = self.scene().get_pw_mapedit_mode()
+        return mode in (pwmapedit_constants.Tools.CREATE_POLYLINE, pwmapedit_constants.Tools.CREATE_POLYGON,
+                        pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE, pwmapedit_constants.Tools.CREATE_POINT)
 
     def insert_key_pressed(self, event_pos):
         point_def = self._closest_point_to_poly_insert_node(event_pos)
