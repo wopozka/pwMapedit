@@ -751,7 +751,8 @@ class pwMapeditPy(QMainWindow):
 
     def key_pressed_escape(self):
         if self.get_mapedit_mode() in (pwmapedit_constants.Tools.CREATE_POLYGON,
-                                  pwmapedit_constants.Tools.CREATE_POLYLINE):
+                                       pwmapedit_constants.Tools.CREATE_POLYLINE,
+                                       pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE):
             self.view.delete_created_poly_shape()
         elif self.get_mapedit_mode() in (pwmapedit_constants.Tools.SELECT_OBJECTS,
                                   pwmapedit_constants.Tools.EDIT_NODES):
