@@ -2118,7 +2118,6 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return True
 
     def hoverEnterEvent(self, event):
-        # print(self.zValue())
         if not self.highlight_when_hoverover():
             return
         if self.decorated():
@@ -2133,18 +2132,24 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.add_hovered_shape()
 
     def hoverLeaveEvent(self, event):
-        # print('hoverLeave')
         if self.decorated():
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
             return
         self.hovered = False
-        if self.is_mode_create_mode():
+        update_me = False
+        if self.hover_enter_for_create_mode:
             self.hover_enter_for_create_mode = False
-            self.update()
-            return
+            update_me = True
+        # if self.is_mode_create_mode():
+        #     self.hover_enter_for_create_mode = False
+        #     self.update()
+        #     return
         if not self.isSelected():
             self.setPen(self.orig_pen)
             self.remove_hovered_shape()
+            update_me = True
+        if update_me:
+            self.update()
 
     def is_mode_create_mode(self):
         mode = self.scene().get_pw_mapedit_mode()
