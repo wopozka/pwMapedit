@@ -1827,19 +1827,17 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                     perp = QLineF(inters, event_pos)
                     intersection_type, inters = line.intersects(perp)
                     if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
-                        # poniższe wykonaj tylko dla polygonow, albo polilinii,
-                        if self.is_polygon() or (not self.is_polygon()):
-                            point_to_point_dist = QLineF(event_pos, p1).length()
-                            intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index - 1))
-                            point_to_point_dist = QLineF(event_pos, p2).length()
-                            intersections.append(Closest_Point(point_to_point_dist, 1, path_num, coord_index))
+                        point_to_point_dist = QLineF(event_pos, p1).length()
+                        intersections.append(Closest_Point(point_to_point_dist, 0, path_num, coord_index))
+                        point_to_point_dist = QLineF(event_pos, p2).length()
+                        intersections.append(Closest_Point(point_to_point_dist, 0, path_num, coord_index))
                         p1 = p2
                         continue
                 intersections.append(Closest_Point(QLineF(event_pos, inters).length(), 1,
                                                    path_num, coord_index))
                 p1 = p2
             if intersections:
-                print(intersections)
+                print(sorted(intersections, key=lambda item: item[0]))
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
         if intersections_for_separate_paths:
             # return the result with the shortest distance
