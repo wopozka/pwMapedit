@@ -506,6 +506,8 @@ class mapRender(QGraphicsView):
         self.weblayers_put_background_weblayer_pictures()
 
     def zoom_in_command(self):
+        if self.scene() is None:
+            return
         self.setInteractive(False)
         previous_map_scale = self.get_map_scale()
         center_coords = self.mapToScene(self.width() // 2, self.height() // 2)

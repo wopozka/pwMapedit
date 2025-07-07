@@ -1821,12 +1821,16 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 perp = QLineF.fromPolar(line.length(), line.angle() + 90.0).translated(event_pos)
                 intersection_type, inters = line.intersects(perp)
                 if intersection_type == QLineF.IntersectionType.NoIntersection:
+                    print('no intersection continue')
                     p1 = p2
                     continue
                 elif intersection_type == QLineF.IntersectionType.UnboundedIntersection:
-                    perp = QLineF(inters, event_pos)
-                    intersection_type, inters = line.intersects(perp)
+                    perp = QLineF(event_pos, inters)
+                    perp.setLength(perp.length() * 2)
+                    intersection_type, inters1 = line.intersects(perp)
+                    print(f'unbounded intersection, inters: {inters}, inters1: {inters1}, {perp}')
                     if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
+                        print('unbonded intersection points co calculate')
                         point_to_point_dist = QLineF(event_pos, p1).length()
                         intersections.append(Closest_Point(point_to_point_dist, 0, path_num, coord_index))
                         point_to_point_dist = QLineF(event_pos, p2).length()
@@ -1836,6 +1840,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 intersections.append(Closest_Point(QLineF(event_pos, inters).length(), 1,
                                                    path_num, coord_index))
                 p1 = p2
+                print('normal intersection')
             if intersections:
                 print(sorted(intersections, key=lambda item: item[0]))
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
@@ -3032,7 +3037,7 @@ class PolylineAddressNumber(MapLabels):
         self.hovered_shape.setPen(hovered_over_pen)
 
     def hoverEnterEvent(self, event):
-        print('hover enter')
+        print('hover enter polyline address number')
         self.setFocus(Qt.FocusReason.MouseFocusReason)
         self.grabKeyboard()
         self.parent.hoverLeaveEvent(event)
@@ -3044,7 +3049,7 @@ class PolylineAddressNumber(MapLabels):
         self.scene().disable_maplevel_shortcuts()
 
     def hoverLeaveEvent(self, event):
-        print('hover leave')
+        print('hover leave polyline address number')
         self.clearFocus()
         self.ungrabKeyboard()
         self.scene().removeItem(self.hovered_shape)
