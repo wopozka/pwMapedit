@@ -1755,7 +1755,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def add_label(self):
-        pass
+        return
 
     def closest_point_to_point(self, event_pos):
         circle = QPainterPath()
