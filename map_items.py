@@ -1022,8 +1022,8 @@ class BasicMapItem(object):
         self.others = None
         self.obj_bounding_box = {}
 
-    def __repr__(self):
-        return str(self.type)
+    # def __repr__(self):
+    #     return str(self.type)
 
     def __str__(self):
         # redefine in other classes
