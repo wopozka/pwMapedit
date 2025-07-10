@@ -6,7 +6,7 @@ import copy
 # from PyQt5.QtSvg import QGraphicsSvgItem
 # from PyQt5.QtWidgets import QGraphicsItemGroup
 from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem, \
-    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsEllipseItem
+    QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsLineItem
 from PyQt6.QtCore import QPointF, Qt, QLineF, QPoint
 from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
 from datetime import datetime
@@ -1022,8 +1022,8 @@ class BasicMapItem(object):
         self.others = None
         self.obj_bounding_box = {}
 
-    def __repr__(self):
-        return str(self.type)
+    # def __repr__(self):
+    #     return str(self.type)
 
     def __str__(self):
         # redefine in other classes
@@ -1706,6 +1706,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.node_grip_hovered = False
         self.hovered_shape_id = None
         self.label = None
+        self._perp_lines = []
         self._mp_data = [None, None, None, None, None]
         # self._mp_end_level = 0
         self._mp_label = None
@@ -1754,7 +1755,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return
 
     def add_label(self):
-        pass
+        return
 
     def closest_point_to_point(self, event_pos):
         circle = QPainterPath()
@@ -1790,6 +1791,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return: Closest_Point(distance, is_segment, path_num, insertion_index)
 
         """
+        for line in self._perp_lines:
+            self.scene().removeItem(line)
+        self._perp_lines.clear()
         polygons = self.get_polygons_from_path(self.path())
         intersections_for_separate_paths = list()
         for path_num, points in enumerate(polygons):
@@ -1821,16 +1825,17 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                 perp = QLineF.fromPolar(line.length(), line.angle() + 90.0).translated(event_pos)
                 intersection_type, inters = line.intersects(perp)
                 if intersection_type == QLineF.IntersectionType.NoIntersection:
-                    print('no intersection continue')
+                    # print('no intersection continue')
                     p1 = p2
                     continue
                 elif intersection_type == QLineF.IntersectionType.UnboundedIntersection:
                     perp = QLineF(event_pos, inters)
                     perp.setLength(perp.length() * 2)
                     intersection_type, inters1 = line.intersects(perp)
-                    print(f'unbounded intersection, inters: {inters}, inters1: {inters1}, {perp}')
+                    # print(f'Intersection type: {intersection_type}, inters: {inters}, inters1: {inters1}, {perp}')
                     if intersection_type == QLineF.IntersectionType.UnboundedIntersection:
-                        print('unbonded intersection points co calculate')
+                        # print('unbonded intersection points co calculate')
+                        # text = QGraphicsSimpleTextItem(str(coord_index), self)
                         point_to_point_dist = QLineF(event_pos, p1).length()
                         intersections.append(Closest_Point(point_to_point_dist, 0, path_num, coord_index))
                         point_to_point_dist = QLineF(event_pos, p2).length()
@@ -1839,8 +1844,12 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
                         continue
                 intersections.append(Closest_Point(QLineF(event_pos, inters).length(), 1,
                                                    path_num, coord_index))
+                # self._perp_lines.append(QGraphicsLineItem(perp, self))
+                # self._perp_lines.append(QGraphicsSimpleTextItem('event_pos'))
+                # print(event_pos)
+                # self._perp_lines[-1].setPos(event_pos)
                 p1 = p2
-                print('normal intersection')
+                # print('normal intersection')
             if intersections:
                 print(sorted(intersections, key=lambda item: item[0]))
                 intersections_for_separate_paths.append(min(intersections, key=lambda item: item[0]))
