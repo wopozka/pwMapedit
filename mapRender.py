@@ -62,8 +62,11 @@ class GetWebLayerPictureWorker(QRunnable):
                 self.www_signals.download_finished.emit((self.tile_url, self.web_layer,
                                                          self.current_zoom, self.tile_def,))
             except FileNotFoundError:
-                self.www_signals.download_failed.emit(self.tile_url)
                 print(f'Nie moglem zapisac obrazka: {self.tile_def.file_path}')
+                try:
+                    self.www_signals.download_failed.emit(self.tile_url)
+                except RuntimeError:
+                    pass
         # self.emit.finished(self.tile_def)
 
 
