@@ -228,9 +228,17 @@ class Data_X(object):
         left_zip = None
         right_zip = None
         if len(num_data) > 7:
-            left_zip = num_data[7] if num_data[7] != -1 else None
+            try:
+                if int(num_data[7]) == -1: 
+                    lef_zip = None
+            except ValueError:
+                left_zip = num_data[7]
         if len(num_data) > 8:
-            right_zip = num_data[8] if num_data[8] != -1 else None
+            try:
+                if int(num_data[8]) == -1:
+                    right_zip
+            except ValueError:
+                right_zip = num_data[8]
 
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
         self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
@@ -3638,7 +3646,7 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         self.setBrush(self.normalBrush)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.MouseButton.ShiftModifier:
+        if event.button() == Qt.MouseButton.LeftButton and event.modifiers() == Qt.KeyboardModifier.ShiftModifier:
             dist, pos, index = self.closestPointToPoly(event.pos())
             if index >= 0 and dist <= self.threshold():
                 self.insertPoint(index, pos)

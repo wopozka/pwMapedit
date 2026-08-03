@@ -209,7 +209,7 @@ class MoveGripCmd(QUndoCommand):
     def undo(self):
         self.map_object.scene().clearSelection()
         self.map_object.undecorate()
-        self.map_object.data0 = self.data0_copy
+        self.map_object.data0 = self.data0_copy.copy()
         self.map_object.setPath(self.path_copy)
         self.update_children()
         self.map_object.set_selected(True)
@@ -575,7 +575,7 @@ class UpdateAddressComponents(QUndoCommand):
             self.map_object.set_street_desc(self.old_value)
         elif self.address_component == 'HouseNumber':
             self.map_object.set_house_number(self.old_value)
-        elif self.address_component == 'Phone':
+        elif self.address_component == 'PhoneNumber':
             self.map_object.set_phone_number(self.old_value)
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.map_object.scene().clearSelection()
