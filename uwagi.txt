@@ -1,0 +1,259 @@
+UWAGI Z PRZEGLĄDU KODU - pwMapedit
+Data przeglądu: 2026-08-03
+Gałąź: qt6
+
+===========================================================================
+KRYTYCZNE (utrata danych / crash / całkowicie zepsute funkcje)
+===========================================================================
+
+1. Zapis mapy może się nie udać bez informowania użytkownika
+   Plik: pwMapEdit.py:220-234 (MapFileSaver.run)
+   `except FileNotFoundError: pass` / `except IOError: pass` - błąd zapisu
+   nie jest w żaden sposób sygnalizowany użytkownikowi.
+   Dodatkowo pwMapEdit.py:861-871 (_save_map) wywołuje
+   undo_redo_stack.file_saved() zaraz po WYSTARTOWANIU wątku zapisu, a nie
+   po jego zakończeniu - flaga "niezapisane zmiany" znika, nawet jeśli
+   zapis się nie powiódł. Realne ryzyko utraty pracy użytkownika.
+
+2. Projekcja UTM jest kompletnie zepsuta
+   Plik: projection.py:38-39, 118-119
+   UTM.canvas_to_geo / Direct.canvas_to_geo to gołe `pass` (zwraca None),
+   mimo że wywołania w mapCanvas.py/map_items.py/mapRender.py oczekują
+   krotki (lat, lon).
+   Dodatkowo mapCanvas.py:71 - logika walidacji offsetu strefy jest
+   odwrócona (`if not newProj.calculate_data_offset():` traktuje poprawny
+   dodatni offset tak samo jak błąd), a sentinel -1 w projection.py:96/100
+   przy błędzie po cichu przesuwa długość geograficzną o +1°.
+   Przełączenie na UTM i ruch myszką / rysowanie linii / panoramowanie
+   widoku skończy się TypeError.
+
+3. remove_all_objects_from_map (zmiana projekcji) jest niedziałająca
+   Plik: mapCanvas.py:352-356
+   Wywołuje self.delete('all') (metoda nie przyjmuje argumentu) oraz
+   self.update_idletasks() (metoda z Tkintera, nieistniejąca na
+   QGraphicsScene) - pozostałość po porcie z Tkintera. change_projection
+   w ogóle nie zadziała.
+
+4. Undo/redo psuje historię przy przesuwaniu punktów
+   Plik: commands.py:212, 257, 175
+   MoveGripCmd.undo(), SelectModeMoveItem.undo(), ReversePolylineCmd.undo()
+   przypisują self.map_object.data0 = self.data0_copy PRZEZ REFERENCJĘ,
+   zamiast .copy() (jak poprawnie robią InsertNodeCmd/RemoveNodeCmd).
+   Po jednym cofnięciu kolejne "redo" mutuje w miejscu ten sam obiekt co
+   zapisany "stan przed" - drugie cofnięcie tej samej akcji już nie
+   przywraca poprawnego stanu. Ujawnia się przy zwykłym użyciu Ctrl+Z/Ctrl+Y.
+
+   Dodatkowo MoveGripCmd.mergeWith (commands.py:227-233) scala komendy
+   tylko po obiekcie i czasie, ignorując KTÓRY węzeł/uchwyt był
+   przesuwany - przesunięcie dwóch różnych punktów w ciągu 1s gubi ruch
+   pierwszego punktu.
+
+5. Znaki drogowe / ograniczenia (RoadSign, Restriction) crashują przy tworzeniu
+   Plik: map_items.py:1341-1369
+   Obie klasy dziedziczą po `object` zamiast po BasicSignRestrict, więc
+   super().__init__(...) trafia w object.__init__() i rzuca TypeError.
+   Nawet po naprawie dziedziczenia, set_data odwołuje się do
+   self.restr_sign_data, które w tym momencie jeszcze jest None.
+
+===========================================================================
+POWAŻNE
+===========================================================================
+
+6. get_calculated_housenumber_defs_for_node - zła zmienna
+   Plik: map_items.py:447
+   Użyto start_node_idx zamiast end_node_idx przy pobieraniu end_node;
+   interpolacja numerów budynków liczona jest błędnie.
+
+7. Niespójne indeksowanie poziomów danych
+   Plik: map_items.py:405-410 vs 897
+   Część kodu poprawnie mapuje data_level przez
+   _data_levels.index(...), ale delete_poly_at_data_level /
+   set_poly_from_node_list indeksuje bezpośrednio - przy nieciągłych
+   poziomach danych (np. tylko Data2/Data4) grozi to IndexError lub
+   cichym uszkodzeniem danych.
+
+8. Wątek wczytywania pliku może zawiesić UI w nieskończoność
+   Plik: pwMapEdit.py:91-116 (wczytaj_rekordy)
+   Brak obsługi wyjątków; np. pusty/uszkodzony plik da IndexError,
+   finished nigdy się nie wyemituje, QThread nigdy się nie zakończy -
+   pasek postępu zawiśnie na stałe.
+
+9. Brak ochrony przed równoległymi wątkami
+   Plik: pwMapEdit.py:697-787
+   Otwieranie/zapis/przeliczanie poziomów nadpisuje referencję do
+   działającego QThread bez sprawdzenia, czy poprzedni się zakończył -
+   ryzyko crasha "QThread: Destroyed while thread is still running".
+
+10. Literówka blokuje undo numeru telefonu
+    Plik: commands.py:578 (vs 556/566)
+    redo() używa stringa 'PhoneNumber', undo() sprawdza 'Phone' - warunek
+    nigdy nie pasuje, Ctrl+Z nie działa dla tego pola.
+
+11. Złe wyliczanie kodu pocztowego
+    Plik: map_items.py:231-233
+    num_data[7] != -1 porównuje string z intem, więc sentinel "brak kodu"
+    ("-1") nigdy nie zamienia się na None.
+
+12. Niezwalidowane int() w polach numeracji
+    Plik: map_obj_properties_dockwidget.py:689-693, 362-378, 719-728
+    Wpisanie nienumerycznego tekstu w pole numeracji i przełączenie
+    stylu/checkboxa rzuca nieobsłużony ValueError.
+
+13. Zła stała enum przy Shift+klik
+    Plik: map_items.py:3641
+    Qt.MouseButton.ShiftModifier nie istnieje (powinno być
+    Qt.KeyboardModifier.ShiftModifier, jak poprawnie użyto w linii 2229) -
+    AttributeError na PolygonAnnotation.
+
+14. QRectF.upperLeft() nie istnieje
+    Plik: mapCanvas.py:287 (get_viewer_corners_geo_coordinates)
+    Powinno być topLeft().
+
+15. QAction.setTooltip() nie istnieje
+    Plik: pwmapedit_toolbar.py:121-122 (set_undo_reto_tooltips)
+    Powinno być setToolTip().
+
+16. Błędne literały kolorów
+    Plik: map_object_properties.py:50, 72
+    QColor('#00ffff"') / QColor('#a959a9"') - nadmiarowy cudzysłów w
+    środku hex-a - kolory renderują się źle (czarny/domyślny zamiast
+    zamierzonego).
+
+17. Kolizja ID w add_map_object
+    Plik: mapData.py:164-171
+    Gdy map_object.get_id() < len(mapObjectsList), ale slot zajęty - kod
+    mimo to dopisuje obiekt na końcu listy, podczas gdy get_id() nadal
+    wskazuje stary (zajęty) indeks - ID obiektu rozjeżdża się z jego
+    pozycją na liście, bez żadnego błędu.
+
+===========================================================================
+ŚREDNIE / MARTWY KOD
+===========================================================================
+
+18. modes.py - cały plik to martwy kod z Tkintera, niekompatybilny z
+    obecnym PyQt6 (import zakomentowany w mapCanvas.py:14) - do usunięcia.
+
+19. Menu "Projekcja" jest niepodłączone - mercator_action/utm_action
+    (pwMapEdit.py:422-431) nigdzie nie mają .triggered.connect(), a
+    menu_change_projection (768-772) odwołuje się do nieistniejących
+    atrybutów Tkintera (self.menuProjectionVar, self.mapa).
+
+20. Menu kontekstowe "Kopiuj/Wklej" i "Usuń" w tabelach właściwości
+    obiektu
+    Plik: map_obj_properties_dockwidget.py:802-810, 1078-1082
+    Akcje utworzone, ale niepodłączone/zaślepione - command_delete_poly
+    tylko drukuje dane i wraca, nic nie usuwa. "Kopiuj do" (1074) też bez
+    podpiętego handlera.
+
+21. great_circle_distance - zła zmienna
+    Plik: misc_functions.py:178
+    lon2 = math.radians(coord1[1]) powinno być coord2[1]. Obecnie
+    nieużywane (test na to jest zakomentowany), ale realny błąd, gdyby
+    ktoś to odblokował.
+
+22. MapeEndlevelWorker.run - ZeroDivisionError
+    Plik: pwMapEdit.py:254-262
+    len_items_1_percent = len(items) // 100 bez zabezpieczenia; dla map
+    z mniej niż 100 obiektów dzielenie przez zero. Ścieżka wywołania jest
+    obecnie zakomentowana (linie 803/808/813/818/823), ale odblokowanie
+    jej odsłoni błąd. mapCanvas.py:427-430 ma analogiczny, poprawnie
+    zabezpieczony kod - typowy błąd kopiuj-wklej bez poprawki.
+
+23. Współdzielony obiekt klasowy closest_node_circle_definition
+    Pliki: mapCanvas.py:27-33, map_items.py:1679
+    Jeden QGraphicsEllipseItem używany jako "wskaźnik najbliższego węzła"
+    dla wszystkich instancji polylinii/poligonów - przy wielu
+    obiektach/scenach może się gubić lub trafiać do złego elementu;
+    ponowne dodanie już dodanego elementu do sceny jest w Qt nieprawidłowe.
+
+24. Ścieżka do ikon względna względem CWD
+    Plik: pwmapedit_toolbar.py:11
+    os.path.join('icons', 'toolbar_icons') liczy się względem katalogu
+    roboczego procesu, nie lokalizacji skryptu - ikony po cichu się nie
+    wczytają, jeśli program uruchomiony z innego katalogu.
+
+25. Niespójna obsługa pióra o szerokości 0
+    Plik: map_items.py:2377-2391
+    threshold() zabezpiecza się przez `self.pen().width() or 1.`, ale
+    _shape() (używane do hit-testingu/hover) tego nie robi - kosmetyczne
+    pióro o szerokości 0 może uczynić polylinię/poligon praktycznie
+    nieklikalnym.
+
+26. Rachunki na elemencie ścieżki ignorują granice pod-ścieżek
+    Plik: map_items.py:2443-2457, 2980-2987 (add_arrow_heads,
+    PolylineLabel.get_label_nodes)
+    Liczenie pozycji przez surowe indeksy elementów QPainterPath zakłada
+    jedną ciągłą polylinię; przy wielu rozłącznych segmentach w jednej
+    ścieżce może dać bezsensowny kąt/pozycję etykiety.
+
+===========================================================================
+DROBNE
+===========================================================================
+
+- pwMapEdit.py:723-725 - map_objects_to_be_drawn.add(...) natychmiast po
+  którym .remove(...) w tej samej iteracji - zbiór nigdy nic nie
+  przechowuje, mechanizm śledzenia rysowanych obiektów to no-op.
+- pwMapEdit.py:26-71 (MapUndoStack) - undo_buttons/redo_buttons
+  domyślnie None; push()/undo()/redo() iterują po nich bez sprawdzenia -
+  TypeError, jeśli wywołane przed ustawieniem przycisków.
+- mapData.py:54 (wczytaj_rekordy) - odwołuje się do self.filename,
+  którego konstruktor nigdy nie ustawia (jest tylko self.map_filename) -
+  martwa, zawsze rzucająca AttributeError kopia działającego loadera z
+  pwMapEdit.py.
+- mapData.py:29 - self.freeObiectIdList zadeklarowane, ale nigdzie nie
+  używane (ID usuniętych obiektów nigdy nie są odzyskiwane) -
+  niedokończona funkcja.
+- misc_functions.py:112-128 (vector_angle) - dla wektora zerowego (0,0)
+  zwraca arbitralnie 270 zamiast sygnalizować "nieokreślone".
+- web_layers.py:44-48 (WebLayers.__init__) - TypeError przez
+  os.path.join(None, ...), jeśli obiekt utworzony bez cache_folder
+  (obecnie tylko jedno miejsce wywołania, więc na razie utajone).
+- map_object_properties.py:395-396, 580-585 - poi_type_has_nonpixmap_icon
+  odwołuje się do self.non_pixmap_icons, które nigdy nie jest ustawiane
+  (przypisanie zakomentowane) - AttributeError, gdyby ścieżkę
+  odblokowano. create_2800_icon (580-585) buduje QPainterPath, ale
+  zwraca literał string 'adr' zamiast niego - kopiuj-wklej.
+- map_obj_properties_dockwidget.py:578-579 - fill_map_object_properties_routing
+  wychodzi wcześnie (return), gdy wszystkie parametry routingu są zero,
+  zostawiając w UI dane poprzednio wybranego obiektu.
+- Różne bloki `except IndexError: return` (map_items.py: 1932, 1945, 1968)
+  po cichu porzucają akcję bez żadnej informacji dla użytkownika ani logu.
+- PolyQGraphicsPathItem.paint() (map_items.py:2268-2282) - mutuje pióro
+  i przezroczystość obiektu przy każdym renderowaniu zamiast tylko przy
+  zmianie stanu - nieefektywne, choć niekrytyczne.
+- mapRender.py:19 - nieużywany import Store; mapCanvas.py:68 - nieużywana
+  zmienna lokalna old_proj; pwMapEdit.py:230-232 - nadmiarowy
+  except FileNotFoundError przed except IOError (IOError to alias
+  OSError i już go pokrywa).
+
+===========================================================================
+TESTY
+===========================================================================
+
+- tests/test_misc_functions.py:157-161 - TEST_DECORATE_POLYLINE = () to
+  pusta lista parametrów - test_decorate_polyline wygląda, jakby
+  istniał, ale wykonuje się zero razy.
+- Testy dla great_circle_distance (linie 116-118) i closest_point_to_poly
+  (139-155) są zakomentowane - maskują błąd nr 21 i zostawiają
+  niesprawdzoną, w całości zakomentowaną funkcję closest_point_to_poly
+  (misc_functions.py:261-309).
+- Brak jakichkolwiek testów dla: matematyki projekcji (projection.py -
+  brak testów round-trip geo_to_canvas/canvas_to_geo dla Mercatora i
+  UTM), zapisu/odczytu mapy (mapData.py), undo/redo (commands.py),
+  web_layers.py.
+- utm/ to niezmodyfikowany, oryginalny pakiet PyPI "utm" - brak błędów
+  specyficznych dla projektu.
+
+===========================================================================
+SUGEROWANA KOLEJNOŚĆ NAPRAWY
+===========================================================================
+
+1. Cichy błąd zapisu mapy (pkt 1) - ryzyko utraty danych użytkownika.
+2. Undo/redo przez referencję zamiast kopii (pkt 4) oraz literówka
+   'PhoneNumber'/'Phone' (pkt 10) - psują historię cofania, używane
+   bardzo często.
+3. RoadSign/Restriction (pkt 5) - crash przy tworzeniu obiektu.
+4. Projekcja UTM (pkt 2, 3) - jeśli funkcja jest w ogóle używana przez
+   użytkowników, obecnie jest praktycznie niedziałająca.
+5. Pozostałe błędy z sekcji "Poważne", w kolejności częstości użycia
+   danej funkcji w aplikacji.
