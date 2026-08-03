@@ -1073,7 +1073,7 @@ class ElementsTable(QTreeWidget):
         delete_action.triggered.connect(self.command_delete_poly)
         paste_to_action = menu.addAction('Kopiuj do')
         # paste_text_action.triggered.connect(self.paste)
-        res = menu.exec_(event.globalPos())
+        res = menu.exec(event.globalPos())
 
     def command_delete_poly(self):
         data_level = self.currentItem().data(0, Qt.ItemDataRole.UserRole)
