@@ -284,7 +284,7 @@ class mapCanvas(QGraphicsScene):
 
     def get_viewer_corners_geo_coordinates(self):
         viewer = self.views()[0]
-        left_top_corner = viewer.mapToScene(viewer.sceneRect().upperLeft())
+        left_top_corner = viewer.mapToScene(viewer.sceneRect().topLeft())
         right_bottom_corner = viewer.mapToScene(viewer.sceneRect().bottomRight())
         print(left_top_corner, right_bottom_corner)
 

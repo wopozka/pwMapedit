@@ -452,7 +452,7 @@ class Data_X(object):
             start_node_idx, end_node_idx = pair
             if start_node_idx < node_num < end_node_idx:
                 start_node = self.get_poly_node(data_level, poly_num, start_node_idx, False)
-                end_node = self.get_poly_node(data_level, poly_num, start_node_idx, False)
+                end_node = self.get_poly_node(data_level, poly_num, end_node_idx, False)
                 definitions = Numbers_Definition(*[None for a in range(14)])._asdict()
                 left, right = self.get_interpolated_housenumbers_for_poly_section(data_level, poly_num,
                                                                                   start_node_idx, end_node_idx)
@@ -472,7 +472,7 @@ class Data_X(object):
                                         'left_side_region', 'left_side_country'):
                             definitions[num_key] = start_node.get_specific_number_definition(num_key)
                         definitions['left_side_number_after'] = (
-                            end_node.get_specific_number_definition('left_side_number_after'))
+                            end_node.get_specific_number_definition('left_side_number_before'))
                         definitions['left_side_number_before'] = (
                             start_node.get_specific_number_definition('left_side_number_after'))
 
@@ -495,7 +495,7 @@ class Data_X(object):
                                         'right_side_region', 'right_side_country'):
                             definitions[num_key] = start_node.get_specific_number_definition(num_key)
                         definitions['right_side_number_after'] = (
-                            end_node.get_specific_number_definition('right_side_number_after'))
+                            end_node.get_specific_number_definition('right_side_number_before'))
                         definitions['right_side_number_before'] = (
                             start_node.get_specific_number_definition('right_side_number_after'))
                 return Numbers_Definition(**definitions)
