@@ -1475,8 +1475,10 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         return False
 
     def set_map_level(self):
+        # nie ustawiamy tu flagi ItemIgnoresTransformations (set_transformation_flag) - robi to leniwie paint, tylko
+        # dla rysowanych POI. Przestawianie jej naraz na wszystkich POI jest w indeksie BSP Qt kwadratowe (zdejmowanie
+        # flagi z setek tysiecy POI przy skali < 1 trwalo ok. minuty)
         level = self.scene().get_map_level()
-        self.set_transformation_flag()
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
