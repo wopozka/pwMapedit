@@ -936,12 +936,14 @@ class pwMapeditPy(QMainWindow):
         if self.map_objects is not None and self.map_objects.contains_data():
             file_name= QFileDialog.getSaveFileName(self, 'Zapisz mapę jako',
                                                    self.map_objects.get_map_file_name(),
-                                                   'Pliki map (*.mp *.MP, *.txt)')
+                                                   'Pliki map (*.mp *.MP *.txt)')
+            if not file_name[0]:
+                # uzytkownik anulowal zapis
+                return
             self.map_objects.set_map_file_name(file_name[0])
             self._save_map()
             self.undo_redo_stack.file_saved()
-            if file_name[0]:
-                self.add_recent_file(file_name[0])
+            self.add_recent_file(file_name[0])
 
     def split_polyline(self):
         self.map_canvas.split_polyline()
