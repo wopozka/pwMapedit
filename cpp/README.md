@@ -120,8 +120,72 @@ Inne:
 11. `get_interpolated_numbers_coordinates` jest rekurencyjna. Przy bardzo długim odcinku numeracji
     (>~1000 numerów) Python rzuci RecursionError. Wersja C++ jest iteracyjna.
 
-## Następne etapy
+## Etap 3: GUI w Qt6 (`gui/`)
 
-2. (opcjonalnie) Moduł Pythona (pybind11) z tym rdzeniem, żeby obecna aplikacja od razu szybciej wczytywała mapy.
-3. GUI w Qt6/C++: scena, elementy mapy, tryby edycji, undo/redo, panel właściwości.
-   Wymaga `cmake` i `qt6-base-dev` (+ `qt6-svg-dev`).
+Budowanie przez CMake (rdzeń, testy, `mptool` i GUI `pwmapedit`; GUI tylko, gdy znaleziono Qt6):
+
+```sh
+cd cpp
+cmake -S . -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build-cmake
+ctest --test-dir build-cmake
+build-cmake/pwmapedit [plik.mp]
+```
+
+Windows (msys2, powłoka MINGW64): `pacman -S mingw-w64-x86_64-{gcc,cmake,ninja,qt6-base,qt6-svg}`.
+Linux: `apt install cmake ninja-build qt6-base-dev qt6-svg-dev`.
+Ikony są szukane w: `$PWMAPEDIT_ICONS`, `icons/` obok programu (i do 3 katalogów wyżej), `icons/` w bieżącym
+katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
+
+| plik | odpowiednik w Pythonie |
+|---|---|
+| `gui/main_window.*` | `pwMapEdit.py` (okno, menu, pasek narzędzi, pasek stanu, otwieranie/zapis) |
+| `gui/map_scene.*` | `mapCanvas.py` |
+| `gui/map_view.*` | `mapRender.py` |
+| `gui/map_items.*` | graficzna część `map_items.py` (POI, polilinie, polygony, etykiety, strzałki, numery adresowe, HLevel, linijka) |
+| `gui/map_styles.*` | `map_object_properties.py` |
+| `gui/constants.hpp` | `pwmapedit_constants.py` |
+
+Elementy sceny nie kopiują danych: trzymają wskaźnik do `MapData` i indeks obiektu. Ścieżki rysowane są
+z węzłów `DataX` dla wybranego poziomu.
+
+### Etap 3a (zrobione): przeglądarka mapy
+
+- otwieranie pliku w tle (także z linii poleceń), zapis i „zapisz jako”, pytanie przy zamykaniu niezapisanej mapy;
+- rysowanie POI (ikony xpm/png), polilinii (kolor, grubość, styl według typu), polygonów (wypełnienie i Z według typu);
+- etykiety POI, polilinii (obrócone wzdłuż linii) i polygonów, strzałki kierunku (`DirIndicator`), numery
+  adresowe przy węzłach, oznaczenia `HLevel`;
+- poziomy mapy 0–4 (klawisze `0`–`4`, menu View → Levels) z uwzględnieniem `EndLevel`;
+- powiększanie `Ctrl`+kółko oraz `=`/`-`, przesuwanie prawym przyciskiem, linijka skali i współrzędne w pasku stanu;
+- progi skali jak w Pythonie: ikony, napisy i strzałki o stałej wielkości powyżej skali 1, bez napisów poniżej 0,5,
+  bez POI i małych polygonów poniżej 0,25;
+- zaznaczanie kliknięciem (`Ctrl` dodaje, kolejne kliknięcia przełączają między obiektami pod kursorem),
+  podświetlanie pod kursorem, `Esc` czyści zaznaczenie;
+- `Ctrl+C` kopiuje współrzędne kursora, `Ctrl+G` przechodzi do podanych współrzędnych.
+
+Test bez klikania: `pwmapedit plik.mp --screenshot zrzut.png [--zoom N] [--level L]` wczytuje mapę, zapisuje zrzut
+okna i kończy działanie.
+
+Wydajność (Windows, syntetyczna mapa 19 MB, 110 tys. obiektów z etykietami, numeracją i HLevel): wczytanie 0,4 s,
+utworzenie elementów sceny 2,4 s, przełączenie poziomu mapy 3,2 s, odświeżenie widoku 45–100 ms.
+
+Scena działa bez indeksu BSP (`NoIndex`). Przy setkach tysięcy elementów indeks BSP spowalniał każdą zmianę
+geometrii (`setPath` przy zmianie poziomu: kilka ms na element, czyli minuty dla całej mapy), a przegląd liniowy
+przy rysowaniu kosztuje kilkadziesiąt ms. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
+bo usuwanie pojedynczo jest kwadratowe.
+
+Różnice względem Pythona (celowe):
+- Przełączanie flagi `ItemIgnoresTransformations` robi scena przy przekroczeniu progu skali, a nie `paint()` każdego elementu.
+- Na poziomie bez własnych danych (ale w zakresie `EndLevel`) polilinia i polygon pokazują dane z najwyższego niższego
+  poziomu. Python pokazywał dane z poziomu oglądanego poprzednio, więc wynik zależał od kolejności przełączania.
+- Etykieta polygonu pokazuje `Label` (w Pythonie była pusta, bo `_mp_label` nie był ustawiany).
+- Gdy dla typu POI są ikony `_day` i `_night`, używana jest `_day` (w Pythonie zależało to od kolejności plików).
+- Obiekty nie dają się jeszcze przesuwać myszą (przesuwanie wymaga undo/redo, etap 3b).
+
+### Następne kroki
+
+- 3b: edycja: undo/redo (`commands.py`), przesuwanie obiektów, tryb edycji węzłów (uchwyty, wstawianie, usuwanie,
+  dzielenie linii), usuwanie obiektów, kopiuj/wklej, panel właściwości (`map_obj_properties_dockwidget.py`).
+- 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).
+
+Etap 2 (moduł pybind11) odłożony.
