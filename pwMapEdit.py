@@ -4,9 +4,11 @@
 # https://www.riverbankcomputing.com/static/Docs/PyQt6/index.html
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QToolBar, QStatusBar, QProgressBar, QLabel
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QFileDialog, QInputDialog, QMessageBox, QStyleFactory
-from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread
+from PyQt6.QtWidgets import QMenu
+from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread, QSettings
 from PyQt6.QtGui import QKeySequence, QClipboard, QAction, QActionGroup, QShortcut, QUndoStack
 import sys
+import os
 import mapData
 import mapCanvas
 import mapRender
@@ -321,6 +323,10 @@ class pwMapeditPy(QMainWindow):
         self.map_ruler = None
         self.km_vs_scale = None
         self.current_scale_index = pwmapedit_constants.MAP_SCALE_KM.index(0.029)
+        # ustawienia programu (m.in. lista ostatnio otwieranych plikow) zapisywane w katalogu domowym
+        self.settings = QSettings(os.path.join(os.path.expanduser('~'), '.pwmapedit.ini'),
+                                  QSettings.Format.IniFormat)
+        self.recent_files_menu = None
         self.initialize()
         self.generate_shortcuts()
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.properties_dock)
@@ -485,6 +491,9 @@ class pwMapeditPy(QMainWindow):
         file_actions = list()
         file_actions.append(QAction('&Open', self))
         file_actions[-1].triggered.connect(self.open_file)
+        self.recent_files_menu = QMenu('Open &recent', self)
+        self.recent_files_menu.aboutToShow.connect(self.fill_recent_files_menu)
+        file_actions.append(self.recent_files_menu.menuAction())
         file_actions.append(QAction('&Add', self))
         file_actions.append(QAction('&Close', self))
         file_actions.append(None)
@@ -695,23 +704,65 @@ class pwMapeditPy(QMainWindow):
         self.delete_key_action.setEnabled(True)
 
     def open_file(self):
-        aaa = QFileDialog.getOpenFileName(self, 'File to open')
+        recent_files = self.get_recent_files()
+        start_dir = os.path.dirname(recent_files[0]) if recent_files else ''
+        aaa = QFileDialog.getOpenFileName(self, 'File to open', start_dir,
+                                          'Pliki mp (*.mp *.MP);;Wszystkie pliki (*)')
         print(aaa[0])
         print('Plik do otwarcia %s' % aaa[0])
         if aaa[0]:
-            self.open_save_thread = QThread()
-            self.worker_file_parser = MapFileOpener(self, aaa[0], self.map_objects_properties, self.projection,
-                                                    self.undo_redo_stack)
-            self.worker_file_parser.moveToThread(self.open_save_thread)
+            self.open_map_file(aaa[0])
 
-            self.open_save_thread.started.connect(self.worker_file_parser.run)
-            self.worker_file_parser.finished.connect(self.open_save_thread.quit)
-            self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
-            self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
-            self.worker_file_parser.progress.connect(self.update_progress_bar)
-            self.worker_file_parser.draw_poi_polyline_polygon.connect(self.draw_poi_polyline_polygon)
-            self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
-            self.open_save_thread.start()
+    def open_recent_file(self, file_name):
+        if not os.path.isfile(file_name):
+            QMessageBox.warning(self, 'Brak pliku', 'Plik nie istnieje:\n%s' % file_name)
+            self.set_recent_files([a for a in self.get_recent_files() if a != file_name])
+            return
+        self.open_map_file(file_name)
+
+    def get_recent_files(self):
+        recent_files = self.settings.value('recent_files', [])
+        # QSettings z pojedynczym elementem moze zwrocic napis zamiast listy
+        if isinstance(recent_files, str):
+            recent_files = [recent_files]
+        return [a for a in recent_files if a]
+
+    def set_recent_files(self, recent_files):
+        self.settings.setValue('recent_files', recent_files[:pwmapedit_constants.MAX_RECENT_FILES])
+        self.settings.sync()
+
+    def add_recent_file(self, file_name):
+        file_name = os.path.abspath(file_name)
+        self.set_recent_files([file_name] + [a for a in self.get_recent_files() if a != file_name])
+
+    def fill_recent_files_menu(self):
+        self.recent_files_menu.clear()
+        recent_files = self.get_recent_files()
+        if not recent_files:
+            no_files_action = self.recent_files_menu.addAction('(brak)')
+            no_files_action.setEnabled(False)
+            return
+        for num, file_name in enumerate(recent_files, start=1):
+            action = self.recent_files_menu.addAction('&%s %s' % (num % 10, file_name))
+            action.triggered.connect(lambda checked=False, f=file_name: self.open_recent_file(f))
+        self.recent_files_menu.addSeparator()
+        self.recent_files_menu.addAction('Wyczysc liste').triggered.connect(lambda: self.set_recent_files([]))
+
+    def open_map_file(self, file_name):
+        self.add_recent_file(file_name)
+        self.open_save_thread = QThread()
+        self.worker_file_parser = MapFileOpener(self, file_name, self.map_objects_properties, self.projection,
+                                                self.undo_redo_stack)
+        self.worker_file_parser.moveToThread(self.open_save_thread)
+
+        self.open_save_thread.started.connect(self.worker_file_parser.run)
+        self.worker_file_parser.finished.connect(self.open_save_thread.quit)
+        self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
+        self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
+        self.worker_file_parser.progress.connect(self.update_progress_bar)
+        self.worker_file_parser.draw_poi_polyline_polygon.connect(self.draw_poi_polyline_polygon)
+        self.worker_file_parser.map_items_map_canvas.connect(self.get_map_items)
+        self.open_save_thread.start()
 
     def draw_poi_polyline_polygon(self, pois_polylines_polygons, map_objects):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
@@ -889,6 +940,8 @@ class pwMapeditPy(QMainWindow):
             self.map_objects.set_map_file_name(file_name[0])
             self._save_map()
             self.undo_redo_stack.file_saved()
+            if file_name[0]:
+                self.add_recent_file(file_name[0])
 
     def split_polyline(self):
         self.map_canvas.split_polyline()
