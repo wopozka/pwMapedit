@@ -4,7 +4,7 @@ from urllib.error import URLError
 
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsPathItem
 from PyQt6.QtCore import QPointF, Qt, QEvent, QObject, pyqtSignal, QThreadPool, QRunnable, QLineF
-from PyQt6.QtGui import QMouseEvent, QPainterPath, QPolygonF, QFont
+from PyQt6.QtGui import QMouseEvent, QPainterPath, QPolygonF, QPen
 import math
 
 import map_items
@@ -257,6 +257,10 @@ class mapRender(QGraphicsView):
                             self._poly_creation_drawn_poly.setOpacity(0.5)
                     elif mode == pwmapedit_constants.Tools.CREATE_POLYLINE_CIRCLE:
                         print('rysujemy okrag')
+                        # pioro kosmetyczne - 1 piksel niezaleznie od skali widoku (domyslne grubieje przy przyblizeniu)
+                        circle_pen = QPen(Qt.GlobalColor.black, 1)
+                        circle_pen.setCosmetic(True)
+                        self._poly_creation_drawn_poly.setPen(circle_pen)
                         # liczymy promien okregu
                         rx = self._poly_creation_nodes[0].x() - self.mapToScene(event.pos()).x()
                         ry = self._poly_creation_nodes[0].y() - self.mapToScene(event.pos()).y()
@@ -285,11 +289,9 @@ class mapRender(QGraphicsView):
                                 pol_n = int(2 * math.pi // alpha)
                                 rot_line = QLineF(self.mapToScene(event.pos()), self._poly_creation_nodes[0])
                                 self._poly_creation_nodes = self._poly_creation_nodes[:1]
-                                qpp.addText(rot_line.p2(), QFont(), '1')
                                 for edge_n in range(1, pol_n):
                                     rot_line.setAngle(rot_line.angle() + 360/pol_n)
                                     # print(rot_line.angle())
-                                    qpp.addText(rot_line.p2(), QFont(), str(edge_n + 1))
                                     if edge_n != 0:
                                         self._poly_creation_nodes.append(rot_line.p2())
                                 self._poly_creation_nodes += [self._poly_creation_nodes[0]]
