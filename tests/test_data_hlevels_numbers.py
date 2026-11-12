@@ -181,3 +181,59 @@ def test_invert_poly_addresses(target, answer):
         adr_ans.append({a: b for a, b in adr._asdict().items() if b is not None})
 
     assert adr_ans == answer
+
+
+# obiekty, ktorych poziomy nie ida po kolei (np. tylko Data0 i Data2) - _poly_data_points jest indeksowane pozycja
+# poziomu, a nie jego numerem
+def _data_obj_from_lines(lines):
+    data_obj = map_items.Data_X(projection=projection.Mercator(None))
+    for dataline in lines:
+        if dataline.startswith('Numbers'):
+            data_obj.add_housenumbers_from_string(dataline)
+        else:
+            data_level, data_string = dataline.split('=', 1)
+            data_obj.add_nodes_from_string(data_level, data_string)
+    return data_obj
+
+
+DATA0_DATA2 = ('Data0=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',
+               'Data2=(52.43016,20.69638),(52.43011,20.69643),(52.43007,20.69651),(52.43001,20.69660)')
+
+
+def test_insert_node_not_consecutive_levels():
+    data_obj = _data_obj_from_lines(DATA0_DATA2)
+    data_obj.insert_node_at_position(2, 0, -1, 10.0, 20.0)
+    assert len(data_obj.get_polys_for_data_level(2)[0]) == 5
+    assert len(data_obj.get_polys_for_data_level(0)[0]) == 3
+
+
+def test_split_not_consecutive_levels():
+    data_obj = _data_obj_from_lines(DATA0_DATA2)
+    assert data_obj.is_splitting_possible(2, 0, 2)
+    poly1, poly2 = data_obj.split_data_x(2, 0, 2)
+    assert len(poly1.get_polys_for_data_level(2)[0]) == 3
+    assert len(poly1.get_polys_for_data_level(0)[0]) == 3
+    assert poly2.get_data_levels() == [2]
+    assert len(poly2.get_polys_for_data_level(2)[0]) == 2
+
+
+def test_split_second_poly_on_level():
+    # druga linia na tym samym poziomie - nowy obiekt ma tylko jedna linie (numer 0)
+    data_obj = _data_obj_from_lines((DATA0_DATA2[0], DATA0_DATA2[1].replace('Data2', 'Data0')))
+    poly1, poly2 = data_obj.split_data_x(0, 1, 2)
+    assert len(poly2.get_polys_for_data_level(0)) == 1
+
+
+def test_delete_poly_not_consecutive_levels():
+    data_obj = _data_obj_from_lines(DATA0_DATA2)
+    data_obj.delete_poly_at_data_level(2, 0)
+    assert data_obj.get_data_levels() == [0]
+    assert len(data_obj.get_polys_for_data_level(0)[0]) == 3
+
+
+def test_housenumbers_on_data1_only():
+    data_obj = _data_obj_from_lines(('Data1=(51.43507,16.10151),(51.43477,16.10183),(51.43465,16.10206)',
+                                     'Numbers1=0,O,157,157,E,154,154', 'Numbers2=1,E,156,156,O,155,155'))
+    numbers = data_obj.get_housenumbers_for_poly(1, 0)
+    assert numbers[0].left_side_number_after == 157
+    assert numbers[2].right_side_number_before == 155

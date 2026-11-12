@@ -240,23 +240,23 @@ class Data_X(object):
             except ValueError:
                 right_zip = num_data[8]
 
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_numbering_style', right_style)
-        self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_after', right_start)
+        self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('left_side_numbering_style', left_style)
+        self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('left_side_number_after', left_start)
+        self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('right_side_numbering_style', right_style)
+        self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('right_side_number_after', right_start)
         if left_zip is not None or right_zip is not None:
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_zip_code', left_zip)
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_zip_code', right_zip)
-        last_node_def = self._poly_data_points[data_level][poly_num][-1].get_numbers_definition()
+            self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('left_side_zip_code', left_zip)
+            self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('right_side_zip_code', right_zip)
+        last_node_def = self._level_polys(data_level)[poly_num][-1].get_numbers_definition()
 
         if last_node_def is not None:
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('left_side_number_before', last_node_def.left_side_number_before)
-            self._poly_data_points[data_level][poly_num][node_num].set_numbers_definition_field_name('right_side_number_before', last_node_def.right_side_number_before)
-            self._poly_data_points[data_level][poly_num][-1].set_node_has_no_numeration()
+            self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('left_side_number_before', last_node_def.left_side_number_before)
+            self._level_polys(data_level)[poly_num][node_num].set_numbers_definition_field_name('right_side_number_before', last_node_def.right_side_number_before)
+            self._level_polys(data_level)[poly_num][-1].set_node_has_no_numeration()
 
         if left_start is not None or right_start is not None:
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('left_side_number_before', left_end)
-            self._poly_data_points[data_level][poly_num][-1].set_numbers_definition_field_name('right_side_number_before', right_end)
+            self._level_polys(data_level)[poly_num][-1].set_numbers_definition_field_name('left_side_number_before', left_end)
+            self._level_polys(data_level)[poly_num][-1].set_numbers_definition_field_name('right_side_number_before', right_end)
 
     def add_nodes_from_string(self, data_level, data_string):
         _data_level = int(data_level[4:])
@@ -279,7 +279,7 @@ class Data_X(object):
         return perimeter
 
     def clean_numbers_definitions(self, data_level, polynum):
-        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
+        nodes_with_numbers = [a for a in self._level_polys(data_level)[polynum] if a.node_has_numeration()]
         # jesli nie ma wezlow z numeracja, to nie ma co robic
         if not nodes_with_numbers:
             return
@@ -295,11 +295,11 @@ class Data_X(object):
         # update numbers definitions for nodes
         # na poczatek zerujemy ostatnie wezly, bo przed i po nie ma dla nich sensu
         # pierwszy nod
-        if self._poly_data_points[data_level][polynum][0].node_has_numeration():
+        if self._level_polys(data_level)[polynum][0].node_has_numeration():
             for key in ('left_side_number_before', 'right_side_number_before'):
-                self._poly_data_points[data_level][polynum][0].set_numbers_definition_field_name(key, None)
+                self._level_polys(data_level)[polynum][0].set_numbers_definition_field_name(key, None)
         # ostatni nod
-        last_node = self._poly_data_points[data_level][polynum][-1]
+        last_node = self._level_polys(data_level)[polynum][-1]
         if last_node.node_has_numeration():
             for key in ('left_side_numbering_style', 'left_side_number_after', 'right_side_numbering_style',
                         'right_side_number_after', 'left_side_zip_code',
@@ -308,7 +308,7 @@ class Data_X(object):
                 last_node.set_numbers_definition_field_name(key, None)
 
     def clean_numbers_definitions_only_one_node_case(self, data_level, polynum, nodes_with_numbers):
-        last_node = self._poly_data_points[data_level][polynum][-1]
+        last_node = self._level_polys(data_level)[polynum][-1]
         if nodes_with_numbers[0].get_specific_number_definition('left_side_number_after') is None:
             last_node.set_numbers_definition_field_name('left_side_number_before', None)
         else:
@@ -327,12 +327,12 @@ class Data_X(object):
 
     def clean_numbers_definitions_multiple_nodes_case(self, data_level, polynum):
         # jesli ostatni wezel nie ma ustawionej zadnej numeracji to ja ustaw, pomoze to porzadkowac wezly
-        last_node = self._poly_data_points[data_level][polynum][-1]
+        last_node = self._level_polys(data_level)[polynum][-1]
         if not last_node.node_has_numeration():
             last_node.set_numbers_definition_field_name('left_side_number_before', 0)
             last_node.set_numbers_definition_field_name('right_side_number_before', 0)
 
-        nodes_with_numbers = [a for a in self._poly_data_points[data_level][polynum] if a.node_has_numeration()]
+        nodes_with_numbers = [a for a in self._level_polys(data_level)[polynum] if a.node_has_numeration()]
         # mamy wiele wezlow z numeracja przeorganizuj je
         for node_num in range(len(nodes_with_numbers) - 1):
             node_start = nodes_with_numbers[node_num]
@@ -395,7 +395,7 @@ class Data_X(object):
 
     def delete_node_at_position(self, data_level, polynum, index):
         # remove point
-        del self._poly_data_points[data_level][polynum][index]
+        del self._level_polys(data_level)[polynum][index]
         self.clean_numbers_definitions(data_level, polynum)
 
     def delete_poly_at_data_level(self, data_level, poly_num):
@@ -410,12 +410,12 @@ class Data_X(object):
         -------
 
         """
-        if data_level in self._data_levels and poly_num < len(self._poly_data_points[data_level]):
-            del self._poly_data_points[data_level][poly_num]
+        if data_level in self._data_levels and poly_num < len(self._level_polys(data_level)):
+            del self._level_polys(data_level)[poly_num]
             # jesli nie ma juz zadnych polygonow w danym data_level to usun go z listy
-            if len(self._poly_data_points[data_level]) == 0:
+            if len(self._level_polys(data_level)) == 0:
+                del self._poly_data_points[self._data_levels.index(data_level)]
                 self._data_levels.remove(data_level)
-                del self._poly_data_points[data_level]
         return
 
     def delete_whole_data_level(self, data_level):
@@ -503,6 +503,11 @@ class Data_X(object):
 
     def get_data_levels(self):
         return self._data_levels
+
+    def _level_polys(self, data_level):
+        # _poly_data_points jest indeksowane pozycja poziomu na liscie _data_levels, a nie numerem poziomu
+        # (obiekt moze miec np. tylko Data0 i Data2)
+        return self._poly_data_points[self._data_levels.index(data_level)]
 
     def get_data_level_index(self, data_level):
         if data_level in self._data_levels:
@@ -786,14 +791,14 @@ class Data_X(object):
         return poly_vectors
 
     def insert_node_at_position(self, data_level, polynum, index, x, y):
-        polygon = self._poly_data_points[data_level][polynum]
+        polygon = self._level_polys(data_level)[polynum]
         if index == 0:
             polygon_mod = [Node(x=x, y=y, projection=self._projection)] + polygon
         elif index == -1:
             polygon_mod = polygon + [Node(x=x, y=y, projection=self._projection)]
         else:
             polygon_mod = polygon[:index] + [Node(x=x, y=y, projection=self._projection)] + polygon[index:]
-        self._poly_data_points[data_level][polynum] = polygon_mod
+        self._level_polys(data_level)[polynum] = polygon_mod
 
     def is_splitting_possible(self, data_level, poly_num, node_num):
         """
@@ -810,9 +815,9 @@ class Data_X(object):
         """
         if data_level not in self._data_levels:
             return False
-        if poly_num >= len(self._poly_data_points[data_level]):
+        if poly_num >= len(self._level_polys(data_level)):
             return False
-        if 1 <= node_num < len(self._poly_data_points[data_level][poly_num]) - 1:
+        if 1 <= node_num < len(self._level_polys(data_level)[poly_num]) - 1:
             return True
         return False
 
@@ -896,13 +901,14 @@ class Data_X(object):
         poly2 = Data_X(projection=self._projection)
         poly2._data_levels.append(data_level)
         poly2._poly_data_points.append([polys[1]])
-        poly2.clean_numbers_definitions(data_level, poly_num)
+        # poly2 zawiera tylko jedna linie, wiec ma numer 0
+        poly2.clean_numbers_definitions(data_level, 0)
         return [poly1, poly2]
 
     def set_poly_from_node_list(self, data_level, poly_num, poly):
         polys = self.get_polys_for_data_level(data_level)
         if polys and len(polys) > poly_num:
-            self._poly_data_points[data_level][poly_num] = poly
+            self._level_polys(data_level)[poly_num] = poly
             return True
         return False
 
