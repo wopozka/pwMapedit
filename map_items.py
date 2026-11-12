@@ -2440,6 +2440,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.arrow_head_items = []
         self.hlevel_labels = None
         self.housenumber_labels = None
+        # numery adresowe tworzone sa leniwie - dopiero gdy linia jest rysowana w skali, w ktorej etykiety sa widoczne.
+        # Flaga oznacza, ze numery maja zostac utworzone przy najblizszym takim rysowaniu
+        self._housenumber_labels_pending = False
         self.interpolated_house_numbers_labels = None
         self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
@@ -2477,6 +2480,22 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                 # self.hlevel_labels[-1].setPos(polygon_node)
 
     def add_housenumber_labels(self):
+        # przy duzych mapach numerow adresowych sa setki tysiecy, a widac je dopiero przy duzym przyblizeniu.
+        # Tutaj tylko zaznaczamy, ze trzeba je utworzyc, tworzy je create_pending_housenumber_labels wywolywane
+        # przez scene, gdy linia zostanie narysowana w skali, w ktorej etykiety sa widoczne (patrz paint)
+        self._housenumber_labels_pending = True
+        self.update()
+
+    def create_pending_housenumber_labels(self):
+        if not self._housenumber_labels_pending:
+            return
+        self._housenumber_labels_pending = False
+        self._create_housenumber_labels()
+        if self.decorated():
+            # dla linii w trybie edycji numery musza reagowac na najechanie myszka, patrz _decorate
+            self.set_hover_over_for_address_labels(True)
+
+    def _create_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path())
         polygons_vectors = self.get_polygons_vectors(self.path())
         adr = list()
@@ -2722,6 +2741,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.add_arrow_heads()
 
     def remove_housenumber_labels(self):
+        self._housenumber_labels_pending = False
         if self.housenumber_labels is None:
             return
         for house_number in self.housenumber_labels:
@@ -2809,6 +2829,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         return num_elems_in_path >= 2
 
     def paint(self, painter, option, widget=None):
+        if self._housenumber_labels_pending and self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
+            # nie dodajemy elementow do sceny w trakcie rysowania, scena utworzy numery po zakonczeniu rysowania
+            self.scene().request_housenumber_labels(self)
         super().paint(painter, option, widget=widget)
 
 

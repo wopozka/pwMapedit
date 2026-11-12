@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipse
                              QGraphicsRectItem, QGraphicsItem, QApplication)
 from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
-from PyQt6.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray
+from PyQt6.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray, QTimer
 import platform
 
 import commands
@@ -63,6 +63,9 @@ class mapCanvas(QGraphicsScene):
 
         # highlighted element
         self._highlighted_element = None
+
+        # linie, dla ktorych przy rysowaniu trzeba utworzyc numery adresowe (leniwe tworzenie numerow)
+        self._housenumber_labels_requests = set()
 
     def change_projection(self, proj, map_bounding_box, map_object_list):
         old_proj = self._projection
@@ -401,6 +404,24 @@ class mapCanvas(QGraphicsScene):
                 self.command_paste_polygon(map_object, mouse_scene_pos)
             else:
                 return
+
+    def request_housenumber_labels(self, polyline):
+        # wywolywane z paint linii. Numery tworzymy dopiero po zakonczeniu rysowania, jednym zbiorczym wywolaniem
+        if not self._housenumber_labels_requests:
+            QTimer.singleShot(0, self._create_requested_housenumber_labels)
+        self._housenumber_labels_requests.add(polyline)
+
+    def _create_requested_housenumber_labels(self):
+        polylines = self._housenumber_labels_requests
+        self._housenumber_labels_requests = set()
+        for polyline in polylines:
+            # linia mogla zostac w miedzyczasie usunieta ze sceny (albo skasowana razem ze scena)
+            try:
+                if polyline.scene() is not self:
+                    continue
+            except RuntimeError:
+                continue
+            polyline.create_pending_housenumber_labels()
 
     def remove_highlighted_element(self):
         if self._highlighted_element is not None:
