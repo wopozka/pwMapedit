@@ -843,9 +843,11 @@ class ExtrasTable(QTableWidget):
             key = ''
             value = ''
             if (row, 0) in cells_indexes_to_copy:
-                key = self.item(row, 0).text()
+                if self.item(row, 0) is not None:
+                    key = self.item(row, 0).text()
             if (row, 1) in cells_indexes_to_copy:
-                value = self.item(row, 1).text()
+                if self.item(row, 1) is not None:
+                    value = self.item(row, 1).text()
             if key or value:
                 copy_content.append([key, value,])
                 text_copy += f'{key}\t{value}\n'
