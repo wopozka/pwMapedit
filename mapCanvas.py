@@ -247,20 +247,22 @@ class mapCanvas(QGraphicsScene):
             mapobject.set_map_level()
         elif isinstance(mapobject, map_items.PolylineQGraphicsPathItem):
             self.addItem(mapobject)
+            # set_map_level najpierw: gdy obiekt ma dane dla biezacego poziomu, sam tworzy etykiete (i ewentualne
+            # strzalki), wiec wczesniejsze add_label/strzalki bylyby od razu usuwane i tworzone od nowa
+            mapobject.set_map_level()
             if mapobject.get_param('DirIndicator'):
                 mapobject.set_mp_dir_indicator(True)
-            mapobject.add_label()
-            # if mapobject.get_param('EndLevel'):
-            #     polyline_path_item.set_mp_end_level(mapobject.get_param('EndLevel'))
-            mapobject.set_map_level()
+            if mapobject.label is None:
+                mapobject.add_label()
             mapobject.set_pen()
         elif isinstance(mapobject, map_items.PolygonQGraphicsPathItem):
             mapobject.set_z_value()
             mapobject.set_pen()
             mapobject.set_brush()
             self.addItem(mapobject)
-            mapobject.add_label()
             mapobject.set_map_level()
+            if mapobject.label is None:
+                mapobject.add_label()
         else:
             pass
 

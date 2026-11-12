@@ -717,11 +717,9 @@ class pwMapeditPy(QMainWindow):
         print(f'rysuje: {len(pois_polylines_polygons)} obiektow')
         if self.view.scene() is not None:
             self.view.setScene(None)
-        # ocenic czy pomaga w szybkosci wczytywania
-        try:
-            self.map_canvas.setItemIndexMethod(QGraphicsScene.ItemIndexMethod.NoIndex)
-        except Exception:
-            pass
+        # scena zostaje z domyslnym indeksem BspTreeIndex. Wylaczanie go (NoIndex) na czas wczytywania nie przyspiesza
+        # rysowania (Qt i tak indeksuje nowe elementy leniwie), a w NoIndex kazde zapytanie o elementy (ruch myszki,
+        # hover, klikniecie) oraz removeItem przegladaja liniowo wszystkie elementy sceny
 
         for poi_polyline_polygon in pois_polylines_polygons:
             poi_polyline_polygon.set_projection(self.projection)
@@ -729,13 +727,6 @@ class pwMapeditPy(QMainWindow):
             self.map_objects_to_be_drawn.add(poi_polyline_polygon.get_id())
             self.map_canvas.draw_object_on_map(poi_polyline_polygon)
             self.map_objects_to_be_drawn.remove(poi_polyline_polygon.get_id())
-
-        # ocenic czy pomaga w szybkosci wczytywania
-        try:
-            self.map_canvas.setItemIndexMethod(QGraphicsScene.ItemIndexMethod.BspTree)
-        except Exception:
-            pass
-
 
         print('koniec rysowania')
         if map_objects is not None:
