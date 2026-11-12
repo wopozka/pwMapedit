@@ -1379,6 +1379,8 @@ class Restriction(object):
 
 class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     _accept_map_level_change = True
+    # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
+    last_used_type = 0x0
 
     # basic class for poi with pixmap icon
     def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
@@ -1445,6 +1447,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self.scene().undo_redo_stack.push(command)
 
     def command_update_type(self, new_type):
+        PoiAsPixmap.last_used_type = new_type
         command = commands.UpdatePoiType(self, new_type, f'Edycja type POI na: {new_type}')
         self.scene().undo_redo_stack.push(command)
 
@@ -2452,6 +2455,9 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         self.add_items_after_new_map_level_set()
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
+    # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
+    last_used_type = 0x0
+
     def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         super(PolylineQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
                                                         _projection=_projection)
@@ -2627,6 +2633,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.scene().undo_redo_stack.push(command)
 
     def command_update_type(self, new_type):
+        PolylineQGraphicsPathItem.last_used_type = new_type
         command = commands.UpdatePolyType(self, new_type, f'Edycja type linii na: {new_type}')
         self.scene().undo_redo_stack.push(command)
 
@@ -2866,6 +2873,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
 
 class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
+    # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
+    last_used_type = 0x0
 
     def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
         super(PolygonQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
@@ -2874,6 +2883,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setAcceptHoverEvents(True)
 
     def command_update_type(self, new_type):
+        PolygonQGraphicsPathItem.last_used_type = new_type
         command = commands.UpdatePolygonType(self, new_type, f'Edycja type polygonu na: {new_type}')
         self.scene().undo_redo_stack.push(command)
 

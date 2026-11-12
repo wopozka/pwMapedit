@@ -137,7 +137,7 @@ class mapCanvas(QGraphicsScene):
         new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                         _projection=self._projection)
         _pos = self._projection.canvas_to_geo(position.x(), position.y())
-        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): str(_pos)})
+        obj_data = OrderedDict({(0, 'Type'): hex(map_items.PoiAsPixmap.last_used_type), (1, 'Data0'): str(_pos)})
         new_poi.set_data('', obj_data)
         new_poi.set_mp_data()
         command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI',
@@ -153,7 +153,8 @@ class mapCanvas(QGraphicsScene):
                                                        map_objects_properties=self._map_objects_properties,
                                                        _projection=self._projection)
         data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
-        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
+        obj_data = OrderedDict({(0, 'Type'): hex(map_items.PolylineQGraphicsPathItem.last_used_type),
+                                (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline',
@@ -169,7 +170,8 @@ class mapCanvas(QGraphicsScene):
                                                       map_objects_properties=self._map_objects_properties,
                                                       _projection=self._projection)
         data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
-        obj_data = OrderedDict({(0, 'Type'): '0x0', (1, 'Data0'): data0})
+        obj_data = OrderedDict({(0, 'Type'): hex(map_items.PolygonQGraphicsPathItem.last_used_type),
+                                (1, 'Data0'): data0})
         new_poly.set_data('', obj_data)
         new_poly.set_mp_data()
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon',
