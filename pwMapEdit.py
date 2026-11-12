@@ -28,13 +28,19 @@ class MapUndoStack(QUndoStack):
         self.undo_buttons = None
         self.redo_buttons = None
         self.file_modificaton_number = 0
+        # ostatni zapis sie nie udal - plik wymaga zapisu niezaleznie od licznika zmian
+        self._save_failed = False
         super(MapUndoStack, self).__init__(parent)
 
     def file_needs_saving(self):
-        return True if self.file_modificaton_number else False
+        return self._save_failed or bool(self.file_modificaton_number)
 
     def file_saved(self):
         self.file_modificaton_number = 0
+        self._save_failed = False
+
+    def file_save_failed(self):
+        self._save_failed = True
 
     def push(self, command, q_undo_command=None):
         super().push(command)
@@ -212,6 +218,8 @@ class MapFileOpener(QObject):
 class MapFileSaver(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(str, int)
+    # nazwa pliku i opis bledu, emitowany przed finished, gdy zapis sie nie udal
+    failed = pyqtSignal(str, str)
 
     def __init__(self, parent, map_objects):
         self.parent = parent
@@ -233,6 +241,7 @@ class MapFileSaver(QObject):
                     self.progress.emit('set_value', map_object_num + 1)
         except OSError as e:
             self.error = e
+            self.failed.emit(self.map_filename, str(e))
         self.finished.emit()
 
 
@@ -935,8 +944,13 @@ class pwMapeditPy(QMainWindow):
         self.worker_file_parser.finished.connect(self.worker_file_parser.deleteLater)
         self.open_save_thread.finished.connect(self.worker_file_parser.deleteLater)
         self.worker_file_parser.progress.connect(self.update_progress_bar)
+        self.worker_file_parser.failed.connect(self.map_save_failed)
         self.open_save_thread.start()
         self.undo_redo_stack.file_saved()
+
+    def map_save_failed(self, file_name, error_text):
+        self.undo_redo_stack.file_save_failed()
+        QMessageBox.critical(self, 'Błąd zapisu', 'Nie udało się zapisać mapy %s:\n%s' % (file_name, error_text))
 
     def save_map_and_wait(self):
         # zapis w biezacym watku - uzywany przy zamykaniu, gdzie trzeba poczekac na koniec zapisu i znac jego wynik
@@ -949,7 +963,7 @@ class pwMapeditPy(QMainWindow):
         saver.progress.connect(self.update_progress_bar)
         saver.run()
         if saver.error is not None:
-            QMessageBox.critical(self, 'Błąd zapisu', 'Nie udało się zapisać mapy:\n%s' % saver.error)
+            self.map_save_failed(saver.map_filename, str(saver.error))
             return False
         self.undo_redo_stack.file_saved()
         return True
