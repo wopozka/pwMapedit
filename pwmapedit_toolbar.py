@@ -52,6 +52,7 @@ class PwMapeditToolbar(QToolBar):
         self.actions['split_polyline'].triggered.connect(self.split_polyline)
         self.insertAction(None, self.actions['split_polyline'])
         self.actions['merge_polyline'] = QAction('Połącz polyline/polygon')
+        self.actions['merge_polyline'].triggered.connect(self.merge_polys)
         self.insertAction(None, self.actions['merge_polyline'])
         self.set_actions_icons()
         self.add_tools_actions_to_group()
@@ -79,6 +80,9 @@ class PwMapeditToolbar(QToolBar):
 
     def save_map(self):
         self.parent().save_map()
+
+    def merge_polys(self):
+        self.parent().merge_polys()
 
     def split_polyline(self):
         self.parent().split_polyline()

@@ -479,6 +479,48 @@ class SplitPolylineCmd(QUndoCommand):
         self.map_object1.update_interpolated_housenumber_labels()
 
 
+class MergePolylinesCmd(QUndoCommand):
+    def __init__(self, source_objects, merged_object, map_objects, description):
+        """
+        source_objects: laczone obiekty, pierwszy ma to samo id co merged_object i zostaje przez niego zastapiony,
+        pozostale sa oznaczane jako usuniete
+        """
+        super(MergePolylinesCmd, self).__init__(description)
+        self.source_objects = source_objects
+        self.merged_object = merged_object
+        self.map_objects = map_objects
+        self.scene = source_objects[0].scene()
+        self._merged_drawn = False
+
+    def redo(self):
+        self.scene.clearSelection()
+        for map_obj in self.source_objects:
+            self.scene.removeItem(map_obj)
+        if self._merged_drawn:
+            self.scene.addItem(self.merged_object)
+        else:
+            # przy pierwszym redo tworzymy etykiety, strzalki itd., potem obiekt ma je juz jako dzieci
+            self.scene.draw_object_on_map(self.merged_object)
+            self._merged_drawn = True
+        self.map_objects.update_map_object(self.merged_object)
+        for map_obj in self.source_objects[1:]:
+            map_obj.set_deleted()
+        if self.scene.get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            self.merged_object.set_selected(True)
+
+    def undo(self):
+        self.scene.clearSelection()
+        self.scene.removeItem(self.merged_object)
+        for map_obj in self.source_objects:
+            self.scene.addItem(map_obj)
+        self.map_objects.update_map_object(self.source_objects[0])
+        for map_obj in self.source_objects[1:]:
+            map_obj.set_undeleted()
+        if self.scene.get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
+            for map_obj in self.source_objects:
+                map_obj.set_selected(True)
+
+
 class UpdateComment(QUndoCommand):
     def __init__(self, map_object, new_comment, description):
         super(UpdateComment, self).__init__(description)

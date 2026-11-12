@@ -987,6 +987,9 @@ class pwMapeditPy(QMainWindow):
             self.undo_redo_stack.file_saved()
             self.add_recent_file(file_name[0])
 
+    def merge_polys(self):
+        self.map_canvas.merge_selected_polys()
+
     def split_polyline(self):
         self.map_canvas.split_polyline()
 

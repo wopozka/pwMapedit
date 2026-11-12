@@ -4,7 +4,7 @@ import calendar
 from collections import OrderedDict
 
 from PyQt6.QtWidgets import (QGraphicsScene, QGraphicsPathItem, QGraphicsEllipseItem, QGraphicsPolygonItem,
-                             QGraphicsRectItem, QGraphicsItem, QApplication)
+                             QGraphicsRectItem, QGraphicsItem, QApplication, QMessageBox)
 from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsSimpleTextItem, QGraphicsItemGroup, QGraphicsLineItem
 from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPixmap, QPainter
 from PyQt6.QtCore import QPointF, Qt, QLineF, QMimeData, QByteArray, QTimer
@@ -50,6 +50,10 @@ class mapCanvas(QGraphicsScene):
         # self.mode = modes.selectMode(self)
         self.mode_name = 'select'
         self.current_map_level = 0
+
+        # zaznaczone elementy w kolejnosci zaznaczania (selectedItems() jej nie zachowuje), np. przy laczeniu obiektow
+        # pierwszy zaznaczony jest wzorcem wlasciwosci
+        self._selection_order = []
 
         # selection changed slot conection
         self.selectionChanged.connect(self.selection_change_actions)
@@ -468,6 +472,54 @@ class mapCanvas(QGraphicsScene):
         print('num screen items: %s' % len(_map_items))
         print('realizacja: %s' % (datetime.now().replace(microsecond=0) - start))
 
+    def update_selection_order(self):
+        selected_items = self.selectedItems()
+        selected_set = set(selected_items)
+        self._selection_order = ([a for a in self._selection_order if a in selected_set] +
+                                 [a for a in selected_items if a not in self._selection_order])
+
+    def get_selected_items_in_order(self):
+        selected_set = set(self.selectedItems())
+        return [a for a in self._selection_order if a in selected_set]
+
+    def merge_selected_polys(self):
+        window = self.parent
+        selected = [a for a in self.get_selected_items_in_order()
+                    if isinstance(a, (map_items.PoiAsPixmap, map_items.PolylineQGraphicsPathItem,
+                                      map_items.PolygonQGraphicsPathItem))]
+        if len(selected) < 2:
+            QMessageBox.information(window, 'Łączenie obiektów',
+                                    'Zaznacz co najmniej dwa obiekty do połączenia (Ctrl + klik).\n'
+                                    'Właściwości nowego obiektu zostaną wzięte z pierwszego zaznaczonego.')
+            return
+        if all(isinstance(a, map_items.PolygonQGraphicsPathItem) for a in selected):
+            QMessageBox.information(window, 'Łączenie obiektów', 'Łączenie polygonów nie jest jeszcze obsługiwane.')
+            return
+        if not all(isinstance(a, map_items.PolylineQGraphicsPathItem) for a in selected):
+            QMessageBox.information(window, 'Łączenie obiektów',
+                                    'Można łączyć tylko obiekty jednego rodzaju: same polylinie albo same polygony.')
+            return
+        first, others = selected[0], selected[1:]
+        try:
+            merged_object, skipped_levels, reversed_any = first.create_merged_polyline(others)
+        except map_items.MergeError as e:
+            QMessageBox.warning(window, 'Łączenie polylinii', str(e))
+            return
+        if reversed_any and any(a.get_param('DirIndicator') or a.is_oneway() for a in selected):
+            answer = QMessageBox.question(window, 'Łączenie polylinii',
+                                          'Linie mają przeciwne kierunki, a co najmniej jedna z nich jest '
+                                          'jednokierunkowa albo ma DirIndicator. Po połączeniu wszystkie odcinki '
+                                          'będą miały kierunek pierwszej zaznaczonej linii.\n\nPołączyć mimo to?')
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        command = commands.MergePolylinesCmd(selected, merged_object, self.parent.map_objects,
+                                             'Połącz polylinie (%s)' % len(selected))
+        self.undo_redo_stack.push(command)
+        if skipped_levels:
+            QMessageBox.information(window, 'Łączenie polylinii',
+                                    'Pominięto poziomy %s - nie mają ich wszystkie linie albo linie nie tworzą na '
+                                    'nich ciągłego łańcucha.' % ', '.join('Data%s' % a for a in skipped_levels))
+
     def split_polyline(self):
         if not self.selectedItems():
             return
@@ -479,6 +531,7 @@ class mapCanvas(QGraphicsScene):
         return self._stick_to_neighbours_nodes
 
     def selection_change_actions(self):
+        self.update_selection_order()
         self.properties_dock.set_dock_off()
         mode = self.get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS:

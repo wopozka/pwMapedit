@@ -28,6 +28,13 @@ Number_Index = namedtuple('Number_Index', ['data_level', 'data_num', 'index_of_p
 Interpolated_Number = namedtuple('Interpolated_Number', ['vector', 'position', 'number'])
 Closest_Point = namedtuple('Closest_Point', ['distance', 'segment_pos', 'path_num', 'coord_index'])
 Grip_Index = namedtuple('Grip_Index', ['poly_num', 'node_index'])
+# tolerancja (we wspolrzednych canvas) przy porownywaniu, czy wezly roznych obiektow sa tym samym punktem
+SAME_NODE_TOLERANCE = 1e-3
+
+
+class MergeError(Exception):
+    """Obiektow nie da sie polaczyc, tresc wyjatku to komunikat dla uzytkownika"""
+    pass
 
 class Node(QPointF):
     """Class used for storing coordinates of given map object point"""
@@ -905,6 +912,138 @@ class Data_X(object):
         poly2.clean_numbers_definitions(data_level, 0)
         return [poly1, poly2]
 
+    @staticmethod
+    def same_node_position(node1, node2):
+        return abs(node1.x() - node2.x()) <= SAME_NODE_TOLERANCE and abs(node1.y() - node2.y()) <= SAME_NODE_TOLERANCE
+
+    def _single_line_copy(self, data_level, reverse=False):
+        # kopia (ewentualnie odwrocona) jedynej linii z danego poziomu, z numeracja i hlevel
+        tmp = Data_X(projection=self._projection)
+        tmp._data_levels.append(data_level)
+        tmp._poly_data_points.append([[node.copy() for node in self._level_polys(data_level)[0]]])
+        if reverse:
+            tmp.reverse_poly(data_level)
+        return tmp._level_polys(data_level)[0]
+
+    @staticmethod
+    def _join_nodes(node_end, node_start, hlevel_from_start):
+        """
+        Wezel styku dwoch sklejanych linii: konczy przedzial numeracji linii poprzedniej (wartosci *_number_before)
+        i zaczyna przedzial linii nastepnej (pozostale pola).
+        Parameters
+        ----------
+        node_end: Node, ostatni wezel linii poprzedniej
+        node_start: Node, pierwszy wezel linii nastepnej
+        hlevel_from_start: bool, przy konflikcie hlevel bierzemy z node_start (True) albo z node_end (False)
+        """
+        joint = node_start.copy()
+        end_def = node_end.get_numbers_definition()
+        if end_def is not None:
+            for key in ('left_side_number_before', 'right_side_number_before'):
+                if getattr(end_def, key) is not None:
+                    joint.set_numbers_definition_field_name(key, getattr(end_def, key))
+        if hlevel_from_start:
+            hlevel = node_start.get_hlevel_definition() if node_start.node_has_hlevel() else \
+                node_end.get_hlevel_definition()
+        else:
+            hlevel = node_end.get_hlevel_definition() if node_end.node_has_hlevel() else \
+                node_start.get_hlevel_definition()
+        joint.set_hlevel_definition(hlevel)
+        return joint
+
+    @staticmethod
+    def _chain_lines(data_objs, data_level):
+        """
+        Skleja jedyne linie z danego poziomu w jedna ciagla linie. Kierunek pierwszej linii jest zachowany, pozostale
+        sa w razie potrzeby odwracane. Linie musza sie stykac koncami.
+        Returns
+        -------
+        (list of Node, bool): sklejona linia, czy ktoras linie trzeba bylo odwrocic
+        """
+        same = Data_X.same_node_position
+        chain = data_objs[0]._single_line_copy(data_level)
+        remaining = list(data_objs[1:])
+        reversed_any = False
+        while remaining:
+            for idx, data_obj in enumerate(remaining):
+                line = data_obj._level_polys(data_level)[0]
+                if same(chain[-1], line[0]) or same(chain[-1], line[-1]):
+                    reverse = not same(chain[-1], line[0])
+                    new = data_obj._single_line_copy(data_level, reverse=reverse)
+                    chain = chain[:-1] + [Data_X._join_nodes(chain[-1], new[0], False)] + new[1:]
+                elif same(chain[0], line[-1]) or same(chain[0], line[0]):
+                    reverse = not same(chain[0], line[-1])
+                    new = data_obj._single_line_copy(data_level, reverse=reverse)
+                    chain = new[:-1] + [Data_X._join_nodes(new[-1], chain[0], True)] + chain[1:]
+                else:
+                    continue
+                reversed_any = reversed_any or reverse
+                del remaining[idx]
+                break
+            else:
+                raise MergeError(f'Linie na poziomie Data{data_level} nie tworzą ciągłego łańcucha - '
+                                 f'każda kolejna linia musi zaczynać się albo kończyć na końcu poprzednich.')
+        return chain, reversed_any
+
+    @staticmethod
+    def merge_polylines(data_objs):
+        """
+        Skleja dane kilku polylinii w jedna linie. Kierunek i kolejnosc wyznacza pierwszy obiekt.
+        Parameters
+        ----------
+        data_objs: list of Data_X, pierwszy to obiekt, po ktorym nowa linia dziedziczy wlasciwosci
+
+        Returns
+        -------
+        (Data_X, list of int, bool): polaczone dane, pominiete poziomy (nie ma ich kazda linia albo nie tworza na
+        nich ciaglego lancucha), czy ktoras linie trzeba bylo odwrocic.
+        Raises MergeError, gdy linii nie da sie polaczyc.
+        """
+        if len(data_objs) < 2:
+            raise MergeError('Do połączenia potrzebne są co najmniej dwie linie.')
+        first = data_objs[0]
+        all_levels = set()
+        for data_obj in data_objs:
+            all_levels.update(data_obj.get_data_levels())
+        common_levels = [level for level in sorted(first.get_data_levels())
+                         if all(level in data_obj.get_data_levels() for data_obj in data_objs)]
+        if not common_levels:
+            raise MergeError('Linie nie mają wspólnego poziomu Data, nie da się ich połączyć.')
+        for data_obj in data_objs:
+            for level in common_levels:
+                if len(data_obj._level_polys(level)) != 1:
+                    raise MergeError(f'Jedna z linii ma kilka części na poziomie Data{level}. '
+                                     f'Łączenie linii wieloczęściowych nie jest obsługiwane.')
+        merged = Data_X(projection=first._projection)
+        skipped_levels = sorted(all_levels - set(common_levels))
+        reversed_any = False
+        for level in common_levels:
+            try:
+                chain, reversed_on_level = Data_X._chain_lines(data_objs, level)
+            except MergeError:
+                # najnizszy wspolny poziom musi sie dac skleic, wyzsze (uproszczone) w razie problemow pomijamy
+                if level == common_levels[0]:
+                    raise
+                skipped_levels.append(level)
+                continue
+            if level == common_levels[0]:
+                reversed_any = reversed_on_level
+            merged._data_levels.append(level)
+            merged._poly_data_points.append([chain])
+            merged.clean_numbers_definitions(level, 0)
+            merged.poly_perimeter = max(merged.poly_perimeter, merged.calculate_poly_perimeter(chain))
+        # obwiednie obiektow zrodlowych moga byc nieustawione (np. czesc z podzialu linii) albo nieaktualne (po
+        # przesunieciu wezlow), dlatego liczymy ja od nowa z wezlow
+        merged.recalculate_bounding_box()
+        return merged, sorted(skipped_levels), reversed_any
+
+    def recalculate_bounding_box(self):
+        self._bounding_box_N = self._bounding_box_S = self._bounding_box_W = self._bounding_box_E = None
+        for polys in self._poly_data_points:
+            for poly in polys:
+                for node in poly:
+                    self.set_obj_bounding_box(*node.get_geo_coordinates())
+
     def set_poly_from_node_list(self, data_level, poly_num, poly):
         polys = self.get_polys_for_data_level(data_level)
         if polys and len(polys) > poly_num:
@@ -1276,6 +1415,9 @@ class BasicMapItem(object):
             self.type = type_val
 
     def set_obj_bounding_box(self, obj_bb):
+        # obwiednia moze byc nieustawiona (None), np. dla danych utworzonych przy podziale linii
+        if any(obj_bb[key] is None for key in ('S', 'N', 'E', 'W')):
+            return
         if not self.obj_bounding_box:
             self.obj_bounding_box['S'] = obj_bb['S']
             self.obj_bounding_box['N'] = obj_bb['N']
@@ -2637,6 +2779,32 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             command = commands.SplitPolylineCmd(self, map_object1, map_object2,
                                                 self.scene().parent.map_objects, 'Podziel polyline')
             self.scene().undo_redo_stack.push(command)
+
+    def create_merged_polyline(self, other_objects):
+        """
+        Tworzy nowa polylinie z polaczenia tej (pierwszej) i other_objects. Nowa linia dziedziczy id i wszystkie
+        wlasciwosci tej linii, dostaje sklejone Data.
+        Returns
+        -------
+        (PolylineQGraphicsPathItem, list of int, bool): nowa linia, pominiete poziomy Data, czy ktoras z linii
+        trzeba bylo odwrocic. Raises MergeError, gdy linii nie da sie polaczyc.
+        """
+        merged_data, skipped_levels, reversed_any = Data_X.merge_polylines(
+            [self.data0] + [obj.data0 for obj in other_objects])
+        s_data = self.to_mp_record()
+        poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(s_data)
+        merged_object = PolylineQGraphicsPathItem(self.get_id(), map_objects_properties=self._map_objects_properties,
+                                                  _projection=self._projection)
+        merged_object.set_data(obj_comment, obj_data)
+        merged_object.data0 = merged_data
+        # set_data ustawilo obwiednie pierwszej linii, zastepujemy ja obwiednia polaczonej
+        merged_object.obj_bounding_box = dict(merged_data.get_obj_bounding_box())
+        merged_object.set_mp_data()
+        return merged_object, skipped_levels, reversed_any
+
+    def is_oneway(self):
+        route_params = self.get_route_params()
+        return bool(route_params) and len(route_params) > 2 and route_params[2] == 1
 
     def command_update_type(self, new_type):
         PolylineQGraphicsPathItem.last_used_type = new_type
