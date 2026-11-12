@@ -217,6 +217,8 @@ class MapFileSaver(QObject):
         self.parent = parent
         self.map_objects = map_objects
         self.map_filename = map_objects.get_map_file_name()
+        # blad zapisu (wyjatek), None gdy zapis sie udal
+        self.error = None
         super(MapFileSaver, self).__init__()
 
     def run(self):
@@ -229,10 +231,8 @@ class MapFileSaver(QObject):
                         map_file.writelines([a + '\n' for a in map_object.to_mp_record()])
                         map_file.writelines(['[END]\n', '\n'])
                     self.progress.emit('set_value', map_object_num + 1)
-        except FileNotFoundError:
-            pass
-        except IOError:
-            pass
+        except OSError as e:
+            self.error = e
         self.finished.emit()
 
 
@@ -624,20 +624,32 @@ class pwMapeditPy(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
-        close_app = True
         if self.undo_redo_stack.file_needs_saving():
-            ask_yes_no = QMessageBox(self)
-            ask_yes_no.setWindowTitle('Zamykanie aplikacji')
-            ask_yes_no.setText('Plik niezapisany. Czy na pewno zamknąć?')
-            ask_yes_no.setStandardButtons(QMessageBox.StandardButton.Ok| QMessageBox.StandardButton.Cancel)
-            return_value = ask_yes_no.exec()
-            if return_value == QMessageBox.StandardButton.Cancel:
-                close_app = False
-        if close_app:
-            self.weblayers_cache_folder.cleanup()
-            super().closeEvent(event)
-        else:
-            event.ignore()
+            answer = self.ask_save_changes_before_close()
+            if answer == QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+            if answer == QMessageBox.StandardButton.Save and not self.save_map_and_wait():
+                # zapis sie nie udal - nie zamykamy, zeby nie stracic zmian
+                event.ignore()
+                return
+        self.weblayers_cache_folder.cleanup()
+        super().closeEvent(event)
+
+    def ask_save_changes_before_close(self):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle('Zamykanie aplikacji')
+        msg_box.setText('Mapa zawiera niezapisane zmiany.')
+        msg_box.setInformativeText('Czy zapisać zmiany przed zamknięciem?')
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard
+                                   | QMessageBox.StandardButton.Cancel)
+        msg_box.button(QMessageBox.StandardButton.Save).setText('Zapisz')
+        msg_box.button(QMessageBox.StandardButton.Discard).setText('Nie zapisuj')
+        msg_box.button(QMessageBox.StandardButton.Cancel).setText('Anuluj')
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Save)
+        msg_box.setEscapeButton(QMessageBox.StandardButton.Cancel)
+        return msg_box.exec()
 
     def copy_action(self):
         if self.focusWidget() is not None and hasattr(self.focusWidget(), 'copy'):
@@ -925,6 +937,22 @@ class pwMapeditPy(QMainWindow):
         self.worker_file_parser.progress.connect(self.update_progress_bar)
         self.open_save_thread.start()
         self.undo_redo_stack.file_saved()
+
+    def save_map_and_wait(self):
+        # zapis w biezacym watku - uzywany przy zamykaniu, gdzie trzeba poczekac na koniec zapisu i znac jego wynik
+        if self.map_objects is None or not self.map_objects.contains_data():
+            return True
+        if self.open_save_thread is not None and self.open_save_thread.isRunning():
+            # trwa wczesniej rozpoczety zapis (lub wczytywanie) w tle
+            self.open_save_thread.wait()
+        saver = MapFileSaver(self, self.map_objects)
+        saver.progress.connect(self.update_progress_bar)
+        saver.run()
+        if saver.error is not None:
+            QMessageBox.critical(self, 'Błąd zapisu', 'Nie udało się zapisać mapy:\n%s' % saver.error)
+            return False
+        self.undo_redo_stack.file_saved()
+        return True
 
     def save_map(self):
         if (self.undo_redo_stack.file_needs_saving() and self.map_objects is not None
