@@ -1393,6 +1393,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = None
         self.label = None
+        # etykieta tworzona leniwie - dopiero gdy POI jest rysowany w skali, w ktorej etykiety sa widoczne
+        self._label_pending = False
         self._mp_data = [None, None, None, None, None]
         # self._mp_end_level = 0
         self._mp_label = None
@@ -1454,6 +1456,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
     def paint(self, painter, option, widget):
         if self.set_transformation_flag():
             self.update()
+        if self._label_pending and self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
+            self.scene().request_pending_labels(self)
         if self.scene().get_viewer_scale() >= SCALE_WITHOUT_POIS:
             super().paint(painter, option, widget)
 
@@ -1523,6 +1527,17 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         return f'<POI, Object ID: {self._id}, Type: {self.type}>'
 
     def add_label(self):
+        # etykiet POI sa setki tysiecy, a widac je dopiero przy przyblizeniu. Tutaj tylko zaznaczamy, ze etykiete
+        # trzeba utworzyc, tworzy ja create_pending_labels wywolywane przez scene (patrz paint)
+        label = self.get_label1()
+        if label is not None and label:
+            self._label_pending = True
+            self.update()
+
+    def create_pending_labels(self):
+        if not self._label_pending:
+            return
+        self._label_pending = False
         label = self.get_label1()
         if label is not None and label:
             self.label = PoiLabel(label, self)
@@ -1587,6 +1602,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             self.hovered_shape = None
 
     def remove_label(self):
+        self._label_pending = False
         if self.label is not None:
             self.scene().removeItem(self.label)
         self.label = None
@@ -2440,8 +2456,9 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.arrow_head_items = []
         self.hlevel_labels = None
         self.housenumber_labels = None
-        # numery adresowe tworzone sa leniwie - dopiero gdy linia jest rysowana w skali, w ktorej etykiety sa widoczne.
-        # Flaga oznacza, ze numery maja zostac utworzone przy najblizszym takim rysowaniu
+        # etykieta i numery adresowe tworzone sa leniwie - dopiero gdy linia jest rysowana w skali, w ktorej etykiety
+        # sa widoczne. Flagi oznaczaja, ze maja zostac utworzone przy najblizszym takim rysowaniu
+        self._label_pending = False
         self._housenumber_labels_pending = False
         self.interpolated_house_numbers_labels = None
         self._mp_hlevels = [None, None, None, None, None]
@@ -2481,19 +2498,23 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def add_housenumber_labels(self):
         # przy duzych mapach numerow adresowych sa setki tysiecy, a widac je dopiero przy duzym przyblizeniu.
-        # Tutaj tylko zaznaczamy, ze trzeba je utworzyc, tworzy je create_pending_housenumber_labels wywolywane
-        # przez scene, gdy linia zostanie narysowana w skali, w ktorej etykiety sa widoczne (patrz paint)
+        # Tutaj tylko zaznaczamy, ze trzeba je utworzyc, tworzy je create_pending_labels wywolywane przez scene,
+        # gdy linia zostanie narysowana w skali, w ktorej etykiety sa widoczne (patrz paint)
         self._housenumber_labels_pending = True
         self.update()
 
-    def create_pending_housenumber_labels(self):
-        if not self._housenumber_labels_pending:
-            return
-        self._housenumber_labels_pending = False
-        self._create_housenumber_labels()
-        if self.decorated():
-            # dla linii w trybie edycji numery musza reagowac na najechanie myszka, patrz _decorate
-            self.set_hover_over_for_address_labels(True)
+    def create_pending_labels(self):
+        if self._label_pending:
+            self._label_pending = False
+            label = self.get_label1()
+            if label is not None and label:
+                self.label = PolylineLabel(label, self)
+        if self._housenumber_labels_pending:
+            self._housenumber_labels_pending = False
+            self._create_housenumber_labels()
+            if self.decorated():
+                # dla linii w trybie edycji numery musza reagowac na najechanie myszka, patrz _decorate
+                self.set_hover_over_for_address_labels(True)
 
     def _create_housenumber_labels(self):
         polygons = self.get_polygons_from_path(self.path())
@@ -2546,9 +2567,15 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
             self.interpolated_house_numbers_labels = None
 
     def add_label(self):
+        # tylko zaznaczamy etykiete do utworzenia, patrz add_housenumber_labels i create_pending_labels
         label = self.get_label1()
         if label is not None and label:
-            self.label = PolylineLabel(label, self)
+            self._label_pending = True
+            self.update()
+
+    def remove_label(self):
+        self._label_pending = False
+        super().remove_label()
 
     def command_reverse_poly(self):
         print('reversing polyline')
@@ -2829,9 +2856,10 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         return num_elems_in_path >= 2
 
     def paint(self, painter, option, widget=None):
-        if self._housenumber_labels_pending and self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS:
-            # nie dodajemy elementow do sceny w trakcie rysowania, scena utworzy numery po zakonczeniu rysowania
-            self.scene().request_housenumber_labels(self)
+        if ((self._label_pending or self._housenumber_labels_pending)
+                and self.scene().get_viewer_scale() >= SCALE_WITHOUT_LABELS):
+            # nie dodajemy elementow do sceny w trakcie rysowania, scena utworzy etykiety po zakonczeniu rysowania
+            self.scene().request_pending_labels(self)
         super().paint(painter, option, widget=widget)
 
 

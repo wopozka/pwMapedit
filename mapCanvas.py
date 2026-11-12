@@ -64,8 +64,9 @@ class mapCanvas(QGraphicsScene):
         # highlighted element
         self._highlighted_element = None
 
-        # linie, dla ktorych przy rysowaniu trzeba utworzyc numery adresowe (leniwe tworzenie numerow)
-        self._housenumber_labels_requests = set()
+        # obiekty (POI, linie), ktore przy rysowaniu zglosily etykiety/numery adresowe do utworzenia
+        # (leniwe tworzenie etykiet)
+        self._pending_labels_requests = set()
 
     def change_projection(self, proj, map_bounding_box, map_object_list):
         old_proj = self._projection
@@ -405,23 +406,24 @@ class mapCanvas(QGraphicsScene):
             else:
                 return
 
-    def request_housenumber_labels(self, polyline):
-        # wywolywane z paint linii. Numery tworzymy dopiero po zakonczeniu rysowania, jednym zbiorczym wywolaniem
-        if not self._housenumber_labels_requests:
-            QTimer.singleShot(0, self._create_requested_housenumber_labels)
-        self._housenumber_labels_requests.add(polyline)
+    def request_pending_labels(self, map_object):
+        # wywolywane z paint obiektu. Etykiety tworzymy dopiero po zakonczeniu rysowania, jednym zbiorczym
+        # wywolaniem - nie dodajemy elementow do sceny w trakcie rysowania
+        if not self._pending_labels_requests:
+            QTimer.singleShot(0, self._create_requested_labels)
+        self._pending_labels_requests.add(map_object)
 
-    def _create_requested_housenumber_labels(self):
-        polylines = self._housenumber_labels_requests
-        self._housenumber_labels_requests = set()
-        for polyline in polylines:
-            # linia mogla zostac w miedzyczasie usunieta ze sceny (albo skasowana razem ze scena)
+    def _create_requested_labels(self):
+        map_objects = self._pending_labels_requests
+        self._pending_labels_requests = set()
+        for map_object in map_objects:
+            # obiekt mogl zostac w miedzyczasie usuniety ze sceny (albo skasowany razem ze scena)
             try:
-                if polyline.scene() is not self:
+                if map_object.scene() is not self:
                     continue
             except RuntimeError:
                 continue
-            polyline.create_pending_housenumber_labels()
+            map_object.create_pending_labels()
 
     def remove_highlighted_element(self):
         if self._highlighted_element is not None:
