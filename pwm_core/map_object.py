@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """Wlasciwosci obiektu mapy zapisywane w pliku MP (Type, Label, EndLevel...) - czesc wspolna POI, polylinii
 i polygonow, bez czesci graficznej."""
+from collections import OrderedDict
+
 from pwm_core.data_x import Node, Data_X
+from pwm_core import mp_format
 
 
 class BasicMapItem(object):
@@ -366,6 +369,27 @@ class BasicMapItem(object):
 
     def to_mp_record_others(self):
         return [f'{key}={val}' for key, val in self.get_others()]
+
+
+class Poi(BasicMapItem):
+    """POI bez czesci graficznej"""
+    @staticmethod
+    def to_mp_record_header():
+        return [mp_format.MAP_OBJECT_POI]
+
+
+class Polyline(BasicMapItem):
+    """Polylinia bez czesci graficznej"""
+    @staticmethod
+    def to_mp_record_header():
+        return [mp_format.MAP_OBJECT_POLYLINE]
+
+
+class Polygon(BasicMapItem):
+    """Polygon bez czesci graficznej"""
+    @staticmethod
+    def to_mp_record_header():
+        return [mp_format.MAP_OBJECT_POLYGON]
 
 
 class BasicSignRestrict(object):

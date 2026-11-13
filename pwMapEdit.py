@@ -9,7 +9,6 @@ from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread, QSettings
 from PyQt6.QtGui import QKeySequence, QClipboard, QAction, QActionGroup, QShortcut, QUndoStack
 import sys
 import os
-import mapData
 import mapCanvas
 import mapRender
 import map_items
@@ -18,7 +17,7 @@ import map_object_properties
 from pwm_core import projection
 import map_obj_properties_dockwidget
 import pwmapedit_constants
-from pwm_core import mp_format
+from pwm_core import mp_file
 import web_layers
 import tempfile
 
@@ -100,120 +99,32 @@ class MapFileOpener(QObject):
         print('wczytuje rekordy')
         _map_object_properties = map_object_properties.MapObjectsProperties()
         _projection = projection.Mercator({})
-        map_objects = mapData.mapData(self.filename, map_objects_properties=_map_object_properties,
-                                      projection=_projection)
-
-        # Firstly. At the end of file there might be attachments (files or weblayers). The format is as below:
-        # ;@File *, for file attached
-        # ;@WEBMAP *, for web layers attached
-        # we have to skipp these data as well.
-        with open(self.filename, 'r', encoding='cp1250') as mp_file:
-            zawartosc_pliku_mp = mp_file.readlines()
-        while zawartosc_pliku_mp[-1].startswith(';@'):
-            print(zawartosc_pliku_mp[-1])
-            # self.listOfAttachments.append(zawartosc_pliku_mp[-1].strip())
-            del (zawartosc_pliku_mp[-1])
-
-        #remove all empty lines until there is the last [END] in the file
-        while not zawartosc_pliku_mp[-1].strip():
-            del (zawartosc_pliku_mp[-1])
-
-        # after removal of attachments we can measure the lenght of the whole file
-        zawartosc_pliku_mp_len = len(zawartosc_pliku_mp)
-        b = -1
-        self.progress.emit('set_maximum', zawartosc_pliku_mp_len)
-        # first lets skip the file header
-        # map_canvas = mapCanvas.mapCanvas(self.parent, 0, 0, 400, 200, projection=self.projection,
-        #                                  undo_redo_stack=self.undo_redo_stack)
-        while b < zawartosc_pliku_mp_len:
-            if zawartosc_pliku_mp[b].strip() not in mp_format.MAP_OBJECT_TYPES:
-                b += 1
-                map_objects.map_header.append(zawartosc_pliku_mp[b])
-            else:
-                b -= 1
-                del(map_objects.map_header[-1])
-                break
-
-        # we skipped the header, but at the same time we might have skipped
-        # the first comment, try to recover it
-
-        # print(map_objects.map_header)
-        while b >= 0:
-            # print(zawartosc_pliku_mp[b])
-            if zawartosc_pliku_mp[b].strip().startswith(';'):
-                b -= 1
-                del(map_objects.map_header[-1])
-            else:
-                break
-
-        # print(map_objects.map_header)
-        print('zakonczylen obrabianie naglowka. Wartosc b: %s' % b)
-        self.progress.emit('set_value', b)
+        reader = mp_file.MpFileReader(self.filename)
+        map_objects = mp_file.new_map_data(reader, self.filename, map_objects_properties=_map_object_properties,
+                                           projection=_projection)
+        self.progress.emit('set_maximum', reader.line_count)
         objs_to_draw = []
-        while b < zawartosc_pliku_mp_len:
-            # print(b)
-            mp_record = []
-            mpfileline = zawartosc_pliku_mp[b].strip()
-            while not mpfileline.startswith(mp_format.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
-
-                mp_record.append(mpfileline)
-                b += 1
-                mpfileline = zawartosc_pliku_mp[b]
-
-            poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(mp_record)
-            if poi_poly_type[0] == mp_format.MAP_OBJECT_POI:
-                map_object = map_items.PoiAsPixmap(None, map_objects_properties=_map_object_properties,
-                                                   _projection=_projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
-                # map_canvas.draw_object_on_map(map_object)
-                # self.draw_poi.emit(map_object)
-                objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYLINE:
-                map_object = map_items.PolylineQGraphicsPathItem(None,
-                                                                 map_objects_properties=_map_object_properties,
-                                                                 _projection=_projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
-                # map_canvas.draw_object_on_map(map_object)
-                # self.draw_polyline.emit(map_object)
-                objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYGON:
-                map_object = map_items.PolygonQGraphicsPathItem(None,
-                                                                map_objects_properties=_map_object_properties,
-                                                                _projection=_projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
-                # map_canvas.draw_object_on_map(map_object)
-                # self.draw_polygon.emit(map_object)
-                objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_RESTRICT:
-                map_object = None
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_ROADSIGN:
-                map_object = None
-            else:
-                map_object = None
-
+        line_num = 0
+        for record in reader.records():
+            line_num = record.line_num
+            map_object = map_items.map_item_from_record(record, _map_object_properties, _projection)
             if map_object is not None:
-                map_objects.add_map_object(map_object)
-                map_objects.set_map_bounding_box(map_object.obj_bounding_box)
-            del mp_record[:]
+                mp_file.add_object_to_map(map_objects, map_object)
+                objs_to_draw.append(map_object)
             if len(objs_to_draw) == 10000:
-                print(f'{b}')
+                print(f'{line_num}')
                 self.draw_poi_polyline_polygon.emit(objs_to_draw, None)
-                self.progress.emit('set_value', b)
-                objs_to_draw.clear()
-            b += 1
-            # self.progress.emit('set_value', b)
-        if objs_to_draw:
+                self.progress.emit('set_value', line_num)
+                objs_to_draw = []
+        # ostatnia porcja przekazuje tez dane mapy - takze wtedy, gdy jest pusta (liczba obiektow podzielna przez
+        # 10000). Mapy bez obiektow nie przekazujemy: okno nie umie jeszcze ustawic sceny bez obwiedni mapy.
+        if map_objects.contains_data():
             self.draw_poi_polyline_polygon.emit(objs_to_draw, map_objects)
-            self.progress.emit('set_value', b)
+        else:
+            print('mapa nie zawiera obiektow')
+        self.progress.emit('set_value', reader.line_count)
         self.finished.emit()
-        # self.projection.set_map_bounding_box(map_objects.get_map_bounding_box())
-        # self.projection.calculate_data_offset()
-        #
-        # print('map data ofset', self.projection.earth_radius)
-        # # print('bonding box', self.map_bounding_box)
+
 
 class MapFileSaver(QObject):
     finished = pyqtSignal()
@@ -231,15 +142,9 @@ class MapFileSaver(QObject):
 
     def run(self):
         try:
-            with open(self.map_filename, 'w', encoding='cp1250') as map_file:
-                self.progress.emit('set_maximum', self.map_objects.records_number())
-                map_file.writelines(self.map_objects.map_header)
-                for map_object_num, map_object in enumerate(self.map_objects.get_all_map_objects()):
-                    if not map_object.is_deleted():
-                        map_file.writelines([a + '\n' for a in
-                                             map_object.to_mp_record(self.map_objects.get_precision())])
-                        map_file.writelines(['[END]\n', '\n'])
-                    self.progress.emit('set_value', map_object_num + 1)
+            self.progress.emit('set_maximum', self.map_objects.records_number())
+            mp_file.write_mp_file(self.map_objects, self.map_filename,
+                                  progress=lambda num: self.progress.emit('set_value', num))
         except OSError as e:
             self.error = e
             self.failed.emit(self.map_filename, str(e))

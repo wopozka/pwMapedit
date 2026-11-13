@@ -15,7 +15,7 @@ import commands
 import math
 from pwm_core import projection
 import json
-from pwm_core import mp_format, data_x
+from pwm_core import mp_format, mp_file, data_x
 import os.path
 import map_items
 import map_object_properties
@@ -389,25 +389,15 @@ class mapCanvas(QGraphicsScene):
                 mouse_scene_pos = QPointF(float(x), float(y))
                 s_data = s_data[1:]
             poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(s_data)
-            if poi_poly_type[0] == mp_format.MAP_OBJECT_POI:
-                map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
-                                                   _projection=self._projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
+            if not poi_poly_type:
+                return
+            record = mp_file.MpRecord(poi_poly_type[0], obj_comment, obj_data, 0)
+            map_object = map_items.map_item_from_record(record, self._map_objects_properties, self._projection)
+            if isinstance(map_object, map_items.PoiAsPixmap):
                 self.command_paste_poi(map_object, mouse_scene_pos)
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYLINE:
-                map_object = map_items.PolylineQGraphicsPathItem(None,
-                                                                 map_objects_properties=self._map_objects_properties,
-                                                                 _projection=self._projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
+            elif isinstance(map_object, map_items.PolylineQGraphicsPathItem):
                 self.command_paste_polyline(map_object, mouse_scene_pos)
-            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYGON:
-                map_object = map_items.PolygonQGraphicsPathItem(None,
-                                                                map_objects_properties=self._map_objects_properties,
-                                                                _projection=self._projection)
-                map_object.set_data(obj_comment, obj_data)
-                map_object.set_mp_data()
+            elif isinstance(map_object, map_items.PolygonQGraphicsPathItem):
                 self.command_paste_polygon(map_object, mouse_scene_pos)
             else:
                 return

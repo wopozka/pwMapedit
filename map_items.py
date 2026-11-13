@@ -12,7 +12,7 @@ from pwmapedit_constants import (IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_L
 import commands
 import itertools
 import pwmapedit_constants
-from pwm_core import geometry, mp_format
+from pwm_core import geometry, mp_format, mp_file
 from pwm_core.data_x import Data_X, MergeError
 from pwm_core.map_object import BasicMapItem
 
@@ -2395,3 +2395,20 @@ class PolygonAnnotation(QGraphicsPolygonItem):
                 self.insertPoint(index, pos)
                 return
         super().mousePressEvent(event)
+
+
+def map_item_from_record(record, map_objects_properties, _projection):
+    """Tworzy element sceny (POI, polylinie, polygon) z rekordu pliku MP (pwm_core.mp_file.MpRecord); None dla
+    rekordow, ktorych nie obslugujemy."""
+    map_object = mp_file.create_map_object(record, object_classes=MAP_ITEM_CLASSES,
+                                           map_objects_properties=map_objects_properties, projection=_projection)
+    if map_object is not None:
+        map_object.set_mp_data()
+    return map_object
+
+
+MAP_ITEM_CLASSES = {
+    mp_format.MAP_OBJECT_POI: PoiAsPixmap,
+    mp_format.MAP_OBJECT_POLYLINE: PolylineQGraphicsPathItem,
+    mp_format.MAP_OBJECT_POLYGON: PolygonQGraphicsPathItem,
+}
