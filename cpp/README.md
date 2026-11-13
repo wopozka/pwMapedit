@@ -319,6 +319,18 @@ Różnice względem Pythona (celowe):
 - Wyliczenie serwera Google (`(x + 2) * y % 2`) jest liczone na 64 bitach - przy 32 bitach przepełniało się
   dla dużych zoomów (Python liczy na dowolnie dużych liczbach).
 
+### Uzupełnienia z nowszej wersji Python
+
+- File → Open recent: do 10 ostatnio otwieranych plików (dopisywane przy otwarciu i „Save map as”), zapisane
+  w `~/.pwmapedit.ini` pod kluczem `recent_files` - ten sam plik i klucz co w wersji Python, więc lista jest wspólna.
+  Brakujący plik jest usuwany z listy z komunikatem. Okno otwierania zaczyna w katalogu ostatniego pliku.
+  Zmienna `PWMAPEDIT_SETTINGS` wskazuje inny plik ustawień (używają jej testy).
+- Niezapisane zmiany przy zamykaniu programu i przy otwieraniu innego pliku: Zapisz / Nie zapisuj / Anuluj;
+  gdy zapis się nie uda, program nie zamyka mapy.
+- Tabela Extras: `Ctrl+C`/`Ctrl+X`/`Ctrl+V` i menu kontekstowe Kopiuj/Wklej (format jak `ExtrasTable` w Pythonie:
+  JSON z parami [klucz, wartość] i tekst `klucz<TAB>wartość`; wkleja się też tekst `klucz=wartość`). `Delete`
+  w tabeli czyści zaznaczone komórki (wcześniej usuwał zaznaczony obiekt mapy).
+
 ### Następne kroki
 
 - Etap 3 przeniesiony w całości; dalsze kroki do ustalenia (np. poprawki błędów z wersji Python opisanych wyżej,

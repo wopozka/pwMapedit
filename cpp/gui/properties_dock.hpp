@@ -16,6 +16,7 @@
 #include "map_scene.hpp"
 
 class QCheckBox;
+class QMimeData;
 class QComboBox;
 class QGroupBox;
 class QLineEdit;
@@ -39,6 +40,13 @@ public:
     QTabWidget* tabs() const { return tabs_; }
     std::optional<size_t> shown_object() const { return obj_; }
     bool shows_node() const { return grip_.has_value(); }
+
+    // ---- schowek tabeli Extras (jak ExtrasTable.copy/paste w Pythonie) ----
+    // Zaznaczone komorki: application/json (lista par [klucz, wartosc]) i tekst "klucz<TAB>wartosc".
+    QMimeData* copy_extras() const;
+    // Wkleja pary od biezacego wiersza w dol (dopisuje wiersze) i zapisuje zmiane jedna komenda.
+    void paste_extras(const QMimeData* mime);
+    void clear_selected_extras();
 
     // Pola dostepne dla testow.
     QComboBox* type_selector() const { return type_; }

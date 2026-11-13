@@ -9,6 +9,8 @@
 #include "map_data.hpp"
 
 class QActionGroup;
+class QMenu;
+class QSettings;
 class QLabel;
 class QProgressBar;
 class QUndoStack;
@@ -36,6 +38,10 @@ public:
     ~MainWindow() override;
 
     void open_file(const QString& file_name);
+    // Lista ostatnio otwieranych plikow (~/.pwmapedit.ini, klucz recent_files - wspolny z wersja Python).
+    QStringList recent_files() const;
+    void set_recent_files(const QStringList& files);
+    void add_recent_file(const QString& file_name);
     void select_map_level(int level);
     // Wybiera narzedzie tak jak z menu Tools (zaznacza tez akcje na pasku).
     void select_tool(Tool tool);
@@ -57,6 +63,9 @@ private slots:
     void save_map();
     void save_map_as();
     void copy_action();
+    void delete_action();
+    void fill_recent_files_menu();
+    void open_recent_file(const QString& file_name);
     void cut_action();
     void paste_action();
     void go_to_position();
@@ -70,6 +79,10 @@ private:
     void create_toolbar();
     void create_shortcuts();
     bool write_map(const QString& file_name);
+    // Niezapisane zmiany: Zapisz / Nie zapisuj / Anuluj. Zwraca true, gdy mozna kontynuowac (zamkniecie,
+    // otwarcie innego pliku) - po udanym zapisie albo rezygnacji z zapisu.
+    bool confirm_discard_changes(const QString& title);
+    bool focus_in_extras() const;
     void update_window_title();
     void show_message(const QString& text);
     bool focus_in_properties() const;
@@ -85,6 +98,8 @@ private:
     WebLayers* web_layers_ = nullptr;
     QActionGroup* web_layer_group_ = nullptr;
     QAction* last_web_layer_action_ = nullptr;
+    QMenu* recent_files_menu_ = nullptr;
+    QSettings* settings_ = nullptr;
     QUndoStack* undo_stack_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;
     QLabel* info_text_ = nullptr;

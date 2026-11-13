@@ -9,9 +9,14 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QIntValidator>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMimeData>
+#include <QApplication>
+#include <QClipboard>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QTabWidget>
@@ -167,6 +172,11 @@ QWidget* PropertiesDock::build_main_tab() {
     connect(extras_, &QTableWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
         QMenu menu;
         const int row = std::max(extras_->currentRow(), 0);
+        menu.addAction(tr("Kopiuj"), [this] {
+            if (QMimeData* mime = copy_extras()) QApplication::clipboard()->setMimeData(mime);
+        });
+        menu.addAction(tr("Wklej"), [this] { paste_extras(QApplication::clipboard()->mimeData()); });
+        menu.addSeparator();
         menu.addAction(tr("Dodaj wiersz powyżej"), [this, row] { extras_->insertRow(row); });
         menu.addAction(tr("Dodaj wiersz poniżej"), [this, row] { extras_->insertRow(row + 1); });
         menu.addAction(tr("Usuń wiersz"), [this] {
@@ -562,6 +572,76 @@ void PropertiesDock::extras_edited() {
         others.emplace_back(encoding::utf8_to_cp1250(key.toStdString()), encoding::utf8_to_cp1250(value.toStdString()));
     }
     commit(tr("Zmiana extras"), [&](MapObject& o) { o.others = others; });
+}
+
+QMimeData* PropertiesDock::copy_extras() const {
+    // wiersze, w ktorych zaznaczono klucz albo wartosc (jak ExtrasTable.copy)
+    QJsonArray pairs;
+    QString text;
+    for (int row = 0; row < extras_->rowCount(); ++row) {
+        QString key, value;
+        if (const QTableWidgetItem* k = extras_->item(row, 0); k && k->isSelected()) key = k->text();
+        if (const QTableWidgetItem* v = extras_->item(row, 1); v && v->isSelected()) value = v->text();
+        if (key.isEmpty() && value.isEmpty()) continue;
+        pairs.append(QJsonArray{key, value});
+        text += key + '\t' + value + '\n';
+    }
+    if (pairs.isEmpty()) return nullptr;
+    auto* mime = new QMimeData;
+    mime->setData(QStringLiteral("application/json"), QJsonDocument(pairs).toJson(QJsonDocument::Compact));
+    mime->setText(text);
+    return mime;
+}
+
+void PropertiesDock::paste_extras(const QMimeData* mime) {
+    if (!mime || !object() || grip_) return;
+    std::vector<std::pair<QString, QString>> pairs;
+    bool from_json = false;
+    if (mime->hasFormat(QStringLiteral("application/json"))) {
+        // lista par [klucz, wartosc]
+        const QJsonArray array = QJsonDocument::fromJson(mime->data(QStringLiteral("application/json"))).array();
+        from_json = !array.isEmpty();
+        for (const QJsonValue& v : array) {
+            const QJsonArray pair = v.toArray();
+            // inne dane JSON to obiekty mapy (rekordy mp) - nie wklejamy ich ani ich tekstu do tabeli
+            if (pair.size() != 2) return;
+            pairs.emplace_back(pair[0].toString(), pair[1].toString());
+        }
+    }
+    if (!from_json && mime->hasText()) {
+        // tekst: wiersze "klucz<TAB>wartosc" albo "klucz=wartosc" (np. z pliku mp albo arkusza)
+        for (const QString& line : mime->text().split('\n')) {
+            if (line.trimmed().isEmpty()) continue;
+            int sep = line.indexOf('\t');
+            if (sep < 0) sep = line.indexOf('=');
+            if (sep < 0)
+                pairs.emplace_back(line.trimmed(), QString());
+            else
+                pairs.emplace_back(line.left(sep).trimmed(), line.mid(sep + 1).trimmed());
+        }
+    }
+    if (pairs.empty()) return;
+    {
+        QSignalBlocker block(extras_);
+        int row = std::max(extras_->currentRow(), 0);
+        for (const auto& [key, value] : pairs) {
+            if (row >= extras_->rowCount()) extras_->insertRow(extras_->rowCount());
+            if (!key.isEmpty()) extras_->setItem(row, 0, new QTableWidgetItem(key));
+            if (!value.isEmpty()) extras_->setItem(row, 1, new QTableWidgetItem(value));
+            ++row;
+        }
+    }
+    extras_edited();
+}
+
+void PropertiesDock::clear_selected_extras() {
+    const QList<QTableWidgetItem*> selected = extras_->selectedItems();
+    if (selected.isEmpty()) return;
+    {
+        QSignalBlocker block(extras_);
+        for (QTableWidgetItem* item : selected) item->setText(QString());
+    }
+    extras_edited();
 }
 
 void PropertiesDock::route_params_edited() {

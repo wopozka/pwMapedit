@@ -27,6 +27,7 @@ constexpr double SNAP_DISTANCE = 15;
 constexpr double SMALL_POLY_PERIMETER = 500;
 constexpr int WEBLAYER_DOWNLOAD_TIMEOUT = 15;
 constexpr int MAP_LEVELS = 5;
+constexpr int MAX_RECENT_FILES = 10;
 
 enum class Tool {
     None,

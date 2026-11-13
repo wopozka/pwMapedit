@@ -13,6 +13,10 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "main_window.hpp"
+#include <QMessageBox>
+#include <QAbstractButton>
+#include <QFile>
 #include "web_layers.hpp"
 #include <QTemporaryDir>
 #include <QImage>
@@ -162,6 +166,9 @@ private slots:
     void snap_grip_to_other_object();
     // 3c.2: warstwy WWW
     void web_layer_download_cache_and_toggle();
+    // poprawki po klikaniu: schowek Extras, ostatnie pliki, pytanie przy zamykaniu
+    void extras_copy_paste_between_objects();
+    void window_recent_files_and_close_prompt();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -926,6 +933,137 @@ void EditTests::web_layer_download_cache_and_toggle() {
     web.clear();
     QCOMPARE(web.tile_count(), 0);
     f.view.set_ruler(nullptr);
+}
+
+void EditTests::extras_copy_paste_between_objects() {
+    DockFixture f;
+    f.select_only(f.polyline());
+    auto set_row = [&](int row, const char* key, const char* value) {
+        QTableWidget* t = f.dock.extras();
+        t->setItem(row, 0, new QTableWidgetItem(key));
+        t->setItem(row, 1, new QTableWidgetItem(value));
+        emit t->cellChanged(row, 1);
+    };
+    set_row(0, "Miasto", "Wola");
+    set_row(1, "Plik", "a.txt");
+    QCOMPARE(f.obj(1).others.size(), size_t{2});
+
+    f.dock.extras()->selectAll();
+    std::unique_ptr<QMimeData> mime(f.dock.copy_extras());
+    QVERIFY(mime);
+    QCOMPARE(mime->text(), QString("Miasto\tWola\nPlik\ta.txt\n"));
+
+    // wklejenie do innego obiektu - jedna komenda
+    f.select_only(f.poi());
+    f.dock.extras()->setCurrentCell(0, 0);
+    f.dock.paste_extras(mime.get());
+    QCOMPARE(f.obj(0).others.size(), size_t{2});
+    QCOMPARE(f.obj(0).others[0], std::make_pair(std::string("Miasto"), std::string("Wola")));
+    QCOMPARE(f.stack.count(), 3);
+
+    // tekst "klucz=wartosc" (np. z pliku mp) - dopisany w biezacym wierszu
+    QMimeData text;
+    text.setText("Typ=droga\n");
+    f.dock.extras()->setCurrentCell(2, 0);
+    f.dock.paste_extras(&text);
+    QCOMPARE(f.obj(0).others.size(), size_t{3});
+    QCOMPARE(f.obj(0).others[2].first, std::string("Typ"));
+
+    // obiekty mapy ze schowka (JSON rekordow) nie trafiaja do tabeli
+    f.select_only(f.polyline());
+    std::unique_ptr<QMimeData> objects(f.scene.copy_selected(QPointF()));
+    f.select_only(f.poi());
+    f.dock.paste_extras(objects.get());
+    QCOMPARE(f.obj(0).others.size(), size_t{3});
+
+    // Delete/wytnij: wyczyszczenie zaznaczonych komorek usuwa wpis
+    f.dock.extras()->clearSelection();
+    f.dock.extras()->item(0, 1)->setSelected(true);
+    f.dock.clear_selected_extras();
+    QCOMPARE(f.obj(0).others.size(), size_t{2});
+    QCOMPARE(f.obj(0).others[0].first, std::string("Plik"));
+
+    while (f.stack.canUndo()) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+namespace {
+// Odpowiada na okno pytania (QMessageBox), gdy sie pojawi.
+void answer_message_box(QMessageBox::StandardButton button) {
+    auto* timer = new QTimer;
+    auto tries = std::make_shared<int>(0);
+    QObject::connect(timer, &QTimer::timeout, [timer, tries, button] {
+        if (auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget())) {
+            timer->stop();
+            timer->deleteLater();
+            box->button(button)->click();
+        } else if (++*tries > 200) {
+            timer->stop();
+            timer->deleteLater();
+        }
+    });
+    timer->start(20);
+}
+}  // namespace
+
+void EditTests::window_recent_files_and_close_prompt() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString map_file = dir.filePath("mapa.mp");
+    {
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(SAMPLE_MAP);
+    }
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        w.show();
+        QSignalSpy loaded(&w, &MainWindow::map_loaded);
+        w.open_file(map_file);
+        QVERIFY(loaded.wait(10000));
+        QCOMPARE(w.recent_files(), QStringList{QDir::toNativeSeparators(QFileInfo(map_file).absoluteFilePath())});
+        QFile saved_before(map_file);
+        QVERIFY(saved_before.open(QIODevice::ReadOnly));
+        const QByteArray before = saved_before.readAll();
+        saved_before.close();
+
+        // zmiana: usuniecie POI
+        w.scene()->item_for_object(0)->graphics_item()->setSelected(true);
+        w.scene()->delete_selected();
+
+        answer_message_box(QMessageBox::Cancel);  // Anuluj - okno zostaje
+        QVERIFY(!w.close());
+        QVERIFY(w.isVisible());
+
+        answer_message_box(QMessageBox::Save);  // Zapisz - zapis i zamkniecie
+        QVERIFY(w.close());
+        QFile saved(map_file);
+        QVERIFY(saved.open(QIODevice::ReadOnly));
+        const QByteArray after = saved.readAll();
+        QVERIFY(after != before);
+        QVERIFY(!after.contains("[POI]"));
+    }
+    {
+        // nowe okno widzi liste ostatnich plikow; "Nie zapisuj" zamyka bez zapisu
+        MainWindow w(MapStyles::find_icons_dir());
+        QCOMPARE(w.recent_files().size(), 1);
+        w.show();
+        QSignalSpy loaded(&w, &MainWindow::map_loaded);
+        w.open_file(map_file);
+        QVERIFY(loaded.wait(10000));
+        w.scene()->item_for_object(0)->graphics_item()->setSelected(true);
+        w.scene()->delete_selected();
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QByteArray before = f.readAll();
+        f.close();
+        answer_message_box(QMessageBox::Discard);
+        QVERIFY(w.close());
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(f.readAll(), before);
+    }
+    qunsetenv("PWMAPEDIT_SETTINGS");
 }
 
 QTEST_MAIN(EditTests)

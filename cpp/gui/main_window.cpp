@@ -1,5 +1,6 @@
 #include "main_window.hpp"
 
+#include <QAbstractButton>
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
@@ -18,6 +19,8 @@
 #include <QMimeData>
 #include <QProgressBar>
 #include <QSaveFile>
+#include <QSettings>
+#include <QTableWidget>
 #include <QShortcut>
 #include <QStatusBar>
 #include <QToolBar>
@@ -62,6 +65,10 @@ std::shared_ptr<LoadResult> load_map_file(const QString& file_name) {
 MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     : QMainWindow(parent), icons_dir_(icons_dir) {
     styles_ = std::make_unique<MapStyles>(icons_dir_);
+    // ten sam plik ustawien co wersja Python (lista ostatnich plikow jest wspolna); PWMAPEDIT_SETTINGS - inny plik
+    // (testy nie zmieniaja wtedy ustawien uzytkownika)
+    settings_ = new QSettings(qEnvironmentVariable("PWMAPEDIT_SETTINGS", QDir::home().filePath(".pwmapedit.ini")),
+                              QSettings::IniFormat, this);
     default_projection_ = std::make_unique<MercatorProjection>();
     undo_stack_ = new QUndoStack(this);
 
@@ -123,6 +130,8 @@ void MainWindow::create_actions_and_menus() {
     QMenu* file_menu = menuBar()->addMenu(tr("&File"));
     QAction* open = file_menu->addAction(tr("&Open"), this, &MainWindow::open_file_dialog);
     open->setShortcut(QKeySequence::Open);
+    recent_files_menu_ = file_menu->addMenu(tr("Open &recent"));
+    connect(recent_files_menu_, &QMenu::aboutToShow, this, &MainWindow::fill_recent_files_menu);
     file_menu->addSeparator();
     QAction* save = file_menu->addAction(tr("&Save map"), this, &MainWindow::save_map);
     save->setShortcut(QKeySequence::Save);
@@ -145,7 +154,7 @@ void MainWindow::create_actions_and_menus() {
     copy->setShortcut(QKeySequence::Copy);
     QAction* paste = edit_menu->addAction(tr("&Paste"), this, &MainWindow::paste_action);
     paste->setShortcut(QKeySequence::Paste);
-    QAction* del = edit_menu->addAction(tr("&Usuń"), scene_, &MapScene::delete_selected);
+    QAction* del = edit_menu->addAction(tr("&Usuń"), this, &MainWindow::delete_action);
     del->setShortcut(QKeySequence::Delete);
     edit_menu->addSeparator();
     edit_menu->addAction(tr("&Odwróć polilinię"), scene_, &MapScene::reverse_selected_polylines);
@@ -311,19 +320,18 @@ void MainWindow::set_progress(int value, int maximum) {
 }
 
 void MainWindow::open_file_dialog() {
-    QString file_name = QFileDialog::getOpenFileName(this, tr("File to open"), QString(),
+    // okno zaczyna w katalogu ostatnio otwieranego pliku
+    const QStringList recent = recent_files();
+    const QString start_dir = recent.isEmpty() ? QString() : QFileInfo(recent.front()).absolutePath();
+    QString file_name = QFileDialog::getOpenFileName(this, tr("File to open"), start_dir,
                                                      tr("Pliki map (*.mp *.MP *.txt);;Wszystkie pliki (*)"));
     if (!file_name.isEmpty()) open_file(file_name);
 }
 
 void MainWindow::open_file(const QString& file_name) {
     if (load_watcher_) return;  // wczytywanie juz trwa
-    if (!undo_stack_->isClean()) {
-        auto answer = QMessageBox::question(this, tr("Otwieranie pliku"),
-                                            tr("Bieżąca mapa nie jest zapisana. Czy na pewno otworzyć inny plik?"),
-                                            QMessageBox::Ok | QMessageBox::Cancel);
-        if (answer != QMessageBox::Ok) return;
-    }
+    if (!confirm_discard_changes(tr("Otwieranie pliku"))) return;
+    add_recent_file(file_name);
     info_text_->setText(tr("Wczytuję %1…").arg(QDir::toNativeSeparators(file_name)));
     progress_bar_->setRange(0, 0);
     QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -411,8 +419,100 @@ void MainWindow::save_map_as() {
     if (file_name.isEmpty()) return;
     if (write_map(file_name)) {
         map_file_name_ = file_name;
+        add_recent_file(file_name);
         update_window_title();
     }
+}
+
+// ---------------------------------------------------------------- ostatnio otwierane pliki
+QStringList MainWindow::recent_files() const {
+    QStringList files;
+    for (const QString& f : settings_->value("recent_files").toStringList())
+        if (!f.isEmpty()) files << f;
+    return files;
+}
+
+void MainWindow::set_recent_files(const QStringList& files) {
+    settings_->setValue("recent_files", files.mid(0, MAX_RECENT_FILES));
+    settings_->sync();
+}
+
+void MainWindow::add_recent_file(const QString& file_name) {
+    // pelna sciezka z separatorami systemu, jak os.path.abspath w Pythonie
+    const QString path = QDir::toNativeSeparators(QFileInfo(file_name).absoluteFilePath());
+    QStringList files = recent_files();
+    files.removeAll(path);
+    files.prepend(path);
+    set_recent_files(files);
+}
+
+void MainWindow::fill_recent_files_menu() {
+    recent_files_menu_->clear();
+    const QStringList files = recent_files();
+    if (files.isEmpty()) {
+        recent_files_menu_->addAction(tr("(brak)"))->setEnabled(false);
+        return;
+    }
+    for (int i = 0; i < files.size(); ++i) {
+        const QString file = files[i];
+        recent_files_menu_->addAction(QString("&%1 %2").arg((i + 1) % 10).arg(file), this,
+                                      [this, file] { open_recent_file(file); });
+    }
+    recent_files_menu_->addSeparator();
+    recent_files_menu_->addAction(tr("Wyczyść listę"), this, [this] { set_recent_files({}); });
+}
+
+void MainWindow::open_recent_file(const QString& file_name) {
+    if (!QFileInfo(file_name).isFile()) {
+        QMessageBox::warning(this, tr("Brak pliku"), tr("Plik nie istnieje:\n%1").arg(file_name));
+        QStringList files = recent_files();
+        files.removeAll(file_name);
+        set_recent_files(files);
+        return;
+    }
+    open_file(file_name);
+}
+
+// ---------------------------------------------------------------- niezapisane zmiany
+bool MainWindow::confirm_discard_changes(const QString& title) {
+    if (undo_stack_->isClean()) return true;
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(title);
+    box.setText(tr("Mapa zawiera niezapisane zmiany."));
+    box.setInformativeText(tr("Czy zapisać zmiany?"));
+    box.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    box.button(QMessageBox::Save)->setText(tr("Zapisz"));
+    box.button(QMessageBox::Discard)->setText(tr("Nie zapisuj"));
+    box.button(QMessageBox::Cancel)->setText(tr("Anuluj"));
+    box.setDefaultButton(QMessageBox::Save);
+    box.setEscapeButton(QMessageBox::Cancel);
+    const int answer = box.exec();
+    if (answer == QMessageBox::Cancel) return false;
+    if (answer == QMessageBox::Save) {
+        // zapis sie nie udal (albo anulowano "zapisz jako") - zostajemy, zeby nie stracic zmian
+        if (map_file_name_.isEmpty()) {
+            save_map_as();
+            return undo_stack_->isClean();
+        }
+        return write_map(map_file_name_);
+    }
+    return true;  // Nie zapisuj
+}
+
+bool MainWindow::focus_in_extras() const {
+    QWidget* focus = QApplication::focusWidget();
+    return focus && (focus == properties_->extras() || properties_->extras()->isAncestorOf(focus));
+}
+
+void MainWindow::delete_action() {
+    // Delete w tabeli Extras czysci zaznaczone komorki; w innych polach panelu nic nie robi (nie usuwa obiektu)
+    if (focus_in_extras()) {
+        properties_->clear_selected_extras();
+        return;
+    }
+    if (focus_in_properties()) return;
+    scene_->delete_selected();
 }
 
 bool MainWindow::focus_in_properties() const {
@@ -422,6 +522,10 @@ bool MainWindow::focus_in_properties() const {
 }
 
 void MainWindow::copy_action() {
+    if (focus_in_extras()) {
+        if (QMimeData* mime = properties_->copy_extras()) QApplication::clipboard()->setMimeData(mime);
+        return;
+    }
     if (focus_in_properties()) return;
     // zaznaczone obiekty; bez zaznaczenia - wspolrzedne kursora (jak copy w mapCanvas.py)
     const QPointF reference = view_->last_click_scene_pos().value_or(view_->current_scene_mouse_coords());
@@ -430,6 +534,13 @@ void MainWindow::copy_action() {
 }
 
 void MainWindow::cut_action() {
+    if (focus_in_extras()) {
+        if (QMimeData* mime = properties_->copy_extras()) {
+            QApplication::clipboard()->setMimeData(mime);
+            properties_->clear_selected_extras();
+        }
+        return;
+    }
     if (focus_in_properties() || scene_->tool() != Tool::SelectObjects) return;
     const QPointF reference = view_->last_click_scene_pos().value_or(view_->current_scene_mouse_coords());
     QMimeData* mime = scene_->copy_selected(reference);
@@ -439,6 +550,10 @@ void MainWindow::cut_action() {
 }
 
 void MainWindow::paste_action() {
+    if (focus_in_extras()) {
+        properties_->paste_extras(QApplication::clipboard()->mimeData());
+        return;
+    }
     if (focus_in_properties()) return;
     const int pasted = scene_->paste(QApplication::clipboard()->mimeData(), view_->mouse_scene_pos());
     if (pasted) show_message(tr("Wklejono obiektów: %1").arg(pasted));
@@ -549,14 +664,9 @@ void MainWindow::merge_polylines() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    if (!undo_stack_->isClean()) {
-        auto answer = QMessageBox::question(this, tr("Zamykanie aplikacji"),
-                                            tr("Plik niezapisany. Czy na pewno zamknąć?"),
-                                            QMessageBox::Ok | QMessageBox::Cancel);
-        if (answer != QMessageBox::Ok) {
-            event->ignore();
-            return;
-        }
+    if (!confirm_discard_changes(tr("Zamykanie aplikacji"))) {
+        event->ignore();
+        return;
     }
     event->accept();
 }
