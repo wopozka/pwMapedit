@@ -141,6 +141,11 @@ public:
     // pierwszego; pozostale poziomy bez zmian). delete_second - drugi polygon jest usuwany w tej samej komendzie.
     // Zwraca opis wyniku; changed - czy mapa sie zmienila.
     QString subtract_selected_polygons(bool delete_second, bool* changed = nullptr);
+    // Zamiana zaznaczonych obiektow rodzaju from (polygon albo polilinia) na drugi rodzaj: nowy obiekt z tymi
+    // samymi wlasciwosciami i geometria (ostatnio uzyty typ docelowego rodzaju), stary usuwany - jedna komenda.
+    // Zwraca opis wyniku; changed - czy mapa sie zmienila.
+    QString convert_selected(ObjectKind from, bool* changed = nullptr);
+    bool has_selected(ObjectKind kind) const;
     // Podswietlenie czesci obiektu wybranej w panelu (karta Elements); pusta sciezka zdejmuje podswietlenie.
     void highlight_path(const QPainterPath& path, bool polygon);
     void request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos);

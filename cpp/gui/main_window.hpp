@@ -85,6 +85,7 @@ private slots:
     void escape_pressed();
     void merge_polylines();
     void subtract_polygons(bool delete_second);
+    void convert_selected(ObjectKind from);
     void set_single_key_shortcuts_enabled(bool enabled);
 
 private:

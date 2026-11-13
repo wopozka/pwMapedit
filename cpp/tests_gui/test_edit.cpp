@@ -186,6 +186,7 @@ private slots:
     // odejmowanie polygonow
     void subtract_polygons_hole_partial_and_delete();
     void ctrl_click_adds_polygon_lying_on_selected_one();
+    void convert_polyline_polygon_both_ways();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1510,6 +1511,68 @@ void EditTests::ctrl_click_adds_polygon_lying_on_selected_one() {
     // zwykly klik nadal przelacza miedzy obiektami pod kursorem (jeden zaznaczony)
     QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, on_small);
     QCOMPARE(f.scene.selected_object_items().size(), size_t{1});
+}
+
+void EditTests::convert_polyline_polygon_both_ways() {
+    DockFixture f;
+    f.scene.set_last_used_type(ObjectKind::Polygon, 0x4e);
+    f.scene.set_last_used_type(ObjectKind::Polyline, 0x1c);
+    bool changed = false;
+
+    // polilinia z mapy testowej ma na Data1 tylko 2 wezly - nie da sie z niej zrobic polygonu (komunikat, bez zmian)
+    f.select_only(f.polyline());
+    QVERIFY(f.scene.has_selected(ObjectKind::Polyline));
+    QVERIFY(!f.scene.has_selected(ObjectKind::Polygon));
+    QVERIFY(f.scene.convert_selected(ObjectKind::Polyline, &changed).contains("Ulica"));
+    QVERIFY(!changed);
+    QCOMPARE(f.stack.count(), 0);
+
+    // polilinia z DirIndicator, numeracja i HLevel -> polygon: pola linii usuniete, etykieta i komentarz zostaja
+    QMimeData mime;
+    mime.setText(";uwaga\n[POLYLINE]\nType=0x6\nLabel=Petla\nDirIndicator=1\n"
+                 "Data0=(52.3000,21.3000),(52.3000,21.3100),(52.3100,21.3100),(52.3000,21.3000)\n"
+                 "Numbers1=0,O,1,5,N,-1,-1\nHLevel0=(1,1)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 1);
+    const int base = f.stack.count();
+    const std::string before = f.map->to_mp_string();
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{1});  // wklejony obiekt zaznaczony
+    const QString msg = f.scene.convert_selected(ObjectKind::Polyline, &changed);
+    QVERIFY(changed);
+    QVERIFY(msg.contains("DirIndicator") && msg.contains("Numbers") && msg.contains("HLevel"));
+    QCOMPARE(f.stack.count(), base + 1);
+    QVERIFY(f.obj(2).deleted);
+    const MapObject& polygon = f.obj(3);
+    QCOMPARE(polygon.kind(), ObjectKind::Polygon);
+    QCOMPARE(*polygon.type, 0x4eLL);
+    QCOMPARE(*polygon.label1, std::string("Petla"));
+    QVERIFY(polygon.comment && polygon.comment->front() == "uwaga");
+    QVERIFY(!polygon.dirindicator);
+    QCOMPARE(polygon.data->polys_for_data_level(0)->front().size(), size_t{3});  // bez powtorzonego wezla
+    QVERIFY(f.scene.item_for_object(3)->graphics_item()->type() == PolygonItemType);
+    QVERIFY(f.scene.item_for_object(3)->graphics_item()->isSelected());
+    // rekord nowego polygonu (w pliku jest tez polilinia "Ulica" z numeracja)
+    std::string record;
+    for (const std::string& l : polygon.to_mp_record(f.map->precision())) record += l + '\n';
+    QVERIFY(record.find("[POLYGON]") != std::string::npos);
+    QVERIFY(record.find("Numbers") == std::string::npos);
+    QVERIFY(record.find("HLevel") == std::string::npos);
+    QVERIFY(record.find("DirIndicator") == std::string::npos);
+
+    // i z powrotem: polygon -> zamknieta polilinia z ostatnio uzytym typem linii
+    QVERIFY(f.scene.has_selected(ObjectKind::Polygon));
+    f.scene.convert_selected(ObjectKind::Polygon, &changed);
+    QVERIFY(changed);
+    const MapObject& line = f.obj(4);
+    QCOMPARE(line.kind(), ObjectKind::Polyline);
+    QCOMPARE(*line.type, 0x1cLL);
+    const Poly& ring = line.data->polys_for_data_level(0)->front();
+    QCOMPARE(ring.size(), size_t{4});
+    QVERIFY(ring.front().pos() == ring.back().pos());
+    QVERIFY(f.scene.item_for_object(4)->graphics_item()->type() == PolylineItemType);
+
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), before);
 }
 
 QTEST_MAIN(EditTests)

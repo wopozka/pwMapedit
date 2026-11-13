@@ -387,6 +387,89 @@ QString MapScene::subtract_selected_polygons(bool delete_second, bool* changed) 
     return tr("Odjęto polygony na poziomie Data%1: pierwszy ma teraz %2 część(i).").arg(level).arg(result.rings.size());
 }
 
+bool MapScene::has_selected(ObjectKind kind) const {
+    for (MapObjectItem* item : selected_object_items())
+        if (item->object().kind() == kind) return true;
+    return false;
+}
+
+QString MapScene::convert_selected(ObjectKind from, bool* changed) {
+    if (changed) *changed = false;
+    if (!map_ || (from != ObjectKind::Polygon && from != ObjectKind::Polyline)) return {};
+    const bool to_polyline = from == ObjectKind::Polygon;
+    const ObjectKind to = to_polyline ? ObjectKind::Polyline : ObjectKind::Polygon;
+    std::vector<size_t> old_indexes;
+    std::vector<MapObject> converted;
+    QStringList dropped;   // pola usuniete przy zamianie na polygon
+    QStringList skipped;   // polilinie, ktorych nie da sie zamienic
+    for (MapObjectItem* item : selected_object_items_in_order()) {
+        const MapObject& src = item->object();
+        if (src.kind() != from || !src.data) continue;
+        MapObject obj = src;
+        obj.set_kind(to);
+        obj.id.reset();
+        obj.type = last_used_type(to);
+        bool ok = true;
+        for (int level : std::vector<int>(obj.data->data_levels())) {
+            std::vector<Poly> polys = *obj.data->polys_for_data_level(level);
+            for (Poly& poly : polys) {
+                const bool closed = poly.size() > 1 && poly.front().pos() == poly.back().pos();
+                if (to_polyline) {
+                    // obrys polygonu jako zamknieta linia
+                    if (!closed && !poly.empty()) poly.push_back(Node(poly.front().x(), poly.front().y()));
+                } else {
+                    if (closed) poly.pop_back();  // polygon zamyka sie sam
+                    if (poly.size() < 3) ok = false;
+                    for (Node& n : poly) {
+                        if (n.has_numeration()) {
+                            n.clear_numbers();
+                            if (!dropped.contains("Numbers")) dropped << "Numbers";
+                        }
+                        if (n.has_hlevel()) {
+                            n.set_hlevel(std::nullopt);
+                            if (!dropped.contains("HLevel")) dropped << "HLevel";
+                        }
+                    }
+                }
+            }
+            obj.data->set_level_polys(level, std::move(polys));
+        }
+        if (!ok) {
+            skipped << (src.label1 ? QString::fromStdString(encoding::cp1250_to_utf8(*src.label1)) : tr("(bez nazwy)"));
+            continue;
+        }
+        if (!to_polyline) {
+            if (obj.dirindicator && !dropped.contains("DirIndicator")) dropped << "DirIndicator";
+            if (obj.routeparam && !dropped.contains("RouteParam")) dropped << "RouteParam";
+            obj.dirindicator = false;
+            obj.routeparam.reset();
+        }
+        old_indexes.push_back(item->object_index());
+        converted.push_back(std::move(obj));
+    }
+    QString skipped_note;
+    if (!skipped.isEmpty())
+        skipped_note = tr(" Pominięto (mniej niż 3 węzły w części): %1.").arg(skipped.join(", "));
+    if (converted.empty())
+        return skipped_note.isEmpty() ? tr("Nie zaznaczono obiektów do zamiany.") : skipped_note.trimmed();
+
+    const QString text = to_polyline ? tr("Zamień polygon na polilinię") : tr("Zamień polilinię na polygon");
+    auto* command = new QUndoCommand(text);
+    new DeleteObjectsCmd(this, old_indexes, text, command);
+    std::vector<AddObjectCmd*> adds;
+    for (MapObject& obj : converted) adds.push_back(new AddObjectCmd(this, std::move(obj), text, command));
+    push_command(command);
+    clearSelection();
+    for (AddObjectCmd* add : adds)
+        if (add->index())
+            if (MapObjectItem* item = item_for_object(*add->index())) item->graphics_item()->setSelected(true);
+    if (changed) *changed = true;
+    QString result = (to_polyline ? tr("Zamieniono polygony na polilinie: %1.") : tr("Zamieniono polilinie na polygony: %1."))
+                         .arg(adds.size());
+    if (!dropped.isEmpty()) result += tr(" Usunięto pola, których polygon nie obsługuje: %1.").arg(dropped.join(", "));
+    return result + skipped_note;
+}
+
 void MapScene::highlight_path(const QPainterPath& path, bool polygon) {
     // jak highlight_element w Pythonie: ciemnoczerwona polprzezroczysta sciezka nad obiektami
     delete highlight_;

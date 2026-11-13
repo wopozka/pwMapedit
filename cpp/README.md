@@ -366,6 +366,17 @@ z dokładnością 1 mm - odporne na wspólne krawędzie i węzły przy przyciąg
 Clipper2 1.5.4 jest dołączony w `third_party/clipper2` (Boost Software License) i buduje się razem z projektem na
 Windows i Linuksie; `-DPWM_SYSTEM_CLIPPER2=ON` używa biblioteki systemowej. `Makefile` też kompiluje Clipper2.
 
+### Zamiana polygon ↔ polilinia (nowa funkcja)
+
+Tools → „Zamień polygon na polilinię” / „Zamień polilinię na polygon” - menu Tools pokazuje tylko operacje pasujące
+do zaznaczenia (odejmowanie i zamiana na polilinię przy polygonach, zamiana na polygon przy poliliniach). Zamieniane są
+wszystkie zaznaczone obiekty danego rodzaju, jedną komendą undo: nowy obiekt ma te same właściwości (etykiety, komentarz,
+Extras, EndLevel) i geometrię na wszystkich poziomach, typ ostatnio użyty dla docelowego rodzaju; stary obiekt jest usuwany.
+- polygon → polilinia: każda część staje się zamkniętą linią (pierwszy węzeł powtórzony na końcu);
+- polilinia → polygon: powtórzony węzeł zamykający jest pomijany; część musi mieć co najmniej 3 węzły (inaczej obiekt
+  jest pomijany z komunikatem); `DirIndicator`, `RouteParam`, numeracja adresowa i `HLevel` są usuwane (informacja
+  w pasku stanu).
+
 ### Ślady GPS jako podkład do rysowania (nowa funkcja, nie ma jej w wersji Python)
 
 Ślady i punkty z plików GPX i GDB są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.

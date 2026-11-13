@@ -265,10 +265,25 @@ void MainWindow::create_actions_and_menus() {
         connect(act, &QAction::triggered, this, [this, tool] { scene_->set_tool(tool); });
         tools_group_->addAction(act);
     }
-    // operacje na zaznaczonych polygonach
-    tools_menu->addSeparator();
-    tools_menu->addAction(tr("Odejmij polygony"), this, [this] { subtract_polygons(false); });
-    tools_menu->addAction(tr("Odejmij polygony i usuń drugi"), this, [this] { subtract_polygons(true); });
+    // operacje na zaznaczonych polygonach i poliliniach
+    QAction* objects_separator = tools_menu->addSeparator();
+    QAction* subtract = tools_menu->addAction(tr("Odejmij polygony"), this, [this] { subtract_polygons(false); });
+    QAction* subtract_delete =
+        tools_menu->addAction(tr("Odejmij polygony i usuń drugi"), this, [this] { subtract_polygons(true); });
+    QAction* to_polyline = tools_menu->addAction(tr("Zamień polygon na polilinię"), this,
+                                                 [this] { convert_selected(ObjectKind::Polygon); });
+    QAction* to_polygon = tools_menu->addAction(tr("Zamień polilinię na polygon"), this,
+                                                [this] { convert_selected(ObjectKind::Polyline); });
+    // menu pokazuje tylko operacje pasujace do zaznaczenia
+    connect(tools_menu, &QMenu::aboutToShow, this, [=] {
+        const bool polygons = scene_->has_selected(ObjectKind::Polygon);
+        const bool polylines = scene_->has_selected(ObjectKind::Polyline);
+        subtract->setVisible(polygons);
+        subtract_delete->setVisible(polygons);
+        to_polyline->setVisible(polygons);
+        to_polygon->setVisible(polylines);
+        objects_separator->setVisible(polygons || polylines);
+    });
     // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
     connect(scene_, &MapScene::tool_changed, this, [this] {
         for (QAction* act : tools_group_->actions())
@@ -636,6 +651,15 @@ void MainWindow::set_single_key_shortcuts_enabled(bool enabled) {
     // na czas najechania - jak enable/disable_*_shortcuts w Pythonie.
     for (QAction* act : tools_group_->actions()) act->setEnabled(enabled);
     for (QAction* act : std::as_const(map_level_actions_)) act->setEnabled(enabled);
+}
+
+void MainWindow::convert_selected(ObjectKind from) {
+    bool changed = false;
+    const QString result = scene_->convert_selected(from, &changed);
+    if (changed || quiet_)
+        show_message(result);
+    else if (!result.isEmpty())
+        QMessageBox::information(this, tr("Zamiana obiektów"), result);
 }
 
 void MainWindow::subtract_polygons(bool delete_second) {

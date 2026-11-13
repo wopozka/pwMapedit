@@ -50,6 +50,8 @@ public:
     std::vector<std::string> to_mp_record(int precision) const;
 
     ObjectKind kind() const { return kind_; }
+    // Zmiana rodzaju (zamiana polygon <-> polilinia); pola nieobslugiwane przez nowy rodzaj czysci wywolujacy.
+    void set_kind(ObjectKind kind) { kind_ = kind; }
     const Projection* projection() const { return projection_; }
 
     std::optional<size_t> id;
