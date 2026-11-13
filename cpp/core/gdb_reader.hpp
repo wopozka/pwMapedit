@@ -2,7 +2,8 @@
 //
 // Format opisany na podstawie GdbFile.h/GdbLoader.cpp z GPSMapEdit (K. Galichsky) i sprawdzony na plikach
 // BaseCamp. Kod jest napisany od nowa: kazdy odczyt sprawdza granice rekordu, liczby sa kopiowane bajt po bajcie
-// (bez rzutowania wskaznikow), wspolrzedne liczone w double. Trasy ('R') sa pomijane z ostrzezeniem.
+// (bez rzutowania wskaznikow), wspolrzedne liczone w double. Trasy ('R') sa wczytywane jako slady (Track::route):
+// punkty kolejnych odcinkow sklejone bez powtorzonego punktu styku.
 //
 // Plik: "MsRcf\0", potem rekordy [uint32 dlugosc][char typ][dane]:
 //   'D' wersja formatu (uint16: 0x6B, 0x6C, 0x6D = GDB v1, v2, v3; v3 - teksty UTF-8, wczesniej strona kodowa

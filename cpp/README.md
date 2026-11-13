@@ -354,12 +354,15 @@ Różnice względem Pythona (celowe):
   są szare (tylko oznaczenie w sesji - cofnięcie nie zdejmuje go).
 - Zrzut ze śladami: `pwmapedit plik.mp --screenshot x.png --gps slad.gpx`.
 
-Pliki GDB (Garmin MapSource/BaseCamp, wersje 1-3) czyta `core/gdb_reader.*`: ślady i waypointy (nazwa, pozycja,
-wysokość, komentarz, symbol); trasy są pomijane z ostrzeżeniem. Format opisany na podstawie `GdbFile.h`/`GdbLoader.cpp`
+Pliki GDB (Garmin MapSource/BaseCamp, wersje 1-3) czyta `core/gdb_reader.*`: ślady, waypointy (nazwa, pozycja,
+wysokość, komentarz, symbol) i trasy. Trasa staje się śladem (w panelu „Trasa:”): punkty kolejnych odcinków (dla tras
+wyznaczonych przez MapSource - geometria drogi) sklejone bez powtórzonych punktów; odcinek bez punktów bierze pozycję
+waypointu o swojej nazwie. Dane za odcinkami, które GPSMapEdit czytał jako komentarz trasy, są binarne i są pomijane. Format opisany na podstawie `GdbFile.h`/`GdbLoader.cpp`
 z GPSMapEdit, kod napisany od nowa: każdy odczyt sprawdza granice rekordu, współrzędne w `double` (GPSMapEdit liczył
 waypointy we `float`, z błędem rzędu metrów). Uszkodzony ślad (mniej punktów niż w nagłówku) i ucięty plik są wczytywane
 do miejsca uszkodzenia z ostrzeżeniem. Za rekordem wersji programu może stać „MapSource” albo „BaseCamp”. Testy: pliki
-BaseCamp w `tests/gdb/` oraz pliki budowane w teście (v1 z cp1250, v3 z UTF-8, waypointy, uszkodzenia).
+BaseCamp i MapSource w `tests/gdb/` (liczby rekordów i wartości porównane z niezależnym skryptem; trasy zaczynają
+odcinki na waypointach o podanych nazwach) oraz pliki budowane w teście (v1 z cp1250, v3 z UTF-8, uszkodzenia).
 
 ### Następne kroki
 

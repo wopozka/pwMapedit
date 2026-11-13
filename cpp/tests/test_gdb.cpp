@@ -202,9 +202,12 @@ TEST(gdb_all_sample_files) {
         }
         CHECK_EQ(r.version, 3);
         CHECK_EQ(r.file.waypoints.size(), e.waypoints);
-        CHECK_EQ(r.file.tracks.size(), e.tracks);
-        // jedyne ostrzezenie: pominiete trasy
-        CHECK_EQ(r.warnings.size(), size_t{e.routes ? 1u : 0u});
+        // trasy sa wczytywane jako slady (na koncu listy, w kolejnosci z pliku)
+        CHECK_EQ(r.file.tracks.size(), e.tracks + e.routes);
+        size_t routes = 0;
+        for (const Track& t : r.file.tracks) routes += t.route;
+        CHECK_EQ(routes, e.routes);
+        CHECK(r.warnings.empty());
         for (const Waypoint& w : r.file.waypoints) {
             CHECK(w.pos.lat > 49 && w.pos.lat < 55.5 && w.pos.lon > 14 && w.pos.lon < 24.5);
             CHECK(!w.name.empty());
@@ -242,4 +245,41 @@ TEST(gdb_mapsource_waypoint_values) {
     CHECK(parking != nullptr);
     if (parking) CHECK(parking->pos.ele && std::fabs(*parking->pos.ele - 168.907135) < 1e-5);
     CHECK(find(b, "Brakuj\xc4\x85" "ca droga 1") != nullptr);
+}
+
+TEST(gdb_routes_as_tracks) {
+    // Liczby punktow policzone niezaleznym skryptem: punkty odcinkow minus powtorzone punkty styku; w trasie z Gdanska
+    // dodatkowo odcinek "029" ma dwa identyczne punkty (zerowa dlugosc) - jeden jest pomijany (158 - 29 - 1 = 128).
+    // Odcinki zaczynaja sie na waypointach o nazwach z rekordu trasy.
+    auto route = [](const GdbResult& r) -> const Track* {
+        for (const Track& t : r.file.tracks)
+            if (t.route) return &t;
+        return nullptr;
+    };
+    GdbResult a = read_gdb_file(DATA + "2026_10_26P.gdb");
+    const Track* t = route(a);
+    CHECK(t != nullptr);
+    if (t) {
+        CHECK_EQ(t->name, std::string("Tak nie wolno"));
+        CHECK_EQ(t->segments.size(), size_t{1});
+        CHECK_EQ(t->segments[0].size(), size_t{5});
+        // pierwszy punkt to waypoint "Powstancow Warszawy 8"
+        CHECK_NEAR(t->segments[0][0].lat, 50.59086503461003, 1e-12);
+        CHECK_NEAR(t->segments[0][0].lon, 16.822200547903776, 1e-12);
+    }
+    GdbResult b = read_gdb_file(DATA + "2026_04_13 r\xc3\xb3\xc5\xbcne w Gda\xc5\x84sku.gdb");
+    t = route(b);
+    CHECK(t != nullptr);
+    if (t) {
+        CHECK_EQ(t->name, std::string("S7 do El\xc5\xbc" "bieta\xc5\x84ska i Aleja"));
+        CHECK_EQ(t->segments[0].size(), size_t{128});
+        CHECK_NEAR(t->segments[0][0].lat, 54.313723370432854, 1e-12);
+        // bez powtorzonych sasiednich punktow
+        for (size_t i = 1; i < t->segments[0].size(); ++i)
+            CHECK(t->segments[0][i].lat != t->segments[0][i - 1].lat || t->segments[0][i].lon != t->segments[0][i - 1].lon);
+    }
+    GdbResult c = read_gdb_file(DATA + "2026_04_19P.gdb");
+    t = route(c);
+    CHECK(t != nullptr);
+    if (t) CHECK_EQ(t->segments[0].size(), size_t{132});
 }
