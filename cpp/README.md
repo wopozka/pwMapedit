@@ -128,9 +128,12 @@ Budowanie przez CMake (rdzeń, testy, `mptool` i GUI `pwmapedit`; GUI tylko, gdy
 cd cpp
 cmake -S . -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build-cmake
-ctest --test-dir build-cmake
+ctest --test-dir build-cmake      # testy rdzenia (run_tests) i GUI (gui_tests, bez okna)
 build-cmake/pwmapedit [plik.mp]
 ```
+
+Testy GUI (`tests_gui/`, QtTest) budują się, gdy jest moduł Qt6 Test; uruchamiane są na platformie `offscreen`.
+Uwaga: QtTest traktuje sloty o nazwie kończącej się na `_data` jako dane dla innego testu i ich nie uruchamia.
 
 Windows (msys2, powłoka MINGW64): `pacman -S mingw-w64-x86_64-{gcc,cmake,ninja,qt6-base,qt6-svg}`.
 Linux: `apt install cmake ninja-build qt6-base-dev qt6-svg-dev`.
@@ -140,6 +143,7 @@ katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
 | plik | odpowiednik w Pythonie |
 |---|---|
 | `gui/main_window.*` | `pwMapEdit.py` (okno, menu, pasek narzędzi, pasek stanu, otwieranie/zapis) |
+| `gui/commands.*` | `commands.py` (komendy undo/redo) |
 | `gui/map_scene.*` | `mapCanvas.py` |
 | `gui/map_view.*` | `mapRender.py` |
 | `gui/map_items.*` | graficzna część `map_items.py` (POI, polilinie, polygony, etykiety, strzałki, numery adresowe, HLevel, linijka) |
@@ -180,12 +184,31 @@ Różnice względem Pythona (celowe):
   poziomu. Python pokazywał dane z poziomu oglądanego poprzednio, więc wynik zależał od kolejności przełączania.
 - Etykieta polygonu pokazuje `Label` (w Pythonie była pusta, bo `_mp_label` nie był ustawiany).
 - Gdy dla typu POI są ikony `_day` i `_night`, używana jest `_day` (w Pythonie zależało to od kolejności plików).
-- Obiekty nie dają się jeszcze przesuwać myszą (przesuwanie wymaga undo/redo, etap 3b).
+### Etap 3b.1 (zrobione): undo/redo, przesuwanie, usuwanie, odwracanie
+
+- Stos undo/redo (Edit → Undo/Redo, `Ctrl+Z`/`Ctrl+Y`, przyciski na pasku), gwiazdka w tytule przy niezapisanych zmianach.
+- Przesuwanie zaznaczonych obiektów lewym przyciskiem (POI, polilinie, polygony); przesuwany jest pokazywany poziom Data.
+- Usuwanie zaznaczonych obiektów (`Delete`, Edit → Usuń); zapis pomija usunięte obiekty.
+- Odwracanie zaznaczonych polilinii (Edit → Odwróć polilinię), razem z numeracją adresową.
+
+Komendy (`gui/commands.*`) zmieniają tylko dane obiektu w `MapData`, a element sceny przebudowuje się z danych
+(`MapObjectItem::refresh`). Obiekt jest wskazywany indeksem w `MapData`; usunięcie tylko oznacza obiekt jako
+usunięty i ukrywa element, więc indeksy się nie zmieniają. Zmiany danych obiektu (przesunięcie, odwrócenie,
+w kolejnych krokach edycja węzłów i właściwości) idą przez jedną komendę `ReplaceObjectCmd` ze stanem przed i po.
+
+Różnice względem Pythona (celowe):
+- Przeciągnięcie kilku zaznaczonych obiektów to jedna komenda undo (w Pythonie osobna dla każdego obiektu).
+- Próg rozpoczęcia przesuwania (`MIN_MOVE_DISTANCE` = 3) jest liczony w pikselach ekranu, a nie w jednostkach sceny,
+  więc nie zależy od powiększenia.
+- Odwrócenie polilinii obejmuje wszystkie poziomy Data (w Pythonie tylko oglądany poziom, więc kierunek na
+  pozostałych poziomach zostawał stary). Odwracanie jest dostępne z menu Edit (w Pythonie przyciskiem w panelu
+  właściwości, który powstanie w 3b.3).
 
 ### Następne kroki
 
-- 3b: edycja: undo/redo (`commands.py`), przesuwanie obiektów, tryb edycji węzłów (uchwyty, wstawianie, usuwanie,
-  dzielenie linii), usuwanie obiektów, kopiuj/wklej, panel właściwości (`map_obj_properties_dockwidget.py`).
+- 3b.2: tryb edycji węzłów: uchwyty, przeciąganie węzła, wstawianie i usuwanie węzła, dzielenie i łączenie polilinii.
+- 3b.3: panel właściwości (`map_obj_properties_dockwidget.py`), każda zmiana jako komenda undo.
+- 3b.4: kopiuj/wklej obiektów.
 - 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).
 
 Etap 2 (moduł pybind11) odłożony.

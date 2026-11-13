@@ -1,6 +1,7 @@
 #include "map_items.hpp"
 
 #include <QFont>
+#include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QStyleOptionGraphicsItem>
@@ -68,6 +69,23 @@ MapScene* MapObjectItem::map_scene() const {
     return s ? qobject_cast<MapScene*>(s) : nullptr;
 }
 
+int MapObjectItem::scene_map_level() const {
+    MapScene* s = map_scene();
+    return s ? s->map_level() : 0;
+}
+
+bool MapObjectItem::accept_mouse_move(QGraphicsSceneMouseEvent* event) {
+    MapScene* s = map_scene();
+    if (!s || s->tool() != Tool::SelectObjects || !(event->buttons() & Qt::LeftButton)) return false;
+    if (!move_started_) {
+        // Python mierzyl MIN_MOVE_DISTANCE w jednostkach sceny; tu w pikselach ekranu, niezaleznie od skali
+        QPointF d = event->screenPos() - event->buttonDownScreenPos(Qt::LeftButton);
+        if (std::hypot(d.x(), d.y()) <= MIN_MOVE_DISTANCE) return false;
+        move_started_ = true;
+    }
+    return true;
+}
+
 void MapObjectItem::set_selection_z_value() {
     QGraphicsItem* item = graphics_item();
     if (item->zValue() < SELECTED_OBJECT_Z_VAL) item->setZValue(item->zValue() + SELECTED_OBJECT_Z_VAL);
@@ -75,38 +93,50 @@ void MapObjectItem::set_selection_z_value() {
 
 // ================================================================ PoiItem
 PoiItem::PoiItem(MapData* map, size_t index, const QPixmap& icon) : MapObjectItem(map, index) {
-    const MapObject& obj = object();
-    bool pos_set = false;
-    if (obj.data) {
-        for (int level = 0; level < MAP_LEVELS; ++level) {
-            const auto* polys = obj.data->polys_for_data_level(level);
-            if (!polys || polys->empty() || polys->front().empty()) continue;
-            const Node& n = polys->front().front();
-            mp_data_[level] = QPointF(n.x(), n.y());
-            if (!pos_set) {
-                setPos(*mp_data_[level]);
-                pos_set = true;
-            }
+    read_positions();
+    for (int level = 0; level < MAP_LEVELS; ++level) {
+        if (mp_data_[level]) {
+            setPos(*mp_data_[level]);
+            break;
         }
     }
     setPixmap(icon);
     set_z_value();
-    setFlags(QGraphicsItem::ItemIsSelectable);
+    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
     setAcceptHoverEvents(true);
+}
+
+void PoiItem::read_positions() {
+    const MapObject& obj = object();
+    for (int level = 0; level < MAP_LEVELS; ++level) {
+        mp_data_[level].reset();
+        if (!obj.data) continue;
+        const auto* polys = obj.data->polys_for_data_level(level);
+        if (!polys || polys->empty() || polys->front().empty()) continue;
+        const Node& n = polys->front().front();
+        mp_data_[level] = QPointF(n.x(), n.y());
+    }
 }
 
 void PoiItem::set_map_level(int level) {
     apply_transformation_flag(scene_ignores_transformations(this));
-    if (mp_data_[level]) {
+    if (object().deleted) {
+        shown_level_ = -1;
+        setVisible(false);
+    } else if (mp_data_[level]) {
         setPos(*mp_data_[level]);
+        shown_level_ = level;
         setVisible(true);
     } else if (object().endlevel < level) {
+        shown_level_ = -1;
         setVisible(false);
     } else {
         // jak w Pythonie: POI pozostaje widoczne w ostatnim polozeniu; bierzemy najwyzszy nizszy poziom
+        shown_level_ = -1;
         for (int l = level - 1; l >= 0; --l) {
             if (mp_data_[l]) {
                 setPos(*mp_data_[l]);
+                shown_level_ = l;
                 break;
             }
         }
@@ -114,9 +144,17 @@ void PoiItem::set_map_level(int level) {
     }
 }
 
+void PoiItem::refresh() {
+    read_positions();
+    delete label_;
+    label_ = nullptr;
+    add_label();
+    set_map_level(scene_map_level());
+}
+
 void PoiItem::add_label() {
     const MapObject& obj = object();
-    if (obj.label1 && !obj.label1->empty()) new PoiLabel(mp_to_qstring(*obj.label1), this);
+    if (obj.label1 && !obj.label1->empty()) label_ = new PoiLabel(mp_to_qstring(*obj.label1), this);
 }
 
 void PoiItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
@@ -150,6 +188,15 @@ void PoiItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
     QGraphicsPixmapItem::hoverLeaveEvent(event);
 }
 
+void PoiItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    move_started_ = false;
+    QGraphicsPixmapItem::mousePressEvent(event);
+}
+
+void PoiItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    if (accept_mouse_move(event)) QGraphicsPixmapItem::mouseMoveEvent(event);
+}
+
 QVariant PoiItem::itemChange(GraphicsItemChange change, const QVariant& value) {
     if (change == ItemSelectedHasChanged) {
         if (value.toBool()) {
@@ -171,7 +218,7 @@ PolyItem::PolyItem(MapData* map, size_t index, bool polygon) : MapObjectItem(map
             break;
         }
     }
-    setFlags(QGraphicsItem::ItemIsSelectable);
+    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
     setAcceptHoverEvents(true);
 }
 
@@ -217,10 +264,19 @@ void PolyItem::rebuild() {
     built_data_x_ = current_data_x_;
 }
 
+void PolyItem::refresh() {
+    // po przesunieciu sciezka jest juz w nowym miejscu, a polozenie elementu wraca do (0, 0)
+    setPos(0, 0);
+    built_data_x_ = -1;
+    set_map_level(scene_map_level());
+}
+
 void PolyItem::set_map_level(int level) {
     const MapObject& obj = object();
     int target = -1;
-    if (has_data_level(level)) {
+    if (obj.deleted) {
+        // ukryty
+    } else if (has_data_level(level)) {
         target = level;
     } else if (obj.endlevel >= level) {
         // Python zostawial sciezke z poprzednio ogladanego poziomu; tu bierzemy najwyzszy nizszy poziom z danymi
@@ -292,6 +348,15 @@ void PolyItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
         update();
     }
     QGraphicsPathItem::hoverLeaveEvent(event);
+}
+
+void PolyItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    move_started_ = false;
+    QGraphicsPathItem::mousePressEvent(event);
+}
+
+void PolyItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    if (accept_mouse_move(event)) QGraphicsPathItem::mouseMoveEvent(event);
 }
 
 QVariant PolyItem::itemChange(GraphicsItemChange change, const QVariant& value) {

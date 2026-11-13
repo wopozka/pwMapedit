@@ -251,3 +251,17 @@ TEST(bad_input_throws) {
     CHECK_THROWS(d.add_nodes_from_string("DataX", "(51.0,19.0)"));
     CHECK_THROWS(d.add_housenumbers_from_string("Numbers1=0,O,1,3"));  // brak Data
 }
+
+TEST(translate_data_level_moves_only_that_level) {
+    DataX d = make({"Data0=(51.0,19.0),(51.1,19.1)", "Data1=(52.0,20.0),(52.1,20.1)"});
+    d.add_hlevels_from_string("0,1");
+    std::vector<std::vector<Poly>> before = d.raw_polys();
+    d.translate_data_level(0, PointF{10.0, -5.0});
+    for (size_t i = 0; i < 2; ++i) {
+        CHECK_EQ(d.raw_polys()[0][0][i].x(), before[0][0][i].x() + 10.0);
+        CHECK_EQ(d.raw_polys()[0][0][i].y(), before[0][0][i].y() - 5.0);
+        CHECK(d.raw_polys()[1][0][i].pos() == before[1][0][i].pos());
+    }
+    CHECK(d.raw_polys()[1][0][0].hlevel() == OptInt(1));  // HLevel trafia do ostatniego poziomu
+    CHECK_THROWS(d.translate_data_level(3, PointF{1.0, 1.0}));
+}

@@ -1,7 +1,7 @@
 # Budowanie pwMapedit w C++.
 #   cmake -S . -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
 #   cmake --build build-cmake
-#   ctest --test-dir build-cmake          (testy rdzenia)
+#   ctest --test-dir build-cmake          (testy rdzenia i GUI)
 #
 # Rdzen (pwmcore), testy i mptool nie wymagaja Qt. GUI (pwmapedit) budowane jest tylko wtedy,
 # gdy znaleziono Qt6 (Widgets). Mozna je wylaczyc: -DPWM_BUILD_GUI=OFF.
@@ -42,12 +42,26 @@ if(PWM_BUILD_GUI)
     find_package(Qt6 QUIET COMPONENTS Widgets Concurrent)
     if(Qt6_FOUND)
         set(CMAKE_AUTOMOC ON)
+        # Biblioteka GUI (wszystko poza main.cpp) - wspolna dla programu i testow GUI.
         file(GLOB PWM_GUI_SOURCES CONFIGURE_DEPENDS gui/*.cpp gui/*.hpp)
-        add_executable(pwmapedit WIN32 ${PWM_GUI_SOURCES})
-        target_link_libraries(pwmapedit PRIVATE pwmcore Qt6::Widgets Qt6::Concurrent)
+        list(REMOVE_ITEM PWM_GUI_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/gui/main.cpp")
+        add_library(pwmgui STATIC ${PWM_GUI_SOURCES})
+        target_include_directories(pwmgui PUBLIC gui)
+        target_link_libraries(pwmgui PUBLIC pwmcore Qt6::Widgets Qt6::Concurrent)
         # Katalog z ikonami z repozytorium - uzywany, gdy obok programu nie ma katalogu icons/.
         get_filename_component(PWM_REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
-        target_compile_definitions(pwmapedit PRIVATE PWM_SOURCE_ICONS_DIR="${PWM_REPO_DIR}/icons")
+        target_compile_definitions(pwmgui PRIVATE PWM_SOURCE_ICONS_DIR="${PWM_REPO_DIR}/icons")
+
+        add_executable(pwmapedit WIN32 gui/main.cpp)
+        target_link_libraries(pwmapedit PRIVATE pwmgui)
+
+        # Testy GUI (QtTest, platforma offscreen): edycja, undo/redo, przeciaganie mysza.
+        find_package(Qt6 QUIET COMPONENTS Test)
+        if(Qt6Test_FOUND)
+            add_executable(gui_tests tests_gui/test_edit.cpp)
+            target_link_libraries(gui_tests PRIVATE pwmgui Qt6::Test)
+            add_test(NAME gui_tests COMMAND gui_tests -platform offscreen)
+        endif()
     else()
         message(STATUS "Nie znaleziono Qt6 - GUI (pwmapedit) nie bedzie budowane")
     endif()

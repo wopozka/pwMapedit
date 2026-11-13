@@ -108,6 +108,16 @@ void MapView::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void MapView::mousePressEvent(QMouseEvent* event) {
+    move_start_.clear();
+    select_on_press(event);
+    MapScene* s = map_scene();
+    if (s && event->button() == Qt::LeftButton && !right_button_drag_ && s->tool() == Tool::SelectObjects) {
+        for (MapObjectItem* item : s->selected_object_items())
+            move_start_.emplace_back(item, item->graphics_item()->pos());
+    }
+}
+
+void MapView::select_on_press(QMouseEvent* event) {
     MapScene* s = map_scene();
     if (!s) return;
 
@@ -176,6 +186,15 @@ void MapView::mouseReleaseEvent(QMouseEvent* event) {
         return;
     }
     QGraphicsView::mouseReleaseEvent(event);
+    if (event->button() == Qt::LeftButton && !move_start_.empty()) {
+        std::vector<std::pair<MapObjectItem*, QPointF>> moves;
+        for (const auto& [item, start] : move_start_) {
+            QPointF delta = item->graphics_item()->pos() - start;
+            if (!delta.isNull()) moves.emplace_back(item, delta);
+        }
+        move_start_.clear();
+        if (MapScene* s = map_scene(); s && !moves.empty()) s->move_objects(moves);
+    }
 }
 
 void MapView::wheelEvent(QWheelEvent* event) {

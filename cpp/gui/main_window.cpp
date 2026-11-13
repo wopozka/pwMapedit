@@ -73,6 +73,7 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     setStatusBar(status);
 
     scene_ = new MapScene(this);
+    scene_->set_undo_stack(undo_stack_);
     scene_->setSceneRect(0, 0, 400, 200);
     view_ = new MapView(scene_, this);
     view_->set_projection(default_projection_.get());
@@ -123,6 +124,10 @@ void MainWindow::create_actions_and_menus() {
     edit_menu->addSeparator();
     QAction* copy = edit_menu->addAction(tr("&Copy"), this, &MainWindow::copy_action);
     copy->setShortcut(QKeySequence::Copy);
+    QAction* del = edit_menu->addAction(tr("&Usuń"), scene_, &MapScene::delete_selected);
+    del->setShortcut(QKeySequence::Delete);
+    edit_menu->addSeparator();
+    edit_menu->addAction(tr("&Odwróć polilinię"), scene_, &MapScene::reverse_selected_polylines);
     edit_menu->addSeparator();
     QAction* go_to = edit_menu->addAction(tr("&Idź do współrzędnych"), this, &MainWindow::go_to_position);
     go_to->setShortcut(QKeySequence(tr("Ctrl+G")));

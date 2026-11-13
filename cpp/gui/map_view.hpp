@@ -14,6 +14,7 @@ namespace pwm::gui {
 
 class MapScene;
 class MapRuler;
+class MapObjectItem;
 
 class MapView : public QGraphicsView {
     Q_OBJECT
@@ -48,6 +49,7 @@ protected:
     void scrollContentsBy(int dx, int dy) override;
 
 private:
+    void select_on_press(QMouseEvent* event);
     void set_map_scale(double factor);
     void update_ruler(bool rescale);
 
@@ -60,6 +62,9 @@ private:
     // cykliczne wybieranie jednego z kilku obiektow pod kursorem kolejnymi kliknieciami
     std::vector<QGraphicsItem*> items_under_cursor_;
     int item_under_cursor_index_ = -1;
+    // polozenia zaznaczonych obiektow w chwili nacisniecia lewego przycisku - po puszczeniu przycisku
+    // przesuniete obiekty trafiaja do jednej komendy undo
+    std::vector<std::pair<MapObjectItem*, QPointF>> move_start_;
     QString last_coords_text_;
 };
 

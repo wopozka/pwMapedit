@@ -717,6 +717,13 @@ void DataX::reverse_poly(int data_level) {
     }
 }
 
+void DataX::translate_data_level(int data_level, PointF delta) {
+    auto* polys = polys_for_data_level(data_level);
+    require(polys != nullptr, "brak poziomu Data do przesuniecia");
+    for (Poly& poly : *polys)
+        for (Node& n : poly) n.set_pos(PointF{n.x() + delta.x, n.y() + delta.y});
+}
+
 bool DataX::is_splitting_possible(int data_level, size_t poly_num, long node_num) const {
     auto idx = data_level_index(data_level);
     if (!idx) return false;

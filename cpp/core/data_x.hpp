@@ -167,6 +167,9 @@ public:
     void update_node_coordinates(int data_level, size_t poly_num, long index, PointF position);
     bool set_poly_from_node_list(int data_level, size_t poly_num, Poly poly);
     void reverse_poly(int data_level);
+    // Przesuwa wszystkie wezly poziomu o wektor (we wspolrzednych sceny) - odpowiednik petli
+    // update_node_coordinates w SelectModeMoveItem/SelectModeMovePoi. Rzuca MpError, gdy poziomu nie ma.
+    void translate_data_level(int data_level, PointF delta);
     bool is_splitting_possible(int data_level, size_t poly_num, long node_num) const;
     // Zwraca {czesc1, czesc2} albo pusty wektor, gdy podzial niemozliwy.
     std::vector<DataX> split_data_x(int data_level, size_t poly_num, long node_num) const;

@@ -53,7 +53,12 @@ public:
     long long object_type() const { return object().type.value_or(0); }
 
     // Ustawia geometrie i widocznosc dla poziomu mapy (odpowiednik set_map_level).
+    // Obiekt oznaczony jako usuniety jest zawsze ukryty.
     virtual void set_map_level(int level) = 0;
+    // Przebudowuje element z danych obiektu po ich zmianie (komendy undo/redo): polozenie, sciezka, dodatki.
+    virtual void refresh() = 0;
+    // Poziom Data, ktorego wezly sa teraz pokazywane (moze byc nizszy niz poziom mapy), -1 gdy zaden.
+    virtual int shown_data_level() const = 0;
     virtual QGraphicsItem* graphics_item() = 0;
     // Odpowiednik set_z_value: z wedlug typu obiektu (bez podniesienia za zaznaczenie).
     virtual void set_z_value() = 0;
@@ -61,9 +66,14 @@ public:
 
 protected:
     MapScene* map_scene() const;
+    int scene_map_level() const;
+    // Przesuwanie myszka (ItemIsMovable) dopiero po przekroczeniu MIN_MOVE_DISTANCE pikseli i tylko
+    // w trybie zaznaczania - jak _movable w Pythonie. Zwraca true, gdy ruch ma byc przekazany do Qt.
+    bool accept_mouse_move(QGraphicsSceneMouseEvent* event);
 
     MapData* map_;
     size_t index_;
+    bool move_started_ = false;
 };
 
 // ---------------------------------------------------------------- POI
@@ -75,6 +85,8 @@ public:
     QGraphicsItem* screen_sized_item() override { return this; }
 
     void set_map_level(int level) override;
+    void refresh() override;
+    int shown_data_level() const override { return shown_level_; }
     void set_z_value() override { setZValue(20); }
     void add_label();
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
@@ -82,10 +94,16 @@ public:
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
+    void read_positions();
+
     std::optional<QPointF> mp_data_[5];
+    int shown_level_ = -1;
+    QGraphicsItem* label_ = nullptr;
     bool hovered_ = false;
 };
 
@@ -96,6 +114,8 @@ public:
 
     QGraphicsItem* graphics_item() override { return this; }
     void set_map_level(int level) override;
+    void refresh() override;
+    int shown_data_level() const override { return has_data_level(current_data_x_) ? current_data_x_ : -1; }
     int current_data_level() const { return current_data_x_; }
     bool has_data_level(int level) const;
     bool is_polygon() const { return polygon_; }
@@ -111,6 +131,8 @@ public:
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
     QPainterPath stroke_shape() const;
 
