@@ -17,6 +17,7 @@
 #include <QMessageBox>
 #include <QAbstractButton>
 #include <QFile>
+#include <QProgressBar>
 #include "web_layers.hpp"
 #include <QTemporaryDir>
 #include <QImage>
@@ -1038,6 +1039,9 @@ void EditTests::window_recent_files_and_close_prompt() {
 
         answer_message_box(QMessageBox::Save);  // Zapisz - zapis i zamkniecie
         QVERIFY(w.close());
+        // pasek postepu pokazal zapis wszystkich obiektow
+        QCOMPARE(w.progress_bar()->maximum(), 2);
+        QCOMPARE(w.progress_bar()->value(), 2);
         QFile saved(map_file);
         QVERIFY(saved.open(QIODevice::ReadOnly));
         const QByteArray after = saved.readAll();

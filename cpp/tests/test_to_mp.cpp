@@ -158,3 +158,17 @@ TEST(object_from_record_roundtrip) {
     CHECK(!map.object_from_record({"[RESTRICT]", "Nod=1"}).has_value());
     CHECK(!map.object_from_record({"[POI]", "Type=0x2f00"}).has_value());  // bez wspolrzednych
 }
+
+TEST(to_mp_string_reports_progress) {
+    pwm::MapData map;
+    std::string content = "[IMG ID]\nName=x\n[END-IMG ID]\n\n";
+    for (int i = 0; i < 2500; ++i) content += "[POI]\nType=0x2f00\nData0=(52.10000,21.00000)\n[END]\n\n";
+    map.load_from_string(content);
+    std::vector<std::pair<size_t, size_t>> calls;
+    const std::string out = map.to_mp_string([&](size_t done, size_t total) { calls.emplace_back(done, total); });
+    CHECK(out == map.to_mp_string());
+    CHECK(calls.size() >= 3);
+    CHECK(calls.front() == std::make_pair(size_t{0}, size_t{2500}));
+    CHECK(calls[1] == std::make_pair(size_t{1000}, size_t{2500}));
+    CHECK(calls.back() == std::make_pair(size_t{2500}, size_t{2500}));
+}

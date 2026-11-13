@@ -50,6 +50,7 @@ public:
     MapScene* scene() const { return scene_; }
     PropertiesDock* properties_dock() const { return properties_; }
     WebLayers* web_layers() const { return web_layers_; }
+    QProgressBar* progress_bar() const { return progress_bar_; }
 
 signals:
     void map_loaded(bool ok);

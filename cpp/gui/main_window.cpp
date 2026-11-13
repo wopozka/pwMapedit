@@ -391,12 +391,23 @@ void MainWindow::file_loaded() {
 bool MainWindow::write_map(const QString& file_name) {
     if (!map_ || !map_->contains_data()) return false;
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    std::string content = map_->to_mp_string();
+    info_text_->setText(tr("Zapisuję %1…").arg(QDir::toNativeSeparators(file_name)));
+    // Postep na pasku jak MapFileSaver.progress w Pythonie. Zapis idzie w watku okna (mapa nie moze sie zmienic
+    // w trakcie), a co ok. 100 ms przetwarzane sa zdarzenia bez wejscia uzytkownika, zeby pasek sie odswiezal.
+    QElapsedTimer progress_timer;
+    progress_timer.start();
+    std::string content = map_->to_mp_string([&](size_t done, size_t total) {
+        if (done != 0 && done != total && progress_timer.elapsed() < 100) return;
+        set_progress(static_cast<int>(done), static_cast<int>(total));
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        progress_timer.restart();
+    });
     QSaveFile file(file_name);
     bool ok = file.open(QIODevice::WriteOnly) &&
               file.write(content.data(), static_cast<qint64>(content.size())) == static_cast<qint64>(content.size()) &&
               file.commit();
     QApplication::restoreOverrideCursor();
+    info_text_->clear();
     if (!ok) {
         QMessageBox::warning(this, tr("Zapis mapy"), tr("Nie udało się zapisać pliku: %1").arg(file.errorString()));
         return false;

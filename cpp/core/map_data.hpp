@@ -3,6 +3,7 @@
 // Tekst jest przechowywany jako bajty cp1250 (tak jak w pliku) - konwersja do UTF-8 bedzie w warstwie GUI.
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -35,7 +36,9 @@ public:
 
     // Zapis jak MapFileSaver: naglowek, potem rekordy (bez usunietych), kazdy zakonczony "[END]" i pusta linia.
     void save(const std::string& path) const;
-    std::string to_mp_string() const;
+    // progress(zapisane, wszystkie) - wywolywane co pewna liczbe obiektow i na koniec (jak sygnal progress
+    // MapFileSaver w Pythonie).
+    std::string to_mp_string(const std::function<void(size_t, size_t)>& progress = {}) const;
 
     const std::vector<MapObject>& objects() const { return objects_; }
     std::vector<MapObject>& objects() { return objects_; }

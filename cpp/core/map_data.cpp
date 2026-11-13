@@ -198,7 +198,7 @@ void MapData::set_map_object_deleted(size_t id, bool deleted) {
     if (id < objects_.size()) objects_[id].deleted = deleted;
 }
 
-std::string MapData::to_mp_string() const {
+std::string MapData::to_mp_string(const std::function<void(size_t, size_t)>& progress) const {
     std::string out;
     size_t estimate = 0;
     for (const auto& h : header_) estimate += h.size() + 1;
@@ -207,14 +207,20 @@ std::string MapData::to_mp_string() const {
         out += h;
         out += '\n';
     }
-    for (const MapObject& obj : objects_) {
-        if (obj.deleted) continue;
-        for (const std::string& line : obj.to_mp_record(precision_)) {
-            out += line;
-            out += '\n';
+    const size_t total = objects_.size();
+    if (progress) progress(0, total);
+    for (size_t i = 0; i < total; ++i) {
+        const MapObject& obj = objects_[i];
+        if (!obj.deleted) {
+            for (const std::string& line : obj.to_mp_record(precision_)) {
+                out += line;
+                out += '\n';
+            }
+            out += "[END]\n\n";
         }
-        out += "[END]\n\n";
+        if (progress && (i + 1) % 1000 == 0) progress(i + 1, total);
     }
+    if (progress) progress(total, total);
     return out;
 }
 
