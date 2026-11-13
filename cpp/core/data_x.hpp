@@ -198,6 +198,8 @@ public:
     // Poziomy sa trzymane rosnaco, wiec zapis daje Data0, Data1... niezaleznie od kolejnosci operacji.
     bool move_data_level(int from_level, int to_level);
     bool copy_data_level(int from_level, int to_level);
+    // Zastepuje wszystkie czesci istniejacego poziomu (np. wynikiem odejmowania polygonow); false, gdy brak poziomu.
+    bool set_level_polys(int data_level, std::vector<Poly> polys);
     int max_data_level() const;  // -1 gdy brak danych
 
     // ---- zapis ----

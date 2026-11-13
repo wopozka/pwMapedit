@@ -84,6 +84,7 @@ private slots:
     void set_progress(int value, int maximum);
     void escape_pressed();
     void merge_polylines();
+    void subtract_polygons(bool delete_second);
     void set_single_key_shortcuts_enabled(bool enabled);
 
 private:

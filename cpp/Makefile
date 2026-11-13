@@ -15,16 +15,25 @@ else
   BUILD    := build
 endif
 
+# Clipper2 (odejmowanie polygonow) - zrodla dolaczone w third_party/clipper2, kompilowane bez naszych ostrzezen
+CLIPPER_SRC := $(wildcard third_party/clipper2/src/*.cpp)
+CLIPPER_OBJ := $(CLIPPER_SRC:%.cpp=$(BUILD)/%.o)
+CPPFLAGS += -isystem third_party/clipper2/include -DPWM_TEST_DATA_DIR='"$(CURDIR)/tests"'
+
 CORE_SRC := $(wildcard core/*.cpp)
-CORE_OBJ := $(CORE_SRC:%.cpp=$(BUILD)/%.o)
+CORE_OBJ := $(CORE_SRC:%.cpp=$(BUILD)/%.o) $(CLIPPER_OBJ)
 TEST_SRC := $(wildcard tests/*.cpp)
 TEST_OBJ := $(TEST_SRC:%.cpp=$(BUILD)/%.o)
 
 all: $(BUILD)/libpwmcore.a $(BUILD)/mptool $(BUILD)/run_tests
 
+$(BUILD)/third_party/%.o: third_party/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) -std=c++17 -O2 -w $(CPPFLAGS) -c $< -o $@
+
 $(BUILD)/%.o: %.cpp $(wildcard core/*.hpp) $(wildcard tests/*.hpp)
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
 $(BUILD)/libpwmcore.a: $(CORE_OBJ)
 	ar rcs $@ $^

@@ -183,6 +183,8 @@ private slots:
     // karta Elements: menu czesci i poziomow
     void elements_move_copy_level_endlevel();
     void elements_delete_extract_polygon_parts();
+    // odejmowanie polygonow
+    void subtract_polygons_hole_partial_and_delete();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1386,6 +1388,77 @@ void EditTests::elements_delete_extract_polygon_parts() {
     f.dock.delete_element(1, {0});
     QCOMPARE(f.obj(1).data->data_levels(), std::vector<int>{0});
     while (f.stack.index() > commands) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), before);
+}
+
+void EditTests::subtract_polygons_hole_partial_and_delete() {
+    DockFixture f;
+    // A: kwadrat; B: maly kwadrat wewnatrz A; C: prostokat nachodzacy na A czesciowo; D: daleko
+    QMimeData mime;
+    mime.setText("[POLYGON]\nType=0x4e\nLabel=A\nEndLevel=1\n"
+                 "Data0=(52.1000,21.0000),(52.1000,21.0100),(52.1100,21.0100),(52.1100,21.0000)\n"
+                 "Data1=(52.1000,21.0000),(52.1000,21.0100),(52.1100,21.0100)\n[END]\n"
+                 "[POLYGON]\nType=0x4e\nLabel=B\n"
+                 "Data0=(52.1030,21.0030),(52.1030,21.0060),(52.1060,21.0060),(52.1060,21.0030)\n[END]\n"
+                 "[POLYGON]\nType=0x4e\nLabel=C\n"
+                 "Data0=(52.1050,21.0050),(52.1050,21.0200),(52.1200,21.0200),(52.1200,21.0050)\n[END]\n"
+                 "[POLYGON]\nType=0x4e\nLabel=D\n"
+                 "Data0=(52.3000,21.3000),(52.3000,21.3100),(52.3100,21.3100)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 4);
+    const size_t A = 2, B = 3, C = 4, D = 5;
+    const std::string before = f.map->to_mp_string();
+    const int commands = f.stack.count();
+    auto select = [&](size_t first, size_t second) {
+        f.scene.clearSelection();
+        f.scene.item_for_object(first)->graphics_item()->setSelected(true);
+        f.scene.item_for_object(second)->graphics_item()->setSelected(true);
+    };
+    bool changed = false;
+
+    // zle zaznaczenie: jeden obiekt, polilinia
+    f.select_only(f.scene.item_for_object(A));
+    f.scene.subtract_selected_polygons(false, &changed);
+    QVERIFY(!changed);
+    select(A, 1);
+    f.scene.subtract_selected_polygons(false, &changed);
+    QVERIFY(!changed);
+    // brak nakladania
+    select(A, D);
+    QVERIFY(f.scene.subtract_selected_polygons(false, &changed).contains(QString::fromUtf8("nie nakładają")));
+    QVERIFY(!changed);
+    // B pokrywa cale A? odwrotnie: od B odejmujemy A - wynik pusty
+    select(B, A);
+    QVERIFY(f.scene.subtract_selected_polygons(false, &changed).contains(QString::fromUtf8("pokrywa cały")));
+    QVERIFY(!changed);
+    QCOMPARE(f.stack.count(), commands);
+
+    // B wewnatrz A - dziura; Data1 bez zmian (tylko ogladany poziom)
+    select(A, B);
+    f.scene.subtract_selected_polygons(false, &changed);
+    QVERIFY(changed);
+    QCOMPARE(f.stack.count(), commands + 1);
+    QCOMPARE(f.obj(A).data->polys_for_data_level(0)->size(), size_t{2});
+    QCOMPARE(f.obj(A).data->polys_for_data_level(1)->size(), size_t{1});
+    QCOMPARE(f.obj(A).data->polys_for_data_level(1)->front().size(), size_t{3});
+    QVERIFY(!f.obj(B).deleted);
+    QVERIFY(f.scene.item_for_object(A)->graphics_item()->isSelected());
+    QCOMPARE(*f.obj(A).label1, std::string("A"));
+    // w karcie Elements druga czesc to dziura - zapis ma dwie linie Data0
+    const std::string saved = f.map->to_mp_string();
+    const size_t a_rec = saved.find("Label=A");
+    QVERIFY(saved.find("Data0=", saved.find("Data0=", a_rec) + 1) < saved.find("[END]", a_rec));
+
+    // C nachodzi czesciowo - odjecie z usunieciem C (jedna komenda)
+    select(A, C);
+    f.scene.subtract_selected_polygons(true, &changed);
+    QVERIFY(changed);
+    QCOMPARE(f.stack.count(), commands + 2);
+    QVERIFY(f.obj(C).deleted);
+    QVERIFY(!f.scene.item_for_object(C)->graphics_item()->isVisible());
+
+    f.stack.undo();
+    QVERIFY(!f.obj(C).deleted);
+    f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), before);
 }
 

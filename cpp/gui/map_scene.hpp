@@ -137,6 +137,10 @@ public:
     void delete_object(size_t obj, const QString& text);
     // Zmiana obiektu i nowy obiekt jedna komenda (ekstrakcja czesci); zwraca indeks nowego obiektu.
     std::optional<size_t> replace_and_add(size_t obj, MapObject after, MapObject added, const QString& text);
+    // Odejmowanie polygonow: od pierwszego zaznaczonego odejmowany jest drugi (na pokazywanym poziomie Data
+    // pierwszego; pozostale poziomy bez zmian). delete_second - drugi polygon jest usuwany w tej samej komendzie.
+    // Zwraca opis wyniku; changed - czy mapa sie zmienila.
+    QString subtract_selected_polygons(bool delete_second, bool* changed = nullptr);
     // Podswietlenie czesci obiektu wybranej w panelu (karta Elements); pusta sciezka zdejmuje podswietlenie.
     void highlight_path(const QPainterPath& path, bool polygon);
     void request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos);

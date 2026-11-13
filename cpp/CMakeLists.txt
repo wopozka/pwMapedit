@@ -22,10 +22,30 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# ---- Clipper2 (odejmowanie polygonow) ----
+# Domyslnie zrodla dolaczone w third_party/clipper2 (Boost Software License) - buduja sie wszedzie bez instalacji.
+# -DPWM_SYSTEM_CLIPPER2=ON: biblioteka systemowa (np. pakiet clipper2 w dystrybucji Linuksa).
+option(PWM_SYSTEM_CLIPPER2 "Uzyj systemowej biblioteki Clipper2 zamiast dolaczonej" OFF)
+if(PWM_SYSTEM_CLIPPER2)
+    find_path(CLIPPER2_INCLUDE_DIR clipper2/clipper.h REQUIRED)
+    find_library(CLIPPER2_LIBRARY NAMES Clipper2 clipper2 REQUIRED)
+    add_library(clipper2 INTERFACE)
+    target_include_directories(clipper2 INTERFACE ${CLIPPER2_INCLUDE_DIR})
+    target_link_libraries(clipper2 INTERFACE ${CLIPPER2_LIBRARY})
+else()
+    file(GLOB CLIPPER2_SOURCES CONFIGURE_DEPENDS third_party/clipper2/src/*.cpp)
+    add_library(clipper2 STATIC ${CLIPPER2_SOURCES})
+    target_include_directories(clipper2 SYSTEM PUBLIC third_party/clipper2/include)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(clipper2 PRIVATE -w)  # kod zewnetrzny - bez naszych ostrzezen
+    endif()
+endif()
+
 # ---- rdzen ----
 file(GLOB PWM_CORE_SOURCES CONFIGURE_DEPENDS core/*.cpp)
 add_library(pwmcore STATIC ${PWM_CORE_SOURCES})
 target_include_directories(pwmcore PUBLIC core)
+target_link_libraries(pwmcore PUBLIC clipper2)
 
 add_executable(mptool tools/mptool.cpp)
 target_link_libraries(mptool PRIVATE pwmcore)

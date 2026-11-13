@@ -265,6 +265,10 @@ void MainWindow::create_actions_and_menus() {
         connect(act, &QAction::triggered, this, [this, tool] { scene_->set_tool(tool); });
         tools_group_->addAction(act);
     }
+    // operacje na zaznaczonych polygonach
+    tools_menu->addSeparator();
+    tools_menu->addAction(tr("Odejmij polygony"), this, [this] { subtract_polygons(false); });
+    tools_menu->addAction(tr("Odejmij polygony i usuń drugi"), this, [this] { subtract_polygons(true); });
     // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
     connect(scene_, &MapScene::tool_changed, this, [this] {
         for (QAction* act : tools_group_->actions())
@@ -632,6 +636,15 @@ void MainWindow::set_single_key_shortcuts_enabled(bool enabled) {
     // na czas najechania - jak enable/disable_*_shortcuts w Pythonie.
     for (QAction* act : tools_group_->actions()) act->setEnabled(enabled);
     for (QAction* act : std::as_const(map_level_actions_)) act->setEnabled(enabled);
+}
+
+void MainWindow::subtract_polygons(bool delete_second) {
+    bool changed = false;
+    const QString result = scene_->subtract_selected_polygons(delete_second, &changed);
+    if (changed || quiet_)
+        show_message(result);
+    else
+        QMessageBox::information(this, tr("Odejmowanie polygonów"), result);
 }
 
 void MainWindow::merge_polylines() {

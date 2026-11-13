@@ -724,6 +724,15 @@ DataX DataX::extract_polys(int data_level, const std::vector<size_t>& poly_nums)
     return result;
 }
 
+bool DataX::set_level_polys(int data_level, std::vector<Poly> polys) {
+    auto idx = data_level_index(data_level);
+    if (!idx || polys.empty()) return false;
+    polys_[*idx] = std::move(polys);
+    recalculate_bounding_box();
+    recalculate_perimeter();
+    return true;
+}
+
 bool DataX::copy_data_level(int from_level, int to_level) {
     auto from = data_level_index(from_level);
     if (!from || from_level == to_level || data_level_index(to_level)) return false;

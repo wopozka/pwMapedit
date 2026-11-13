@@ -349,6 +349,21 @@ Menu kontekstowe (prawy przycisk) w karcie Elements panelu właściwości; każd
 
 Numeracja adresowa i HLevel przechodzą razem z węzłami. Poziomy są zapisywane rosnąco (`Data0`, `Data1`…).
 
+### Odejmowanie polygonów (nowa funkcja)
+
+Tools → „Odejmij polygony” / „Odejmij polygony i usuń drugi”: przy dwóch zaznaczonych polygonach od pierwszego
+zaznaczonego odejmowany jest drugi (kolejność zaznaczania, jak przy łączeniu polilinii):
+- drugi w całości wewnątrz pierwszego - pierwszy dostaje dziurę; częściowe nakładanie - znika wspólny kawałek;
+  przecięcie na kawałki - pierwszy ma kilka części (rozdzielisz je przez „Ekstrahuj element” w karcie Elements);
+- liczone na oglądanym poziomie Data (to, co widać na mapie); pozostałe poziomy pierwszego bez zmian;
+- brak nakładania albo drugi pokrywa cały pierwszy - komunikat, bez zmian;
+- jedna komenda undo (razem z usunięciem drugiego w wariancie „i usuń drugi”); właściwości pierwszego zostają.
+
+Obliczenia: `core/polygon_ops.*` na bibliotece Clipper2 (zasada parzystości jak w pliku mp, współrzędne całkowite
+z dokładnością 1 mm - odporne na wspólne krawędzie i węzły przy przyciąganiu; węzły na prostych odcinkach zostają).
+Clipper2 1.5.4 jest dołączony w `third_party/clipper2` (Boost Software License) i buduje się razem z projektem na
+Windows i Linuksie; `-DPWM_SYSTEM_CLIPPER2=ON` używa biblioteki systemowej. `Makefile` też kompiluje Clipper2.
+
 ### Ślady GPS jako podkład do rysowania (nowa funkcja, nie ma jej w wersji Python)
 
 Ślady i punkty z plików GPX i GDB są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.

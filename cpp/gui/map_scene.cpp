@@ -15,6 +15,7 @@
 #include "commands.hpp"
 #include "map_items.hpp"
 #include "misc.hpp"
+#include "polygon_ops.hpp"
 #include "map_styles.hpp"
 
 namespace pwm::gui {
@@ -336,6 +337,54 @@ std::optional<size_t> MapScene::replace_and_add(size_t obj, MapObject after, Map
     auto* add = new AddObjectCmd(this, std::move(added), text, command);
     push_command(command);
     return undo_stack_ ? add->index() : std::nullopt;
+}
+
+QString MapScene::subtract_selected_polygons(bool delete_second, bool* changed) {
+    if (changed) *changed = false;
+    const std::vector<MapObjectItem*> selected = selected_object_items_in_order();
+    if (!map_ || selected.size() != 2 || selected[0]->object().kind() != ObjectKind::Polygon ||
+        selected[1]->object().kind() != ObjectKind::Polygon)
+        return tr("Zaznacz dwa polygony (Ctrl+klik): od pierwszego zaznaczonego zostanie odjęty drugi.");
+    auto* a = static_cast<PolyItem*>(selected[0]);
+    auto* b = static_cast<PolyItem*>(selected[1]);
+    const int level = a->shown_data_level();
+    if (level < 0 || b->shown_data_level() < 0) return tr("Polygony nie mają danych na oglądanym poziomie.");
+    // pokazywany poziom obu polygonow (to, co widac na mapie); pierscienie bez powtorzonego punktu zamykajacego
+    auto rings = [](const PolyItem* item) {
+        std::vector<geom::Ring> out;
+        for (const auto& poly : item->shown_nodes()) {
+            geom::Ring ring;
+            for (const QPointF& p : poly) ring.push_back(PointF{p.x(), p.y()});
+            if (ring.size() > 1 && ring.front() == ring.back()) ring.pop_back();
+            out.push_back(std::move(ring));
+        }
+        return out;
+    };
+    const geom::SubtractResult result = geom::subtract(rings(a), rings(b));
+    if (result.status == geom::SubtractResult::Status::NoOverlap)
+        return tr("Polygony się nie nakładają (poziom Data%1) - nic nie zmieniono.").arg(level);
+    if (result.status == geom::SubtractResult::Status::Empty)
+        return tr("Drugi polygon pokrywa cały pierwszy - nic nie zmieniono.");
+
+    const size_t a_index = a->object_index(), b_index = b->object_index();
+    MapObject after = a->object();
+    std::vector<Poly> polys;
+    for (const geom::Ring& ring : result.rings) {
+        Poly poly;
+        for (const PointF& p : ring) poly.emplace_back(p.x, p.y);
+        polys.push_back(std::move(poly));
+    }
+    after.data->set_level_polys(level, std::move(polys));
+    after.bbox = after.data->obj_bounding_box();
+    const QString text = delete_second ? tr("Odejmij polygony i usuń drugi") : tr("Odejmij polygony");
+    auto* command = new QUndoCommand(text);
+    new ReplaceObjectCmd(this, a_index, map_->objects()[a_index], std::move(after), text, command);
+    if (delete_second) new DeleteObjectsCmd(this, {b_index}, text, command);
+    push_command(command);
+    clearSelection();
+    if (MapObjectItem* item = item_for_object(a_index)) item->graphics_item()->setSelected(true);
+    if (changed) *changed = true;
+    return tr("Odjęto polygony na poziomie Data%1: pierwszy ma teraz %2 część(i).").arg(level).arg(result.rings.size());
 }
 
 void MapScene::highlight_path(const QPainterPath& path, bool polygon) {
