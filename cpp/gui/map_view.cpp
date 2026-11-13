@@ -183,6 +183,26 @@ void MapView::select_on_press(QMouseEvent* event) {
             QGraphicsView::mousePressEvent(event);
             return;
         }
+        // Ctrl+klik w trybie zaznaczania: dodaje najwyzszy NIEzaznaczony obiekt pod kursorem (np. maly polygon lezacy
+        // na juz zaznaczonym duzym); gdy wszystkie pod kursorem sa zaznaczone - odznacza najwyzszy. Zaznaczenie
+        // ustawiamy sami - Qt przelaczylby obiekt na wierzchu, a zaznaczony obiekt jest podniesiony nad inne.
+        if (tool == Tool::SelectObjects && event->modifiers() == Qt::ControlModifier) {
+            QGraphicsItem* target = nullptr;
+            for (QGraphicsItem* item : objects) {
+                if (!item->isSelected()) {
+                    target = item;
+                    break;
+                }
+            }
+            if (target) {
+                target->setSelected(true);
+                if (auto* obj = dynamic_cast<MapObjectItem*>(target)) obj->set_selection_z_value();
+            } else {
+                objects.front()->setSelected(false);
+            }
+            event->accept();
+            return;
+        }
         auto* first = dynamic_cast<MapObjectItem*>(objects.front());
         if (objects.size() == 1) {
             if (!objects.front()->isSelected()) {

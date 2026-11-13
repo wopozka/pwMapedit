@@ -185,6 +185,7 @@ private slots:
     void elements_delete_extract_polygon_parts();
     // odejmowanie polygonow
     void subtract_polygons_hole_partial_and_delete();
+    void ctrl_click_adds_polygon_lying_on_selected_one();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1460,6 +1461,55 @@ void EditTests::subtract_polygons_hole_partial_and_delete() {
     QVERIFY(!f.obj(C).deleted);
     f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), before);
+}
+
+void EditTests::ctrl_click_adds_polygon_lying_on_selected_one() {
+    ViewFixture f;
+    // duzy polygon i maly lezacy w calosci na nim (bez obiektow mapy w poblizu)
+    QMimeData mime;
+    mime.setText("[POLYGON]\nType=0x4e\nLabel=Duzy\n"
+                 "Data0=(52.2000,21.2000),(52.2000,21.2030),(52.2020,21.2030),(52.2020,21.2000)\n[END]\n"
+                 "[POLYGON]\nType=0x4e\nLabel=Maly\n"
+                 "Data0=(52.2008,21.2012),(52.2008,21.2018),(52.2012,21.2018),(52.2012,21.2012)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 2);
+    MapObjectItem* big = f.scene.item_for_object(2);
+    MapObjectItem* small = f.scene.item_for_object(3);
+    f.scene.clearSelection();
+    f.view.centerOn(small->graphics_item());
+    const QPoint on_small = f.view.mapFromScene(small->graphics_item()->sceneBoundingRect().center());
+    const QPointF big_corner = big->graphics_item()->sceneBoundingRect().topLeft();
+    const QPoint on_big_only = f.view.mapFromScene(big_corner) + QPoint(5, 5);
+
+    // klik na samym duzym - zaznaczony duzy
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, on_big_only);
+    QVERIFY(big->graphics_item()->isSelected());
+    QVERIFY(!small->graphics_item()->isSelected());
+    // Ctrl+klik na malym (pod kursorem oba) - dochodzi maly, duzy zostaje
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::ControlModifier, on_small);
+    QVERIFY(big->graphics_item()->isSelected());
+    QVERIFY(small->graphics_item()->isSelected());
+    // kolejnosc zaznaczania: najpierw duzy (od niego odejmujemy maly)
+    const auto order = f.scene.selected_object_items_in_order();
+    QCOMPARE(order.size(), size_t{2});
+    QCOMPARE(order[0], big);
+    QCOMPARE(order[1], small);
+    bool changed = false;
+    f.scene.subtract_selected_polygons(false, &changed);
+    QVERIFY(changed);
+    QCOMPARE(f.map->objects()[2].data->polys_for_data_level(0)->size(), size_t{2});  // dziura
+    f.stack.undo();
+
+    // wszystkie pod kursorem zaznaczone - Ctrl+klik odznacza najwyzszy, kolejny znow dodaje
+    f.scene.clearSelection();
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, on_big_only);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::ControlModifier, on_small);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::ControlModifier, on_small);
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{1});
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::ControlModifier, on_small);
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{2});
+    // zwykly klik nadal przelacza miedzy obiektami pod kursorem (jeden zaznaczony)
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, on_small);
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{1});
 }
 
 QTEST_MAIN(EditTests)

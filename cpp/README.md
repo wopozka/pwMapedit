@@ -170,7 +170,9 @@ z węzłów `DataX` dla wybranego poziomu.
 - powiększanie `Ctrl`+kółko oraz `=`/`-`, przesuwanie prawym przyciskiem, linijka skali i współrzędne w pasku stanu;
 - progi skali jak w Pythonie: ikony, napisy i strzałki o stałej wielkości powyżej skali 1, bez napisów poniżej 0,5,
   bez POI i małych polygonów poniżej 0,25;
-- zaznaczanie kliknięciem (`Ctrl` dodaje, kolejne kliknięcia przełączają między obiektami pod kursorem),
+- zaznaczanie kliknięciem (kolejne kliknięcia przełączają między obiektami pod kursorem; `Ctrl`+klik dodaje
+  najwyższy niezaznaczony obiekt pod kursorem - także mniejszy obiekt leżący na zaznaczonym większym - a gdy
+  wszystkie są zaznaczone, odznacza najwyższy),
   podświetlanie pod kursorem, `Esc` czyści zaznaczenie;
 - `Ctrl+C` kopiuje współrzędne kursora, `Ctrl+G` przechodzi do podanych współrzędnych.
 
