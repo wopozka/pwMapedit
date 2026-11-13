@@ -278,8 +278,29 @@ Różnice względem Pythona (celowe):
 - Wytnij działa (w Pythonie akcja była w menu, ale niepodłączona).
 - `Ctrl+C/X/V` w polach panelu właściwości nie dotyczą obiektów mapy.
 
+### Etap 3c.1 (zrobione): tworzenie obiektów i przyciąganie
+
+Narzędzia w menu Tools i na pasku (skróty jak w Pythonie):
+- **Point** (`a`): kliknięcie tworzy POI;
+- **Polyline** (`b`) i **Polygon** (`f`): kliknięcia (albo `Insert`) dodają węzły, `Backspace` usuwa ostatni,
+  `Enter` kończy (polilinia co najmniej 2 węzły, polygon 3), `Esc` porzuca rysowany obiekt; podgląd w trakcie;
+- **Polyline: circle**: pierwsze kliknięcie to punkt na okręgu, kursor wyznacza środek, drugie kliknięcie tworzy
+  zamkniętą polilinię; liczba boków taka, żeby bok miał co najmniej 7 m (`MINIMAL_GEO_DISTANCE`), jak w Pythonie.
+
+Nowy obiekt dostaje typ ostatnio wybrany w panelu właściwości dla danego rodzaju (`last_used_type`). Po utworzeniu
+włącza się narzędzie zaznaczania i nowy obiekt jest zaznaczony. Tworzenie to jedna komenda undo (`AddObjectCmd`).
+
+Przyciąganie: z wciśniętym `Ctrl` nowy węzeł (przy rysowaniu) albo przeciągany uchwyt (w edycji węzłów) trafia
+w najbliższy węzeł innej polilinii lub polygonu w promieniu 15 pikseli; niebieskie kółko pokazuje to miejsce.
+
+Różnice względem Pythona (celowe):
+- Promień przyciągania jest w pikselach ekranu (w Pythonie w jednostkach sceny, więc zależał od powiększenia).
+- Akcje „Polygon: stripe/rectangle/disc” nie zostały przeniesione - w Pythonie były w menu, ale nic nie robiły.
+- Zmiana narzędzia porzuca rysowany obiekt.
+
 ### Następne kroki
 
-- 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).
+- 3c.2: warstwy WWW (`web_layers.py`, pobieranie kafelków w tle).
+
 
 Etap 2 (moduł pybind11) odłożony.

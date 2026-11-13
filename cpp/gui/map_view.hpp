@@ -10,12 +10,14 @@
 #include "projection.hpp"
 
 class QMimeData;
+class QGraphicsPathItem;
 
 namespace pwm::gui {
 
 class MapScene;
 class MapRuler;
 class MapObjectItem;
+
 
 class MapView : public QGraphicsView {
     Q_OBJECT
@@ -42,12 +44,24 @@ public:
     GeoPoint current_mouse_geo_coordinates() const;
 
     QMimeData* copy() const;
+
+    // ---- tworzenie obiektow (narzedzia Create*) ----
+    // Wezly rysowanego obiektu (polilinia, polygon) albo punkt na okregu i wezly okregu.
+    const std::vector<QPointF>& creation_nodes() const { return creation_nodes_; }
+    // Insert: wezel w miejscu kursora (albo przyciagniety); Backspace: usuniecie ostatniego; Enter: koniec.
+    void creation_add_node();
+    void creation_remove_last_node();
+    bool creation_finish();
+    // Esc albo zmiana narzedzia: porzucenie rysowanego obiektu.
+    void creation_cancel();
     void update_status(bool with_mouse_coords = true);
 
 signals:
     void status_message(const QString& text);
 
 protected:
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -57,6 +71,13 @@ protected:
 
 private:
     void select_on_press(QMouseEvent* event);
+    bool creation_tool() const;
+    // Polozenie nowego wezla: przyciagniety wezel (Ctrl) albo punkt pod kursorem.
+    QPointF creation_position() const;
+    void update_snap(Qt::KeyboardModifiers modifiers);
+    void creation_click();
+    void update_creation_preview();
+    void compute_circle();
     void set_map_scale(double factor);
     void update_ruler(bool rescale);
 
@@ -73,6 +94,10 @@ private:
     // przesuniete obiekty trafiaja do jednej komendy undo
     std::vector<std::pair<MapObjectItem*, QPointF>> move_start_;
     std::optional<QPointF> last_click_;
+    std::optional<QPointF> snapped_;
+    std::vector<QPointF> creation_nodes_;
+    std::vector<QPointF> circle_nodes_;  // okrag: wezly wyliczone dla biezacego polozenia kursora
+    QGraphicsPathItem* creation_preview_ = nullptr;
     QString last_coords_text_;
 };
 

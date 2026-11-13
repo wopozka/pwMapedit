@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QGraphicsEllipseItem>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
 #include <QJsonArray>
@@ -32,6 +33,8 @@ void MapScene::clear_map() {
     decorated_.clear();
     active_grip_.reset();
     highlight_path(QPainterPath(), false);
+    delete snap_indicator_;
+    snap_indicator_ = nullptr;
     if (!object_items_.empty()) {
         // Usuwanie elementow pojedynczo kosztuje O(liczba elementow) na kazdy element (lista elementow
         // najwyzszego poziomu, indeks), czyli przy duzej mapie dziesiatki sekund. clear() usuwa wszystko naraz,
@@ -543,5 +546,95 @@ int MapScene::paste(const QMimeData* mime, std::optional<QPointF> mouse) {
             if (MapObjectItem* item = item_for_object(*add->index())) item->graphics_item()->setSelected(true);
     return static_cast<int>(adds.size());
 }
+
+
+// ---------------------------------------------------------------- tworzenie obiektow
+long long MapScene::last_used_type(ObjectKind kind) const { return last_used_type_[static_cast<int>(kind)]; }
+
+void MapScene::set_last_used_type(ObjectKind kind, long long type) { last_used_type_[static_cast<int>(kind)] = type; }
+
+std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector<QPointF>& nodes) {
+    if (!map_ || nodes.empty() || kind == ObjectKind::Basic) return std::nullopt;
+    // Jak w Pythonie: rekord z Type i Data0 we wspolrzednych geograficznych. 10 miejsc po przecinku, zeby nie
+    // podniesc precyzji zapisu calej mapy (cyfry powyzej 6 nie wplywaja na precyzje); zapis uzywa precyzji mapy.
+    std::string data = "Data0=";
+    const Projection& projection = map_->projection();
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        GeoPoint g;
+        try {
+            g = projection.canvas_to_geo(nodes[i].x(), nodes[i].y());
+        } catch (const std::exception&) {
+            return std::nullopt;
+        }
+        if (i) data += ',';
+        data += QString::asprintf("(%.10f,%.10f)", g.latitude, g.longitude).toStdString();
+    }
+    std::vector<std::string> lines{object_kind_section(kind),
+                                   QString::asprintf("Type=0x%llx", last_used_type(kind)).toStdString(), data};
+    std::optional<MapObject> obj = map_->object_from_record(lines);
+    if (!obj) return std::nullopt;
+    QString text;
+    switch (kind) {
+        case ObjectKind::Poi: text = tr("Utwórz POI"); break;
+        case ObjectKind::Polyline: text = tr("Utwórz Polyline"); break;
+        default: text = tr("Utwórz Polygon"); break;
+    }
+    auto* command = new AddObjectCmd(this, std::move(*obj), text);
+    push_command(command);
+    const std::optional<size_t> index = undo_stack_ ? command->index() : std::nullopt;
+    // po utworzeniu obiektu narzedzie zaznaczania i zaznaczony nowy obiekt
+    set_tool(Tool::SelectObjects);
+    clearSelection();
+    if (index)
+        if (MapObjectItem* item = item_for_object(*index)) item->graphics_item()->setSelected(true);
+    return index;
+}
+
+// ---------------------------------------------------------------- przyciaganie
+std::optional<QPointF> MapScene::closest_node(const QPointF& pos, double max_distance,
+                                              const MapObjectItem* excluded) const {
+    std::optional<QPointF> best;
+    double best_distance = max_distance;
+    const QRectF area(pos.x() - max_distance, pos.y() - max_distance, 2 * max_distance, 2 * max_distance);
+    const QList<QGraphicsItem*> under = items(area);
+    for (QGraphicsItem* graphics : under) {
+        if (graphics->type() != PolylineItemType && graphics->type() != PolygonItemType) continue;
+        auto* item = static_cast<PolyItem*>(graphics);
+        if (item == excluded || !item->isVisible() || item->object().deleted) continue;
+        for (const auto& poly : item->shown_nodes()) {
+            for (const QPointF& node : poly) {
+                const QPointF d = node - pos;
+                const double distance = std::hypot(d.x(), d.y());
+                if (distance <= best_distance) {
+                    best_distance = distance;
+                    best = node;
+                }
+            }
+        }
+    }
+    return best;
+}
+
+void MapScene::show_snap_indicator(std::optional<QPointF> pos) {
+    if (!pos) {
+        if (snap_indicator_) snap_indicator_->setVisible(false);
+        return;
+    }
+    if (!snap_indicator_) {
+        // jak closest_node_circle_definition w Pythonie
+        snap_indicator_ = new QGraphicsEllipseItem(-10, -10, 20, 20);
+        snap_indicator_->setZValue(150);
+        snap_indicator_->setPen(QPen(QColor("blue")));
+        snap_indicator_->setBrush(QBrush(QColor("blue")));
+        snap_indicator_->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+        snap_indicator_->setOpacity(0.5);
+        snap_indicator_->setAcceptedMouseButtons(Qt::NoButton);
+        addItem(snap_indicator_);
+    }
+    snap_indicator_->setPos(*pos);
+    snap_indicator_->setVisible(true);
+}
+
+bool MapScene::snap_indicator_visible() const { return snap_indicator_ && snap_indicator_->isVisible(); }
 
 }  // namespace pwm::gui

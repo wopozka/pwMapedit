@@ -151,6 +151,12 @@ private slots:
     void copy_paste_several_objects();
     void paste_plain_text_keeps_position();
     void copy_without_selection_gives_nothing();
+    // 3c.1: tworzenie obiektow i przyciaganie
+    void create_poi_with_click();
+    void create_polyline_and_polygon_with_keys();
+    void create_circle();
+    void snap_to_node_when_creating();
+    void snap_grip_to_other_object();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -493,6 +499,7 @@ void EditTests::dock_follows_selection() {
     QVERIFY(f.dock.dir_indicator()->isChecked());
     f.poi()->graphics_item()->setSelected(true);  // kilka obiektow - panel pusty
     QVERIFY(!f.dock.shown_object());
+    QCOMPARE(f.dock.tabs()->currentIndex(), int(PropertiesDock::MainTab));
 }
 
 void EditTests::dock_labels_endlevel_direction() {
@@ -720,6 +727,142 @@ void EditTests::paste_plain_text_keeps_position() {
 void EditTests::copy_without_selection_gives_nothing() {
     Fixture f;
     QVERIFY(f.scene.copy_selected(QPointF()) == nullptr);
+}
+
+void EditTests::create_poi_with_click() {
+    ViewFixture f;
+    f.scene.set_last_used_type(ObjectKind::Poi, 0x2f00);
+    f.scene.set_tool(Tool::CreatePoint);
+    const QPoint click = f.view_pos(f.node(1, 0, 1).pos()) + QPoint(60, 0);
+    const QPointF expected = f.view.mapToScene(click);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, click);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.stack.text(0), QString::fromUtf8("Utwórz POI"));
+    QCOMPARE(f.map->objects().size(), size_t{3});
+    const MapObject& poi = f.map->objects()[2];
+    QCOMPARE(poi.kind(), ObjectKind::Poi);
+    QCOMPARE(*poi.type, 0x2f00LL);
+    QVERIFY(qAbs(f.node(2, 0, 0).x() - expected.x()) < 1e-3);
+    QVERIFY(qAbs(f.node(2, 0, 0).y() - expected.y()) < 1e-3);
+    // po utworzeniu: narzedzie zaznaczania i zaznaczony nowy obiekt
+    QCOMPARE(f.scene.tool(), Tool::SelectObjects);
+    QVERIFY(f.scene.item_for_object(2)->graphics_item()->isSelected());
+    // zapis z precyzja mapy (5 miejsc), a nie z 10 uzytymi przy tworzeniu
+    QVERIFY(f.map->to_mp_string().find("Data0=(52.10000,21.00000)") != std::string::npos);
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::create_polyline_and_polygon_with_keys() {
+    ViewFixture f;
+    f.scene.set_tool(Tool::CreatePolyline);
+    const QPoint base = f.view_pos(f.node(1, 0, 1).pos()) + QPoint(40, 0);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base);
+    QTest::keyClick(f.vp(), Qt::Key_Return);  // jeden wezel - za malo
+    QCOMPARE(f.stack.count(), 0);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(30, 0));
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(30, 30));
+    QCOMPARE(f.view.creation_nodes().size(), size_t{3});
+    QTest::keyClick(f.vp(), Qt::Key_Backspace);
+    QCOMPARE(f.view.creation_nodes().size(), size_t{2});
+    QTest::keyClick(f.vp(), Qt::Key_Return);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.map->objects()[2].kind(), ObjectKind::Polyline);
+    QCOMPARE(f.node_count(2), size_t{2});
+    QVERIFY(f.view.creation_nodes().empty());
+    QCOMPARE(f.scene.tool(), Tool::SelectObjects);
+
+    f.scene.set_tool(Tool::CreatePolygon);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(0, 60));
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(30, 60));
+    QTest::keyClick(f.vp(), Qt::Key_Return);  // polygon wymaga 3 wezlow
+    QCOMPARE(f.stack.count(), 1);
+    f.view.creation_add_node();  // Insert: wezel pod kursorem
+    QTest::mouseMove(f.vp(), base + QPoint(15, 90));
+    f.view.creation_add_node();
+    QTest::keyClick(f.vp(), Qt::Key_Return);
+    QCOMPARE(f.stack.count(), 2);
+    QCOMPARE(f.map->objects()[3].kind(), ObjectKind::Polygon);
+    QCOMPARE(f.node_count(3), size_t{4});
+
+    // Esc / zmiana narzedzia porzuca rysowany obiekt
+    f.scene.set_tool(Tool::CreatePolyline);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base);
+    QCOMPARE(f.view.creation_nodes().size(), size_t{1});
+    f.scene.set_tool(Tool::SelectObjects);
+    QVERIFY(f.view.creation_nodes().empty());
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::create_circle() {
+    ViewFixture f;
+    f.scene.set_tool(Tool::CreatePolylineCircle);
+    const QPoint first = f.view_pos(f.node(1, 0, 1).pos()) + QPoint(50, 0);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, first);
+    QTest::mouseMove(f.vp(), first + QPoint(80, 0));
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, first + QPoint(80, 0));
+    QCOMPARE(f.stack.count(), 1);
+    const MapObject& circle = f.map->objects()[2];
+    QCOMPARE(circle.kind(), ObjectKind::Polyline);
+    const size_t n = f.node_count(2);
+    QVERIFY2(n > 4, qPrintable(QString::number(n)));
+    QVERIFY(f.node(2, 0, 0).pos() == f.node(2, 0, n - 1).pos());  // okrag zamkniety
+    // wszystkie wezly w tej samej odleglosci od srodka
+    const QPointF center = f.view.mapToScene(first + QPoint(80, 0));
+    const double r0 = std::hypot(f.node(2, 0, 0).x() - center.x(), f.node(2, 0, 0).y() - center.y());
+    for (size_t i = 0; i < n; ++i) {
+        const double r = std::hypot(f.node(2, 0, i).x() - center.x(), f.node(2, 0, i).y() - center.y());
+        QVERIFY(qAbs(r - r0) < 1e-3 * r0);
+    }
+}
+
+void EditTests::snap_to_node_when_creating() {
+    ViewFixture f;
+    f.scene.set_tool(Tool::CreatePoint);
+    const PointF n1 = f.node(1, 0, 1).pos();
+    const QPoint near = f.view_pos(n1) + QPoint(6, 4);
+    QTest::mouseMove(f.vp(), near, -1);
+    QMouseEvent move(QEvent::MouseMove, QPointF(near), f.vp()->mapToGlobal(QPointF(near)), Qt::NoButton,
+                     Qt::NoButton, Qt::ControlModifier);
+    QCoreApplication::sendEvent(f.vp(), &move);
+    QVERIFY(f.scene.snap_indicator_visible());
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::ControlModifier, near);
+    QCOMPARE(f.stack.count(), 1);
+    QVERIFY(qAbs(f.node(2, 0, 0).x() - n1.x) < 1e-3);
+    QVERIFY(qAbs(f.node(2, 0, 0).y() - n1.y) < 1e-3);
+    // bez Ctrl - punkt pod kursorem
+    f.scene.set_tool(Tool::CreatePoint);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, near);
+    const QPointF under = f.view.mapToScene(near);
+    QVERIFY(qAbs(f.node(3, 0, 0).x() - under.x()) < 1e-3);
+}
+
+void EditTests::snap_grip_to_other_object() {
+    ViewFixture f;
+    // druga polilinia obok pierwszej (kopia przesunieta), potem przeciagniecie jej wezla z Ctrl do wezla pierwszej
+    f.select_only(f.polyline());
+    std::unique_ptr<QMimeData> mime(f.scene.copy_selected(QPointF(0, 0)));
+    const PointF n1 = f.node(1, 0, 1).pos();
+    // wklejenie 40 pikseli w prawo (punkt odniesienia (0, 0))
+    f.scene.paste(mime.get(), f.view.mapToScene(QPoint(40, 0)) - f.view.mapToScene(QPoint(0, 0)));
+    QCOMPARE(f.map->objects().size(), size_t{3});
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.scene.item_for_object(2));
+    const QPoint grip = f.view_pos(f.node(2, 0, 1).pos());
+    const QPoint target = f.view_pos(n1) + QPoint(3, 3);
+    QTest::mousePress(f.vp(), Qt::LeftButton, Qt::NoModifier, grip);
+    QTest::mouseMove(f.vp(), (grip + target) / 2);
+    QMouseEvent move(QEvent::MouseMove, QPointF(target), f.vp()->mapToGlobal(QPointF(target)), Qt::NoButton,
+                     Qt::LeftButton, Qt::ControlModifier);
+    QCoreApplication::sendEvent(f.vp(), &move);
+    QVERIFY(f.scene.snap_indicator_visible());
+    QTest::mouseRelease(f.vp(), Qt::LeftButton, Qt::ControlModifier, target);
+    QTRY_COMPARE(f.stack.count(), 2);
+    QVERIFY(qAbs(f.node(2, 0, 1).x() - n1.x) < 1e-9);
+    QVERIFY(qAbs(f.node(2, 0, 1).y() - n1.y) < 1e-9);
+    QVERIFY(!f.scene.snap_indicator_visible());
 }
 
 QTEST_MAIN(EditTests)

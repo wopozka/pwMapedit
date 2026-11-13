@@ -22,6 +22,8 @@ constexpr double MINIMAL_GEO_DISTANCE = 7;  // metry
 constexpr double MIN_MOVE_DISTANCE = 3;
 // Shift+klik dodaje wezel, gdy klikniecie jest najwyzej tyle pikseli od krawedzi obiektu.
 constexpr double NODE_INSERT_DISTANCE = 8;
+// Przyciaganie (Ctrl): wezel innego obiektu najwyzej tyle pikseli od kursora (closest_node_min_distance).
+constexpr double SNAP_DISTANCE = 15;
 constexpr double SMALL_POLY_PERIMETER = 500;
 constexpr int WEBLAYER_DOWNLOAD_TIMEOUT = 15;
 constexpr int MAP_LEVELS = 5;

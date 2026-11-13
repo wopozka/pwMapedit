@@ -301,6 +301,7 @@ void PropertiesDock::refresh() {
     if (!o || o->deleted || !o->data) {
         obj_.reset();
         for (int i = 0; i < tabs_->count(); ++i) tabs_->setTabEnabled(i, false);
+        tabs_->setCurrentIndex(MainTab);  // po wylaczeniu kart Qt przestawia biezaca na ostatnia
         scene_->highlight_path(QPainterPath(), false);
         last_obj_.reset();
         return;
@@ -520,6 +521,8 @@ void PropertiesDock::commit_node(const QString& text, const std::function<void(D
 void PropertiesDock::type_chosen(int index) {
     if (index < 0) return;
     const long long new_type = type_->itemData(index).toLongLong();
+    // nowe obiekty tego rodzaju dostaja ten typ (last_used_type w Pythonie)
+    if (const MapObject* o = object()) scene_->set_last_used_type(o->kind(), new_type);
     commit(tr("Edycja type na: 0x%1").arg(new_type, 0, 16), [new_type](MapObject& o) { o.type = new_type; });
 }
 

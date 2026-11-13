@@ -148,7 +148,11 @@ void MainWindow::create_actions_and_menus() {
     merge_action_ = edit_menu->addAction(tr("Połą&cz polilinie"), this, &MainWindow::merge_polylines);
     // Insert w trybie edycji wezlow: nowy wezel pod kursorem (jak w Pythonie)
     QAction* insert_node = edit_menu->addAction(tr("&Wstaw węzeł pod kursorem"), this, [this] {
-        scene_->insert_node_at(view_->current_scene_mouse_coords());
+        // przy rysowaniu polilinii/polygonu Insert dodaje wezel rysowanego obiektu (jak w Pythonie)
+        if (scene_->tool() == Tool::CreatePolyline || scene_->tool() == Tool::CreatePolygon)
+            view_->creation_add_node();
+        else
+            scene_->insert_node_at(view_->current_scene_mouse_coords());
     });
     insert_node->setShortcut(QKeySequence(Qt::Key_Insert));
     edit_menu->addSeparator();
@@ -178,16 +182,40 @@ void MainWindow::create_actions_and_menus() {
     select->setCheckable(true);
     select->setChecked(true);
     select->setShortcut(QKeySequence(tr("s")));
+    select->setData(static_cast<int>(Tool::SelectObjects));
     connect(select, &QAction::triggered, this, [this] {
         scene_->clearSelection();
         scene_->set_tool(Tool::SelectObjects);
     });
     tools_group_->addAction(select);
-    QAction* edit_nodes = tools_menu->addAction(tr("&Edit nodes"));
-    edit_nodes->setCheckable(true);
-    edit_nodes->setShortcut(QKeySequence(tr("m")));
-    connect(edit_nodes, &QAction::triggered, this, [this] { scene_->set_tool(Tool::EditNodes); });
-    tools_group_->addAction(edit_nodes);
+    // pozostale narzedzia: (nazwa, skrot jak w Pythonie, narzedzie)
+    struct ToolDef {
+        QString name;
+        QString shortcut;
+        Tool tool;
+    };
+    const ToolDef tools[] = {
+        {tr("&Edit nodes"), "m", Tool::EditNodes},
+        {tr("&Point"), "a", Tool::CreatePoint},
+        {tr("P&olyline"), "b", Tool::CreatePolyline},
+        {tr("Polyline: &circle"), QString(), Tool::CreatePolylineCircle},
+        {tr("Poly&gon"), "f", Tool::CreatePolygon},
+    };
+    for (const ToolDef& def : tools) {
+        if (def.tool == Tool::CreatePoint) tools_menu->addSeparator();
+        QAction* act = tools_menu->addAction(def.name);
+        act->setCheckable(true);
+        if (!def.shortcut.isEmpty()) act->setShortcut(QKeySequence(def.shortcut));
+        act->setData(static_cast<int>(def.tool));
+        const Tool tool = def.tool;
+        connect(act, &QAction::triggered, this, [this, tool] { scene_->set_tool(tool); });
+        tools_group_->addAction(act);
+    }
+    // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
+    connect(scene_, &MapScene::tool_changed, this, [this] {
+        for (QAction* act : tools_group_->actions())
+            if (act->data().toInt() == static_cast<int>(scene_->tool()) && !act->isChecked()) act->setChecked(true);
+    });
 }
 
 void MainWindow::create_toolbar() {
@@ -213,10 +241,16 @@ void MainWindow::create_toolbar() {
         select->setIcon(icon("select_48.png"));
         bar->addAction(select);
     }
-    QAction* edit_nodes = tools_group_->actions().value(1);
-    if (edit_nodes) {
-        edit_nodes->setIcon(icon("nodes_48.png"));
-        bar->addAction(edit_nodes);
+    const std::pair<Tool, const char*> tool_icons[] = {{Tool::EditNodes, "nodes_48.png"},
+                                                       {Tool::CreatePoint, "create_poi_48.png"},
+                                                       {Tool::CreatePolyline, "create_polyline_48.png"},
+                                                       {Tool::CreatePolygon, "create_polygon_48.png"}};
+    for (const auto& [tool, file] : tool_icons) {
+        for (QAction* act : tools_group_->actions()) {
+            if (act->data().toInt() != static_cast<int>(tool)) continue;
+            act->setIcon(icon(file));
+            bar->addAction(act);
+        }
     }
     bar->addSeparator();
     split_action_->setIcon(icon("split_polyline_48.png"));
@@ -286,6 +320,7 @@ void MainWindow::file_loaded() {
 
     QElapsedTimer timer;
     timer.start();
+    view_->creation_cancel();  // podglad rysowanego obiektu jest elementem sceny
     scene_->clear_map();
     undo_stack_->clear();
     map_ = std::move(result->map);
@@ -405,12 +440,16 @@ void MainWindow::select_map_level(int level) {
 }
 
 void MainWindow::select_tool(Tool tool) {
-    const int index = tool == Tool::EditNodes ? 1 : 0;
-    if (QAction* act = tools_group_->actions().value(index)) act->trigger();
+    for (QAction* act : tools_group_->actions())
+        if (act->data().toInt() == static_cast<int>(tool)) act->trigger();
 }
 
 void MainWindow::escape_pressed() {
-    scene_->clearSelection();
+    // przy rysowaniu Esc porzuca rysowany obiekt, w pozostalych narzedziach czysci zaznaczenie
+    if (!view_->creation_nodes().empty())
+        view_->creation_cancel();
+    else
+        scene_->clearSelection();
 }
 
 void MainWindow::set_single_key_shortcuts_enabled(bool enabled) {

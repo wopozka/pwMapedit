@@ -10,6 +10,7 @@
 #include "constants.hpp"
 #include "map_data.hpp"
 
+class QGraphicsEllipseItem;
 class QGraphicsPathItem;
 class QMimeData;
 class QUndoCommand;
@@ -85,6 +86,23 @@ public:
     // mouse: biezaca pozycja kursora; bez niej (albo bez MouseScenePos) obiekty trafiaja w oryginalne miejsce.
     int paste(const QMimeData* mime, std::optional<QPointF> mouse);
 
+    // ---- tworzenie obiektow (narzedzia Create*) ----
+    // Nowy obiekt z wezlow (wspolrzedne sceny) i ostatnio uzytego typu: komenda undo, potem narzedzie
+    // zaznaczania i zaznaczenie nowego obiektu (jak command_create_* w Pythonie). Zwraca indeks obiektu.
+    std::optional<size_t> create_object(ObjectKind kind, const std::vector<QPointF>& nodes);
+    // Typ nadawany nowym obiektom - ostatnio wybrany w panelu wlasciwosci dla danego rodzaju (last_used_type).
+    long long last_used_type(ObjectKind kind) const;
+    void set_last_used_type(ObjectKind kind, long long type);
+
+    // ---- przyciaganie do wezlow (Ctrl) ----
+    // Najblizszy wezel polilinii lub polygonu (pokazywany poziom) w odleglosci max_distance; excluded - obiekt
+    // pomijany (np. ten, ktorego wezel jest przeciagany).
+    std::optional<QPointF> closest_node(const QPointF& pos, double max_distance,
+                                        const MapObjectItem* excluded = nullptr) const;
+    // Niebieskie kolko w miejscu, do ktorego wezel zostanie przyciagniety; brak punktu je ukrywa.
+    void show_snap_indicator(std::optional<QPointF> pos);
+    bool snap_indicator_visible() const;
+
     // Dodaje obiekt do MapData i tworzy jego element; zwraca indeks obiektu (bez komendy undo).
     size_t add_object(MapObject obj);
     // Zastapienie pierwszego obiektu polaczona linia (merged) i usuniecie pozostalych - jedna komenda.
@@ -152,6 +170,8 @@ private:
     GripItem* hovered_grip_ = nullptr;
     std::optional<GripRef> active_grip_;
     QGraphicsPathItem* highlight_ = nullptr;
+    QGraphicsEllipseItem* snap_indicator_ = nullptr;
+    long long last_used_type_[4] = {0, 0, 0, 0};  // wedlug ObjectKind
 };
 
 }  // namespace pwm::gui

@@ -889,8 +889,21 @@ void GripItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     QGraphicsPathItem::mousePressEvent(event);
 }
 
+void GripItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
+    QGraphicsPathItem::mouseMoveEvent(event);
+    auto* s = qobject_cast<MapScene*>(scene());
+    if (!s) return;
+    // Ctrl w trakcie przeciagania: wezel przyciagany do najblizszego wezla innego obiektu (stick_to_neighbours)
+    std::optional<QPointF> snap;
+    if (event->modifiers() & Qt::ControlModifier)
+        snap = s->closest_node(pos(), SNAP_DISTANCE / std::max(s->viewer_scale(), 1e-9), parent_);
+    s->show_snap_indicator(snap);
+    if (snap) setPos(*snap);
+}
+
 void GripItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     QGraphicsPathItem::mouseReleaseEvent(event);
+    if (auto* s = qobject_cast<MapScene*>(scene())) s->show_snap_indicator(std::nullopt);
     if (event->button() != Qt::LeftButton || pos() == press_pos_) return;
     if (auto* s = qobject_cast<MapScene*>(scene()))
         s->request_node_move(parent_->object_index(), data_level_, poly_num_, node_num_, pos());
