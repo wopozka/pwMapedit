@@ -1,14 +1,19 @@
 // pwMapEdit - edytor map w formacie mp (port C++/Qt6 wersji Python).
-//   pwmapedit [plik.mp] [--screenshot plik.png] [--zoom N] [--level L] [--select N] [--edit-nodes]
-//             [--weblayer osm|geoportal|google] [--gps plik.gpx]
+//   pwmapedit [plik.mp] [slad.gpx|slad.gdb ...] [--screenshot plik.png] [--zoom N] [--level L] [--select N]
+//             [--edit-nodes] [--weblayer osm|geoportal|google] [--gps plik.gpx]
+// Pliki podane w poleceniu (sciezka wzgledna albo pelna; tak samo przy przeciagnieciu plikow na ikone programu
+// i "Otworz za pomoca"): *.gpx i *.gdb sa wczytywane jako slady GPS po wczytaniu mapy, kazdy inny plik to mapa
+// (otwierana jest pierwsza).
 // --screenshot: po wczytaniu mapy zapisuje zrzut okna i konczy program (do testow bez klikania);
 // --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy;
 // --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow;
 // --weblayer: wlacz warstwe WWW (zrzut po pobraniu kafelkow, najwyzej 15 s).
 #include <QApplication>
+#include <memory>
 #include <QMessageBox>
 #include <QStyleFactory>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QTimer>
 
 #include "main_window.hpp"
@@ -45,7 +50,10 @@ int main(int argc, char* argv[]) {
             weblayer = args[++i].toLower();
         else if (args[i] == "--gps" && i + 1 < args.size())
             gps_files << args[++i];
-        else
+        else if (const QString suffix = QFileInfo(args[i]).suffix().toLower();
+                 suffix == QLatin1String("gpx") || suffix == QLatin1String("gdb"))
+            gps_files << args[i];
+        else if (file_name.isEmpty())
             file_name = args[i];
     }
 
@@ -95,6 +103,24 @@ int main(int argc, char* argv[]) {
             });
             poll->start(300);
         });
+    }
+    if (screenshot.isEmpty() && !gps_files.isEmpty()) {
+        if (file_name.isEmpty()) {
+            // slady sa rysowane w ukladzie mapy - bez mapy nie ma ich gdzie pokazac
+            QTimer::singleShot(0, &window, [&] {
+                QMessageBox::information(&window, "pwMapEdit",
+                                         QObject::tr("Ślady GPS z linii poleceń wymagają mapy - podaj też plik .mp "
+                                                     "albo otwórz mapę i wczytaj ślady z menu File."));
+            });
+        } else {
+            // slady po pierwszym udanym wczytaniu mapy
+            auto loaded = std::make_shared<bool>(false);
+            QObject::connect(&window, &pwm::gui::MainWindow::map_loaded, &window, [&, loaded](bool ok) {
+                if (!ok || *loaded) return;
+                *loaded = true;
+                window.load_gps_files(gps_files);
+            });
+        }
     }
     if (!file_name.isEmpty()) window.open_file(file_name);
     return app.exec();

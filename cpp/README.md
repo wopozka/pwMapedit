@@ -176,6 +176,10 @@ z węzłów `DataX` dla wybranego poziomu.
   podświetlanie pod kursorem, `Esc` czyści zaznaczenie;
 - `Ctrl+C` kopiuje współrzędne kursora, `Ctrl+G` przechodzi do podanych współrzędnych.
 
+Otwieranie z linii poleceń: `pwmapedit plik.mp` (ścieżka względna albo pełna, także ze spacjami i polskimi znakami).
+Tak samo działa przeciągnięcie pliku na ikonę programu i „Otwórz za pomocą”. Pliki `*.gpx` i `*.gdb` podane obok mapy
+(`pwmapedit mapa.mp slad.gdb`) są wczytywane jako ślady GPS po wczytaniu mapy; bez mapy pojawia się informacja.
+
 Test bez klikania: `pwmapedit plik.mp --screenshot zrzut.png [--zoom N] [--level L]` wczytuje mapę, zapisuje zrzut
 okna i kończy działanie.
 
