@@ -702,7 +702,7 @@ void MainWindow::load_gps_dialog() {
     const QString start_dir = settings_->value("gps_dir", recent.isEmpty() ? QString() : QFileInfo(recent.front()).absolutePath())
                                   .toString();
     const QStringList files = QFileDialog::getOpenFileNames(this, tr("Wczytaj ślady GPS"), start_dir,
-                                                            tr("Ślady GPS (*.gpx *.GPX);;Wszystkie pliki (*)"));
+                                                            tr("Ślady GPS (*.gpx *.GPX *.gdb *.GDB);;GPX (*.gpx *.GPX);;Garmin GDB (*.gdb *.GDB);;Wszystkie pliki (*)"));
     if (files.isEmpty()) return;
     settings_->setValue("gps_dir", QFileInfo(files.front()).absolutePath());
     load_gps_files(files);
@@ -711,6 +711,7 @@ void MainWindow::load_gps_dialog() {
 int MainWindow::load_gps_files(const QStringList& files) {
     QStringList problems;
     int loaded = 0;
+    const int first_new = gps_layers_->file_count();
     for (const QString& file : files) {
         QString warning;
         const QString error = gps_layers_->load_file(file, &warning);
@@ -724,6 +725,10 @@ int MainWindow::load_gps_files(const QStringList& files) {
     if (loaded) {
         gps_dock_->show();
         gps_dock_->raise();
+        // pokaz wczytany slad, jesli nie ma go w widoku (slady moga lezec daleko od ogladanego miejsca)
+        if (auto first = gps_layers_->first_point(first_new);
+            first && !view_->mapToScene(view_->viewport()->rect()).boundingRect().contains(*first))
+            view_->centerOn(*first);
         show_message(tr("Wczytano ślady GPS: %1").arg(loaded));
     }
     if (!problems.isEmpty()) QMessageBox::warning(this, tr("Ślady GPS"), problems.join('\n'));

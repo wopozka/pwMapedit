@@ -61,7 +61,7 @@ public:
     explicit GpsLayers(MapScene* scene, QObject* parent = nullptr);
     ~GpsLayers() override;
 
-    // Wczytuje plik GPX (wymaga otwartej mapy - projekcja); zwraca opis bledu albo pusty napis.
+    // Wczytuje plik GPX albo GDB (wymaga otwartej mapy - projekcja); zwraca opis bledu albo pusty napis.
     // warning: ostrzezenie przy udanym wczytaniu (np. pominiete punkty).
     QString load_file(const QString& path, QString* warning = nullptr);
     void add_file(gps::File file);
@@ -83,6 +83,8 @@ public:
 
     QPainterPath segment_path(int file, int track, int segment) const;
     std::optional<QPointF> waypoint_position(int file, int waypoint) const;
+    // Pierwszy punkt pliku (sladu albo waypoint) na scenie - do pokazania wczytanego pliku.
+    std::optional<QPointF> first_point(int file) const;
 
 signals:
     void files_changed();

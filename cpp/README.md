@@ -146,6 +146,7 @@ katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
 | `gui/commands.*` | `commands.py` (komendy undo/redo) |
 | `gui/properties_dock.*` | `map_obj_properties_dockwidget.py` (panel właściwości) |
 | `core/gps_data.*` | (nowe) dane GPS i upraszczanie śladu (Douglas-Peucker) |
+| `core/gdb_reader.*` | (nowe) czytnik plików Garmin GDB |
 | `gui/gpx_reader.*`, `gui/gps_layers.*`, `gui/gps_dock.*` | (nowe) czytnik GPX, ślady na scenie, panel „Ślady GPS” |
 | `core/web_tiles.*` | `web_layers.py` (kafelki: zoom ze skali, numery kafelków, adresy OSM/Geoportal/Google) |
 | `gui/web_layers.*` | warstwy WWW z `mapRender.py`/`mapCanvas.py` (pobieranie w tle, kafelki na scenie) |
@@ -335,10 +336,12 @@ Różnice względem Pythona (celowe):
 
 ### Ślady GPS jako podkład do rysowania (nowa funkcja, nie ma jej w wersji Python)
 
-Ślady i punkty z plików GPX są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.
+Ślady i punkty z plików GPX i GDB są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.
 - Wczytywanie: File → „Wczytaj ślady GPS…” (wiele plików naraz), przycisk w panelu albo przeciągnięcie plików
-  `.gpx` na okno (wymaga otwartej mapy - ślady są rysowane w jej układzie). Czytane są `<wpt>`, `<trk>/<trkseg>`
+  `.gpx`/`.gdb` na okno (wymaga otwartej mapy - ślady są rysowane w jej układzie). GPX: `<wpt>`, `<trk>/<trkseg>`
   i `<rte>` (GPX 1.0 i 1.1); punkty bez poprawnych współrzędnych są pomijane z ostrzeżeniem.
+  Po wczytaniu widok przesuwa się na ślad, jeśli nie było go widać, a obszar przewijania obejmuje ślady
+  (wcześniej był ograniczony do mapy).
 - Na mapie: ślady jako cienkie linie (każdy plik w innym kolorze), przy powiększeniu z punktami GPS; waypointy
   jako romby z nazwą. Leżą nad podkładem WWW, pod obiektami mapy i nie reagują na mysz. Po otwarciu innej mapy
   zostają wczytane i są rysowane w jej układzie.
@@ -351,7 +354,12 @@ Różnice względem Pythona (celowe):
   są szare (tylko oznaczenie w sesji - cofnięcie nie zdejmuje go).
 - Zrzut ze śladami: `pwmapedit plik.mp --screenshot x.png --gps slad.gpx`.
 
-Pliki GDB (Garmin MapSource) - w przygotowaniu (własny czytnik formatu).
+Pliki GDB (Garmin MapSource/BaseCamp, wersje 1-3) czyta `core/gdb_reader.*`: ślady i waypointy (nazwa, pozycja,
+wysokość, komentarz, symbol); trasy są pomijane z ostrzeżeniem. Format opisany na podstawie `GdbFile.h`/`GdbLoader.cpp`
+z GPSMapEdit, kod napisany od nowa: każdy odczyt sprawdza granice rekordu, współrzędne w `double` (GPSMapEdit liczył
+waypointy we `float`, z błędem rzędu metrów). Uszkodzony ślad (mniej punktów niż w nagłówku) i ucięty plik są wczytywane
+do miejsca uszkodzenia z ostrzeżeniem. Za rekordem wersji programu może stać „MapSource” albo „BaseCamp”. Testy: pliki
+BaseCamp w `tests/gdb/` oraz pliki budowane w teście (v1 z cp1250, v3 z UTF-8, waypointy, uszkodzenia).
 
 ### Następne kroki
 

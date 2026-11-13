@@ -1,10 +1,13 @@
 #include "gps_layers.hpp"
 
+#include <QFile>
 #include <QFileInfo>
 #include <QGraphicsSimpleTextItem>
 #include <QPainter>
 #include <QUndoStack>
+#include <algorithm>
 
+#include "gdb_reader.hpp"
 #include "gpx_reader.hpp"
 #include "map_scene.hpp"
 #include "misc.hpp"
@@ -96,10 +99,24 @@ std::optional<QPointF> GpsLayers::to_scene(const gps::Point& p) const {
 QString GpsLayers::load_file(const QString& path, QString* warning) {
     if (!scene_->map()) return tr("Najpierw otwórz mapę - ślady są rysowane w jej układzie współrzędnych.");
     const QString suffix = QFileInfo(path).suffix().toLower();
-    if (suffix == QLatin1String("gdb")) return tr("Pliki GDB nie są jeszcze obsługiwane.");
     QString message;
-    std::optional<gps::File> file = read_gpx_file(path, &message);
-    if (!file) return message;
+    std::optional<gps::File> file;
+    if (suffix == QLatin1String("gdb")) {
+        // GDB (Garmin MapSource/BaseCamp) - czytnik w rdzeniu; plik czytany przez QFile (polskie nazwy na Windows)
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly)) return tr("Nie można otworzyć pliku: %1").arg(f.errorString());
+        const QByteArray data = f.readAll();
+        gps::GdbResult r = gps::read_gdb(std::string_view(data.constData(), static_cast<size_t>(data.size())));
+        if (!r.ok) return QString::fromStdString(r.error);
+        QStringList warnings;
+        for (const std::string& w : r.warnings) warnings << QString::fromStdString(w);
+        message = warnings.join("; ");
+        r.file.path = path.toStdString();
+        file = std::move(r.file);
+    } else {
+        file = read_gpx_file(path, &message);
+        if (!file) return message;
+    }
     if (file->waypoints.empty() && file->tracks.empty()) return tr("Plik nie zawiera śladów ani punktów.");
     if (warning) *warning = message;
     add_file(std::move(*file));
@@ -177,6 +194,15 @@ void GpsLayers::build_items(GpsFileEntry& e) {
         scene_->addItem(item);
         e.waypoint_items.push_back(item);
     }
+    // Prostokat sceny obejmuje tylko mape - bez rozszerzenia slady lezace dalej bylyby poza zasiegiem przewijania.
+    QRectF bounds;
+    for (const auto& segs : e.track_items)
+        for (const GpsTrackItem* item : segs) bounds |= item->sceneBoundingRect();
+    for (const GpsWaypointItem* item : e.waypoint_items) bounds |= QRectF(item->pos(), QSizeF(1, 1));
+    if (!bounds.isEmpty()) {
+        const double margin = std::max(bounds.width(), bounds.height()) * 0.05 + 100;
+        scene_->setSceneRect(scene_->sceneRect().united(bounds.adjusted(-margin, -margin, margin, margin)));
+    }
 }
 
 QPainterPath GpsLayers::segment_path(int file, int track, int segment) const {
@@ -193,6 +219,16 @@ QPainterPath GpsLayers::segment_path(int file, int track, int segment) const {
         path.addPolygon(poly);
     }
     return path;
+}
+
+std::optional<QPointF> GpsLayers::first_point(int file) const {
+    if (file < 0 || file >= file_count()) return std::nullopt;
+    const gps::File& f = files_[static_cast<size_t>(file)].data;
+    for (const gps::Track& t : f.tracks)
+        for (const auto& seg : t.segments)
+            if (!seg.empty()) return to_scene(seg.front());
+    if (!f.waypoints.empty()) return to_scene(f.waypoints.front().pos);
+    return std::nullopt;
 }
 
 std::optional<QPointF> GpsLayers::waypoint_position(int file, int waypoint) const {

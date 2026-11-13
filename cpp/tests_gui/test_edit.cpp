@@ -179,6 +179,7 @@ private slots:
     void gps_layer_items_snapping_and_visibility();
     void gps_track_to_polyline_and_waypoints_to_pois();
     void gps_dock_lists_and_creates();
+    void gps_load_gdb_far_from_map();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1263,6 +1264,27 @@ void EditTests::gps_dock_lists_and_creates() {
     dock.remove_selected_file();
     QCOMPARE(layers.file_count(), 0);
     QCOMPARE(tree->topLevelItemCount(), 0);
+}
+
+void EditTests::gps_load_gdb_far_from_map() {
+    ViewFixture f;
+    GpsLayers layers(&f.scene);
+    QString warning;
+    // plik BaseCamp z polska nazwa; slady leza ok. 60 km od mapy testowej
+    const QString path = QString::fromUtf8(PWM_TEST_DATA_DIR "/gdb/Mój zbiór.gdb");
+    QCOMPARE(layers.load_file(path, &warning), QString());
+    QCOMPARE(layers.file_count(), 1);
+    QCOMPARE(layers.file(0).data.tracks.size(), size_t{2});
+    // prostokat sceny obejmuje slad, wiec da sie do niego przewinac
+    const QPointF first = *layers.first_point(0);
+    QVERIFY(f.scene.sceneRect().contains(first));
+    f.view.centerOn(first);
+    QVERIFY(f.view.mapToScene(f.view.viewport()->rect()).boundingRect().contains(first));
+    // zamiana na polilinie dziala tak samo jak dla GPX
+    QCOMPARE(layers.create_polylines(0, 1, -1, 3.0), 1);
+    QVERIFY(f.node_count(2) > 2 && f.node_count(2) < 1488);
+    QCOMPARE(layers.load_file(QString::fromUtf8(PWM_TEST_DATA_DIR "/gdb/nie_ma.gdb")).isEmpty(), false);
+    layers.clear_items();
 }
 
 QTEST_MAIN(EditTests)
