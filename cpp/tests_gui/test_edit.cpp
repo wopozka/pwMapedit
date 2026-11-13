@@ -180,6 +180,9 @@ private slots:
     void gps_track_to_polyline_and_waypoints_to_pois();
     void gps_dock_lists_and_creates();
     void gps_load_gdb_far_from_map();
+    // karta Elements: menu czesci i poziomow
+    void elements_move_copy_level_endlevel();
+    void elements_delete_extract_polygon_parts();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1285,6 +1288,105 @@ void EditTests::gps_load_gdb_far_from_map() {
     QVERIFY(f.node_count(2) > 2 && f.node_count(2) < 1488);
     QCOMPARE(layers.load_file(QString::fromUtf8(PWM_TEST_DATA_DIR "/gdb/nie_ma.gdb")).isEmpty(), false);
     layers.clear_items();
+}
+
+void EditTests::elements_move_copy_level_endlevel() {
+    DockFixture f;
+    f.select_only(f.polyline());
+    QSignalSpy messages(&f.dock, &PropertiesDock::message);
+    QCOMPARE(f.obj(1).data->data_levels(), (std::vector<int>{0, 1}));
+    QCOMPARE(f.obj(1).endlevel, 0LL);
+
+    // przeniesienie Data0 na wolny poziom 2: poziomy rosnaco, EndLevel podniesiony (wariant 2a)
+    f.dock.move_level(0, 2, false);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.obj(1).data->data_levels(), (std::vector<int>{1, 2}));
+    QCOMPARE(f.obj(1).endlevel, 2LL);
+    QVERIFY(messages.last().at(0).toString().contains("EndLevel"));
+    const std::string saved = f.map->to_mp_string();
+    QVERIFY(saved.find("EndLevel=2") != std::string::npos);
+    QVERIFY(saved.find("Data1=") < saved.find("Data2="));
+    // numeracja przeszla razem z wezlami
+    QVERIFY(saved.find("Numbers1=") != std::string::npos);
+
+    // zajety poziom docelowy - nic sie nie dzieje (wariant 1c, w menu pozycja wyszarzona)
+    f.dock.move_level(1, 2, false);
+    QCOMPARE(f.stack.count(), 1);
+
+    // obiekt nie ma juz Data0, wiec na ogladanym poziomie 0 jest niewidoczny (i odznaczony)
+    QVERIFY(!f.polyline()->graphics_item()->isVisible());
+    QVERIFY(messages.last().at(0).toString().contains(QString::fromUtf8("widoczny od poziomu 1")));
+    f.scene.set_map_level(1);
+    f.select_only(f.polyline());
+
+    // kopia: oryginal zostaje
+    f.dock.move_level(1, 4, true);
+    QCOMPARE(f.obj(1).data->data_levels(), (std::vector<int>{1, 2, 4}));
+    QCOMPARE(f.obj(1).endlevel, 4LL);
+    // karta Elements pokazuje nowe poziomy
+    QCOMPARE(f.dock.elements()->topLevelItemCount(), 3);
+    QCOMPARE(f.dock.elements()->topLevelItem(2)->text(0), QString("Data4"));
+
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+    f.scene.set_map_level(0);
+}
+
+void EditTests::elements_delete_extract_polygon_parts() {
+    DockFixture f;
+    // polygon: czesc A z dziura i osobna czesc B (wszystkie na Data0)
+    QMimeData mime;
+    mime.setText("[POLYGON]\nType=0x4e\nLabel=Dzialki\n"
+                 "Data0=(52.1000,21.0000),(52.1000,21.0100),(52.1100,21.0100),(52.1100,21.0000)\n"
+                 "Data0=(52.1030,21.0030),(52.1030,21.0060),(52.1060,21.0060),(52.1060,21.0030)\n"
+                 "Data0=(52.1200,21.0200),(52.1200,21.0300),(52.1300,21.0300)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 1);
+    const size_t poly = 2;
+    QCOMPARE(f.obj(poly).data->polys_for_data_level(0)->size(), size_t{3});
+    f.select_only(f.scene.item_for_object(poly));
+    const std::string before = f.map->to_mp_string();
+    const int commands = f.stack.count();
+
+    // karta Elements: A (Outer) z dziura (Inner) jako dzieckiem, B osobno
+    QTreeWidgetItem* level = f.dock.elements()->topLevelItem(0);
+    QCOMPARE(level->childCount(), 2);
+    QCOMPARE(level->child(0)->childCount(), 1);
+    QCOMPARE(level->child(0)->child(0)->text(1), QString("Inner"));
+
+    // ekstrakcja A razem z dziura (wariant 3a): nowy obiekt z 2 czesciami i tymi samymi wlasciwosciami
+    f.dock.extract_element(0, {0, 1});
+    QCOMPARE(f.stack.count(), commands + 1);
+    QCOMPARE(f.map->objects().size(), size_t{4});
+    QCOMPARE(f.obj(3).kind(), ObjectKind::Polygon);
+    QCOMPARE(*f.obj(3).label1, std::string("Dzialki"));
+    QCOMPARE(f.obj(3).data->polys_for_data_level(0)->size(), size_t{2});
+    QCOMPARE(f.obj(poly).data->polys_for_data_level(0)->size(), size_t{1});
+    QVERIFY(f.scene.item_for_object(3)->graphics_item()->isVisible());
+
+    // jedyny element poziomu - nie da sie wyekstrahowac (komunikat, bez komendy)
+    QSignalSpy messages(&f.dock, &PropertiesDock::message);
+    f.dock.extract_element(0, {0});
+    QCOMPARE(f.stack.count(), commands + 1);
+    QVERIFY(messages.last().at(0).toString().contains(QString::fromUtf8("jedynego")));
+
+    // usuniecie ostatniej czesci obiektu = usuniecie obiektu
+    f.dock.delete_element(0, {0});
+    QVERIFY(f.obj(poly).deleted);
+    QVERIFY(!f.scene.item_for_object(poly)->graphics_item()->isVisible());
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), before);
+
+    // usuniecie A z dziura - zostaje B; usuniecie czesci poziomu Data1 linii usuwa caly poziom
+    f.select_only(f.scene.item_for_object(poly));
+    f.dock.delete_element(0, {0, 1});
+    QCOMPARE(f.obj(poly).data->polys_for_data_level(0)->size(), size_t{1});
+    f.select_only(f.polyline());
+    f.dock.delete_element(1, {0});
+    QCOMPARE(f.obj(1).data->data_levels(), std::vector<int>{0});
+    while (f.stack.index() > commands) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), before);
 }
 
 QTEST_MAIN(EditTests)

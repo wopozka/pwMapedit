@@ -189,6 +189,17 @@ public:
     // Obwiednia liczona od nowa z wezlow (recalculate_bounding_box).
     void recalculate_bounding_box();
 
+    // ---- operacje na czesciach i poziomach (karta Elements) ----
+    // Usuwa wskazane czesci poziomu; gdy poziom zostaje pusty - caly poziom. Przelicza obwiednie i obwod.
+    void delete_polys(int data_level, std::vector<size_t> poly_nums);
+    // Nowy DataX z kopia wskazanych czesci poziomu (ten sam numer poziomu); oryginal sie nie zmienia.
+    DataX extract_polys(int data_level, const std::vector<size_t>& poly_nums) const;
+    // Przeniesienie albo kopia calego poziomu na inny (docelowy nie moze miec danych - wtedy false).
+    // Poziomy sa trzymane rosnaco, wiec zapis daje Data0, Data1... niezaleznie od kolejnosci operacji.
+    bool move_data_level(int from_level, int to_level);
+    bool copy_data_level(int from_level, int to_level);
+    int max_data_level() const;  // -1 gdy brak danych
+
     // ---- zapis ----
     std::vector<std::string> to_mp_record(int precision) const;
     std::string numbers_to_mp(size_t start_node_num, const Node& start_node, const Node& end_node) const;
@@ -205,6 +216,9 @@ private:
     const Poly& poly_ref(int data_level, size_t poly_num) const;
     void set_obj_bounding_box(double latitude, double longitude);
     static double calculate_poly_perimeter(const Poly& coords);
+    void recalculate_perimeter();
+    // indeks, pod ktorym wstawic poziom, zeby lista poziomow byla rosnaca
+    size_t sorted_insert_index(int data_level) const;
     void add_housenumbers_to_nodes(int data_level, size_t poly_num, std::string_view definition);
     void clean_numbers_definition_first_and_last_nodes(Poly& poly);
     void clean_numbers_definitions_only_one_node_case(Poly& poly, size_t node_with_numbers_idx);

@@ -669,6 +669,84 @@ void DataX::delete_node_at_position(int data_level, size_t poly_num, long index)
     if (!poly.empty()) clean_numbers_definitions(data_level, poly_num);
 }
 
+// ------------------------------------------------------------------ DataX: czesci i poziomy (karta Elements)
+
+void DataX::recalculate_perimeter() {
+    perimeter_ = 0.0;
+    for (const auto& polys : polys_)
+        for (const Poly& poly : polys) perimeter_ = std::max(perimeter_, calculate_poly_perimeter(poly));
+}
+
+size_t DataX::sorted_insert_index(int data_level) const {
+    size_t i = 0;
+    while (i < levels_.size() && levels_[i] < data_level) ++i;
+    return i;
+}
+
+int DataX::max_data_level() const {
+    int m = -1;
+    for (int level : levels_) m = std::max(m, level);
+    return m;
+}
+
+void DataX::delete_polys(int data_level, std::vector<size_t> poly_nums) {
+    auto idx = data_level_index(data_level);
+    if (!idx) return;
+    std::sort(poly_nums.begin(), poly_nums.end());
+    poly_nums.erase(std::unique(poly_nums.begin(), poly_nums.end()), poly_nums.end());
+    auto& polys = polys_[*idx];
+    for (auto it = poly_nums.rbegin(); it != poly_nums.rend(); ++it)
+        if (*it < polys.size()) polys.erase(polys.begin() + static_cast<long>(*it));
+    if (polys.empty()) {
+        levels_.erase(levels_.begin() + static_cast<long>(*idx));
+        polys_.erase(polys_.begin() + static_cast<long>(*idx));
+    }
+    recalculate_bounding_box();
+    recalculate_perimeter();
+}
+
+DataX DataX::extract_polys(int data_level, const std::vector<size_t>& poly_nums) const {
+    DataX result(projection_);
+    auto idx = data_level_index(data_level);
+    if (!idx) return result;
+    std::vector<size_t> nums = poly_nums;
+    std::sort(nums.begin(), nums.end());
+    nums.erase(std::unique(nums.begin(), nums.end()), nums.end());
+    std::vector<Poly> polys;
+    for (size_t n : nums)
+        if (n < polys_[*idx].size()) polys.push_back(polys_[*idx][n]);  // kopia z numeracja i HLevel wezlow
+    if (polys.empty()) return result;
+    result.levels_.push_back(data_level);
+    result.polys_.push_back(std::move(polys));
+    result.last_data_level_ = data_level;
+    result.recalculate_bounding_box();
+    result.recalculate_perimeter();
+    return result;
+}
+
+bool DataX::copy_data_level(int from_level, int to_level) {
+    auto from = data_level_index(from_level);
+    if (!from || from_level == to_level || data_level_index(to_level)) return false;
+    std::vector<Poly> copy = polys_[*from];
+    const size_t at = sorted_insert_index(to_level);
+    levels_.insert(levels_.begin() + static_cast<long>(at), to_level);
+    polys_.insert(polys_.begin() + static_cast<long>(at), std::move(copy));
+    return true;
+}
+
+bool DataX::move_data_level(int from_level, int to_level) {
+    auto from = data_level_index(from_level);
+    if (!from || from_level == to_level || data_level_index(to_level)) return false;
+    std::vector<Poly> moved = std::move(polys_[*from]);
+    levels_.erase(levels_.begin() + static_cast<long>(*from));
+    polys_.erase(polys_.begin() + static_cast<long>(*from));
+    const size_t at = sorted_insert_index(to_level);
+    levels_.insert(levels_.begin() + static_cast<long>(at), to_level);
+    polys_.insert(polys_.begin() + static_cast<long>(at), std::move(moved));
+    if (last_data_level_ == from_level) last_data_level_ = to_level;
+    return true;
+}
+
 void DataX::delete_poly_at_data_level(int data_level, size_t poly_num) {
     auto idx = data_level_index(data_level);
     if (!idx || poly_num >= polys_[*idx].size()) return;

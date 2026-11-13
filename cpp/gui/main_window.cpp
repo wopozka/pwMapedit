@@ -116,6 +116,7 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     connect(scene_, &MapScene::active_grip_changed, properties_, &PropertiesDock::refresh);
     connect(scene_, &MapScene::tool_changed, properties_, &PropertiesDock::refresh);
     connect(undo_stack_, &QUndoStack::indexChanged, properties_, &PropertiesDock::refresh);
+    connect(properties_, &PropertiesDock::message, this, &MainWindow::show_message);
 
     connect(scene_, &MapScene::progress, this, &MainWindow::set_progress);
     connect(view_, &MapView::status_message, info_text_, &QLabel::setText);

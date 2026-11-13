@@ -133,6 +133,10 @@ public:
 
     // Zamiana danych obiektu jedna komenda undo (panel wlasciwosci: typ, etykiety, numeracja wezla...).
     void replace_object(size_t obj, MapObject after, const QString& text);
+    // Usuniecie jednego obiektu (np. gdy w karcie Elements usunieto jego ostatnia czesc).
+    void delete_object(size_t obj, const QString& text);
+    // Zmiana obiektu i nowy obiekt jedna komenda (ekstrakcja czesci); zwraca indeks nowego obiektu.
+    std::optional<size_t> replace_and_add(size_t obj, MapObject after, MapObject added, const QString& text);
     // Podswietlenie czesci obiektu wybranej w panelu (karta Elements); pusta sciezka zdejmuje podswietlenie.
     void highlight_path(const QPainterPath& path, bool polygon);
     void request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos);

@@ -87,6 +87,9 @@ QPainterPath poly_path(const Poly& poly, bool polygon) {
 }
 
 constexpr int ROUTE_PARAMS = 12;
+// karta Elements: pozycja "DataN" ma numer poziomu w LEVEL_ROLE; czesci - poziom i numer w Qt::UserRole (kolumny 0, 1)
+constexpr int LEVEL_ROLE = Qt::UserRole + 10;
+constexpr int MAX_DATA_LEVEL = 4;  // Data0..Data4 (MAP_LEVELS)
 const char* const ROUTE_CHECK_NAMES[ROUTE_PARAMS] = {
     nullptr, nullptr, "One way", "Route is toll", "No emergency", "No delivery", "No car/motorcycle",
     "No bus", "No taxi", "No pedestrian", "No bicycle", "No truck"};
@@ -216,6 +219,8 @@ QWidget* PropertiesDock::build_elements_tab() {
     elements_->setColumnCount(4);
     elements_->setHeaderLabels({tr("Nr Data/Nr poly"), tr("Inner/Outer"), tr("Lat/Lon 1 punkt"), tr("Węzły")});
     connect(elements_, &QTreeWidget::itemSelectionChanged, this, &PropertiesDock::element_selected);
+    elements_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(elements_, &QTreeWidget::customContextMenuRequested, this, &PropertiesDock::elements_context_menu);
     box->addWidget(elements_);
     return page;
 }
@@ -424,6 +429,7 @@ void PropertiesDock::fill_elements() {
         const auto* polys = o.data->polys_for_data_level(level);
         if (!polys) continue;
         auto* level_item = new QTreeWidgetItem(elements_, {QString("Data%1").arg(level)});
+        level_item->setData(0, LEVEL_ROLE, level);
         if (o.kind() == ObjectKind::Poi) {
             if (polys->empty() || polys->front().empty()) continue;
             auto* item = new QTreeWidgetItem(level_item, {"POI", "", geo_text(projection, polys->front().front())});
@@ -694,6 +700,92 @@ void PropertiesDock::node_numbers_toggled(bool on) {
     });
     // gdy numeracja nie zostala zapisana (np. czyszczenie ja usunelo), pola wracaja do stanu z danych
     refresh();
+}
+
+// ---------------------------------------------------------------- karta Elements: menu kontekstowe
+void PropertiesDock::elements_context_menu(const QPoint& pos) {
+    const MapObject* o = object();
+    QTreeWidgetItem* item = elements_->itemAt(pos);
+    if (!o || !item || grip_) return;
+    QMenu menu;
+    if (item->data(0, LEVEL_ROLE).isValid()) {
+        // poziom: przenies / skopiuj na inny, wolny poziom (zajete poziomy wyszarzone)
+        const int level = item->data(0, LEVEL_ROLE).toInt();
+        for (const bool copy : {false, true}) {
+            QMenu* sub = menu.addMenu(copy ? tr("Skopiuj na poziom") : tr("Przenieś na poziom"));
+            for (int target = 0; target <= MAX_DATA_LEVEL; ++target) {
+                if (target == level) continue;
+                QAction* act = sub->addAction(QString("Data%1").arg(target));
+                act->setEnabled(!o->data->data_level_index(target));
+                connect(act, &QAction::triggered, this, [this, level, target, copy] { move_level(level, target, copy); });
+            }
+        }
+    } else if (item->data(0, Qt::UserRole).isValid()) {
+        // czesc: wraz z dziurami polygonu (pozycje Inner pod Outer)
+        const int level = item->data(0, Qt::UserRole).toInt();
+        std::vector<size_t> polys{static_cast<size_t>(item->data(1, Qt::UserRole).toULongLong())};
+        for (int i = 0; i < item->childCount(); ++i)
+            polys.push_back(static_cast<size_t>(item->child(i)->data(1, Qt::UserRole).toULongLong()));
+        menu.addAction(tr("Usuń element"), this, [this, level, polys] { delete_element(level, polys); });
+        menu.addAction(tr("Ekstrahuj element"), this, [this, level, polys] { extract_element(level, polys); });
+    }
+    if (!menu.isEmpty()) menu.exec(elements_->viewport()->mapToGlobal(pos));
+}
+
+void PropertiesDock::delete_element(int level, const std::vector<size_t>& polys) {
+    const MapObject* o = object();
+    if (!o || !o->data || grip_) return;
+    MapObject after = *o;
+    after.data->delete_polys(level, polys);
+    if (after.data->data_levels().empty()) {
+        // ostatnia czesc obiektu - jak Delete
+        scene_->delete_object(*obj_, tr("Usuń obiekt"));
+        return;
+    }
+    after.bbox = after.data->obj_bounding_box();
+    scene_->replace_object(*obj_, std::move(after), tr("Usuń element"));
+}
+
+void PropertiesDock::extract_element(int level, const std::vector<size_t>& polys) {
+    const MapObject* o = object();
+    if (!o || !o->data || grip_) return;
+    const auto* level_polys = o->data->polys_for_data_level(level);
+    if (!level_polys) return;
+    if (polys.size() >= level_polys->size()) {
+        emit message(tr("Nie można wyekstrahować jedynego elementu poziomu Data%1.").arg(level));
+        return;
+    }
+    MapObject added = *o;  // te same wlasciwosci (typ, etykiety, Extras...)
+    added.data = o->data->extract_polys(level, polys);
+    added.bbox = added.data->obj_bounding_box();
+    MapObject after = *o;
+    after.data->delete_polys(level, polys);
+    after.bbox = after.data->obj_bounding_box();
+    scene_->replace_and_add(*obj_, std::move(after), std::move(added), tr("Ekstrahuj element"));
+    emit message(tr("Wyekstrahowano element z poziomu Data%1 jako nowy obiekt.").arg(level));
+}
+
+void PropertiesDock::move_level(int from_level, int to_level, bool copy) {
+    const MapObject* o = object();
+    if (!o || !o->data || grip_) return;
+    MapObject after = *o;
+    if (!(copy ? after.data->copy_data_level(from_level, to_level) : after.data->move_data_level(from_level, to_level)))
+        return;  // poziom docelowy zajety
+    QString text = copy ? tr("Skopiuj Data%1 na poziom %2").arg(from_level).arg(to_level)
+                        : tr("Przenieś Data%1 na poziom %2").arg(from_level).arg(to_level);
+    // obiekt musi byc widoczny na poziomie z danymi
+    const int max_level = after.data->max_data_level();
+    QString note;
+    if (after.endlevel < max_level) {
+        note = tr(" (EndLevel podniesiony z %1 do %2)").arg(after.endlevel).arg(max_level);
+        after.endlevel = max_level;
+    }
+    const int min_level = after.data->data_levels().empty() ? 0 : after.data->data_levels().front();
+    const int shown_level = scene_->map_level();
+    scene_->replace_object(*obj_, std::move(after), text + note);
+    // na ogladanym poziomie obiekt moze zniknac (brak danych na tym i nizszych poziomach)
+    if (min_level > shown_level) note += tr("; obiekt widoczny od poziomu %1").arg(min_level);
+    emit message(text + note);
 }
 
 void PropertiesDock::element_selected() {

@@ -322,6 +322,22 @@ void MapScene::replace_object(size_t obj, MapObject after, const QString& text) 
     push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text));
 }
 
+void MapScene::delete_object(size_t obj, const QString& text) {
+    if (!map_ || obj >= map_->objects().size()) return;
+    push_command(new DeleteObjectsCmd(this, {obj}, text));
+}
+
+std::optional<size_t> MapScene::replace_and_add(size_t obj, MapObject after, MapObject added, const QString& text) {
+    if (!map_ || obj >= map_->objects().size()) return std::nullopt;
+    added.id.reset();
+    added.deleted = false;
+    auto* command = new QUndoCommand(text);
+    new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text, command);
+    auto* add = new AddObjectCmd(this, std::move(added), text, command);
+    push_command(command);
+    return undo_stack_ ? add->index() : std::nullopt;
+}
+
 void MapScene::highlight_path(const QPainterPath& path, bool polygon) {
     // jak highlight_element w Pythonie: ciemnoczerwona polprzezroczysta sciezka nad obiektami
     delete highlight_;

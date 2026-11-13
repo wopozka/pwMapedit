@@ -334,6 +334,21 @@ Różnice względem Pythona (celowe):
   JSON z parami [klucz, wartość] i tekst `klucz<TAB>wartość`; wkleja się też tekst `klucz=wartość`). `Delete`
   w tabeli czyści zaznaczone komórki (wcześniej usuwał zaznaczony obiekt mapy).
 
+### Karta Elements: części obiektu i poziomy Data (nowa funkcja)
+
+Menu kontekstowe (prawy przycisk) w karcie Elements panelu właściwości; każda operacja to jedna komenda undo:
+- na części („Poly: N”, „POI”):
+  - **Usuń element** - usuwa część; ostatnia część poziomu usuwa cały poziom Data, ostatnia część obiektu
+    usuwa obiekt (jak `Delete`);
+  - **Ekstrahuj element** - część staje się nowym obiektem o tych samych właściwościach (typ, etykiety, Extras…)
+    na tym samym poziomie i znika z oryginału; jedynego elementu poziomu nie da się wyekstrahować (komunikat).
+  W polygonie część zewnętrzna jest usuwana i ekstrahowana razem ze swoimi dziurami (pozycje „Inner” pod nią).
+- na poziomie („DataN”): **Przenieś na poziom** / **Skopiuj na poziom** 0-4 - cały poziom na inny; zajęte poziomy
+  są wyszarzone. Gdy `EndLevel` jest niższy niż najwyższy poziom z danymi, jest podnoszony (informacja w pasku
+  stanu, także gdy obiekt przestaje być widoczny na oglądanym poziomie).
+
+Numeracja adresowa i HLevel przechodzą razem z węzłami. Poziomy są zapisywane rosnąco (`Data0`, `Data1`…).
+
 ### Ślady GPS jako podkład do rysowania (nowa funkcja, nie ma jej w wersji Python)
 
 Ślady i punkty z plików GPX i GDB są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.

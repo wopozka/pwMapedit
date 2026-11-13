@@ -48,6 +48,15 @@ public:
     void paste_extras(const QMimeData* mime);
     void clear_selected_extras();
 
+    // ---- karta Elements: czesci obiektu i poziomy Data ----
+    // Usuniecie czesci (polygon: zewnetrzna razem z jej dziurami); ostatnia czesc poziomu usuwa poziom,
+    // ostatnia czesc obiektu - obiekt.
+    void delete_element(int level, const std::vector<size_t>& polys);
+    // Czesci jako nowy obiekt o tych samych wlasciwosciach (nie dla jedynego elementu poziomu).
+    void extract_element(int level, const std::vector<size_t>& polys);
+    // Przeniesienie/kopia calego poziomu na wolny poziom; EndLevel podnoszony, gdy jest za niski.
+    void move_level(int from_level, int to_level, bool copy);
+
     // Pola dostepne dla testow.
     QComboBox* type_selector() const { return type_; }
     QLineEdit* label_edit(int num) const { return labels_[num - 1]; }
@@ -66,6 +75,10 @@ public:
     QLineEdit* number_after(bool left) const { return left ? left_.after : right_.after; }
     QLineEdit* number_before(bool left) const { return left ? left_.before : right_.before; }
     QComboBox* node_hlevel() const { return hlevel_; }
+
+signals:
+    // komunikat dla paska stanu okna
+    void message(const QString& text);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -108,6 +121,7 @@ private:
     void numbering_edited();
     void node_numbers_toggled(bool on);
     void element_selected();
+    void elements_context_menu(const QPoint& pos);
 
     MapScene* scene_;
     std::optional<size_t> obj_;

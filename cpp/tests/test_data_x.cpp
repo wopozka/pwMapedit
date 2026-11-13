@@ -265,3 +265,43 @@ TEST(translate_data_level_moves_only_that_level) {
     CHECK(d.raw_polys()[1][0][0].hlevel() == OptInt(1));  // HLevel trafia do ostatniego poziomu
     CHECK_THROWS(d.translate_data_level(3, PointF{1.0, 1.0}));
 }
+
+TEST(levels_delete_extract_move_copy) {
+    DataX d = make({"Data0=(51.0,19.0),(51.1,19.1)", "Data0=(51.2,19.2),(51.3,19.3),(51.4,19.4)",
+                    "Data2=(52.0,20.0),(52.1,20.1)"});
+    d.add_housenumbers_from_string("Numbers1=0,O,1,3,N,-1,-1");  // numeracja na ostatniej czesci (Data2)
+    CHECK(d.data_levels() == (std::vector<int>{0, 2}));
+    CHECK_EQ(d.max_data_level(), 2);
+
+    // ekstrakcja: kopia czesci na tym samym poziomie, oryginal bez zmian
+    DataX e = d.extract_polys(0, {1});
+    CHECK(e.data_levels() == std::vector<int>{0});
+    CHECK_EQ(e.raw_polys()[0].size(), size_t{1});
+    CHECK_EQ(e.raw_polys()[0][0].size(), size_t{3});
+    CHECK(e.obj_bounding_box().valid);
+    CHECK_EQ(d.raw_polys()[0].size(), size_t{2});
+
+    // przeniesienie na zajety poziom - odmowa; na wolny - poziomy rosnaco, numeracja wezlow przeniesiona
+    CHECK(!d.move_data_level(2, 0));
+    CHECK(!d.move_data_level(3, 1));
+    CHECK(d.move_data_level(2, 1));
+    CHECK(d.data_levels() == (std::vector<int>{0, 1}));
+    CHECK(d.housenumbers_for_poly(1, 0)[0] != nullptr);
+    CHECK(d.copy_data_level(1, 4));
+    CHECK(d.data_levels() == (std::vector<int>{0, 1, 4}));
+    CHECK(d.housenumbers_for_poly(4, 0)[0] != nullptr);  // kopia gleboka - niezalezna od oryginalu
+    d.reverse_poly(4);
+    CHECK(d.raw_polys()[1][0][0].pos() != d.raw_polys()[2][0][0].pos());
+    CHECK(!d.copy_data_level(0, 4));
+    const std::vector<std::string> rec = d.to_mp_record(1);
+    CHECK_EQ(rec[0].rfind("Data0=", 0), size_t{0});
+    CHECK_EQ(rec.back().rfind("Numbers", 0), size_t{0});
+
+    // usuniecie czesci; ostatnia czesc poziomu usuwa poziom
+    d.delete_polys(0, {0});
+    CHECK_EQ(d.raw_polys()[0].size(), size_t{1});
+    d.delete_polys(0, {0});
+    CHECK(d.data_levels() == (std::vector<int>{1, 4}));
+    d.delete_polys(4, {0, 0, 7});  // powtorzenia i indeksy poza zakresem sa ignorowane
+    CHECK(d.data_levels() == std::vector<int>{1});
+}
