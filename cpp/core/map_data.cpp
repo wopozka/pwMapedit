@@ -155,6 +155,33 @@ LoadStats MapData::load_from_string(std::string content) {
     return st;
 }
 
+std::optional<MapObject> MapData::object_from_record(const std::vector<std::string>& lines,
+                                                     std::vector<std::string>* warnings) {
+    std::vector<std::string_view> views;
+    for (const std::string& line : lines) {
+        std::string_view v = py::strip(line);
+        if (v == "[END]") break;
+        views.push_back(v);
+    }
+    ParsedRecord rec = parse_record(views);
+    if (rec.head != ParsedRecord::Head::Section) return std::nullopt;
+    ObjectKind kind;
+    if (rec.section == "[POI]")
+        kind = ObjectKind::Poi;
+    else if (rec.section == "[POLYLINE]")
+        kind = ObjectKind::Polyline;
+    else if (rec.section == "[POLYGON]")
+        kind = ObjectKind::Polygon;
+    else
+        return std::nullopt;
+    MapObject obj(kind, projection_.get());
+    std::vector<std::string> obj_warnings;
+    obj.set_data(rec.comments, rec.fields, precision_, obj_warnings);
+    if (warnings) warnings->insert(warnings->end(), obj_warnings.begin(), obj_warnings.end());
+    if (!obj.data || obj.data->data_levels().empty()) return std::nullopt;
+    return obj;
+}
+
 MapObject& MapData::add_map_object(MapObject obj) {
     if (!obj.id) obj.id = objects_.size();
     const size_t id = *obj.id;

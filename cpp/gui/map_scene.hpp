@@ -11,6 +11,7 @@
 #include "map_data.hpp"
 
 class QGraphicsPathItem;
+class QMimeData;
 class QUndoCommand;
 class QUndoStack;
 
@@ -76,6 +77,14 @@ public:
     void delete_selected();
     // Odwrocenie kierunku zaznaczonych polilinii (wszystkie poziomy Data).
     void reverse_selected_polylines();
+    // ---- schowek (format zgodny z wersja Python: application/json + tekst rekordow mp) ----
+    // Rekordy zaznaczonych obiektow; reference - punkt odniesienia zapisywany jako MouseScenePos
+    // (wklejone obiekty sa przesuwane o odleglosc od niego do kursora). nullptr, gdy nic nie zaznaczono.
+    QMimeData* copy_selected(const QPointF& reference) const;
+    // Wkleja obiekty ze schowka jako nowe (jedna komenda) i zaznacza je; zwraca liczbe wklejonych.
+    // mouse: biezaca pozycja kursora; bez niej (albo bez MouseScenePos) obiekty trafiaja w oryginalne miejsce.
+    int paste(const QMimeData* mime, std::optional<QPointF> mouse);
+
     // Dodaje obiekt do MapData i tworzy jego element; zwraca indeks obiektu (bez komendy undo).
     size_t add_object(MapObject obj);
     // Zastapienie pierwszego obiektu polaczona linia (merged) i usuniecie pozostalych - jedna komenda.

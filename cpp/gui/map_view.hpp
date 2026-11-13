@@ -4,6 +4,7 @@
 
 #include <QGraphicsView>
 #include <QPointF>
+#include <optional>
 #include <vector>
 
 #include "projection.hpp"
@@ -31,6 +32,12 @@ public:
     void zoom_out();
 
     QPointF current_scene_mouse_coords() const { return scene_mouse_; }
+    // Pozycja kursora na mapie (brak, gdy kursor jeszcze nie byl nad mapa).
+    std::optional<QPointF> mouse_scene_pos() const {
+        return view_mouse_.x() < 0 ? std::nullopt : std::optional<QPointF>(scene_mouse_);
+    }
+    // Miejsce ostatniego klikniecia lewym przyciskiem (punkt odniesienia przy kopiowaniu obiektow).
+    std::optional<QPointF> last_click_scene_pos() const { return last_click_; }
     // (lat, lon) pod kursorem
     GeoPoint current_mouse_geo_coordinates() const;
 
@@ -65,6 +72,7 @@ private:
     // polozenia zaznaczonych obiektow w chwili nacisniecia lewego przycisku - po puszczeniu przycisku
     // przesuniete obiekty trafiaja do jednej komendy undo
     std::vector<std::pair<MapObjectItem*, QPointF>> move_start_;
+    std::optional<QPointF> last_click_;
     QString last_coords_text_;
 };
 

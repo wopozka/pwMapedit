@@ -109,6 +109,7 @@ void MapView::mouseMoveEvent(QMouseEvent* event) {
 
 void MapView::mousePressEvent(QMouseEvent* event) {
     move_start_.clear();
+    if (event->button() == Qt::LeftButton) last_click_ = mapToScene(event->position().toPoint());
     select_on_press(event);
     MapScene* s = map_scene();
     if (s && event->button() == Qt::LeftButton && !right_button_drag_ && s->tool() == Tool::SelectObjects) {

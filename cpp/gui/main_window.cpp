@@ -15,6 +15,7 @@
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QProgressBar>
 #include <QSaveFile>
 #include <QShortcut>
@@ -133,8 +134,12 @@ void MainWindow::create_actions_and_menus() {
     edit_menu->addAction(undo);
     edit_menu->addAction(redo);
     edit_menu->addSeparator();
+    QAction* cut = edit_menu->addAction(tr("Cu&t"), this, &MainWindow::cut_action);
+    cut->setShortcut(QKeySequence::Cut);
     QAction* copy = edit_menu->addAction(tr("&Copy"), this, &MainWindow::copy_action);
     copy->setShortcut(QKeySequence::Copy);
+    QAction* paste = edit_menu->addAction(tr("&Paste"), this, &MainWindow::paste_action);
+    paste->setShortcut(QKeySequence::Paste);
     QAction* del = edit_menu->addAction(tr("&Usuń"), scene_, &MapScene::delete_selected);
     del->setShortcut(QKeySequence::Delete);
     edit_menu->addSeparator();
@@ -199,7 +204,9 @@ void MainWindow::create_toolbar() {
     redo->setIcon(icon("redo_48.png"));
     bar->addAction(redo);
     bar->addSeparator();
+    bar->addAction(icon("cut_48.png"), tr("Wytnij"), this, &MainWindow::cut_action);
     bar->addAction(icon("copy_48.png"), tr("Kopiuj"), this, &MainWindow::copy_action);
+    bar->addAction(icon("paste_48.png"), tr("Wklej"), this, &MainWindow::paste_action);
     bar->addSeparator();
     QAction* select = tools_group_->actions().value(0);
     if (select) {
@@ -343,8 +350,33 @@ void MainWindow::save_map_as() {
     }
 }
 
+bool MainWindow::focus_in_properties() const {
+    // skroty Ctrl+C/X/V w polach panelu wlasciwosci dotycza tych pol, nie obiektow mapy
+    QWidget* focus = QApplication::focusWidget();
+    return focus && properties_->isAncestorOf(focus);
+}
+
 void MainWindow::copy_action() {
-    QApplication::clipboard()->setMimeData(view_->copy());
+    if (focus_in_properties()) return;
+    // zaznaczone obiekty; bez zaznaczenia - wspolrzedne kursora (jak copy w mapCanvas.py)
+    const QPointF reference = view_->last_click_scene_pos().value_or(view_->current_scene_mouse_coords());
+    QMimeData* mime = scene_->copy_selected(reference);
+    QApplication::clipboard()->setMimeData(mime ? mime : view_->copy());
+}
+
+void MainWindow::cut_action() {
+    if (focus_in_properties() || scene_->tool() != Tool::SelectObjects) return;
+    const QPointF reference = view_->last_click_scene_pos().value_or(view_->current_scene_mouse_coords());
+    QMimeData* mime = scene_->copy_selected(reference);
+    if (!mime) return;
+    QApplication::clipboard()->setMimeData(mime);
+    scene_->delete_selected();
+}
+
+void MainWindow::paste_action() {
+    if (focus_in_properties()) return;
+    const int pasted = scene_->paste(QApplication::clipboard()->mimeData(), view_->mouse_scene_pos());
+    if (pasted) show_message(tr("Wklejono obiektów: %1").arg(pasted));
 }
 
 void MainWindow::go_to_position() {

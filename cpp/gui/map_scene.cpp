@@ -4,12 +4,16 @@
 #include <QElapsedTimer>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QMimeData>
 #include <QTimer>
 #include <QUndoStack>
 #include <algorithm>
 
 #include "commands.hpp"
 #include "map_items.hpp"
+#include "misc.hpp"
 #include "map_styles.hpp"
 
 namespace pwm::gui {
@@ -447,6 +451,97 @@ void MapScene::merge_objects(const std::vector<size_t>& indexes, DataX merged, c
     push_command(command);
     clearSelection();
     if (MapObjectItem* item = item_for_object(first)) item->graphics_item()->setSelected(true);
+}
+
+
+// ---------------------------------------------------------------- schowek
+QMimeData* MapScene::copy_selected(const QPointF& reference) const {
+    if (!map_) return nullptr;
+    QJsonArray records;
+    QString text;
+    const QString position = QString("MouseScenePos=%1,%2").arg(reference.x(), 0, 'g', 17).arg(reference.y(), 0, 'g', 17);
+    for (MapObjectItem* item : selected_object_items()) {
+        const MapObject& obj = item->object();
+        if (obj.deleted) continue;
+        QJsonArray record;
+        record.append(position);
+        for (const std::string& line : obj.to_mp_record(map_->precision())) {
+            const QString l = QString::fromStdString(encoding::cp1250_to_utf8(line));
+            record.append(l);
+            text += l + '\n';
+        }
+        record.append(QStringLiteral("[END]"));
+        text += QStringLiteral("[END]\n\n");
+        records.append(record);
+    }
+    if (records.isEmpty()) return nullptr;
+    auto* mime = new QMimeData;
+    mime->setData(QStringLiteral("application/json"), QJsonDocument(records).toJson(QJsonDocument::Compact));
+    mime->setText(text);
+    return mime;
+}
+
+int MapScene::paste(const QMimeData* mime, std::optional<QPointF> mouse) {
+    if (!map_ || !mime) return 0;
+    // rekordy: (MouseScenePos, linie w UTF-8)
+    std::vector<std::pair<std::optional<QPointF>, QStringList>> records;
+    if (mime->hasFormat(QStringLiteral("application/json"))) {
+        const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QStringLiteral("application/json")));
+        for (const QJsonValue& rec_value : doc.array()) {
+            QStringList lines;
+            for (const QJsonValue& line : rec_value.toArray()) lines << line.toString();
+            std::optional<QPointF> ref;
+            if (!lines.isEmpty() && lines.front().startsWith(QLatin1String("MouseScenePos="))) {
+                const QStringList xy = lines.takeFirst().mid(14).split(',');
+                bool ok_x = false, ok_y = false;
+                if (xy.size() == 2) {
+                    const QPointF p(xy[0].toDouble(&ok_x), xy[1].toDouble(&ok_y));
+                    if (ok_x && ok_y) ref = p;
+                }
+            }
+            records.emplace_back(ref, lines);
+        }
+    } else if (mime->hasText()) {
+        // tekst rekordow mp (np. z edytora): obiekty w oryginalnym miejscu
+        for (const QString& chunk : mime->text().split(QStringLiteral("[END]"))) {
+            if (!chunk.trimmed().isEmpty()) records.emplace_back(std::nullopt, chunk.split('\n'));
+        }
+    }
+
+    QString text;
+    std::vector<MapObject> objects;
+    for (const auto& [ref, lines] : records) {
+        std::vector<std::string> cp1250;
+        for (const QString& line : lines) cp1250.push_back(encoding::utf8_to_cp1250(line.toStdString()));
+        std::optional<MapObject> obj = map_->object_from_record(cp1250);
+        if (!obj) continue;
+        if (ref && mouse) {
+            // Python przesuwal tylko pokazywany poziom; tu wszystkie, zeby obiekt nie rozjechal sie miedzy poziomami
+            const QPointF delta = *mouse - *ref;
+            const std::vector<int> levels = obj->data->data_levels();
+            for (int level : levels) obj->data->translate_data_level(level, PointF{delta.x(), delta.y()});
+            obj->data->recalculate_bounding_box();
+            obj->bbox = obj->data->obj_bounding_box();
+        }
+        switch (obj->kind()) {
+            case ObjectKind::Poi: text = tr("Wklej POI"); break;
+            case ObjectKind::Polyline: text = tr("Wklej Polyline"); break;
+            default: text = tr("Wklej Polygon"); break;
+        }
+        objects.push_back(std::move(*obj));
+    }
+    if (objects.empty()) return 0;
+    if (objects.size() > 1) text = tr("Wklej obiekty (%1)").arg(objects.size());
+    auto* command = new QUndoCommand(text);
+    std::vector<AddObjectCmd*> adds;
+    for (MapObject& obj : objects) adds.push_back(new AddObjectCmd(this, std::move(obj), text, command));
+    push_command(command);
+    // wklejone obiekty zostaja zaznaczone (wskazniki do komend sa wazne, dopoki komenda jest na stosie)
+    clearSelection();
+    for (AddObjectCmd* add : adds)
+        if (add->index())
+            if (MapObjectItem* item = item_for_object(*add->index())) item->graphics_item()->setSelected(true);
+    return static_cast<int>(adds.size());
 }
 
 }  // namespace pwm::gui

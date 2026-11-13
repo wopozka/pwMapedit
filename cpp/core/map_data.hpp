@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,11 @@ public:
     std::vector<MapObject>& objects() { return objects_; }
     size_t records_number() const { return objects_.size(); }
     bool contains_data() const { return !objects_.empty(); }
+
+    // Obiekt z jednego rekordu mp (linie jak w pliku, [END] opcjonalnie) - np. ze schowka przy wklejaniu.
+    // Wspolrzedne przeliczane projekcja mapy. Brak wyniku, gdy rekord nie jest POI/polilinia/polygonem z danymi.
+    std::optional<MapObject> object_from_record(const std::vector<std::string>& lines,
+                                                std::vector<std::string>* warnings = nullptr);
 
     // Dodaje obiekt; jesli nie ma id, dostaje kolejny numer (jak mapData.add_map_object).
     MapObject& add_map_object(MapObject obj);

@@ -1,5 +1,8 @@
 // Testy edycji w GUI (etap 3b): komendy undo/redo na scenie oraz przeciaganie obiektu mysza.
 // Uruchamiane bez okna: gui_tests -platform offscreen (tak robi ctest).
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QMimeData>
 #include <QSignalSpy>
 #include <QUndoStack>
 #include <QtTest>
@@ -143,6 +146,11 @@ private slots:
     void dock_address_and_routing();
     void dock_node_hlevel_and_numbers();
     void dock_elements_highlight();
+    // 3b.4: schowek
+    void copy_paste_at_cursor_and_undo();
+    void copy_paste_several_objects();
+    void paste_plain_text_keeps_position();
+    void copy_without_selection_gives_nothing();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -639,6 +647,79 @@ void EditTests::dock_elements_highlight() {
     QCOMPARE(highlighted(), 1);
     f.scene.clearSelection();
     QCOMPARE(highlighted(), 0);
+}
+
+void EditTests::copy_paste_at_cursor_and_undo() {
+    Fixture f;
+    f.select_only(f.polyline());
+    const PointF n0 = f.node(1, 0, 0).pos();
+    const PointF level1 = f.node(1, 1, 0).pos();
+    std::unique_ptr<QMimeData> mime(f.scene.copy_selected(QPointF(n0.x, n0.y)));
+    QVERIFY(mime);
+    QVERIFY(mime->hasFormat("application/json"));
+    QVERIFY(mime->text().startsWith("[POLYLINE]\nType=0x6\nLabel=Ulica\n"));
+    // format jak w Pythonie: [MouseScenePos=x,y, linie rekordu..., [END]]
+    const QJsonArray records = QJsonDocument::fromJson(mime->data("application/json")).array();
+    QCOMPARE(records.size(), 1);
+    QVERIFY(records[0].toArray().first().toString().startsWith("MouseScenePos="));
+    QCOMPARE(records[0].toArray().last().toString(), QString("[END]"));
+
+    QCOMPARE(f.scene.paste(mime.get(), QPointF(n0.x + 10, n0.y - 5)), 1);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.map->objects().size(), size_t{3});
+    const MapObject& pasted = f.map->objects()[2];
+    QCOMPARE(*pasted.label1, std::string("Ulica"));
+    QVERIFY(pasted.dirindicator);
+    QVERIFY(qAbs(f.node(2, 0, 0).x() - (n0.x + 10)) < 1e-6);
+    QVERIFY(qAbs(f.node(2, 0, 0).y() - (n0.y - 5)) < 1e-6);
+    // przesuwane sa wszystkie poziomy
+    QVERIFY(qAbs(f.node(2, 1, 0).x() - (level1.x + 10)) < 1e-6);
+    QVERIFY(f.node(1, 0, 0).pos() == n0);  // oryginal bez zmian
+    QVERIFY(f.scene.item_for_object(2)->graphics_item()->isSelected());
+    QVERIFY(!f.polyline()->graphics_item()->isSelected());
+    const std::string after_paste = f.map->to_mp_string();
+
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+    QVERIFY(!f.scene.item_for_object(2)->graphics_item()->isVisible());
+    f.stack.redo();
+    QCOMPARE(f.map->to_mp_string(), after_paste);
+}
+
+void EditTests::copy_paste_several_objects() {
+    Fixture f;
+    f.poi()->graphics_item()->setSelected(true);
+    f.polyline()->graphics_item()->setSelected(true);
+    std::unique_ptr<QMimeData> mime(f.scene.copy_selected(QPointF(0, 0)));
+    QCOMPARE(f.scene.paste(mime.get(), QPointF(3, 4)), 2);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.stack.text(0), QString("Wklej obiekty (2)"));
+    QCOMPARE(f.map->objects()[2].kind(), ObjectKind::Poi);
+    QCOMPARE(f.map->objects()[3].kind(), ObjectKind::Polyline);
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{2});
+    // obiekty przesuniete o ten sam wektor - wzajemne polozenie zachowane
+    QVERIFY(qAbs(f.node(2, 0, 0).x() - f.node(0, 0, 0).x() - 3) < 1e-6);
+    QVERIFY(qAbs(f.node(3, 0, 0).y() - f.node(1, 0, 0).y() - 4) < 1e-6);
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::paste_plain_text_keeps_position() {
+    Fixture f;
+    QMimeData mime;
+    mime.setText(QString::fromUtf8("[POI]\nType=0x2f00\nLabel=Łódź\nData0=(52.10000,21.00000)\n[END]\n\n"
+                                   "tekst bez rekordu\n"));
+    QCOMPARE(f.scene.paste(&mime, QPointF(100, 100)), 1);
+    QCOMPARE(*f.map->objects()[2].label1, std::string("\xa3\xf3\x64\x9f"));
+    QVERIFY(f.node(2, 0, 0).pos() == f.node(0, 0, 0).pos());  // bez MouseScenePos - oryginalne miejsce
+    QMimeData empty;
+    QCOMPARE(f.scene.paste(&empty, QPointF()), 0);
+    QCOMPARE(f.stack.count(), 1);
+}
+
+void EditTests::copy_without_selection_gives_nothing() {
+    Fixture f;
+    QVERIFY(f.scene.copy_selected(QPointF()) == nullptr);
 }
 
 QTEST_MAIN(EditTests)

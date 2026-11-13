@@ -259,9 +259,27 @@ Różnice względem Pythona (celowe):
 - Puste pole (etykieta, adres) usuwa wartość z obiektu; puste końcowe wiersze komentarza są pomijane.
 - Karta Elements nie ma kolumny „Obszar” ani menu „Usuń/Kopiuj do” (w Pythonie nie były zaimplementowane).
 
+### Etap 3b.4 (zrobione): kopiuj, wytnij, wklej
+
+- `Ctrl+C` kopiuje zaznaczone obiekty (bez zaznaczenia: współrzędne kursora, jak dotąd), `Ctrl+X` wycina
+  (kopiuje i usuwa, tylko w trybie zaznaczania), `Ctrl+V` wkleja; przyciski na pasku.
+- Schowek ma format wersji Python: `application/json` (lista rekordów, każdy zaczyna się od `MouseScenePos=x,y`
+  i kończy `[END]`) oraz tekst rekordów mp, więc obiekty można przenosić między obiema wersjami programu
+  i wklejać rekordy mp skopiowane z edytora tekstu.
+- Wklejone obiekty są przesuwane o wektor od miejsca kliknięcia przy kopiowaniu (`MouseScenePos`) do bieżącej
+  pozycji kursora; wklejone z samego tekstu trafiają w oryginalne miejsce. Wklejenie to jedna komenda undo
+  (`AddObjectCmd` dla każdego obiektu), a wklejone obiekty zostają zaznaczone.
+- Obiekt z rekordu tworzy `MapData::object_from_record` (rdzeń, z testem).
+
+Różnice względem Pythona (celowe):
+- Wszystkie kopiowane obiekty mają wspólny punkt odniesienia (ostatnie kliknięcie), więc po wklejeniu zachowują
+  wzajemne położenie (w Pythonie każdy obiekt miał własny punkt, ostatnie kliknięcie na nim).
+- Wklejony obiekt jest przesuwany na wszystkich poziomach Data (Python przesuwał tylko pokazywany poziom).
+- Wytnij działa (w Pythonie akcja była w menu, ale niepodłączona).
+- `Ctrl+C/X/V` w polach panelu właściwości nie dotyczą obiektów mapy.
+
 ### Następne kroki
 
-- 3b.4: kopiuj/wklej obiektów.
 - 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).
 
 Etap 2 (moduł pybind11) odłożony.

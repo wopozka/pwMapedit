@@ -142,3 +142,19 @@ TEST(warnings_instead_of_crash) {
     CHECK_EQ(m.records_number(), size_t{1});
     CHECK_EQ(m.warnings().size(), size_t{2});  // Numbers przed Data, EndLevel nie-liczba
 }
+
+TEST(object_from_record_roundtrip) {
+    pwm::MapData map;
+    map.load_from_string("[IMG ID]\nName=x\n[END-IMG ID]\n\n[POLYLINE]\nType=0x6\nLabel=Ulica\n"
+                         "Data0=(52.10000,21.00000),(52.10100,21.00100)\n[END]\n\n");
+    const auto record = map.objects()[0].to_mp_record(map.precision());
+    auto obj = map.object_from_record(record);
+    CHECK(obj.has_value());
+    CHECK(obj->kind() == pwm::ObjectKind::Polyline);
+    CHECK(obj->to_mp_record(map.precision()) == record);
+    std::vector<std::string> with_end = record;
+    with_end.push_back("[END]");
+    CHECK(map.object_from_record(with_end).has_value());
+    CHECK(!map.object_from_record({"[RESTRICT]", "Nod=1"}).has_value());
+    CHECK(!map.object_from_record({"[POI]", "Type=0x2f00"}).has_value());  // bez wspolrzednych
+}

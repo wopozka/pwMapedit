@@ -55,6 +55,8 @@ private slots:
     void save_map();
     void save_map_as();
     void copy_action();
+    void cut_action();
+    void paste_action();
     void go_to_position();
     void set_progress(int value, int maximum);
     void escape_pressed();
@@ -68,6 +70,7 @@ private:
     bool write_map(const QString& file_name);
     void update_window_title();
     void show_message(const QString& text);
+    bool focus_in_properties() const;
 
     std::unique_ptr<MapStyles> styles_;
     std::unique_ptr<MapData> map_;
