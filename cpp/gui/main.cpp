@@ -1,16 +1,20 @@
 // pwMapEdit - edytor map w formacie mp (port C++/Qt6 wersji Python).
 //   pwmapedit [plik.mp] [--screenshot plik.png] [--zoom N] [--level L] [--select N] [--edit-nodes]
+//             [--weblayer osm|geoportal|google]
 // --screenshot: po wczytaniu mapy zapisuje zrzut okna i konczy program (do testow bez klikania);
 // --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy;
-// --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow.
+// --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow;
+// --weblayer: wlacz warstwe WWW (zrzut po pobraniu kafelkow, najwyzej 15 s).
 #include <QApplication>
 #include <QMessageBox>
 #include <QStyleFactory>
+#include <QElapsedTimer>
 #include <QTimer>
 
 #include "main_window.hpp"
 #include "map_items.hpp"
 #include "map_scene.hpp"
+#include "web_layers.hpp"
 #include "map_styles.hpp"
 #include "map_view.hpp"
 
@@ -22,6 +26,7 @@ int main(int argc, char* argv[]) {
     QString file_name, screenshot;
     int zoom = 0, level = 0, select = -1;
     bool edit_nodes = false;
+    QString weblayer;
     const QStringList args = QApplication::arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == "--screenshot" && i + 1 < args.size())
@@ -34,6 +39,8 @@ int main(int argc, char* argv[]) {
             select = args[++i].toInt();
         else if (args[i] == "--edit-nodes")
             edit_nodes = true;
+        else if (args[i] == "--weblayer" && i + 1 < args.size())
+            weblayer = args[++i].toLower();
         else
             file_name = args[i];
     }
@@ -63,10 +70,24 @@ int main(int argc, char* argv[]) {
                     window.view()->centerOn(item->graphics_item());
                 }
             }
-            QTimer::singleShot(300, &window, [&] {
+            if (!weblayer.isEmpty()) {
+                const pwm::web::Layer layer = weblayer == "google"      ? pwm::web::Layer::GoogleOrto
+                                              : weblayer == "geoportal" ? pwm::web::Layer::GeoportalOrto
+                                                                        : pwm::web::Layer::Osm;
+                window.web_layers()->set_layer(layer);
+            }
+            // zrzut, gdy nie ma juz pobieranych kafelkow (najwyzej po 15 s)
+            auto* poll = new QTimer(&window);
+            auto* waited = new QElapsedTimer;
+            waited->start();
+            QObject::connect(poll, &QTimer::timeout, &window, [&, poll, waited] {
+                if (window.web_layers()->pending_downloads() > 0 && waited->elapsed() < 15000) return;
+                poll->stop();
+                delete waited;
                 if (!window.grab().save(screenshot)) QApplication::exit(2);
                 else QApplication::quit();
             });
+            poll->start(300);
         });
     }
     if (!file_name.isEmpty()) window.open_file(file_name);

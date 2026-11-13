@@ -26,6 +26,7 @@ public:
 
     MapScene* map_scene() const;
     void set_projection(const Projection* projection);
+    const Projection* projection() const { return projection_; }
     void set_ruler(MapRuler* ruler) { ruler_ = ruler; }
     MapRuler* ruler() const { return ruler_; }
 
@@ -58,6 +59,8 @@ public:
 
 signals:
     void status_message(const QString& text);
+    // Widoczny fragment mapy sie zmienil (przesuniecie, powiekszenie, rozmiar) - np. dla warstw WWW.
+    void view_changed();
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;

@@ -29,6 +29,7 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "web_layers.hpp"
 
 namespace pwm::gui {
 
@@ -84,6 +85,9 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     scene_->add_persistent_item(ruler_);
     view_->set_ruler(ruler_);
 
+    web_layers_ = new WebLayers(view_, this);
+    connect(view_, &MapView::view_changed, web_layers_, &WebLayers::update);
+
     properties_ = new PropertiesDock(scene_, this);
     addDockWidget(Qt::RightDockWidgetArea, properties_);
     // panel pokazuje zaznaczony obiekt albo wezel aktywnego uchwytu i wypelnia sie od nowa po kazdej zmianie
@@ -111,6 +115,7 @@ MainWindow::~MainWindow() {
     // widok nie moze odwolywac sie do linijki i sceny w trakcie ich niszczenia
     view_->set_ruler(nullptr);
     view_->setScene(nullptr);
+    web_layers_->clear();
     scene_->clear_map();
 }
 
@@ -175,6 +180,29 @@ void MainWindow::create_actions_and_menus() {
         map_level_group_->addAction(act);
         map_level_actions_.append(act);
     }
+
+    // Weblayers: jedna warstwa naraz albo zadna; E wlacza/wylacza ostatnio uzywana (background_on_off)
+    QMenu* web_menu = menuBar()->addMenu(tr("&Weblayers"));
+    web_layer_group_ = new QActionGroup(this);
+    web_layer_group_->setExclusionPolicy(QActionGroup::ExclusionPolicy::ExclusiveOptional);
+    for (web::Layer layer : {web::Layer::Osm, web::Layer::GeoportalOrto, web::Layer::GoogleOrto}) {
+        QAction* act = web_menu->addAction(QString::fromLatin1(web::layer_name(layer)));
+        act->setCheckable(true);
+        act->setData(static_cast<int>(layer));
+        web_layer_group_->addAction(act);
+    }
+    connect(web_layer_group_, &QActionGroup::triggered, this, [this] {
+        QAction* checked = web_layer_group_->checkedAction();
+        if (checked) last_web_layer_action_ = checked;
+        web_layers_->set_layer(checked ? std::optional<web::Layer>(static_cast<web::Layer>(checked->data().toInt()))
+                                       : std::nullopt);
+    });
+    web_menu->addSeparator();
+    QAction* toggle = web_menu->addAction(tr("Włącz/wyłącz tło"), this, [this] {
+        QAction* act = last_web_layer_action_ ? last_web_layer_action_ : web_layer_group_->actions().value(0);
+        if (act) act->trigger();
+    });
+    toggle->setShortcut(QKeySequence(tr("e")));
 
     QMenu* tools_menu = menuBar()->addMenu(tr("&Tools"));
     tools_group_ = new QActionGroup(this);
@@ -321,6 +349,7 @@ void MainWindow::file_loaded() {
     QElapsedTimer timer;
     timer.start();
     view_->creation_cancel();  // podglad rysowanego obiektu jest elementem sceny
+    web_layers_->clear();      // kafelki tez (i ich polozenie zalezy od projekcji nowej mapy)
     scene_->clear_map();
     undo_stack_->clear();
     map_ = std::move(result->map);
@@ -347,6 +376,7 @@ void MainWindow::file_loaded() {
     show_message(msg);
     view_->update_status(false);
     properties_->refresh();
+    web_layers_->update_now();
     emit map_loaded(true);
 }
 

@@ -39,7 +39,7 @@ add_test(NAME core_tests COMMAND run_tests)
 
 # ---- GUI ----
 if(PWM_BUILD_GUI)
-    find_package(Qt6 QUIET COMPONENTS Widgets Concurrent)
+    find_package(Qt6 QUIET COMPONENTS Widgets Concurrent Network)
     if(Qt6_FOUND)
         set(CMAKE_AUTOMOC ON)
         # Biblioteka GUI (wszystko poza main.cpp) - wspolna dla programu i testow GUI.
@@ -47,7 +47,7 @@ if(PWM_BUILD_GUI)
         list(REMOVE_ITEM PWM_GUI_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/gui/main.cpp")
         add_library(pwmgui STATIC ${PWM_GUI_SOURCES})
         target_include_directories(pwmgui PUBLIC gui)
-        target_link_libraries(pwmgui PUBLIC pwmcore Qt6::Widgets Qt6::Concurrent)
+        target_link_libraries(pwmgui PUBLIC pwmcore Qt6::Widgets Qt6::Concurrent Qt6::Network)
         # Katalog z ikonami z repozytorium - uzywany, gdy obok programu nie ma katalogu icons/.
         get_filename_component(PWM_REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
         target_compile_definitions(pwmgui PRIVATE PWM_SOURCE_ICONS_DIR="${PWM_REPO_DIR}/icons")

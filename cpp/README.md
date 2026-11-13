@@ -145,6 +145,8 @@ katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
 | `gui/main_window.*` | `pwMapEdit.py` (okno, menu, pasek narzędzi, pasek stanu, otwieranie/zapis) |
 | `gui/commands.*` | `commands.py` (komendy undo/redo) |
 | `gui/properties_dock.*` | `map_obj_properties_dockwidget.py` (panel właściwości) |
+| `core/web_tiles.*` | `web_layers.py` (kafelki: zoom ze skali, numery kafelków, adresy OSM/Geoportal/Google) |
+| `gui/web_layers.*` | warstwy WWW z `mapRender.py`/`mapCanvas.py` (pobieranie w tle, kafelki na scenie) |
 | `gui/type_names.*` | `icons/icons_names.py`, `type_aliases.py`, `line_polygon_names.py` (generowane przez `tools/gen_type_names.py`) |
 | `gui/map_scene.*` | `mapCanvas.py` |
 | `gui/map_view.*` | `mapRender.py` |
@@ -298,9 +300,29 @@ Różnice względem Pythona (celowe):
 - Akcje „Polygon: stripe/rectangle/disc” nie zostały przeniesione - w Pythonie były w menu, ale nic nie robiły.
 - Zmiana narzędzia porzuca rysowany obiekt.
 
+### Etap 3c.2 (zrobione): warstwy WWW
+
+Menu Weblayers: OSM, Geoportal (ortofotomapa), Google (ortofotomapa) - jedna warstwa naraz albo żadna;
+`E` włącza i wyłącza ostatnio używaną warstwę (jak `background_on_off`). Po każdej zmianie widoku zoom kafelków
+jest liczony ze skali linijki, a kafelki pokrywające widok są układane pod obiektami mapy. Brakujące kafelki są
+pobierane w tle (`QNetworkAccessManager`, nagłówek `User-Agent: pwMapedit`, limit czasu 15 s). Kafelki, które
+wyszły poza widok przed pobraniem, nie są pobierane.
+
+Matematyka kafelków (`core/web_tiles.*`) jest bez Qt; testy porównują z wartościami policzonymi oryginalnym
+`web_layers.py`. Test GUI pobiera kafelki z lokalnego pliku (bez sieci). Zrzut z podkładem:
+`pwmapedit plik.mp --screenshot x.png --weblayer osm|geoportal|google`.
+
+Różnice względem Pythona (celowe):
+- Pamięć podręczna kafelków jest trwała (`<cache użytkownika>/weblayers`, na Windows w `%LOCALAPPDATA%`);
+  Python używał katalogu tymczasowego, więc w każdej sesji pobierał kafelki od nowa.
+- Kafelki leżą pod wszystkimi obiektami mapy i nie reagują na mysz.
+- Wyliczenie serwera Google (`(x + 2) * y % 2`) jest liczone na 64 bitach - przy 32 bitach przepełniało się
+  dla dużych zoomów (Python liczy na dowolnie dużych liczbach).
+
 ### Następne kroki
 
-- 3c.2: warstwy WWW (`web_layers.py`, pobieranie kafelków w tle).
+- Etap 3 przeniesiony w całości; dalsze kroki do ustalenia (np. poprawki błędów z wersji Python opisanych wyżej,
+  etap 2 - moduł pybind11).
 
 
 Etap 2 (moduł pybind11) odłożony.

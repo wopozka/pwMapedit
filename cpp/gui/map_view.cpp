@@ -92,6 +92,7 @@ void MapView::zoom_in() {
     setInteractive(true);
     update_ruler(true);
     update_status(false);
+    emit view_changed();
 }
 
 void MapView::zoom_out() {
@@ -102,6 +103,7 @@ void MapView::zoom_out() {
     setInteractive(true);
     update_ruler(true);
     update_status(false);
+    emit view_changed();
 }
 
 void MapView::mouseMoveEvent(QMouseEvent* event) {
@@ -252,11 +254,13 @@ void MapView::wheelEvent(QWheelEvent* event) {
 void MapView::resizeEvent(QResizeEvent* event) {
     QGraphicsView::resizeEvent(event);
     update_ruler(false);
+    emit view_changed();
 }
 
 void MapView::scrollContentsBy(int dx, int dy) {
     QGraphicsView::scrollContentsBy(dx, dy);
     update_ruler(false);
+    emit view_changed();
 }
 
 

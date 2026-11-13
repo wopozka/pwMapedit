@@ -20,6 +20,7 @@ class MapView;
 class MapStyles;
 class MapRuler;
 class PropertiesDock;
+class WebLayers;
 
 struct LoadResult {
     std::unique_ptr<MapData> map;
@@ -42,6 +43,7 @@ public:
     MapView* view() const { return view_; }
     MapScene* scene() const { return scene_; }
     PropertiesDock* properties_dock() const { return properties_; }
+    WebLayers* web_layers() const { return web_layers_; }
 
 signals:
     void map_loaded(bool ok);
@@ -80,6 +82,9 @@ private:
     MapView* view_ = nullptr;
     MapRuler* ruler_ = nullptr;
     PropertiesDock* properties_ = nullptr;
+    WebLayers* web_layers_ = nullptr;
+    QActionGroup* web_layer_group_ = nullptr;
+    QAction* last_web_layer_action_ = nullptr;
     QUndoStack* undo_stack_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;
     QLabel* info_text_ = nullptr;

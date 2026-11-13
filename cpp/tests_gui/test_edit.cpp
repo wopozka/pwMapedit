@@ -13,6 +13,9 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "web_layers.hpp"
+#include <QTemporaryDir>
+#include <QImage>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
@@ -157,6 +160,8 @@ private slots:
     void create_circle();
     void snap_to_node_when_creating();
     void snap_grip_to_other_object();
+    // 3c.2: warstwy WWW
+    void web_layer_download_cache_and_toggle();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -863,6 +868,64 @@ void EditTests::snap_grip_to_other_object() {
     QVERIFY(qAbs(f.node(2, 0, 1).x() - n1.x) < 1e-9);
     QVERIFY(qAbs(f.node(2, 0, 1).y() - n1.y) < 1e-9);
     QVERIFY(!f.scene.snap_indicator_visible());
+}
+
+void EditTests::web_layer_download_cache_and_toggle() {
+    ViewFixture f;
+    MapRuler ruler(&f.view, &f.map->projection());
+    f.view.set_ruler(&ruler);
+    QTemporaryDir cache, source;
+    QVERIFY(cache.isValid() && source.isValid());
+    // "serwer" kafelkow: lokalny obrazek 256x256 (bez sieci)
+    const QString tile_png = source.filePath("tile.png");
+    QImage image(256, 256, QImage::Format_RGB32);
+    image.fill(Qt::darkCyan);
+    QVERIFY(image.save(tile_png));
+
+    WebLayers web(&f.view);
+    web.set_cache_dir(cache.path());
+    int requests = 0;
+    web.set_url_provider([&](web::Layer, int, int, int) {
+        ++requests;
+        return QUrl::fromLocalFile(tile_png);
+    });
+    web.set_layer(web::Layer::Osm);
+    QVERIFY(requests > 0);
+    QTRY_VERIFY(web.pending_downloads() == 0);
+    const int tiles = web.tile_count();
+    QCOMPARE(tiles, requests);
+    QVERIFY(web.zoom() >= 0 && web.zoom() <= 19);
+    // kafelki zapisane w pamieci podrecznej: <warstwa>/<zoom>/<x>/<y>.png
+    QVERIFY(QDir(cache.filePath(QString("OSM/%1").arg(web.zoom()))).exists());
+    // kafelki pod obiektami mapy i bez obslugi myszy
+    int under = 0;
+    for (QGraphicsItem* item : f.scene.items())
+        if (item->type() == QGraphicsPixmapItem::Type && item->zValue() < 0) {
+            ++under;
+            QCOMPARE(item->acceptedMouseButtons(), Qt::NoButton);
+        }
+    QCOMPARE(under, tiles);
+    // klikniecie w obiekt nad kafelkiem nadal go zaznacza
+    const PointF a = f.node(1, 0, 0).pos(), b = f.node(1, 0, 1).pos();
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, f.view_pos(PointF{(a.x + b.x) / 2, (a.y + b.y) / 2}));
+    QVERIFY(f.polyline()->graphics_item()->isSelected());
+
+    // wylaczenie usuwa kafelki; ponowne wlaczenie bierze je z pamieci podrecznej (bez pobierania)
+    web.set_layer(std::nullopt);
+    QCOMPARE(web.tile_count(), 0);
+    web.set_layer(web::Layer::Osm);
+    QCOMPARE(web.tile_count(), tiles);
+    QCOMPARE(requests, tiles);
+
+    // inny zoom: stare kafelki znikaja, nowe sa pobierane
+    for (int i = 0; i < 15; ++i) f.view.zoom_in();
+    web.update_now();
+    QTRY_VERIFY(web.pending_downloads() == 0);
+    QVERIFY(requests > tiles);
+    QVERIFY(web.tile_count() > 0);
+    web.clear();
+    QCOMPARE(web.tile_count(), 0);
+    f.view.set_ruler(nullptr);
 }
 
 QTEST_MAIN(EditTests)
