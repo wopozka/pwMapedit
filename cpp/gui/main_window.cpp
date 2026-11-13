@@ -324,7 +324,7 @@ void MainWindow::open_file_dialog() {
     const QStringList recent = recent_files();
     const QString start_dir = recent.isEmpty() ? QString() : QFileInfo(recent.front()).absolutePath();
     QString file_name = QFileDialog::getOpenFileName(this, tr("File to open"), start_dir,
-                                                     tr("Pliki map (*.mp *.MP *.txt);;Wszystkie pliki (*)"));
+                                                     tr("Pliki mp (*.mp *.MP);;Wszystkie pliki (*)"));
     if (!file_name.isEmpty()) open_file(file_name);
 }
 
@@ -426,7 +426,7 @@ void MainWindow::save_map() {
 void MainWindow::save_map_as() {
     if (!map_ || !map_->contains_data()) return;
     QString file_name = QFileDialog::getSaveFileName(this, tr("Zapisz mapę jako"), map_file_name_,
-                                                     tr("Pliki map (*.mp *.MP *.txt)"));
+                                                     tr("Pliki mp (*.mp *.MP)"));
     if (file_name.isEmpty()) return;
     if (write_map(file_name)) {
         map_file_name_ = file_name;
