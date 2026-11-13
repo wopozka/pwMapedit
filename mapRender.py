@@ -15,7 +15,7 @@ import urllib.request
 from web_layers import WebLayerTile
 from pathlib import Path
 
-import misc_functions
+from pwm_core import geometry
 from singleton_store import Store
 
 
@@ -147,7 +147,7 @@ class mapRender(QGraphicsView):
         self.set_status_bar()
         # coords1 = self.projection.canvas_to_geo(self.mapToScene(0, 0).x(), self.mapToScene(0, 0).y())
         # coords2 = self.projection.canvas_to_geo(self.mapToScene(0, 10).x(), self.mapToScene(0, 10).y())
-        # print(misc_functions.vincenty_distance(coords1, coords2))
+        # print(geometry.vincenty_distance(coords1, coords2))
 
     def get_map_scale(self):
         return self.map_scale
@@ -269,7 +269,7 @@ class mapRender(QGraphicsView):
                         qpp.addEllipse(self.mapToScene(event.pos()), r_circle, r_circle)
                         # obliczamy jaką geo odległość ma promień okręgu
                         try:
-                            vincenty_r = misc_functions.vincenty_distance(
+                            vincenty_r = geometry.vincenty_distance(
                                 self.projection.canvas_to_geo(self._poly_creation_nodes[0].x(),
                                                               self._poly_creation_nodes[0].y()),
                                 self.projection.canvas_to_geo(self.mapToScene(event.pos()).x(),

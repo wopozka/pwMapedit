@@ -1,13 +1,5 @@
 import pytest
-import sys
-import os.path
-
-import map_items
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-import misc_functions
-from PyQt6.QtGui import QPainterPath, QPolygonF
-from PyQt6.QtCore import QPointF, QLineF
+from pwm_core import geometry, skin
 
 
 TEST_RETURN_ICON_DEFINITION = ((['Type=0x15', 'SubType=0x00', 'Marine=Y', 'string1=0x04,Map', 'string2=0x15,Mapa',
@@ -47,7 +39,7 @@ TEST_RETURN_ICON_DEFINITION = ((['Type=0x15', 'SubType=0x00', 'Marine=Y', 'strin
 
 @pytest.mark.parametrize('target, answer', TEST_RETURN_ICON_DEFINITION)
 def test_return_icon_definiton(target, answer):
-    assert misc_functions.return_icon_definition(target) == answer
+    assert skin.return_icon_definition(target) == answer
 
 TEST_VECTOR_ANGLE =(
     ((1, 0, False), 0),
@@ -70,7 +62,7 @@ TEST_VECTOR_ANGLE =(
 
 @pytest.mark.parametrize('target, answer', TEST_VECTOR_ANGLE)
 def test_vector_angle(target, answer):
-    assert misc_functions.vector_angle(target[0], target[1], clockwise=target[2], screen_coord_system=False) == answer
+    assert geometry.vector_angle(target[0], target[1], clockwise=target[2], screen_coord_system=False) == answer
 
 TEST_VECTOR_ROTATED =(
     ((1.0, 0.0, 90, False, False), (0.0, 1.0),), # x, y, obrót, clockwise, screen_coord_system
@@ -88,7 +80,7 @@ TEST_VECTOR_ROTATED =(
 
 @pytest.mark.parametrize('target, answer', TEST_VECTOR_ROTATED)
 def test_vector_rotated(target, answer):
-    _answer = misc_functions.vector_rotated(target[0], target[1], target[2], clockwise=target[3],
+    _answer = geometry.vector_rotated(target[0], target[1], target[2], clockwise=target[3],
                                            screen_coord_system=target[4])
     _answer = tuple([round(a, 1) for a in _answer])
     assert _answer == answer
@@ -106,7 +98,7 @@ TEST_LABEL_ANGLE = (
 
 @pytest.mark.parametrize('target, answer', TEST_LABEL_ANGLE)
 def test_label_angle(target, answer):
-    assert misc_functions.calculate_label_angle(target) == answer
+    assert geometry.calculate_label_angle(target) == answer
 
 TEST_DISTANCE = (
     ([(51.981570, 16.444900), (51.990910, 16.467280)], 1850),
@@ -115,55 +107,8 @@ TEST_DISTANCE = (
 
 # @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
 # def test_great_circle_distance(target, answer):
-#     assert misc_functions.great_circle_distance(target[0], target[1]) == answer / 1000
+#     assert geometry.great_circle_distance(target[0], target[1]) == answer / 1000
 
 @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
 def test_vincenty_distance(target, answer):
-    assert misc_functions.vincenty_distance(target[0], target[1]) == answer
-
-TEST_CLOSEST_POINT_TO_POLY_JOINT = (
-    (QPointF(2.0, 0.0), (0, QPointF(2.0, 0.0), 1),),
-    (QPointF(0.0, -2.0), (0, QPointF(0.0, -2.0), 2),),
-    (QPointF(-2.0, 0.0), (0, QPointF(-2.0, 0.0), 3),),
-    (QPointF(0.0, 2.0), (0, QPointF(0.0, 2.0), 4),),
-    (QPointF(1.0, 0.0), (0, QPointF(1.0, 0.0), 6),),
-    (QPointF(0.0, -1.0), (0, QPointF(0.0, -1.0), 7),),
-    (QPointF(-1.0, 0.0), (0, QPointF(-1.0, 0.0), 8),),
-    (QPointF(0.0, 1.0), (0, QPointF(0.0, 1.0), 9),),
-    (QPointF(5.0, 3.0), (0, QPointF(5.0, 3.0), 11),),
-    (QPointF(3.0, 2.0), (0, QPointF(3.0, 2.0), 12),),
-    (QPointF(3.0, 3.0), (0, QPointF(3.0, 3.0), 13),),
-    (QPointF(4.0, 4.0), (0, QPointF(4.0, 4.0), 14),),
-)
-
-# @pytest.mark.parametrize('target, answer', TEST_CLOSEST_POINT_TO_POLY_JOINT)
-# def test_closest_point_to_poly3(target, answer):
-#     poly0 = QPolygonF([QPointF(1.0, 1.0), QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)])
-#     poly = QPolygonF([QPointF(2.0, 2.0), QPointF(2.0, -2.0), QPointF(-2.0, -2.0), QPointF(-2.0, 2.0)])
-#     poly2 = QPolygonF([QPointF(5.0, 4.0), QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)])
-#     pp0 = QPainterPath()
-#     pp0.addPolygon(poly0)
-#     pp = QPainterPath()
-#     pp.addPolygon(poly)
-#     pp = pp.subtracted(pp0)
-#     pp1 = QPainterPath()
-#     pp1.addPolygon(poly2)
-#     pp3 = QPainterPath()
-#     pp3.addPath(pp)
-#     pp3.addPath(pp1)
-#     treshold = 1
-#     assert misc_functions.closest_point_to_poly(target, pp3, treshold, polygon=True) == answer
-
-TEST_DECORATE_POLYLINE = (
-
-)
-@pytest.mark.parametrize('target, answer', TEST_DECORATE_POLYLINE)
-def test_decorate_polyline(target, answer):
-    polyline = map_items.PolylineQGraphicsPathItem(None)
-    polyline.moveTo(QPointF(1.0, 1.0))
-    for line_point in (QPointF(1.0, -1.0), QPointF(-1.0, -1.0), QPointF(-1.0, 1.0)):
-        polyline.drawTo(line_point)
-    polyline.moveTo(QPointF(5.0, 4.0))
-    for line_point in (QPointF(5.0, 2.0), QPointF(3.0, 2.0), QPointF(3.0, 4.0)):
-        polyline.drawTo(line_point)
-
+    assert geometry.vincenty_distance(target[0], target[1]) == answer

@@ -13,9 +13,9 @@ import platform
 import commands
 # import modes
 import math
-import projection
+from pwm_core import projection
 import json
-import misc_functions
+from pwm_core import mp_format, data_x
 import os.path
 import map_items
 import map_object_properties
@@ -388,21 +388,21 @@ class mapCanvas(QGraphicsScene):
                 x, y = s_data[0].split('=')[1].split(',')
                 mouse_scene_pos = QPointF(float(x), float(y))
                 s_data = s_data[1:]
-            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(s_data)
-            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+            poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(s_data)
+            if poi_poly_type[0] == mp_format.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
                                                    _projection=self._projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
                 self.command_paste_poi(map_object, mouse_scene_pos)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(None,
                                                                  map_objects_properties=self._map_objects_properties,
                                                                  _projection=self._projection)
                 map_object.set_data(obj_comment, obj_data)
                 map_object.set_mp_data()
                 self.command_paste_polyline(map_object, mouse_scene_pos)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(None,
                                                                 map_objects_properties=self._map_objects_properties,
                                                                 _projection=self._projection)
@@ -502,7 +502,7 @@ class mapCanvas(QGraphicsScene):
         first, others = selected[0], selected[1:]
         try:
             merged_object, skipped_levels, reversed_any = first.create_merged_polyline(others)
-        except map_items.MergeError as e:
+        except data_x.MergeError as e:
             QMessageBox.warning(window, 'Łączenie polylinii', str(e))
             return
         if reversed_any and any(a.get_param('DirIndicator') or a.is_oneway() for a in selected):

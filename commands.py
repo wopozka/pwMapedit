@@ -3,7 +3,6 @@ from PyQt6.QtCore import QPointF
 import copy
 import time
 import pwmapedit_constants
-import misc_functions
 
 class CreateNewPoiCmd(QUndoCommand):
     def __init__(self, new_poi_map_object, map_objects, scene, description, mouse_scene_pos=None):
@@ -166,7 +165,7 @@ class ReversePolylineCmd(QUndoCommand):
 
     def redo(self):
         self.map_object.data0.reverse_poly(self.data_level)
-        polygons = self.map_object.data0.get_polys_for_data_level(self.data_level, qpointsf=False)
+        polygons = self.map_object.data0.get_polys_for_data_level(self.data_level)
         self.map_object.setPath(self.map_object.create_painter_path(polygons))
         self.update_children()
         return
@@ -363,11 +362,11 @@ class SetHlevelToNode(QUndoCommand):
         self.data_level = map_object.current_data_x
         self.new_hlevel_definition = hlevel
         self.old_hlevel_definition = self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                                                      self.node_num, False).get_hlevel_definition()
+                                                                      self.node_num).get_hlevel_definition()
 
     def redo(self):
         self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                            self.node_num, False).set_hlevel_definition(self.new_hlevel_definition)
+                                            self.node_num).set_hlevel_definition(self.new_hlevel_definition)
         self.map_object.update_hlevel_labels()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             if not (self.grip in self.map_object.scene().items(self.pos) and self.grip.isSelected()):
@@ -379,7 +378,7 @@ class SetHlevelToNode(QUndoCommand):
 
     def undo(self):
         self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                            self.node_num, False).set_hlevel_definition(self.old_hlevel_definition)
+                                            self.node_num).set_hlevel_definition(self.old_hlevel_definition)
         self.map_object.update_hlevel_labels()
         if self.map_object.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             self.map_object.scene().clearSelection()
@@ -399,12 +398,12 @@ class SetNumbersToNode(QUndoCommand):
         self.data_level = map_object.current_data_x
         self.new_num_definition = num_definition
         self.old_num_definition = self.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                                                      self.node_num, False).get_numbers_definition()
+                                                                      self.node_num).get_numbers_definition()
 
 
     def redo(self):
-        self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num,
-                                        False).set_numbers_definition(self.new_num_definition)
+        node = self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num)
+        node.set_numbers_definition(self.new_num_definition)
         self.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
         self.map_object.update_housenumber_labels()
         self.map_object.update_interpolated_housenumber_labels()
@@ -416,8 +415,8 @@ class SetNumbersToNode(QUndoCommand):
                 self.map_object.scene().views()[0].centerOn(self.pos)
 
     def undo(self):
-        self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num,
-                                        False).set_numbers_definition(self.old_num_definition)
+        node = self.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num)
+        node.set_numbers_definition(self.old_num_definition)
         self.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
         self.map_object.update_housenumber_labels()
         self.map_object.update_interpolated_housenumber_labels()

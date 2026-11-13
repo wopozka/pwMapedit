@@ -1,12 +1,7 @@
 import pytest
-import sys
-import os.path
-
-import map_object_properties
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
+pytest.importorskip('PyQt6')
 import map_items
-import projection
+from pwm_core import projection
 from map_object_properties import MapObjectsProperties
 from PyQt6.QtGui import QPainterPath, QPolygonF
 from PyQt6.QtCore import QPointF, QLineF

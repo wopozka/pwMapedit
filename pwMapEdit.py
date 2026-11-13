@@ -15,10 +15,10 @@ import mapRender
 import map_items
 import pwmapedit_toolbar
 import map_object_properties
-import projection
+from pwm_core import projection
 import map_obj_properties_dockwidget
 import pwmapedit_constants
-import misc_functions
+from pwm_core import mp_format
 import web_layers
 import tempfile
 
@@ -126,7 +126,7 @@ class MapFileOpener(QObject):
         # map_canvas = mapCanvas.mapCanvas(self.parent, 0, 0, 400, 200, projection=self.projection,
         #                                  undo_redo_stack=self.undo_redo_stack)
         while b < zawartosc_pliku_mp_len:
-            if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
+            if zawartosc_pliku_mp[b].strip() not in mp_format.MAP_OBJECT_TYPES:
                 b += 1
                 map_objects.map_header.append(zawartosc_pliku_mp[b])
             else:
@@ -154,14 +154,14 @@ class MapFileOpener(QObject):
             # print(b)
             mp_record = []
             mpfileline = zawartosc_pliku_mp[b].strip()
-            while not mpfileline.startswith(pwmapedit_constants.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
+            while not mpfileline.startswith(mp_format.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
 
                 mp_record.append(mpfileline)
                 b += 1
                 mpfileline = zawartosc_pliku_mp[b]
 
-            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
-            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+            poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(mp_record)
+            if poi_poly_type[0] == mp_format.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(None, map_objects_properties=_map_object_properties,
                                                    _projection=_projection)
                 map_object.set_data(obj_comment, obj_data)
@@ -169,7 +169,7 @@ class MapFileOpener(QObject):
                 # map_canvas.draw_object_on_map(map_object)
                 # self.draw_poi.emit(map_object)
                 objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(None,
                                                                  map_objects_properties=_map_object_properties,
                                                                  _projection=_projection)
@@ -178,7 +178,7 @@ class MapFileOpener(QObject):
                 # map_canvas.draw_object_on_map(map_object)
                 # self.draw_polyline.emit(map_object)
                 objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(None,
                                                                 map_objects_properties=_map_object_properties,
                                                                 _projection=_projection)
@@ -187,9 +187,9 @@ class MapFileOpener(QObject):
                 # map_canvas.draw_object_on_map(map_object)
                 # self.draw_polygon.emit(map_object)
                 objs_to_draw.append(map_object)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_RESTRICT:
                 map_object = None
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_ROADSIGN:
                 map_object = None
             else:
                 map_object = None
@@ -236,7 +236,8 @@ class MapFileSaver(QObject):
                 map_file.writelines(self.map_objects.map_header)
                 for map_object_num, map_object in enumerate(self.map_objects.get_all_map_objects()):
                     if not map_object.is_deleted():
-                        map_file.writelines([a + '\n' for a in map_object.to_mp_record()])
+                        map_file.writelines([a + '\n' for a in
+                                             map_object.to_mp_record(self.map_objects.get_precision())])
                         map_file.writelines(['[END]\n', '\n'])
                     self.progress.emit('set_value', map_object_num + 1)
         except OSError as e:

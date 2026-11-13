@@ -5,11 +5,12 @@ from PyQt6.QtWidgets import (QDockWidget, QMenu, QLabel, QHBoxLayout, QVBoxLayou
                              QPushButton, QGroupBox, QCompleter, QApplication)
 from PyQt6.QtWidgets import QFormLayout, QTabWidget
 from PyQt6.QtWidgets import QPlainTextEdit, QWidget, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem
-from PyQt6.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray
+from PyQt6.QtCore import Qt, QSortFilterProxyModel, QObject, pyqtSignal, QMimeData, QByteArray, QPointF
 from PyQt6.QtGui import QIcon, QPainterPath
 from enum import Enum
 import json
 import map_items
+from pwm_core.data_x import Numbers_Definition
 
 
 class RouteParams(Enum):
@@ -472,7 +473,7 @@ class MapObjPropDock(QDockWidget):
             poly_item.setText(1, '')
             poly_item.setText(2, f"{lat:.6f}, {lon:.6f}")
             pp = QPainterPath()
-            pp.addEllipse(scene_coords, 10, 10)
+            pp.addEllipse(QPointF(scene_coords.x(), scene_coords.y()), 10, 10)
             poly_item.setData(2, Qt.ItemDataRole.UserRole, pp)
         else:
             for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
@@ -696,7 +697,7 @@ class MapObjPropDock(QDockWidget):
                         definition[key] = widget.text().strip()
                     else:
                         definition[key] = None
-        return map_items.Numbers_Definition(**definition)
+        return Numbers_Definition(**definition)
 
     def labels_changed(self):
         if ([a.text().strip() for a in (self.label1_entry, self.label2_entry, self.label3_entry)]

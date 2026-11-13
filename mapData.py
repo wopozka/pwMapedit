@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import misc_functions
-import pwmapedit_constants
+from pwm_core import mp_format
 import map_items
 
 
@@ -41,6 +40,9 @@ class mapData(object):
         self.map_bounding_box = {}
 
         self.projection = projection
+        # najwieksza precyzja wspolrzednych wczytanych obiektow; przy zapisie dostaja ja obiekty, ktorych precyzja
+        # nie jest znana (np. narysowane w programie)
+        self.precision = None
 
     def contains_data(self):
         return len(self.mapObjectsList) > 0
@@ -74,7 +76,7 @@ class mapData(object):
         # first lets skip the file header
         while b < zawartosc_pliku_mp_len:
             # print(b)
-            if zawartosc_pliku_mp[b].strip() not in pwmapedit_constants.MAP_OBJECT_TYPES:
+            if zawartosc_pliku_mp[b].strip() not in mp_format.MAP_OBJECT_TYPES:
                 b += 1
             else:
                 break
@@ -92,34 +94,35 @@ class mapData(object):
             # print(b)
             mp_record = []
             mpfileline = zawartosc_pliku_mp[b].strip()
-            while not mpfileline.startswith(pwmapedit_constants.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
+            while not mpfileline.startswith(mp_format.MAP_OBJECT_END) and b < zawartosc_pliku_mp_len-1:
 
                 mp_record.append(mpfileline)
                 b += 1
                 mpfileline = zawartosc_pliku_mp[b]
 
-            poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(mp_record)
+            poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(mp_record)
             self.lastObjectId += 1
-            if poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POI:
+            if poi_poly_type[0] == mp_format.MAP_OBJECT_POI:
                 map_object = map_items.PoiAsPixmap(self.get_object_id(),
                                                    map_objects_properties=self.map_objects_properties,
                                                    _projection=self.projection)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYLINE:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYLINE:
                 map_object = map_items.PolylineQGraphicsPathItem(self.get_object_id(),
                                                                  map_objects_properties=self.map_objects_properties,
                                                                  _projection=self.projection)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_POLYGON:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_POLYGON:
                 map_object = map_items.PolygonQGraphicsPathItem(self.get_object_id(),
                                                                 map_objects_properties=self.map_objects_properties,
                                                                 _projection=self.projection)
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_RESTRICT:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_RESTRICT:
                 pass
-            elif poi_poly_type[0] == pwmapedit_constants.MAP_OBJECT_ROADSIGN:
+            elif poi_poly_type[0] == mp_format.MAP_OBJECT_ROADSIGN:
                 pass
             else:
                 pass
             map_object.set_data(obj_comment, obj_data)
             self.mapObjectsList.append(map_object)
+            self.update_precision(map_object)
             self.set_map_bounding_box(map_object.obj_bounding_box)
             del mp_record[:]
             b += 1
@@ -161,7 +164,16 @@ class mapData(object):
     def get_map_file_name(self):
         return self.map_filename
 
+    def update_precision(self, map_object):
+        data = getattr(map_object, 'data0', None)
+        if data is not None and data.precision is not None:
+            self.precision = data.precision if self.precision is None else max(self.precision, data.precision)
+
+    def get_precision(self):
+        return self.precision
+
     def add_map_object(self, map_object):
+        self.update_precision(map_object)
         # dla nowych obiektow id moze byc ustawione na None, wtedy przypisz pierwszy wolny
         if map_object.get_id() is None:
            map_object.set_id(self.get_object_id())

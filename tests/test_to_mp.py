@@ -1,11 +1,7 @@
 import pytest
-import sys
-import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-import map_items
-import projection
-import misc_functions
-import map_object_properties
+from pwm_core import projection, mp_format
+from pwm_core.data_x import Node, Data_X
+from pwm_core.map_object import BasicMapItem
 
 NODE_TEST = (
         ((12.23456, 12.23456, 5), '(12.23456,12.23456)',),
@@ -15,7 +11,7 @@ NODE_TEST = (
 @pytest.mark.parametrize('target, answer', NODE_TEST)
 def test_get_mp_coords(target, answer):
     proj = projection.Mercator(None)
-    node = map_items.Node(latitude=target[0], longitude=target[1], projection=proj)
+    node = Node(latitude=target[0], longitude=target[1], projection=proj)
     assert node.get_mp_coords(target[2]) == answer
 
 DATA_TEST = (
@@ -30,7 +26,7 @@ DATA_TEST = (
 @pytest.mark.parametrize('target, answer', DATA_TEST)
 def test_data_to_mp_record(target, answer):
     _projection = projection.Mercator(None)
-    data_x = map_items.Data_X(projection=_projection)
+    data_x = Data_X(projection=_projection)
     for data_line in target:
         if data_line.startswith('Data'):
             data_level, data_string = data_line.split('=', 1)
@@ -58,7 +54,51 @@ OBJ_TO_MP_TEST = (
 @pytest.mark.parametrize('target, answer', OBJ_TO_MP_TEST)
 def test_obj_to_mp_record(target, answer):
     _projection = projection.Mercator(None)
-    basic_map_item = map_items.BasicMapItem(1, map_objects_properties=None, _projection=_projection)
-    poi_poly_type, obj_comment, obj_data = misc_functions.map_strings_record_to_dict_record(target)
+    basic_map_item = BasicMapItem(1, map_objects_properties=None, _projection=_projection)
+    poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(target)
     basic_map_item.set_data(obj_comment, obj_data)
     assert basic_map_item.to_mp_record() == answer
+
+
+def _data_x(*data_strings):
+    data_x = Data_X(projection=projection.Mercator(None))
+    for data_string in data_strings:
+        data_x.add_nodes_from_string('Data0', data_string)
+    return data_x
+
+
+def test_precision_does_not_leak_between_objects():
+    # wczesniej precyzja byla zmienna klasowa: obiekt z 6 miejscami po przecinku zmienial zapis wszystkich kolejnych
+    six = _data_x('(51.819400,19.303790),(51.818870,19.306380)')
+    five = _data_x('(51.81940,19.30379),(51.81887,19.30638)')
+    assert six.to_mp_record() == ['Data0=(51.819400,19.303790),(51.818870,19.306380)']
+    assert five.to_mp_record() == ['Data0=(51.81940,19.30379),(51.81887,19.30638)']
+
+
+def test_unknown_precision_uses_map_default():
+    # obiekt narysowany w programie: wspolrzedne z pelna precyzja float, wlasna precyzja nieznana
+    drawn = _data_x('(51.8194001234567,19.3037901234567),(51.8188701234567,19.3063801234567)')
+    assert drawn.precision is None
+    assert drawn.to_mp_record(default_precision=6) == ['Data0=(51.819400,19.303790),(51.818870,19.306380)']
+    assert drawn.to_mp_record() == ['Data0=(51.81940,19.30379),(51.81887,19.30638)']
+
+
+def test_own_precision_wins_over_map_default():
+    five = _data_x('(51.81940,19.30379),(51.81887,19.30638)')
+    assert five.to_mp_record(default_precision=6) == ['Data0=(51.81940,19.30379),(51.81887,19.30638)']
+
+
+def test_precision_kept_by_copy_split_and_merge():
+    six = _data_x('(51.819400,19.303790),(51.818870,19.306380),(51.818430,19.308500)')
+    assert six.copy().precision == 6
+    part1, part2 = six.split_data_x(0, 0, 1)
+    assert part1.precision == 6 and part2.precision == 6
+    merged, _, _ = Data_X.merge_polylines([part1, part2])
+    assert merged.precision == 6
+
+
+def test_basic_map_item_passes_map_precision():
+    item = BasicMapItem(1, _projection=projection.Mercator(None))
+    item.set_type('0x1')
+    item.set_datax('Data0', '(51.8194001234567,19.3037901234567),(51.8188701234567,19.3063801234567)')
+    assert 'Data0=(51.819400,19.303790),(51.818870,19.306380)' in item.to_mp_record(default_precision=6)

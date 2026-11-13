@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import math
-import utm
+from pwm_core import utm
 
 class Projection(object):
     """general base class for all projections"""

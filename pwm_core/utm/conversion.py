@@ -1,5 +1,5 @@
 import math
-from utm.error import OutOfRangeError
+from .error import OutOfRangeError
 
 __all__ = ['to_latlon', 'from_latlon']
 

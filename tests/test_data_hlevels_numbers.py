@@ -1,11 +1,7 @@
 import pytest
-import sys
-import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
-import map_items
-import projection
-from PyQt6.QtGui import QPainterPath, QPolygonF
-from PyQt6.QtCore import QPointF, QLineF
+from pwm_core import projection
+from pwm_core.data_x import Data_X
+from pwm_core.geometry import Point, Line
 
 DATA_TEST = (
     (('Data0=(52.42016,20.68638),(52.42011,20.68643),(52.42007,20.68651)',), [0]),
@@ -23,7 +19,7 @@ DATA_TEST = (
 @pytest.mark.parametrize('target, answer', DATA_TEST)
 def test_data_levels(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X(projection=proj)
+    data_obj = Data_X(projection=proj)
     for dataline in target:
         data_level, data_string = dataline.split('=', 1)
         data_obj.add_nodes_from_string(data_level, data_string)
@@ -50,7 +46,7 @@ DATA_TEST1 = (
 @pytest.mark.parametrize('target, answer', DATA_TEST1)
 def test_data_levels(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X(projection=proj)
+    data_obj = Data_X(projection=proj)
     for dataline in target:
         data_level, data_string = dataline.split('=', 1)
         data_obj.add_nodes_from_string(data_level, data_string)
@@ -68,7 +64,7 @@ TEST_ADDRESS_ADDING = (
 @pytest.mark.parametrize('target, answer', TEST_ADDRESS_ADDING)
 def test_address_adding(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X(projection=proj)
+    data_obj = Data_X(projection=proj)
     data_obj.add_nodes_from_string('Data0', target[0])
     data_obj.add_housenumbers_from_string(target[1])
     data_obj.add_housenumbers_from_string(target[2])
@@ -77,32 +73,6 @@ def test_address_adding(target, answer):
         def_['n'] = node_num
         assert def_ == answer[node_num]
 
-
-TEST_ADRESS_NUMBER_POSITION = (
-    # node_coords, line_segment_vector,
-    # subj_position
-    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_after',), QPointF(20.0, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_after',), QPointF(20.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'left_side_number_before',), QPointF(80, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(100.0, 0.0)), 'right_side_number_before',), QPointF(80.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'left_side_number_after',), QPointF(-20.0, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'right_side_number_after',), QPointF(20.0, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'left_side_number_before',), QPointF(-20, 80.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, 100.0)), 'right_side_number_before',), QPointF(20.0, 80.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'left_side_number_after',), QPointF(-20.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'right_side_number_after',), QPointF(-20.0, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'left_side_number_before',), QPointF(-80.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(-100.0, 0.0)), 'right_side_number_before',), QPointF(-80.0, 20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'left_side_number_after',), QPointF(20.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'right_side_number_after',), QPointF(-20.0, -20.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'left_side_number_before',), QPointF(20, -80.0)),
-    ((QLineF(QPointF(0.0, 0.0), QPointF(0.0, -100.0)), 'right_side_number_before',), QPointF(-20.0, -80.0)),
-
-)
-
-@pytest.mark.parametrize('target, answer', TEST_ADRESS_NUMBER_POSITION)
-def test_get_numbers_position(target, answer):
-    assert map_items.PolylineQGraphicsPathItem.get_numbers_position(target[0], target[1], testing=True).p2() == answer
 
 NUMBERS_BETWEEN = (
     ((1, 9, 'O'), ([3, 5, 7])),
@@ -116,30 +86,30 @@ NUMBERS_BETWEEN = (
 )
 @pytest.mark.parametrize('target, answer', NUMBERS_BETWEEN)
 def test_get_numbers_between(target, answer):
-    assert map_items.Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
+    assert Data_X.get_numbers_between(target[0], target[1], target[2]) == answer
 
 INTERPOLATED_NUMS_COORDS = (
-    (([QLineF(0, 0, 1, 0)], [3]), [(QLineF(0, 0, 1, 0), QPointF(0.5, 0), 3),],),
-    (([QLineF(0, 0, 0, 3)], [1, 2]), [(QLineF(0, 0, 0, 3), QPointF(0, 1), 1), (QLineF(0, 0, 0, 3), QPointF(0, 2), 2),],),
-    (([QLineF(0, 0, 0, 4)], [1, 2, 3]), [(QLineF(0, 0, 0, 4), QPointF(0, 1), 1), (QLineF(0, 0, 0, 4), QPointF(0, 2), 2), (QLineF(0, 0, 0, 4),QPointF(0, 3), 3)],),
-    (([QLineF(0, 0, 0, 1), QLineF(0, 1, 0, 3)], [3]), [(QLineF(0, 1, 0, 3), QPointF(0, 1.5), 3)],),
-    (([QLineF(0, 0, 5, 0), QLineF(5, 0, 10, 0)], [1, 2, 3, 4, 5, 6, 7, 8, 9]),
-     [(QLineF(0, 0, 5, 0), QPointF(1, 0), 1), (QLineF(0, 0, 5, 0), QPointF(2, 0), 2),
-      (QLineF(0, 0, 5, 0), QPointF(3, 0), 3), (QLineF(0, 0, 5, 0), QPointF(4, 0), 4),
-      (QLineF(0, 0, 5, 0), QPointF(5, 0), 5),
-      (QLineF(5, 0, 10, 0), QPointF(6, 0), 6), (QLineF(5, 0, 10, 0), QPointF(7, 0), 7),
-      (QLineF(5, 0, 10, 0), QPointF(8, 0), 8), (QLineF(5, 0, 10, 0), QPointF(9, 0), 9)],
+    (([Line(0, 0, 1, 0)], [3]), [(Line(0, 0, 1, 0), Point(0.5, 0), 3),],),
+    (([Line(0, 0, 0, 3)], [1, 2]), [(Line(0, 0, 0, 3), Point(0, 1), 1), (Line(0, 0, 0, 3), Point(0, 2), 2),],),
+    (([Line(0, 0, 0, 4)], [1, 2, 3]), [(Line(0, 0, 0, 4), Point(0, 1), 1), (Line(0, 0, 0, 4), Point(0, 2), 2), (Line(0, 0, 0, 4),Point(0, 3), 3)],),
+    (([Line(0, 0, 0, 1), Line(0, 1, 0, 3)], [3]), [(Line(0, 1, 0, 3), Point(0, 1.5), 3)],),
+    (([Line(0, 0, 5, 0), Line(5, 0, 10, 0)], [1, 2, 3, 4, 5, 6, 7, 8, 9]),
+     [(Line(0, 0, 5, 0), Point(1, 0), 1), (Line(0, 0, 5, 0), Point(2, 0), 2),
+      (Line(0, 0, 5, 0), Point(3, 0), 3), (Line(0, 0, 5, 0), Point(4, 0), 4),
+      (Line(0, 0, 5, 0), Point(5, 0), 5),
+      (Line(5, 0, 10, 0), Point(6, 0), 6), (Line(5, 0, 10, 0), Point(7, 0), 7),
+      (Line(5, 0, 10, 0), Point(8, 0), 8), (Line(5, 0, 10, 0), Point(9, 0), 9)],
      ),
-    (([QLineF(0, 0, 4, 0), QLineF(4, 0, 5, 0), QLineF(5, 0, 6, 0), QLineF(6, 0, 9, 0)], [1, 2]),
-     [(QLineF(0, 0, 4, 0), QPointF(3, 0), 1), (QLineF(5, 0, 6, 0), QPointF(6, 0), 2),]
+    (([Line(0, 0, 4, 0), Line(4, 0, 5, 0), Line(5, 0, 6, 0), Line(6, 0, 9, 0)], [1, 2]),
+     [(Line(0, 0, 4, 0), Point(3, 0), 1), (Line(5, 0, 6, 0), Point(6, 0), 2),]
      ),
-    (([QLineF(0, 0, 100, 0), QLineF(100, 0, 200, 0), QLineF(200, 0, 300, 0), QLineF(300, 0, 400, 0), QLineF(400, 0, 500, 0)], [1, 2, 3, 4]), [(QLineF(0, 0, 100, 0), QPointF(100, 0), 1), (QLineF(100, 0, 200, 0), QPointF(200, 0), 2), (QLineF(200, 0, 300, 0), QPointF(300, 0), 3), (QLineF(300, 0, 400, 0), QPointF(400, 0), 4)],),
+    (([Line(0, 0, 100, 0), Line(100, 0, 200, 0), Line(200, 0, 300, 0), Line(300, 0, 400, 0), Line(400, 0, 500, 0)], [1, 2, 3, 4]), [(Line(0, 0, 100, 0), Point(100, 0), 1), (Line(100, 0, 200, 0), Point(200, 0), 2), (Line(200, 0, 300, 0), Point(300, 0), 3), (Line(300, 0, 400, 0), Point(400, 0), 4)],),
 
 )
 
 @pytest.mark.parametrize('target, answer', INTERPOLATED_NUMS_COORDS)
 def test_interpolated_number_coordinates(target, answer):
-    answer_list = [tuple(a) for a in map_items.Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
+    answer_list = [tuple(a) for a in Data_X.get_interpolated_numbers_coordinates(target[0], target[1])]
     assert answer_list == answer
 
 ADDRESSES = (
@@ -170,7 +140,7 @@ ADDRESSES = (
 @pytest.mark.parametrize('target, answer', ADDRESSES)
 def test_invert_poly_addresses(target, answer):
     proj = projection.Mercator(None)
-    data_obj = map_items.Data_X(projection=proj)
+    data_obj = Data_X(projection=proj)
     data_obj.add_nodes_from_string('Data0', target[0])
     for num_num in range(1, 2):
         data_obj.add_housenumbers_from_string(target[num_num])
@@ -186,7 +156,7 @@ def test_invert_poly_addresses(target, answer):
 # obiekty, ktorych poziomy nie ida po kolei (np. tylko Data0 i Data2) - _poly_data_points jest indeksowane pozycja
 # poziomu, a nie jego numerem
 def _data_obj_from_lines(lines):
-    data_obj = map_items.Data_X(projection=projection.Mercator(None))
+    data_obj = Data_X(projection=projection.Mercator(None))
     for dataline in lines:
         if dataline.startswith('Numbers'):
             data_obj.add_housenumbers_from_string(dataline)
