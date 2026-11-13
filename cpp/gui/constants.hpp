@@ -20,6 +20,8 @@ constexpr Qt::GlobalColor RIGHT_SIDE_NUM_MAIN = Qt::blue;
 constexpr Qt::GlobalColor RIGHT_SIDE_NUM_INTER = Qt::red;
 constexpr double MINIMAL_GEO_DISTANCE = 7;  // metry
 constexpr double MIN_MOVE_DISTANCE = 3;
+// Shift+klik dodaje wezel, gdy klikniecie jest najwyzej tyle pikseli od krawedzi obiektu.
+constexpr double NODE_INSERT_DISTANCE = 8;
 constexpr double SMALL_POLY_PERIMETER = 500;
 constexpr int WEBLAYER_DOWNLOAD_TIMEOUT = 15;
 constexpr int MAP_LEVELS = 5;

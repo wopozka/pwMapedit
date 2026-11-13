@@ -85,6 +85,8 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     connect(scene_, &MapScene::progress, this, &MainWindow::set_progress);
     connect(view_, &MapView::status_message, info_text_, &QLabel::setText);
     connect(undo_stack_, &QUndoStack::cleanChanged, this, &MainWindow::update_window_title);
+    connect(scene_, &MapScene::grip_hover_changed, this,
+            [this](bool hovered) { set_single_key_shortcuts_enabled(!hovered); });
 
     create_actions_and_menus();
     create_toolbar();
@@ -128,6 +130,13 @@ void MainWindow::create_actions_and_menus() {
     del->setShortcut(QKeySequence::Delete);
     edit_menu->addSeparator();
     edit_menu->addAction(tr("&Odwróć polilinię"), scene_, &MapScene::reverse_selected_polylines);
+    split_action_ = edit_menu->addAction(tr("&Podziel polilinię w węźle"), scene_, &MapScene::split_at_active_grip);
+    merge_action_ = edit_menu->addAction(tr("Połą&cz polilinie"), this, &MainWindow::merge_polylines);
+    // Insert w trybie edycji wezlow: nowy wezel pod kursorem (jak w Pythonie)
+    QAction* insert_node = edit_menu->addAction(tr("&Wstaw węzeł pod kursorem"), this, [this] {
+        scene_->insert_node_at(view_->current_scene_mouse_coords());
+    });
+    insert_node->setShortcut(QKeySequence(Qt::Key_Insert));
     edit_menu->addSeparator();
     QAction* go_to = edit_menu->addAction(tr("&Idź do współrzędnych"), this, &MainWindow::go_to_position);
     go_to->setShortcut(QKeySequence(tr("Ctrl+G")));
@@ -160,6 +169,11 @@ void MainWindow::create_actions_and_menus() {
         scene_->set_tool(Tool::SelectObjects);
     });
     tools_group_->addAction(select);
+    QAction* edit_nodes = tools_menu->addAction(tr("&Edit nodes"));
+    edit_nodes->setCheckable(true);
+    edit_nodes->setShortcut(QKeySequence(tr("m")));
+    connect(edit_nodes, &QAction::triggered, this, [this] { scene_->set_tool(Tool::EditNodes); });
+    tools_group_->addAction(edit_nodes);
 }
 
 void MainWindow::create_toolbar() {
@@ -183,6 +197,16 @@ void MainWindow::create_toolbar() {
         select->setIcon(icon("select_48.png"));
         bar->addAction(select);
     }
+    QAction* edit_nodes = tools_group_->actions().value(1);
+    if (edit_nodes) {
+        edit_nodes->setIcon(icon("nodes_48.png"));
+        bar->addAction(edit_nodes);
+    }
+    bar->addSeparator();
+    split_action_->setIcon(icon("split_polyline_48.png"));
+    bar->addAction(split_action_);
+    merge_action_->setIcon(icon("merge_polyline_48.png"));
+    bar->addAction(merge_action_);
 }
 
 void MainWindow::create_shortcuts() {
@@ -338,8 +362,79 @@ void MainWindow::select_map_level(int level) {
     QApplication::restoreOverrideCursor();
 }
 
+void MainWindow::select_tool(Tool tool) {
+    const int index = tool == Tool::EditNodes ? 1 : 0;
+    if (QAction* act = tools_group_->actions().value(index)) act->trigger();
+}
+
 void MainWindow::escape_pressed() {
     scene_->clearSelection();
+}
+
+void MainWindow::set_single_key_shortcuts_enabled(bool enabled) {
+    // Nad uchwytem wezla klawisz 's' dzieli linie, wiec skroty narzedzi (s, m) i poziomow (0-4) sa wylaczane
+    // na czas najechania - jak enable/disable_*_shortcuts w Pythonie.
+    for (QAction* act : tools_group_->actions()) act->setEnabled(enabled);
+    for (QAction* act : std::as_const(map_level_actions_)) act->setEnabled(enabled);
+}
+
+void MainWindow::merge_polylines() {
+    const QString title = tr("Łączenie obiektów");
+    std::vector<MapObjectItem*> selected = scene_->selected_object_items_in_order();
+    if (selected.size() < 2) {
+        QMessageBox::information(this, title,
+                                 tr("Zaznacz co najmniej dwa obiekty do połączenia (Ctrl + klik).\n"
+                                    "Właściwości nowego obiektu zostaną wzięte z pierwszego zaznaczonego."));
+        return;
+    }
+    auto kind_is = [&](ObjectKind kind) {
+        return std::all_of(selected.begin(), selected.end(),
+                           [kind](MapObjectItem* item) { return item->object().kind() == kind; });
+    };
+    if (kind_is(ObjectKind::Polygon)) {
+        QMessageBox::information(this, title, tr("Łączenie polygonów nie jest jeszcze obsługiwane."));
+        return;
+    }
+    if (!kind_is(ObjectKind::Polyline)) {
+        QMessageBox::information(this, title,
+                                 tr("Można łączyć tylko obiekty jednego rodzaju: same polylinie albo same polygony."));
+        return;
+    }
+    std::vector<const DataX*> data;
+    std::vector<size_t> indexes;
+    for (MapObjectItem* item : selected) {
+        if (!item->object().data) return;
+        data.push_back(&*item->object().data);
+        indexes.push_back(item->object_index());
+    }
+    MergeResult merged;
+    try {
+        merged = DataX::merge_polylines(data);
+    } catch (const MergeError& e) {
+        QMessageBox::warning(this, tr("Łączenie polylinii"), QString::fromUtf8(e.what()));
+        return;
+    }
+    auto one_way = [](const MapObject& obj) {
+        return obj.dirindicator || (obj.routeparam && (*obj.routeparam)[2] == 1);
+    };
+    if (merged.reversed_any && std::any_of(selected.begin(), selected.end(),
+                                           [&](MapObjectItem* item) { return one_way(item->object()); })) {
+        auto answer = QMessageBox::question(
+            this, tr("Łączenie polylinii"),
+            tr("Linie mają przeciwne kierunki, a co najmniej jedna z nich jest jednokierunkowa albo ma "
+               "DirIndicator. Po połączeniu wszystkie odcinki będą miały kierunek pierwszej zaznaczonej linii."
+               "\n\nPołączyć mimo to?"));
+        if (answer != QMessageBox::Yes) return;
+    }
+    scene_->merge_objects(indexes, std::move(merged.data), tr("Połącz polylinie (%1)").arg(indexes.size()));
+    if (!merged.skipped_levels.empty()) {
+        QStringList levels;
+        for (int level : merged.skipped_levels) levels << QString("Data%1").arg(level);
+        QMessageBox::information(this, tr("Łączenie polylinii"),
+                                 tr("Pominięto poziomy %1 - nie mają ich wszystkie linie albo linie nie tworzą "
+                                    "na nich ciągłego łańcucha.")
+                                     .arg(levels.join(", ")));
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {

@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QTimer>
 #include <QUndoStack>
 #include <algorithm>
 
@@ -16,10 +17,14 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     // (setPath przy zmianie poziomu mapy: kilka ms na element, czyli minuty dla calej mapy), a przeglad liniowy
     // przy rysowaniu kosztuje kilkadziesiat ms. Python uzywal BSP, ale tam koszt ginal w narzucie interpretera.
     setItemIndexMethod(QGraphicsScene::NoIndex);
+    connect(this, &QGraphicsScene::selectionChanged, this, &MapScene::selection_changed);
 }
 
 void MapScene::clear_map() {
-    clearSelection();
+    clearSelection();  // zdejmuje tez uchwyty (selection_changed)
+    selection_order_.clear();
+    decorated_.clear();
+    active_grip_.reset();
     if (!object_items_.empty()) {
         // Usuwanie elementow pojedynczo kosztuje O(liczba elementow) na kazdy element (lista elementow
         // najwyzszego poziomu, indeks), czyli przy duzej mapie dziesiatki sekund. clear() usuwa wszystko naraz,
@@ -53,40 +58,7 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
     QElapsedTimer progress_timer;
     progress_timer.start();
     for (size_t i = 0; i < objects.size(); ++i) {
-        const MapObject& obj = objects[i];
-        if (obj.deleted || !obj.data) continue;
-        long long type = obj.type.value_or(0);
-        switch (obj.kind()) {
-            case ObjectKind::Poi: {
-                auto* item = new PoiItem(map_, i, styles_->poi_icon(type));
-                addItem(item);
-                item->add_label();
-                item->set_map_level(map_level_);
-                object_items_.push_back(item);
-                items_by_object_[i] = item;
-                break;
-            }
-            case ObjectKind::Polyline: {
-                auto* item = new PolylineItem(map_, i, styles_->polyline_pen(type));
-                addItem(item);
-                item->set_map_level(map_level_);
-                object_items_.push_back(item);
-                items_by_object_[i] = item;
-                break;
-            }
-            case ObjectKind::Polygon: {
-                auto* item = new PolygonItem(map_, i, styles_->polygon_pen(type),
-                                             QBrush(styles_->polygon_fill_colour(type)),
-                                             styles_->polygon_z_value(type));
-                addItem(item);
-                item->set_map_level(map_level_);
-                object_items_.push_back(item);
-                items_by_object_[i] = item;
-                break;
-            }
-            case ObjectKind::Basic:
-                break;
-        }
+        if (!objects[i].deleted) create_item(i);
         if (progress_timer.elapsed() > 100) {
             emit progress(static_cast<int>(i), total);
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -94,6 +66,41 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
         }
     }
     emit progress(total, total);
+}
+
+MapObjectItem* MapScene::create_item(size_t i) {
+    const MapObject& obj = map_->objects()[i];
+    if (!obj.data) return nullptr;
+    const long long type = obj.type.value_or(0);
+    MapObjectItem* result = nullptr;
+    switch (obj.kind()) {
+        case ObjectKind::Poi: {
+            auto* item = new PoiItem(map_, i, styles_->poi_icon(type));
+            addItem(item);
+            item->add_label();
+            result = item;
+            break;
+        }
+        case ObjectKind::Polyline: {
+            auto* item = new PolylineItem(map_, i, styles_->polyline_pen(type));
+            addItem(item);
+            result = item;
+            break;
+        }
+        case ObjectKind::Polygon: {
+            auto* item = new PolygonItem(map_, i, styles_->polygon_pen(type), QBrush(styles_->polygon_fill_colour(type)),
+                                         styles_->polygon_z_value(type));
+            addItem(item);
+            result = item;
+            break;
+        }
+        case ObjectKind::Basic:
+            return nullptr;
+    }
+    result->set_map_level(map_level_);
+    object_items_.push_back(result);
+    items_by_object_[i] = result;
+    return result;
 }
 
 void MapScene::set_map_level(int level) {
@@ -198,7 +205,8 @@ void MapScene::move_objects(const std::vector<std::pair<MapObjectItem*, QPointF>
 }
 
 void MapScene::delete_selected() {
-    if (!map_) return;
+    // jak w Pythonie: usuwanie obiektow tylko w trybie zaznaczania
+    if (!map_ || tool_ != Tool::SelectObjects) return;
     std::vector<size_t> indexes;
     for (MapObjectItem* item : selected_object_items()) indexes.push_back(item->object_index());
     if (indexes.empty()) return;
@@ -225,6 +233,190 @@ void MapScene::reverse_selected_polylines() {
         return;
     }
     push_command(command);
+}
+
+
+// ---------------------------------------------------------------- tryb edycji wezlow
+void MapScene::set_tool(Tool tool) {
+    tool_ = tool;
+    update_decorations();
+}
+
+PolyItem* MapScene::poly_item(size_t index) const {
+    MapObjectItem* item = item_for_object(index);
+    return item ? dynamic_cast<PolyItem*>(item) : nullptr;
+}
+
+void MapScene::selection_changed() {
+    std::vector<MapObjectItem*> order;
+    for (MapObjectItem* item : selection_order_)
+        if (item->graphics_item()->isSelected()) order.push_back(item);
+    for (MapObjectItem* item : selected_object_items())
+        if (std::find(order.begin(), order.end(), item) == order.end()) order.push_back(item);
+    selection_order_ = std::move(order);
+    update_decorations();
+}
+
+std::vector<MapObjectItem*> MapScene::selected_object_items_in_order() const {
+    std::vector<MapObjectItem*> result;
+    for (MapObjectItem* item : selection_order_)
+        if (item->graphics_item()->isSelected()) result.push_back(item);
+    return result;
+}
+
+void MapScene::update_decorations() {
+    std::vector<PolyItem*> keep;
+    for (PolyItem* item : decorated_) {
+        if (tool_ == Tool::EditNodes && item->isSelected() && item->isVisible())
+            keep.push_back(item);
+        else
+            item->undecorate();
+    }
+    decorated_ = std::move(keep);
+    if (tool_ == Tool::EditNodes) {
+        for (MapObjectItem* obj_item : selected_object_items()) {
+            auto* item = dynamic_cast<PolyItem*>(obj_item);
+            if (!item || !item->isVisible()) continue;
+            if (!item->decorated()) item->decorate();
+            if (std::find(decorated_.begin(), decorated_.end(), item) == decorated_.end()) decorated_.push_back(item);
+        }
+    }
+    if (active_grip_) {
+        PolyItem* item = poly_item(active_grip_->obj);
+        if (!item || !item->decorated()) active_grip_.reset();
+    }
+}
+
+void MapScene::grip_hovered(GripItem* grip, bool hovered) {
+    if (hovered) {
+        const bool changed = hovered_grip_ == nullptr;
+        hovered_grip_ = grip;
+        if (changed) emit grip_hover_changed(true);
+    } else if (hovered_grip_ == grip) {
+        hovered_grip_ = nullptr;
+        emit grip_hover_changed(false);
+    }
+}
+
+void MapScene::set_active_grip(size_t obj, int level, size_t poly, size_t node) {
+    active_grip_ = GripRef{obj, level, poly, node};
+}
+
+void MapScene::request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos) {
+    QTimer::singleShot(0, this, [=] { move_node(obj, level, poly, node, pos); });
+}
+
+void MapScene::request_node_removal(size_t obj, int level, size_t poly, size_t node) {
+    QTimer::singleShot(0, this, [=] { remove_node(obj, level, poly, node); });
+}
+
+void MapScene::request_split(size_t obj, int level, size_t poly, size_t node) {
+    QTimer::singleShot(0, this, [=] { split_polyline(obj, level, poly, node); });
+}
+
+bool MapScene::move_node(size_t obj, int level, size_t poly, size_t node, const QPointF& pos) {
+    if (!map_ || obj >= map_->objects().size() || !map_->objects()[obj].data) return false;
+    MapObject after = map_->objects()[obj];
+    try {
+        after.data->update_node_coordinates(level, poly, static_cast<long>(node), PointF{pos.x(), pos.y()});
+    } catch (const MpError&) {
+        refresh_object(obj);  // uchwyt wraca na miejsce wezla
+        return false;
+    }
+    push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), tr("Przesuń węzeł")));
+    return true;
+}
+
+bool MapScene::remove_node(size_t obj, int level, size_t poly, size_t node) {
+    PolyItem* item = poly_item(obj);
+    if (!map_ || !item || !map_->objects()[obj].data) return false;
+    const auto* polys = map_->objects()[obj].data->polys_for_data_level(level);
+    if (!polys || poly >= polys->size() || node >= (*polys)[poly].size()) return false;
+    // polilinia musi miec co najmniej 2 wezly, polygon 3
+    if ((*polys)[poly].size() <= item->min_nodes()) return false;
+    MapObject after = map_->objects()[obj];
+    after.data->delete_node_at_position(level, poly, static_cast<long>(node));
+    push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), tr("Usuń węzeł")));
+    return true;
+}
+
+bool MapScene::insert_node(size_t obj, int level, size_t poly, size_t index, const QPointF& pos) {
+    if (!map_ || obj >= map_->objects().size() || !map_->objects()[obj].data) return false;
+    const auto* polys = map_->objects()[obj].data->polys_for_data_level(level);
+    if (!polys || poly >= polys->size() || index > (*polys)[poly].size()) return false;
+    MapObject after = map_->objects()[obj];
+    after.data->insert_node_at_position(level, poly, static_cast<long>(index), pos.x(), pos.y());
+    push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), tr("Dodaj węzeł")));
+    return true;
+}
+
+bool MapScene::insert_node_at(const QPointF& scene_pos) {
+    if (tool_ != Tool::EditNodes) return false;
+    for (PolyItem* item : decorated_) {
+        auto ins = item->node_insertion(scene_pos, false, true);
+        if (ins) return insert_node(item->object_index(), item->shown_data_level(), ins->poly_num, ins->index,
+                                    ins->position);
+    }
+    return false;
+}
+
+bool MapScene::insert_node_on_segment(PolyItem* item, const QPointF& scene_pos, double max_distance) {
+    if (!item || !item->decorated()) return false;
+    auto ins = item->node_insertion(scene_pos, true, false);
+    if (!ins || ins->distance > max_distance) return false;
+    return insert_node(item->object_index(), item->shown_data_level(), ins->poly_num, ins->index, ins->position);
+}
+
+bool MapScene::split_at_active_grip() {
+    if (!active_grip_) return false;
+    const GripRef g = *active_grip_;
+    return split_polyline(g.obj, g.level, g.poly, g.node);
+}
+
+bool MapScene::split_polyline(size_t obj, int level, size_t poly, size_t node) {
+    if (!map_ || obj >= map_->objects().size()) return false;
+    const MapObject& orig = map_->objects()[obj];
+    if (orig.kind() != ObjectKind::Polyline || !orig.data) return false;
+    std::vector<DataX> parts = orig.data->split_data_x(level, poly, static_cast<long>(node));
+    if (parts.size() != 2) return false;
+    MapObject first = orig;
+    first.data = std::move(parts[0]);
+    // druga czesc: nowy obiekt z tymi samymi wlasciwosciami (jak w Pythonie)
+    MapObject second = orig;
+    second.id.reset();
+    second.deleted = false;
+    parts[1].recalculate_bounding_box();
+    second.bbox = parts[1].obj_bounding_box();
+    second.data = std::move(parts[1]);
+    const QString text = tr("Podziel polilinię");
+    auto* command = new QUndoCommand(text);
+    new ReplaceObjectCmd(this, obj, orig, std::move(first), text, command);
+    new AddObjectCmd(this, std::move(second), text, command);
+    push_command(command);
+    return true;
+}
+
+size_t MapScene::add_object(MapObject obj) {
+    obj.id.reset();
+    MapObject& added = map_->add_map_object(std::move(obj));
+    const size_t index = *added.id;
+    if (items_by_object_.size() < map_->objects().size()) items_by_object_.resize(map_->objects().size(), nullptr);
+    create_item(index);
+    return index;
+}
+
+void MapScene::merge_objects(const std::vector<size_t>& indexes, DataX merged, const QString& text) {
+    if (!map_ || indexes.size() < 2) return;
+    const size_t first = indexes.front();
+    MapObject after = map_->objects()[first];
+    after.bbox = merged.obj_bounding_box();
+    after.data = std::move(merged);
+    auto* command = new QUndoCommand(text);
+    new ReplaceObjectCmd(this, first, map_->objects()[first], std::move(after), text, command);
+    new DeleteObjectsCmd(this, std::vector<size_t>(indexes.begin() + 1, indexes.end()), text, command);
+    push_command(command);
+    clearSelection();
+    if (MapObjectItem* item = item_for_object(first)) item->graphics_item()->setSelected(true);
 }
 
 }  // namespace pwm::gui

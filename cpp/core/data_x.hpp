@@ -27,6 +27,14 @@ struct MpError : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
+// Linii nie da sie polaczyc (MergeError z Pythona); komunikat jest dla uzytkownika (UTF-8).
+struct MergeError : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+// Tolerancja (we wspolrzednych sceny), w ktorej konce linii uznajemy za ten sam wezel (SAME_NODE_TOLERANCE).
+constexpr double SAME_NODE_TOLERANCE = 1e-3;
+
 using OptStr = std::optional<std::string>;
 using OptInt = std::optional<long long>;
 
@@ -114,6 +122,8 @@ struct InterpolatedNumbers {
     std::vector<InterpolatedNumber> right;
 };
 
+struct MergeResult;
+
 class DataX {
 public:
     explicit DataX(const Projection* projection = nullptr) : projection_(projection) {}
@@ -173,6 +183,11 @@ public:
     bool is_splitting_possible(int data_level, size_t poly_num, long node_num) const;
     // Zwraca {czesc1, czesc2} albo pusty wektor, gdy podzial niemozliwy.
     std::vector<DataX> split_data_x(int data_level, size_t poly_num, long node_num) const;
+    // Port Data_X.merge_polylines: skleja linie (po jednej czesci na poziomie) w jedna. Kierunek i kolejnosc
+    // wyznacza pierwsza linia, pozostale sa w razie potrzeby odwracane. Rzuca MergeError.
+    static MergeResult merge_polylines(const std::vector<const DataX*>& data_objs);
+    // Obwiednia liczona od nowa z wezlow (recalculate_bounding_box).
+    void recalculate_bounding_box();
 
     // ---- zapis ----
     std::vector<std::string> to_mp_record(int precision) const;
@@ -182,6 +197,9 @@ public:
     const std::vector<std::vector<Poly>>& raw_polys() const { return polys_; }
 
 private:
+    Poly single_line_copy(int data_level, bool reverse) const;
+    static Node join_nodes(const Node& node_end, const Node& node_start, bool hlevel_from_start);
+    static std::pair<Poly, bool> chain_lines(const std::vector<const DataX*>& data_objs, int data_level);
     size_t level_index_or_throw(int data_level) const;
     Poly& poly_ref(int data_level, size_t poly_num);
     const Poly& poly_ref(int data_level, size_t poly_num) const;
@@ -200,6 +218,14 @@ private:
     size_t last_poly_index_ = 0;
     double perimeter_ = 0.0;
 };
+
+struct MergeResult {
+    DataX data;
+    std::vector<int> skipped_levels;  // poziomy pominiete (nie ma ich kazda linia albo nie tworza lancucha)
+    bool reversed_any = false;        // czy na najnizszym wspolnym poziomie ktoras linie trzeba bylo odwrocic
+};
+
+bool same_node_position(const Node& a, const Node& b);
 
 // Indeksowanie jak w Pythonie: ujemne indeksy licza od konca. Rzuca MpError, gdy poza zakresem.
 size_t py_index(long idx, size_t size);

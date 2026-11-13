@@ -135,6 +135,22 @@ void MapView::select_on_press(QMouseEvent* event) {
     const Tool tool = s->tool();
     if (event->button() == Qt::LeftButton && (tool == Tool::SelectObjects || tool == Tool::EditNodes)) {
         const QList<QGraphicsItem*> under = items(event->position().toPoint());
+        // uchwyt wezla obsluguje klikniecie sam (przeciaganie, Ctrl+klik), zaznaczenie sie nie zmienia
+        if (!under.isEmpty() && under.front()->type() == GripItemType) {
+            QGraphicsView::mousePressEvent(event);
+            return;
+        }
+        // Shift+klik na krawedzi obiektu z uchwytami dodaje wezel
+        if (tool == Tool::EditNodes && event->modifiers() == Qt::ShiftModifier) {
+            const QPointF scene_pos = mapToScene(event->position().toPoint());
+            const double max_distance = NODE_INSERT_DISTANCE / std::max(s->viewer_scale(), 1e-9);
+            for (MapObjectItem* item : s->selected_object_items()) {
+                if (s->insert_node_on_segment(dynamic_cast<PolyItem*>(item), scene_pos, max_distance)) {
+                    event->accept();
+                    return;
+                }
+            }
+        }
         if (under.isEmpty()) {
             s->clearSelection();
             QGraphicsView::mousePressEvent(event);

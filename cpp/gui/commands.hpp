@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QUndoCommand>
+#include <optional>
 #include <vector>
 
 #include "map_object.hpp"
@@ -36,7 +37,8 @@ private:
 // DeleteObjectsCmd: oznacza obiekty jako usuniete (zapis je pomija) i ukrywa ich elementy.
 class DeleteObjectsCmd : public QUndoCommand {
 public:
-    DeleteObjectsCmd(MapScene* scene, std::vector<size_t> indexes, const QString& text);
+    DeleteObjectsCmd(MapScene* scene, std::vector<size_t> indexes, const QString& text,
+                     QUndoCommand* parent = nullptr);
     void redo() override;
     void undo() override;
 
@@ -45,6 +47,21 @@ private:
 
     MapScene* scene_;
     std::vector<size_t> indexes_;
+};
+
+// Nowy obiekt (np. druga czesc podzielonej polilinii). Pierwsze redo dodaje obiekt do MapData i tworzy element,
+// undo oznacza go jako usuniety, kolejne redo przywraca. Obiekt zostaje w MapData, wiec indeksy sie nie zmieniaja.
+class AddObjectCmd : public QUndoCommand {
+public:
+    AddObjectCmd(MapScene* scene, MapObject obj, const QString& text, QUndoCommand* parent = nullptr);
+    void redo() override;
+    void undo() override;
+    std::optional<size_t> index() const { return index_; }
+
+private:
+    MapScene* scene_;
+    MapObject obj_;
+    std::optional<size_t> index_;
 };
 
 }  // namespace pwm::gui

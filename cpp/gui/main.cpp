@@ -1,13 +1,16 @@
 // pwMapEdit - edytor map w formacie mp (port C++/Qt6 wersji Python).
-//   pwmapedit [plik.mp] [--screenshot plik.png] [--zoom N] [--level L]
+//   pwmapedit [plik.mp] [--screenshot plik.png] [--zoom N] [--level L] [--select N] [--edit-nodes]
 // --screenshot: po wczytaniu mapy zapisuje zrzut okna i konczy program (do testow bez klikania);
-// --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy.
+// --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy;
+// --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow.
 #include <QApplication>
 #include <QMessageBox>
 #include <QStyleFactory>
 #include <QTimer>
 
 #include "main_window.hpp"
+#include "map_items.hpp"
+#include "map_scene.hpp"
 #include "map_styles.hpp"
 #include "map_view.hpp"
 
@@ -17,7 +20,8 @@ int main(int argc, char* argv[]) {
     app.setStyle(QStyleFactory::create("Fusion"));
 
     QString file_name, screenshot;
-    int zoom = 0, level = 0;
+    int zoom = 0, level = 0, select = -1;
+    bool edit_nodes = false;
     const QStringList args = QApplication::arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == "--screenshot" && i + 1 < args.size())
@@ -26,6 +30,10 @@ int main(int argc, char* argv[]) {
             zoom = args[++i].toInt();
         else if (args[i] == "--level" && i + 1 < args.size())
             level = args[++i].toInt();
+        else if (args[i] == "--select" && i + 1 < args.size())
+            select = args[++i].toInt();
+        else if (args[i] == "--edit-nodes")
+            edit_nodes = true;
         else
             file_name = args[i];
     }
@@ -48,6 +56,13 @@ int main(int argc, char* argv[]) {
             for (int i = 0; i < zoom; ++i) window.view()->zoom_in();
             for (int i = 0; i < -zoom; ++i) window.view()->zoom_out();
             if (level) window.select_map_level(level);
+            if (edit_nodes) window.select_tool(pwm::gui::Tool::EditNodes);
+            if (select >= 0) {
+                if (auto* item = window.scene()->item_for_object(static_cast<size_t>(select))) {
+                    item->graphics_item()->setSelected(true);
+                    window.view()->centerOn(item->graphics_item());
+                }
+            }
             QTimer::singleShot(300, &window, [&] {
                 if (!window.grab().save(screenshot)) QApplication::exit(2);
                 else QApplication::quit();

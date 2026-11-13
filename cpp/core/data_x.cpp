@@ -717,6 +717,134 @@ void DataX::reverse_poly(int data_level) {
     }
 }
 
+bool same_node_position(const Node& a, const Node& b) {
+    return std::abs(a.x() - b.x()) <= SAME_NODE_TOLERANCE && std::abs(a.y() - b.y()) <= SAME_NODE_TOLERANCE;
+}
+
+Poly DataX::single_line_copy(int data_level, bool reverse) const {
+    // kopia (ewentualnie odwrocona) jedynej linii z danego poziomu, z numeracja i hlevel
+    DataX tmp(projection_);
+    tmp.levels_.push_back(data_level);
+    tmp.polys_.push_back({poly_ref(data_level, 0)});
+    if (reverse) tmp.reverse_poly(data_level);
+    return std::move(tmp.polys_[0][0]);
+}
+
+Node DataX::join_nodes(const Node& node_end, const Node& node_start, bool hlevel_from_start) {
+    // Wezel styku: konczy przedzial numeracji linii poprzedniej (*_number_before) i zaczyna przedzial nastepnej.
+    Node joint = node_start;
+    if (const NumbersDefinition* end_def = node_end.numbers()) {
+        if (end_def->left_side_number_before)
+            joint.numbers_or_create().left_side_number_before = end_def->left_side_number_before;
+        if (end_def->right_side_number_before)
+            joint.numbers_or_create().right_side_number_before = end_def->right_side_number_before;
+    }
+    if (hlevel_from_start)
+        joint.set_hlevel(node_start.has_hlevel() ? node_start.hlevel() : node_end.hlevel());
+    else
+        joint.set_hlevel(node_end.has_hlevel() ? node_end.hlevel() : node_start.hlevel());
+    return joint;
+}
+
+std::pair<Poly, bool> DataX::chain_lines(const std::vector<const DataX*>& data_objs, int data_level) {
+    Poly chain = data_objs[0]->single_line_copy(data_level, false);
+    std::vector<const DataX*> remaining(data_objs.begin() + 1, data_objs.end());
+    bool reversed_any = false;
+    while (!remaining.empty()) {
+        bool joined = false;
+        for (size_t idx = 0; idx < remaining.size(); ++idx) {
+            const Poly& line = remaining[idx]->poly_ref(data_level, 0);
+            bool reverse;
+            if (same_node_position(chain.back(), line.front()) || same_node_position(chain.back(), line.back())) {
+                reverse = !same_node_position(chain.back(), line.front());
+                Poly add = remaining[idx]->single_line_copy(data_level, reverse);
+                Node joint = join_nodes(chain.back(), add.front(), false);
+                chain.back() = std::move(joint);
+                chain.insert(chain.end(), std::make_move_iterator(add.begin() + 1), std::make_move_iterator(add.end()));
+            } else if (same_node_position(chain.front(), line.back()) ||
+                       same_node_position(chain.front(), line.front())) {
+                reverse = !same_node_position(chain.front(), line.back());
+                Poly add = remaining[idx]->single_line_copy(data_level, reverse);
+                add.back() = join_nodes(add.back(), chain.front(), true);
+                add.insert(add.end(), std::make_move_iterator(chain.begin() + 1), std::make_move_iterator(chain.end()));
+                chain = std::move(add);
+            } else {
+                continue;
+            }
+            reversed_any = reversed_any || reverse;
+            remaining.erase(remaining.begin() + static_cast<long>(idx));
+            joined = true;
+            break;
+        }
+        if (!joined)
+            throw MergeError("Linie na poziomie Data" + std::to_string(data_level) +
+                             " nie tworzą ciągłego łańcucha - każda kolejna linia musi zaczynać się albo kończyć "
+                             "na końcu poprzednich.");
+    }
+    return {std::move(chain), reversed_any};
+}
+
+MergeResult DataX::merge_polylines(const std::vector<const DataX*>& data_objs) {
+    if (data_objs.size() < 2) throw MergeError("Do połączenia potrzebne są co najmniej dwie linie.");
+    const DataX& first = *data_objs[0];
+    std::vector<int> all_levels;
+    for (const DataX* d : data_objs)
+        for (int level : d->levels_)
+            if (std::find(all_levels.begin(), all_levels.end(), level) == all_levels.end()) all_levels.push_back(level);
+    std::vector<int> common_levels = first.levels_;
+    std::sort(common_levels.begin(), common_levels.end());
+    common_levels.erase(std::remove_if(common_levels.begin(), common_levels.end(),
+                                       [&](int level) {
+                                           for (const DataX* d : data_objs)
+                                               if (!d->data_level_index(level)) return true;
+                                           return false;
+                                       }),
+                        common_levels.end());
+    if (common_levels.empty()) throw MergeError("Linie nie mają wspólnego poziomu Data, nie da się ich połączyć.");
+    for (const DataX* d : data_objs)
+        for (int level : common_levels)
+            if (d->polys_for_data_level(level)->size() != 1)
+                throw MergeError("Jedna z linii ma kilka części na poziomie Data" + std::to_string(level) +
+                                 ". Łączenie linii wieloczęściowych nie jest obsługiwane.");
+
+    MergeResult result{DataX(first.projection_), {}, false};
+    DataX& merged = result.data;
+    for (int level : all_levels)
+        if (std::find(common_levels.begin(), common_levels.end(), level) == common_levels.end())
+            result.skipped_levels.push_back(level);
+    for (int level : common_levels) {
+        std::pair<Poly, bool> chained;
+        try {
+            chained = chain_lines(data_objs, level);
+        } catch (const MergeError&) {
+            // najnizszy wspolny poziom musi sie dac skleic, wyzsze (uproszczone) w razie problemow pomijamy
+            if (level == common_levels.front()) throw;
+            result.skipped_levels.push_back(level);
+            continue;
+        }
+        if (level == common_levels.front()) result.reversed_any = chained.second;
+        merged.levels_.push_back(level);
+        merged.perimeter_ = std::max(merged.perimeter_, calculate_poly_perimeter(chained.first));
+        merged.polys_.push_back({std::move(chained.first)});
+        merged.clean_numbers_definitions(level, 0);
+    }
+    // obwiednie zrodel moga byc nieustawione (czesc z podzialu linii) albo nieaktualne (po przesunieciu wezlow)
+    merged.recalculate_bounding_box();
+    std::sort(result.skipped_levels.begin(), result.skipped_levels.end());
+    return result;
+}
+
+void DataX::recalculate_bounding_box() {
+    bbox_ = GeoBBox{};
+    if (!projection_) return;
+    for (const auto& polys : polys_)
+        for (const Poly& poly : polys)
+            for (const Node& n : poly) {
+                GeoPoint g = projection_->canvas_to_geo(n.x(), n.y());
+                set_obj_bounding_box(g.latitude, g.longitude);
+            }
+}
+
 void DataX::translate_data_level(int data_level, PointF delta) {
     auto* polys = polys_for_data_level(data_level);
     require(polys != nullptr, "brak poziomu Data do przesuniecia");

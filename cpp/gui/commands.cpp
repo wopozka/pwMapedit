@@ -20,8 +20,9 @@ void ReplaceObjectCmd::apply(const MapObject& obj) {
     scene_->refresh_object(index_);
 }
 
-DeleteObjectsCmd::DeleteObjectsCmd(MapScene* scene, std::vector<size_t> indexes, const QString& text)
-    : QUndoCommand(text), scene_(scene), indexes_(std::move(indexes)) {}
+DeleteObjectsCmd::DeleteObjectsCmd(MapScene* scene, std::vector<size_t> indexes, const QString& text,
+                                   QUndoCommand* parent)
+    : QUndoCommand(text, parent), scene_(scene), indexes_(std::move(indexes)) {}
 
 void DeleteObjectsCmd::redo() { set_deleted(true); }
 
@@ -37,6 +38,25 @@ void DeleteObjectsCmd::set_deleted(bool deleted) {
             item->refresh();
         }
     }
+}
+
+AddObjectCmd::AddObjectCmd(MapScene* scene, MapObject obj, const QString& text, QUndoCommand* parent)
+    : QUndoCommand(text, parent), scene_(scene), obj_(std::move(obj)) {}
+
+void AddObjectCmd::redo() {
+    if (!index_) {
+        index_ = scene_->add_object(obj_);
+        return;
+    }
+    if (MapData* map = scene_->map()) map->set_map_object_deleted(*index_, false);
+    scene_->refresh_object(*index_);
+}
+
+void AddObjectCmd::undo() {
+    if (!index_) return;
+    if (MapData* map = scene_->map()) map->set_map_object_deleted(*index_, true);
+    if (MapObjectItem* item = scene_->item_for_object(*index_)) item->graphics_item()->setSelected(false);
+    scene_->refresh_object(*index_);
 }
 
 }  // namespace pwm::gui

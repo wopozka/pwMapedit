@@ -35,6 +35,8 @@ public:
 
     void open_file(const QString& file_name);
     void select_map_level(int level);
+    // Wybiera narzedzie tak jak z menu Tools (zaznacza tez akcje na pasku).
+    void select_tool(Tool tool);
 
     MapView* view() const { return view_; }
     MapScene* scene() const { return scene_; }
@@ -54,6 +56,8 @@ private slots:
     void go_to_position();
     void set_progress(int value, int maximum);
     void escape_pressed();
+    void merge_polylines();
+    void set_single_key_shortcuts_enabled(bool enabled);
 
 private:
     void create_actions_and_menus();
@@ -77,6 +81,8 @@ private:
     QActionGroup* map_level_group_ = nullptr;
     QList<QAction*> map_level_actions_;
     QActionGroup* tools_group_ = nullptr;
+    QAction* split_action_ = nullptr;
+    QAction* merge_action_ = nullptr;
     QFutureWatcher<std::shared_ptr<LoadResult>>* load_watcher_ = nullptr;
     QString icons_dir_;
 };

@@ -204,9 +204,35 @@ Różnice względem Pythona (celowe):
   pozostałych poziomach zostawał stary). Odwracanie jest dostępne z menu Edit (w Pythonie przyciskiem w panelu
   właściwości, który powstanie w 3b.3).
 
+### Etap 3b.2 (zrobione): edycja węzłów, dzielenie i łączenie polilinii
+
+Narzędzie Tools → Edit nodes (`m`, przycisk na pasku): zaznaczona polilinia lub polygon dostaje uchwyty na węzłach
+pokazywanego poziomu Data (pierwszy węzeł czerwony).
+- przeciągnięcie uchwytu przesuwa węzeł (podgląd w trakcie, jedna komenda undo po puszczeniu przycisku);
+- `Ctrl`+klik na uchwycie usuwa węzeł (polilinia zachowuje co najmniej 2 węzły, polygon 3);
+- `Shift`+klik na krawędzi dodaje węzeł na odcinku (do 8 pikseli od krawędzi);
+- `Insert` dodaje węzeł pod kursorem na najbliższym odcinku, a za końcem polilinii ją przedłuża;
+- `s` nad uchwytem (albo Edit → Podziel polilinię w węźle dla ostatnio klikniętego uchwytu) dzieli polilinię:
+  obiekt zachowuje pierwszą część, druga staje się nowym obiektem z tymi samymi właściwościami;
+- Edit → Połącz polilinie (przycisk na pasku) łączy zaznaczone polilinie w kolejności zaznaczania
+  (`DataX::merge_polylines`, port `Data_X.merge_polylines` z testami z `tests/test_merge_polylines.py`).
+
+Gdy kursor jest nad uchwytem, skróty jednoliterowe (narzędzia, poziomy) są wyłączone, tak jak w Pythonie.
+Operacje zgłaszane przez uchwyt wykonują się po zakończeniu obsługi zdarzenia, bo przebudowują uchwyty.
+Nowy obiekt (druga część podziału) dodaje `AddObjectCmd`; undo oznacza go jako usunięty, więc indeksy się nie zmieniają.
+
+Zrzut z trybem edycji: `pwmapedit plik.mp --screenshot x.png --select N --edit-nodes`.
+
+Różnice względem Pythona (celowe):
+- Przeciągnięcie węzła to jedna komenda po puszczeniu przycisku (Python dodawał komendę przy każdym ruchu
+  i łączył je, jeśli następowały w ciągu sekundy).
+- Uchwyty nie mają podpisów z numerami (część, węzeł).
+- Przyciąganie węzła do sąsiednich obiektów (`Ctrl` w trakcie przeciągania) będzie w etapie 3c.
+- Usuwanie węzła sprawdza minimalną liczbę węzłów w każdej części obiektu (Python sprawdzał łączną liczbę
+  uchwytów, więc w obiekcie wieloczęściowym mogła zostać część z jednym węzłem).
+
 ### Następne kroki
 
-- 3b.2: tryb edycji węzłów: uchwyty, przeciąganie węzła, wstawianie i usuwanie węzła, dzielenie i łączenie polilinii.
 - 3b.3: panel właściwości (`map_obj_properties_dockwidget.py`), każda zmiana jako komenda undo.
 - 3b.4: kopiuj/wklej obiektów.
 - 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).

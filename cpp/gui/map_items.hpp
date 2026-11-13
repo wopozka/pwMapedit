@@ -28,7 +28,10 @@ enum ItemType {
     MapLabelItemType,
     ArrowHeadItemType,
     RulerItemType,
+    GripItemType,
 };
+
+class GripItem;
 
 QString mp_to_qstring(const std::string& cp1250);
 
@@ -121,6 +124,30 @@ public:
     bool is_polygon() const { return polygon_; }
 
     QPainterPath path_for_level(int level) const;
+    // Wezly pokazywanego poziomu (we wspolrzednych sceny), po jednej liscie na czesc obiektu.
+    std::vector<std::vector<QPointF>> shown_nodes() const;
+
+    // ---- tryb edycji wezlow ----
+    // Uchwyty na wezlach pokazywanego poziomu (decorate/undecorate z Pythona). W trakcie edycji obiekt
+    // nie daje sie przesuwac, bo Qt przesuwalby go razem z przeciaganym uchwytem.
+    void decorate();
+    void undecorate();
+    bool decorated() const { return !grips_.empty(); }
+    // Podglad przeciagania uchwytu: sciezka z jednym wezlem w nowym miejscu (bez zmiany danych).
+    void preview_node_position(size_t poly_num, size_t node_num, const QPointF& pos);
+
+    // Miejsce wstawienia nowego wezla najblizej punktu: czesc, indeks (przed ktorym wstawic) i polozenie.
+    struct NodeInsertion {
+        size_t poly_num = 0;
+        size_t index = 0;
+        QPointF position;
+        double distance = 0;
+    };
+    // on_segment: polozenie na odcinku (Shift+klik), inaczej sam punkt (klawisz Insert); extend_ends: dla
+    // otwartej polilinii punkt za koncem linii przedluza ja zamiast wstawiac wezel na pierwszym/ostatnim odcinku.
+    std::optional<NodeInsertion> node_insertion(const QPointF& scene_pos, bool on_segment, bool extend_ends) const;
+    // Najmniejsza liczba wezlow czesci obiektu (polilinia 2, polygon 3).
+    size_t min_nodes() const { return polygon_ ? 3 : 2; }
     // Lista wielokatow (bez powtorzonego pierwszego punktu w polygonie) - jak get_polygons_from_path.
     std::vector<std::vector<QPointF>> polygons_from_path() const;
 
@@ -144,6 +171,7 @@ protected:
     int current_data_x_ = 0;
     int built_data_x_ = -1;  // poziom, dla ktorego sa zbudowane dodatki (etykiety, strzalki, numery)
     bool hovered_ = false;
+    std::vector<GripItem*> grips_;
 };
 
 class PolylineItem : public PolyItem {
@@ -181,6 +209,43 @@ protected:
 private:
     int z_value_;
     QGraphicsItem* label_ = nullptr;
+};
+
+// ---------------------------------------------------------------- uchwyt wezla
+// Port GripItem: kwadrat na wezle obiektu w trybie edycji wezlow (pierwszy wezel czerwony).
+//  - przeciagniecie przesuwa wezel (jedna komenda undo po puszczeniu przycisku),
+//  - Ctrl+klik usuwa wezel,
+//  - klawisz 's' nad uchwytem dzieli polilinie w tym wezle.
+// Operacje sa wykonywane po zakonczeniu obslugi zdarzenia, bo przebudowuja uchwyty (usuwaja ten obiekt).
+class GripItem : public QGraphicsPathItem {
+public:
+    GripItem(PolyItem* parent, int data_level, size_t poly_num, size_t node_num, const QPointF& pos);
+    ~GripItem() override;
+    int type() const override { return GripItemType; }
+    PolyItem* poly_item() const { return parent_; }
+    int data_level() const { return data_level_; }
+    size_t poly_num() const { return poly_num_; }
+    size_t node_num() const { return node_num_; }
+
+protected:
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
+private:
+    void set_hover(bool hover);
+    bool first_grip() const { return node_num_ == 0; }
+
+    PolyItem* parent_;
+    int data_level_;
+    size_t poly_num_;
+    size_t node_num_;
+    QPointF press_pos_;
+    bool ready_ = false;  // itemChange dopiero po zbudowaniu uchwytu
+    MapScene* hover_scene_ = nullptr;  // scena powiadomiona o najechaniu (do zwolnienia w destruktorze)
 };
 
 // ---------------------------------------------------------------- etykiety i dodatki

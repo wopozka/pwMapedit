@@ -2,6 +2,9 @@
 
 #include <QFont>
 #include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
+#include <algorithm>
+#include <tuple>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QStyleOptionGraphicsItem>
@@ -210,6 +213,21 @@ QVariant PoiItem::itemChange(GraphicsItemChange change, const QVariant& value) {
 }
 
 // ================================================================ PolyItem
+namespace {
+QPainterPath make_path(const std::vector<std::vector<QPointF>>& polys, bool polygon) {
+    QPainterPath path;
+    for (const auto& poly : polys) {
+        if (poly.empty()) continue;
+        QPolygonF pp;
+        pp.reserve(static_cast<int>(poly.size()) + 1);
+        for (const QPointF& p : poly) pp.append(p);
+        if (polygon && pp.first() != pp.last()) pp.append(pp.first());
+        path.addPolygon(pp);
+    }
+    return path;
+}
+}  // namespace
+
 PolyItem::PolyItem(MapData* map, size_t index, bool polygon) : MapObjectItem(map, index), polygon_(polygon) {
     for (int level = 0; level < MAP_LEVELS; ++level) {
         if (has_data_level(level)) {
@@ -230,20 +248,92 @@ bool PolyItem::has_data_level(int level) const {
 }
 
 QPainterPath PolyItem::path_for_level(int level) const {
-    QPainterPath path;
+    std::vector<std::vector<QPointF>> polys;
     const MapObject& obj = object();
-    if (!obj.data) return path;
-    const auto* polys = obj.data->polys_for_data_level(level);
-    if (!polys) return path;
-    for (const Poly& poly : *polys) {
-        if (poly.empty()) continue;
-        QPolygonF pp;
-        pp.reserve(static_cast<int>(poly.size()) + 1);
-        for (const Node& n : poly) pp.append(QPointF(n.x(), n.y()));
-        if (is_polygon() && pp.first() != pp.last()) pp.append(pp.first());
-        path.addPolygon(pp);
+    if (obj.data) {
+        if (const auto* data_polys = obj.data->polys_for_data_level(level)) {
+            for (const Poly& poly : *data_polys) {
+                polys.emplace_back();
+                polys.back().reserve(poly.size());
+                for (const Node& n : poly) polys.back().emplace_back(n.x(), n.y());
+            }
+        }
     }
-    return path;
+    return make_path(polys, is_polygon());
+}
+
+std::vector<std::vector<QPointF>> PolyItem::shown_nodes() const {
+    std::vector<std::vector<QPointF>> result;
+    const int level = shown_data_level();
+    const MapObject& obj = object();
+    if (level < 0 || !obj.data) return result;
+    if (const auto* polys = obj.data->polys_for_data_level(level)) {
+        for (const Poly& poly : *polys) {
+            result.emplace_back();
+            result.back().reserve(poly.size());
+            for (const Node& n : poly) result.back().emplace_back(n.x(), n.y());
+        }
+    }
+    return result;
+}
+
+void PolyItem::decorate() {
+    undecorate();
+    const int level = shown_data_level();
+    if (level < 0 || object().deleted) return;
+    const auto polys = shown_nodes();
+    for (size_t poly_num = 0; poly_num < polys.size(); ++poly_num)
+        for (size_t node_num = 0; node_num < polys[poly_num].size(); ++node_num)
+            grips_.push_back(new GripItem(this, level, poly_num, node_num, polys[poly_num][node_num]));
+    setFlag(QGraphicsItem::ItemIsMovable, false);
+}
+
+void PolyItem::undecorate() {
+    for (GripItem* grip : grips_) delete grip;
+    grips_.clear();
+    setFlag(QGraphicsItem::ItemIsMovable, true);
+}
+
+void PolyItem::preview_node_position(size_t poly_num, size_t node_num, const QPointF& pos) {
+    auto polys = shown_nodes();
+    if (poly_num >= polys.size() || node_num >= polys[poly_num].size()) return;
+    polys[poly_num][node_num] = pos;
+    setPath(make_path(polys, is_polygon()));
+}
+
+std::optional<PolyItem::NodeInsertion> PolyItem::node_insertion(const QPointF& p, bool on_segment,
+                                                                 bool extend_ends) const {
+    std::optional<NodeInsertion> best;
+    const auto polys = shown_nodes();
+    for (size_t poly_num = 0; poly_num < polys.size(); ++poly_num) {
+        const auto& nodes = polys[poly_num];
+        const size_t n = nodes.size();
+        if (n < 2) continue;
+        // odcinki (a, b, indeks wstawienia); polygon ma tez odcinek zamykajacy
+        std::vector<std::tuple<size_t, size_t, size_t>> segments;
+        for (size_t i = 0; i + 1 < n; ++i) segments.emplace_back(i, i + 1, i + 1);
+        if (is_polygon() && nodes.front() != nodes.back()) segments.emplace_back(n - 1, 0, n);
+        for (const auto& [ia, ib, insert_at] : segments) {
+            const QPointF a = nodes[ia], b = nodes[ib];
+            const QPointF ab = b - a;
+            const double len2 = QPointF::dotProduct(ab, ab);
+            if (len2 == 0) continue;
+            const double t_raw = QPointF::dotProduct(p - a, ab) / len2;
+            if (on_segment && (t_raw <= 0 || t_raw >= 1)) continue;  // punkt poza odcinkiem
+            const double t = std::clamp(t_raw, 0.0, 1.0);
+            const QPointF proj = a + ab * t;
+            const QPointF d = p - proj;
+            NodeInsertion cand{poly_num, insert_at, on_segment ? proj : p, std::hypot(d.x(), d.y())};
+            if (extend_ends && !is_polygon()) {
+                if (ia == 0 && t_raw < 0)
+                    cand.index = 0;  // przed pierwszym wezlem
+                else if (ib == n - 1 && t_raw > 1)
+                    cand.index = n;  // za ostatnim wezlem
+            }
+            if (!best || cand.distance < best->distance) best = cand;
+        }
+    }
+    return best;
 }
 
 std::vector<std::vector<QPointF>> PolyItem::polygons_from_path() const {
@@ -265,10 +355,14 @@ void PolyItem::rebuild() {
 }
 
 void PolyItem::refresh() {
+    const bool was_decorated = decorated();
+    undecorate();
     // po przesunieciu sciezka jest juz w nowym miejscu, a polozenie elementu wraca do (0, 0)
     setPos(0, 0);
     built_data_x_ = -1;
     set_map_level(scene_map_level());
+    // uchwyty odpowiadaja nowym wezlom (wstawienie lub usuniecie wezla zmienia ich liczbe)
+    if (was_decorated && isVisible() && isSelected()) decorate();
 }
 
 void PolyItem::set_map_level(int level) {
@@ -685,6 +779,100 @@ void MapRuler::scale_to() {
 double MapRuler::map_scale() {
     calculate_geo_distance();
     return one_cm_geo_distance_.value_or(0.0) * 100;
+}
+
+// ================================================================ GripItem
+namespace {
+QPainterPath grip_square() {
+    QPainterPath square;
+    square.addRect(-5, -5, 10, 10);
+    return square;
+}
+}  // namespace
+
+GripItem::GripItem(PolyItem* parent, int data_level, size_t poly_num, size_t node_num, const QPointF& pos)
+    : QGraphicsPathItem(parent), parent_(parent), data_level_(data_level), poly_num_(poly_num), node_num_(node_num) {
+    static const QPainterPath square = grip_square();
+    setPath(square);
+    setPen(QPen(first_grip() ? QColor("red") : QColor("green"), 1));
+    set_hover(false);
+    setZValue(100);
+    setPos(pos);
+    setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemSendsGeometryChanges |
+             QGraphicsItem::ItemIgnoresParentOpacity | QGraphicsItem::ItemIgnoresTransformations |
+             QGraphicsItem::ItemIsFocusable);
+    setAcceptHoverEvents(true);
+    setCursor(Qt::PointingHandCursor);
+    ready_ = true;
+}
+
+GripItem::~GripItem() {
+    if (hover_scene_) hover_scene_->grip_hovered(this, false);
+}
+
+void GripItem::set_hover(bool hover) {
+    // pierwszy wezel: czerwony, po najechaniu zielony; pozostale odwrotnie
+    const bool red = first_grip() != hover;
+    setBrush(QBrush(red ? QColor("red") : QColor("green")));
+}
+
+QVariant GripItem::itemChange(GraphicsItemChange change, const QVariant& value) {
+    if (change == ItemPositionHasChanged && ready_) parent_->preview_node_position(poly_num_, node_num_, pos());
+    return QGraphicsPathItem::itemChange(change, value);
+}
+
+void GripItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event) {
+    set_hover(true);
+    if (auto* s = qobject_cast<MapScene*>(scene())) {
+        // skroty jednoliterowe (narzedzia, poziomy) sa wylaczane, zeby klawisz 's' trafil do uchwytu
+        hover_scene_ = s;
+        s->grip_hovered(this, true);
+        setFocus(Qt::MouseFocusReason);
+    }
+    QGraphicsPathItem::hoverEnterEvent(event);
+}
+
+void GripItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
+    set_hover(false);
+    clearFocus();
+    if (hover_scene_) {
+        hover_scene_->grip_hovered(this, false);
+        hover_scene_ = nullptr;
+    }
+    QGraphicsPathItem::hoverLeaveEvent(event);
+}
+
+void GripItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    auto* s = qobject_cast<MapScene*>(scene());
+    if (!s || event->button() != Qt::LeftButton) {
+        QGraphicsPathItem::mousePressEvent(event);
+        return;
+    }
+    s->set_active_grip(parent_->object_index(), data_level_, poly_num_, node_num_);
+    press_pos_ = pos();
+    if (event->modifiers() == Qt::ControlModifier) {
+        s->request_node_removal(parent_->object_index(), data_level_, poly_num_, node_num_);
+        event->accept();
+        return;
+    }
+    QGraphicsPathItem::mousePressEvent(event);
+}
+
+void GripItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    QGraphicsPathItem::mouseReleaseEvent(event);
+    if (event->button() != Qt::LeftButton || pos() == press_pos_) return;
+    if (auto* s = qobject_cast<MapScene*>(scene()))
+        s->request_node_move(parent_->object_index(), data_level_, poly_num_, node_num_, pos());
+}
+
+void GripItem::keyPressEvent(QKeyEvent* event) {
+    auto* s = qobject_cast<MapScene*>(scene());
+    if (s && event->text() == QLatin1String("s")) {
+        s->request_split(parent_->object_index(), data_level_, poly_num_, node_num_);
+        event->accept();
+        return;
+    }
+    QGraphicsPathItem::keyPressEvent(event);
 }
 
 }  // namespace pwm::gui
