@@ -57,6 +57,7 @@ int main(int argc, char* argv[]) {
     }
 
     pwm::gui::MainWindow window(icons_dir);
+    window.set_quiet(!screenshot.isEmpty());  // zrzut nie moze czekac na zamkniecie okna komunikatu
     window.show();
     if (!screenshot.isEmpty()) {
         QObject::connect(&window, &pwm::gui::MainWindow::map_loaded, &window, [&](bool ok) {

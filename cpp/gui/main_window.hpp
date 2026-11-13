@@ -47,6 +47,8 @@ public:
     void select_map_level(int level);
     // Wybiera narzedzie tak jak z menu Tools (zaznacza tez akcje na pasku).
     void select_tool(Tool tool);
+    // Tryb bez okien komunikatow (zrzuty ekranu z linii polecen): ostrzezenia trafiaja do paska stanu.
+    void set_quiet(bool quiet) { quiet_ = quiet; }
 
     MapView* view() const { return view_; }
     MapScene* scene() const { return scene_; }
@@ -112,6 +114,7 @@ private:
     QAction* last_web_layer_action_ = nullptr;
     QMenu* recent_files_menu_ = nullptr;
     QSettings* settings_ = nullptr;
+    bool quiet_ = false;
     QUndoStack* undo_stack_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;
     QLabel* info_text_ = nullptr;

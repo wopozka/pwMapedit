@@ -173,3 +173,73 @@ TEST(gdb_damaged_track_and_truncated_file) {
     CHECK(!read_gdb(std::string("MsRcf\0", 6)).ok);  // bez rekordu wersji
     CHECK(!read_gdb_file(DATA + "nie_ma.gdb").ok);
 }
+
+TEST(gdb_all_sample_files) {
+    // liczby rekordow W/T/R policzone niezaleznym skryptem (przejscie po rekordach pliku)
+    struct Expected {
+        const char* name;
+        size_t waypoints, tracks, routes;
+    };
+    const Expected files[] = {
+        {"2025_09_10P.gdb", 3, 1, 0},
+        {"2025_10_10P.gdb", 3, 1, 0},
+        {"20260809-195440.gdb", 0, 1, 0},
+        {"2026_04_13 r\xc3\xb3\xc5\xbcne w Gda\xc5\x84sku.gdb", 34, 8, 1},
+        {"2026_04_19P.gdb", 30, 0, 1},
+        {"2026_05_26P.gdb", 0, 3, 0},
+        {"2026_06_08P.gdb", 4, 2, 0},
+        {"2026_06_09P.gdb", 10, 5, 0},
+        {"2026_06_13P.gdb", 2, 1, 0},
+        {"2026_10_26P.gdb", 10, 3, 1},
+        {"M\xc3\xb3j zbi\xc3\xb3r.gdb", 0, 2, 0},
+    };
+    for (const Expected& e : files) {
+        GdbResult r = read_gdb_file(DATA + e.name);
+        CHECK(r.ok);
+        if (!r.ok) {
+            std::printf("    %s: %s\n", e.name, r.error.c_str());
+            continue;
+        }
+        CHECK_EQ(r.version, 3);
+        CHECK_EQ(r.file.waypoints.size(), e.waypoints);
+        CHECK_EQ(r.file.tracks.size(), e.tracks);
+        // jedyne ostrzezenie: pominiete trasy
+        CHECK_EQ(r.warnings.size(), size_t{e.routes ? 1u : 0u});
+        for (const Waypoint& w : r.file.waypoints) {
+            CHECK(w.pos.lat > 49 && w.pos.lat < 55.5 && w.pos.lon > 14 && w.pos.lon < 24.5);
+            CHECK(!w.name.empty());
+        }
+        for (const Track& t : r.file.tracks)
+            for (const auto& seg : t.segments)
+                for (const Point& p : seg) CHECK(p.lat > 49 && p.lat < 55.5 && p.lon > 14 && p.lon < 24.5);
+    }
+}
+
+TEST(gdb_mapsource_waypoint_values) {
+    // wartosci policzone niezaleznym skryptem z rekordow 'W'
+    auto find = [](const GdbResult& r, const std::string& name) -> const Waypoint* {
+        for (const Waypoint& w : r.file.waypoints)
+            if (w.name == name) return &w;
+        return nullptr;
+    };
+    GdbResult a = read_gdb_file(DATA + "2025_10_10P.gdb");
+    const Waypoint* avia = find(a, "AVIA");
+    CHECK(avia != nullptr);
+    if (avia) {
+        CHECK_NEAR(avia->pos.lat, 53.335240026935935, 1e-12);
+        CHECK_NEAR(avia->pos.lon, 20.43666997924447, 1e-12);
+        CHECK(!avia->pos.ele);
+        CHECK_EQ(avia->symbol, std::string("8"));
+    }
+    GdbResult b = read_gdb_file(DATA + "2026_10_26P.gdb");
+    const Waypoint* orlen = find(b, "Tu nie ma Orlenu");  // rekord z dodatkowymi polami adresu na koncu
+    CHECK(orlen != nullptr);
+    if (orlen) {
+        CHECK_EQ(orlen->comment, std::string("Orlen"));
+        CHECK_NEAR(orlen->pos.lat, 50.58925151824951, 1e-12);
+    }
+    const Waypoint* parking = find(b, "Parking le\xc5\x9bny");  // UTF-8
+    CHECK(parking != nullptr);
+    if (parking) CHECK(parking->pos.ele && std::fabs(*parking->pos.ele - 168.907135) < 1e-5);
+    CHECK(find(b, "Brakuj\xc4\x85" "ca droga 1") != nullptr);
+}

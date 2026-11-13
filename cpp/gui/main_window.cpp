@@ -731,7 +731,12 @@ int MainWindow::load_gps_files(const QStringList& files) {
             view_->centerOn(*first);
         show_message(tr("Wczytano ślady GPS: %1").arg(loaded));
     }
-    if (!problems.isEmpty()) QMessageBox::warning(this, tr("Ślady GPS"), problems.join('\n'));
+    if (!problems.isEmpty()) {
+        if (quiet_)
+            show_message(problems.join("; "));
+        else
+            QMessageBox::warning(this, tr("Ślady GPS"), problems.join('\n'));
+    }
     return loaded;
 }
 
