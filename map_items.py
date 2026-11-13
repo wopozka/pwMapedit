@@ -1152,7 +1152,7 @@ class BasicMapItem(object):
         if map_objects_properties is not None:
             self._map_objects_properties = map_objects_properties
         self.obj_comment = None
-        self.type = None
+        self._map_type = None
         self.label1 = None
         self.label2 = None
         self.label3 = None
@@ -1176,7 +1176,7 @@ class BasicMapItem(object):
         self.obj_bounding_box = {}
 
     # def __repr__(self):
-    #     return str(self.type)
+    #     return str(self._map_type)
 
     def __str__(self):
         # redefine in other classes
@@ -1267,7 +1267,7 @@ class BasicMapItem(object):
         return self.streetdesc
 
     def get_type(self):
-        return self.type
+        return self._map_type
 
     def is_deleted(self):
         return self._deleted
@@ -1410,9 +1410,9 @@ class BasicMapItem(object):
 
     def set_type(self, type_val):
         if isinstance(type_val, str):
-            self.type = int(type_val, 16)
+            self._map_type = int(type_val, 16)
         else:
-            self.type = type_val
+            self._map_type = type_val
 
     def set_obj_bounding_box(self, obj_bb):
         # obwiednia moze byc nieustawiona (None), np. dla danych utworzonych przy podziale linii
@@ -1464,7 +1464,7 @@ class BasicMapItem(object):
         else:
             mp_record = []
         mp_record += self.to_mp_record_header()
-        mp_record.append('Type=' + str(hex(self.type)))
+        mp_record.append('Type=' + str(hex(self._map_type)))
         if self.label1 is not None and self.label1:
             mp_record.append('Label=' + self.label1)
         if self.endlevel is not None and self.endlevel:
@@ -1677,7 +1677,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             self.setZValue(self.zValue() + pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
 
     def __str__(self):
-        return f'<POI, Object ID: {self._id}, Type: {self.type}>'
+        return f'<POI, Object ID: {self._id}, Type: {self._map_type}>'
 
     def add_label(self):
         # etykiet POI sa setki tysiecy, a widac je dopiero przy przyblizeniu. Tutaj tylko zaznaczamy, ze etykiete
@@ -2899,7 +2899,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setZValue(10)
 
     def __str__(self):
-        return f'<POLYLINE, Object ID: {self._id}, Type: {self.type}>'
+        return f'<POLYLINE, Object ID: {self._id}, Type: {self._map_type}>'
 
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:
@@ -3101,7 +3101,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         self.setZValue(self._map_objects_properties.get_polygon_z_value(self.get_type()))
 
     def __str__(self):
-        return f'<POLYLINE, Object ID: {self._id}, Type: {self.type}>'
+        return f'<POLYGON, Object ID: {self._id}, Type: {self._map_type}>'
 
     def add_items_after_new_map_level_set(self):
         self.add_label()
