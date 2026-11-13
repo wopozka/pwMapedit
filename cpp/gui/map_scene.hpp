@@ -89,14 +89,17 @@ public:
     // ---- tworzenie obiektow (narzedzia Create*) ----
     // Nowy obiekt z wezlow (wspolrzedne sceny) i ostatnio uzytego typu: komenda undo, potem narzedzie
     // zaznaczania i zaznaczenie nowego obiektu (jak command_create_* w Pythonie). Zwraca indeks obiektu.
-    std::optional<size_t> create_object(ObjectKind kind, const std::vector<QPointF>& nodes);
+    // fields: dodatkowe pola rekordu (np. "Label=..."), comments: linie komentarza - tekst w cp1250.
+    std::optional<size_t> create_object(ObjectKind kind, const std::vector<QPointF>& nodes,
+                                        const std::vector<std::string>& fields = {},
+                                        const std::vector<std::string>& comments = {});
     // Typ nadawany nowym obiektom - ostatnio wybrany w panelu wlasciwosci dla danego rodzaju (last_used_type).
     long long last_used_type(ObjectKind kind) const;
     void set_last_used_type(ObjectKind kind, long long type);
 
     // ---- przyciaganie do wezlow (Ctrl) ----
-    // Najblizszy wezel polilinii lub polygonu (pokazywany poziom) w odleglosci max_distance; excluded - obiekt
-    // pomijany (np. ten, ktorego wezel jest przeciagany).
+    // Najblizszy wezel polilinii lub polygonu (pokazywany poziom) albo punkt sladu GPS / waypoint w odleglosci
+    // max_distance; excluded - obiekt pomijany (np. ten, ktorego wezel jest przeciagany).
     std::optional<QPointF> closest_node(const QPointF& pos, double max_distance,
                                         const MapObjectItem* excluded = nullptr) const;
     // Niebieskie kolko w miejscu, do ktorego wezel zostanie przyciagniety; brak punktu je ukrywa.

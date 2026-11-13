@@ -6,6 +6,10 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
@@ -33,6 +37,8 @@
 #include "map_view.hpp"
 #include "properties_dock.hpp"
 #include "web_layers.hpp"
+#include "gps_dock.hpp"
+#include "gps_layers.hpp"
 
 namespace pwm::gui {
 
@@ -97,6 +103,14 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
 
     properties_ = new PropertiesDock(scene_, this);
     addDockWidget(Qt::RightDockWidgetArea, properties_);
+    // slady GPS: podklad do rysowania (nie zapisuje sie w mapie); panel jako druga karta obok wlasciwosci
+    gps_layers_ = new GpsLayers(scene_, this);
+    gps_dock_ = new GpsDock(gps_layers_, scene_, view_, this);
+    addDockWidget(Qt::RightDockWidgetArea, gps_dock_);
+    tabifyDockWidget(properties_, gps_dock_);
+    properties_->raise();
+    connect(gps_dock_, &GpsDock::load_requested, this, &MainWindow::load_gps_dialog);
+    setAcceptDrops(true);
     // panel pokazuje zaznaczony obiekt albo wezel aktywnego uchwytu i wypelnia sie od nowa po kazdej zmianie
     connect(scene_, &QGraphicsScene::selectionChanged, properties_, &PropertiesDock::refresh);
     connect(scene_, &MapScene::active_grip_changed, properties_, &PropertiesDock::refresh);
@@ -123,6 +137,7 @@ MainWindow::~MainWindow() {
     view_->set_ruler(nullptr);
     view_->setScene(nullptr);
     web_layers_->clear();
+    gps_layers_->clear_items();
     scene_->clear_map();
 }
 
@@ -132,6 +147,7 @@ void MainWindow::create_actions_and_menus() {
     open->setShortcut(QKeySequence::Open);
     recent_files_menu_ = file_menu->addMenu(tr("Open &recent"));
     connect(recent_files_menu_, &QMenu::aboutToShow, this, &MainWindow::fill_recent_files_menu);
+    file_menu->addAction(tr("Wczytaj ślady &GPS…"), this, &MainWindow::load_gps_dialog);
     file_menu->addSeparator();
     QAction* save = file_menu->addAction(tr("&Save map"), this, &MainWindow::save_map);
     save->setShortcut(QKeySequence::Save);
@@ -358,6 +374,7 @@ void MainWindow::file_loaded() {
     timer.start();
     view_->creation_cancel();  // podglad rysowanego obiektu jest elementem sceny
     web_layers_->clear();      // kafelki tez (i ich polozenie zalezy od projekcji nowej mapy)
+    gps_layers_->clear_items();  // slady zostaja wczytane, ich elementy powstana w ukladzie nowej mapy
     scene_->clear_map();
     undo_stack_->clear();
     map_ = std::move(result->map);
@@ -385,6 +402,7 @@ void MainWindow::file_loaded() {
     view_->update_status(false);
     properties_->refresh();
     web_layers_->update_now();
+    gps_layers_->rebuild_items();
     emit map_loaded(true);
 }
 
@@ -671,6 +689,72 @@ void MainWindow::merge_polylines() {
                                  tr("Pominięto poziomy %1 - nie mają ich wszystkie linie albo linie nie tworzą "
                                     "na nich ciągłego łańcucha.")
                                      .arg(levels.join(", ")));
+    }
+}
+
+// ---------------------------------------------------------------- slady GPS
+void MainWindow::load_gps_dialog() {
+    if (!map_) {
+        QMessageBox::information(this, tr("Ślady GPS"), tr("Najpierw otwórz mapę - ślady są rysowane w jej układzie."));
+        return;
+    }
+    const QStringList recent = recent_files();
+    const QString start_dir = settings_->value("gps_dir", recent.isEmpty() ? QString() : QFileInfo(recent.front()).absolutePath())
+                                  .toString();
+    const QStringList files = QFileDialog::getOpenFileNames(this, tr("Wczytaj ślady GPS"), start_dir,
+                                                            tr("Ślady GPS (*.gpx *.GPX);;Wszystkie pliki (*)"));
+    if (files.isEmpty()) return;
+    settings_->setValue("gps_dir", QFileInfo(files.front()).absolutePath());
+    load_gps_files(files);
+}
+
+int MainWindow::load_gps_files(const QStringList& files) {
+    QStringList problems;
+    int loaded = 0;
+    for (const QString& file : files) {
+        QString warning;
+        const QString error = gps_layers_->load_file(file, &warning);
+        if (!error.isEmpty())
+            problems << QString("%1: %2").arg(QFileInfo(file).fileName(), error);
+        else {
+            ++loaded;
+            if (!warning.isEmpty()) problems << QString("%1: %2").arg(QFileInfo(file).fileName(), warning);
+        }
+    }
+    if (loaded) {
+        gps_dock_->show();
+        gps_dock_->raise();
+        show_message(tr("Wczytano ślady GPS: %1").arg(loaded));
+    }
+    if (!problems.isEmpty()) QMessageBox::warning(this, tr("Ślady GPS"), problems.join('\n'));
+    return loaded;
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasUrls()) event->acceptProposedAction();
+}
+
+void MainWindow::dropEvent(QDropEvent* event) {
+    QStringList gps_files;
+    QString map_file;
+    for (const QUrl& url : event->mimeData()->urls()) {
+        const QString path = url.toLocalFile();
+        const QString suffix = QFileInfo(path).suffix().toLower();
+        if (suffix == QLatin1String("gpx") || suffix == QLatin1String("gdb"))
+            gps_files << path;
+        else if (suffix == QLatin1String("mp"))
+            map_file = path;
+    }
+    event->acceptProposedAction();
+    if (!map_file.isEmpty()) open_file(map_file);
+    if (!gps_files.isEmpty()) {
+        if (!map_ && map_file.isEmpty())
+            QMessageBox::information(this, tr("Ślady GPS"), tr("Najpierw otwórz mapę - ślady są rysowane w jej układzie."));
+        else if (map_file.isEmpty())
+            load_gps_files(gps_files);
+        else
+            QMessageBox::information(this, tr("Ślady GPS"),
+                                     tr("Mapa jest wczytywana - przeciągnij ślady ponownie, gdy się wczyta."));
     }
 }
 

@@ -145,6 +145,8 @@ katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
 | `gui/main_window.*` | `pwMapEdit.py` (okno, menu, pasek narzędzi, pasek stanu, otwieranie/zapis) |
 | `gui/commands.*` | `commands.py` (komendy undo/redo) |
 | `gui/properties_dock.*` | `map_obj_properties_dockwidget.py` (panel właściwości) |
+| `core/gps_data.*` | (nowe) dane GPS i upraszczanie śladu (Douglas-Peucker) |
+| `gui/gpx_reader.*`, `gui/gps_layers.*`, `gui/gps_dock.*` | (nowe) czytnik GPX, ślady na scenie, panel „Ślady GPS” |
 | `core/web_tiles.*` | `web_layers.py` (kafelki: zoom ze skali, numery kafelków, adresy OSM/Geoportal/Google) |
 | `gui/web_layers.*` | warstwy WWW z `mapRender.py`/`mapCanvas.py` (pobieranie w tle, kafelki na scenie) |
 | `gui/type_names.*` | `icons/icons_names.py`, `type_aliases.py`, `line_polygon_names.py` (generowane przez `tools/gen_type_names.py`) |
@@ -330,6 +332,26 @@ Różnice względem Pythona (celowe):
 - Tabela Extras: `Ctrl+C`/`Ctrl+X`/`Ctrl+V` i menu kontekstowe Kopiuj/Wklej (format jak `ExtrasTable` w Pythonie:
   JSON z parami [klucz, wartość] i tekst `klucz<TAB>wartość`; wkleja się też tekst `klucz=wartość`). `Delete`
   w tabeli czyści zaznaczone komórki (wcześniej usuwał zaznaczony obiekt mapy).
+
+### Ślady GPS jako podkład do rysowania (nowa funkcja, nie ma jej w wersji Python)
+
+Ślady i punkty z plików GPX są tylko podkładem w bieżącej sesji: nie są częścią mapy i nie zapisują się w pliku mp.
+- Wczytywanie: File → „Wczytaj ślady GPS…” (wiele plików naraz), przycisk w panelu albo przeciągnięcie plików
+  `.gpx` na okno (wymaga otwartej mapy - ślady są rysowane w jej układzie). Czytane są `<wpt>`, `<trk>/<trkseg>`
+  i `<rte>` (GPX 1.0 i 1.1); punkty bez poprawnych współrzędnych są pomijane z ostrzeżeniem.
+- Na mapie: ślady jako cienkie linie (każdy plik w innym kolorze), przy powiększeniu z punktami GPS; waypointy
+  jako romby z nazwą. Leżą nad podkładem WWW, pod obiektami mapy i nie reagują na mysz. Po otwarciu innej mapy
+  zostają wczytane i są rysowane w jej układzie.
+- Panel „Ślady GPS” (karta obok „Właściwości”): pliki z polem widoczności i kolorem, ślady (i ich części),
+  waypointy. Zaznaczona pozycja jest podświetlana, podwójne kliknięcie centruje na niej widok.
+- Rysowanie: `Ctrl` przyciąga węzły (rysowanie, przeciąganie uchwytów) także do punktów śladów i waypointów.
+- „Utwórz obiekty” / menu kontekstowe: ślad lub jego część → polilinia z ostatnio użytym typem, uproszczona
+  algorytmem Douglasa-Peuckera z tolerancją z panelu (domyślnie 3 m; 0 - wszystkie punkty); waypointy → POI
+  (`Label` = nazwa, komentarz = `cmt`/`desc`). Każde polecenie to jedna komenda undo. Wykorzystane elementy
+  są szare (tylko oznaczenie w sesji - cofnięcie nie zdejmuje go).
+- Zrzut ze śladami: `pwmapedit plik.mp --screenshot x.png --gps slad.gpx`.
+
+Pliki GDB (Garmin MapSource) - w przygotowaniu (własny czytnik formatu).
 
 ### Następne kroki
 

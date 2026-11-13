@@ -23,6 +23,8 @@ class MapStyles;
 class MapRuler;
 class PropertiesDock;
 class WebLayers;
+class GpsLayers;
+class GpsDock;
 
 struct LoadResult {
     std::unique_ptr<MapData> map;
@@ -50,6 +52,9 @@ public:
     MapScene* scene() const { return scene_; }
     PropertiesDock* properties_dock() const { return properties_; }
     WebLayers* web_layers() const { return web_layers_; }
+    GpsLayers* gps_layers() const { return gps_layers_; }
+    // Wczytuje slady GPS (GPX) jako podklad; bledy pokazuje w oknie komunikatu. Zwraca liczbe wczytanych plikow.
+    int load_gps_files(const QStringList& files);
     QProgressBar* progress_bar() const { return progress_bar_; }
 
 signals:
@@ -57,6 +62,9 @@ signals:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    // przeciagniecie plikow na okno: *.mp otwiera mape, *.gpx wczytuje slady
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 private slots:
     void open_file_dialog();
@@ -64,6 +72,7 @@ private slots:
     void save_map();
     void save_map_as();
     void copy_action();
+    void load_gps_dialog();
     void delete_action();
     void fill_recent_files_menu();
     void open_recent_file(const QString& file_name);
@@ -97,6 +106,8 @@ private:
     MapRuler* ruler_ = nullptr;
     PropertiesDock* properties_ = nullptr;
     WebLayers* web_layers_ = nullptr;
+    GpsLayers* gps_layers_ = nullptr;
+    GpsDock* gps_dock_ = nullptr;
     QActionGroup* web_layer_group_ = nullptr;
     QAction* last_web_layer_action_ = nullptr;
     QMenu* recent_files_menu_ = nullptr;

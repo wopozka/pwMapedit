@@ -13,6 +13,10 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "gps_dock.hpp"
+#include "gps_layers.hpp"
+#include "gpx_reader.hpp"
+#include <QDoubleSpinBox>
 #include "main_window.hpp"
 #include <QMessageBox>
 #include <QAbstractButton>
@@ -170,6 +174,11 @@ private slots:
     // poprawki po klikaniu: schowek Extras, ostatnie pliki, pytanie przy zamykaniu
     void extras_copy_paste_between_objects();
     void window_recent_files_and_close_prompt();
+    // slady GPS (GPX) jako podklad do rysowania
+    void gpx_reader_parses_tracks_waypoints_routes();
+    void gps_layer_items_snapping_and_visibility();
+    void gps_track_to_polyline_and_waypoints_to_pois();
+    void gps_dock_lists_and_creates();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1068,6 +1077,192 @@ void EditTests::window_recent_files_and_close_prompt() {
         QCOMPARE(f.readAll(), before);
     }
     qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+namespace {
+// Slad wzdluz linii z SAMPLE_MAP (52.100,21.000 -> 52.102,21.003) z punktami co ok. 1 m i drobnym szumem,
+// druga czesc sladu, trasa i dwa waypointy (jeden z polskimi znakami).
+QByteArray sample_gpx() {
+    QByteArray gpx = R"(<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <wpt lat="52.10050" lon="21.00080"><ele>101.5</ele><name>Stacja Łódź</name><cmt>przy drodze</cmt><sym>Fuel</sym></wpt>
+  <wpt lat="52.10150" lon="21.00200"><name>Most</name><desc>opis zamiast komentarza</desc></wpt>
+  <wpt lat="abc" lon="21.0"><name>zly</name></wpt>
+  <trk><name>Przejazd</name><trkseg>
+)";
+    for (int i = 0; i <= 200; ++i) {
+        const double t = i / 200.0;
+        const double noise = (i % 2 ? 0.000004 : -0.000004);  // ok. 0,4 m
+        gpx += QString("    <trkpt lat=\"%1\" lon=\"%2\"><ele>100</ele><time>2026-11-13T10:00:%3Z</time></trkpt>\n")
+                   .arg(52.100 + 0.002 * t + noise, 0, 'f', 7)
+                   .arg(21.000 + 0.003 * t, 0, 'f', 7)
+                   .arg(i % 60, 2, 10, QChar('0'))
+                   .toUtf8();
+    }
+    gpx += R"(  </trkseg><trkseg>
+    <trkpt lat="52.10300" lon="21.00400"/><trkpt lat="52.10310" lon="21.00420"/>
+  </trkseg></trk>
+  <rte><name>Trasa</name><rtept lat="52.1000" lon="21.0000"><name>A</name></rtept><rtept lat="52.1010" lon="21.0010"/></rte>
+  <extensions><foo/></extensions>
+</gpx>
+)";
+    return gpx;
+}
+}  // namespace
+
+void EditTests::gpx_reader_parses_tracks_waypoints_routes() {
+    QString message;
+    auto file = read_gpx(sample_gpx(), &message);
+    QVERIFY2(file, qPrintable(message));
+    QVERIFY(message.contains("1"));  // pominiety waypoint bez wspolrzednych
+    QCOMPARE(file->waypoints.size(), size_t{2});
+    QCOMPARE(QString::fromStdString(file->waypoints[0].name), QString::fromUtf8("Stacja Łódź"));
+    QCOMPARE(file->waypoints[0].comment, std::string("przy drodze"));
+    QCOMPARE(file->waypoints[0].symbol, std::string("Fuel"));
+    QCOMPARE(*file->waypoints[0].pos.ele, 101.5);
+    QCOMPARE(file->waypoints[1].comment, std::string("opis zamiast komentarza"));
+    QCOMPARE(file->tracks.size(), size_t{2});
+    QCOMPARE(file->tracks[0].name, std::string("Przejazd"));
+    QCOMPARE(file->tracks[0].segments.size(), size_t{2});
+    QCOMPARE(file->tracks[0].segments[0].size(), size_t{201});
+    QVERIFY(file->tracks[0].segments[0][5].time);
+    QVERIFY(file->tracks[1].route);
+    QCOMPARE(file->tracks[1].segments[0].size(), size_t{2});
+
+    QVERIFY(!read_gpx("<kml></kml>", &message));
+    QVERIFY(!read_gpx("<gpx><trk><trkseg><trkpt lat='1' lon='2'>", &message));  // urwany plik
+    QVERIFY(message.contains(QString::fromUtf8("Błąd")));
+}
+
+void EditTests::gps_layer_items_snapping_and_visibility() {
+    ViewFixture f;
+    GpsLayers layers(&f.scene);
+    auto file = read_gpx(sample_gpx());
+    file->path = "test.gpx";
+    layers.add_file(std::move(*file));
+    QCOMPARE(layers.file_count(), 1);
+    int tracks = 0, waypoints = 0;
+    for (QGraphicsItem* item : f.scene.items()) {
+        if (item->type() == GpsTrackItemType) {
+            ++tracks;
+            QVERIFY(item->zValue() < 0);
+            QCOMPARE(item->acceptedMouseButtons(), Qt::NoButton);
+        }
+        if (item->type() == GpsWaypointItemType) ++waypoints;
+    }
+    QCOMPARE(tracks, 3);  // 2 czesci sladu + trasa
+    QCOMPARE(waypoints, 2);
+
+    // przyciaganie: kursor kilka pikseli od waypointu "Most" (daleko od obiektow mapy)
+    const QPointF most = *layers.waypoint_position(0, 1);
+    auto snapped = f.scene.closest_node(most + QPointF(3, -2), 15);
+    QVERIFY(snapped);
+    QCOMPARE(*snapped, most);
+    // klikniecie na sladzie (druga czesc - za koncem drogi, bez obiektow mapy) niczego nie zaznacza
+    f.scene.clearSelection();
+    const QPointF on_track = layers.segment_path(0, 0, 1).elementAt(0);
+    f.view.centerOn(on_track);
+    QVERIFY(!f.scene.items(on_track).isEmpty());
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, f.view.mapFromScene(on_track));
+    QVERIFY(f.scene.selectedItems().isEmpty());
+
+    // ukrycie pliku: elementy niewidoczne i bez przyciagania
+    layers.set_visible(0, false);
+    QVERIFY(!f.scene.closest_node(most + QPointF(3, -2), 15) || *f.scene.closest_node(most + QPointF(3, -2), 15) != most);
+    layers.set_visible(0, true);
+
+    // nowa mapa: elementy usuwane przed wyczyszczeniem sceny i budowane od nowa
+    layers.clear_items();
+    f.scene.clear_map();
+    f.scene.set_map(f.map.get(), &f.styles);
+    layers.rebuild_items();
+    int after = 0;
+    for (QGraphicsItem* item : f.scene.items())
+        if (item->type() == GpsTrackItemType || item->type() == GpsWaypointItemType) ++after;
+    QCOMPARE(after, 5);
+    layers.clear_items();
+}
+
+void EditTests::gps_track_to_polyline_and_waypoints_to_pois() {
+    Fixture f;
+    GpsLayers layers(&f.scene);
+    auto file = read_gpx(sample_gpx());
+    layers.add_file(std::move(*file));
+    f.scene.set_last_used_type(ObjectKind::Polyline, 0x6);
+    const size_t before = f.map->objects().size();
+
+    // pierwsza czesc sladu (201 punktow, prosta z szumem 0,4 m) -> polilinia z 2 wezlami przy tolerancji 3 m
+    QCOMPARE(layers.create_polylines(0, 0, 0, 3.0), 1);
+    QCOMPARE(f.map->objects().size(), before + 1);
+    const MapObject& line = f.map->objects()[before];
+    QCOMPARE(line.kind(), ObjectKind::Polyline);
+    QCOMPARE(*line.type, 0x6LL);
+    QCOMPARE(f.node_count(before), size_t{2});
+    QVERIFY(layers.file(0).used_segments[0][0]);
+    QCOMPARE(f.stack.count(), 1);
+    // bez upraszczania - wszystkie punkty
+    QCOMPARE(layers.create_polylines(0, 0, 0, 0.0), 1);
+    QCOMPARE(f.node_count(before + 1), size_t{201});
+    // caly slad (2 czesci) - jedna komenda
+    QCOMPARE(layers.create_polylines(0, 0, -1, 3.0), 2);
+    QCOMPARE(f.stack.count(), 3);
+
+    // waypointy -> POI z nazwa w Label (cp1250) i komentarzem
+    QCOMPARE(layers.create_pois(0, {0, 1}), 2);
+    QCOMPARE(f.stack.count(), 4);
+    const MapObject& poi = f.map->objects()[f.map->objects().size() - 2];
+    QCOMPARE(poi.kind(), ObjectKind::Poi);
+    QCOMPARE(*poi.label1, std::string("Stacja \xa3\xf3\x64\x9f"));
+    QVERIFY(poi.comment && poi.comment->front() == "przy drodze");
+    QVERIFY(layers.file(0).used_waypoints[0] && layers.file(0).used_waypoints[1]);
+    // zapis mapy zawiera nowe obiekty, a slady nie
+    const std::string saved = f.map->to_mp_string();
+    QVERIFY(saved.find("Label=Most") != std::string::npos);
+    QVERIFY(saved.find("Przejazd") == std::string::npos);
+
+    while (f.stack.canUndo()) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::gps_dock_lists_and_creates() {
+    ViewFixture f;
+    GpsLayers layers(&f.scene);
+    GpsDock dock(&layers, &f.scene, &f.view);
+    auto file = read_gpx(sample_gpx());
+    file->path = "C:/slady/test.gpx";
+    layers.add_file(std::move(*file));
+    QTreeWidget* tree = dock.tree();
+    QCOMPARE(tree->topLevelItemCount(), 1);
+    QTreeWidgetItem* file_item = tree->topLevelItem(0);
+    QCOMPARE(file_item->text(0), QString("test.gpx"));
+    QCOMPARE(file_item->childCount(), 3);  // slad, trasa, waypointy
+    QTreeWidgetItem* track = file_item->child(0);
+    QCOMPARE(track->childCount(), 2);  // dwie czesci
+    QTreeWidgetItem* wpts = file_item->child(2);
+    QCOMPARE(wpts->childCount(), 2);
+
+    // ukrycie przez pole wyboru
+    file_item->setCheckState(0, Qt::Unchecked);
+    QVERIFY(!layers.file(0).visible);
+    file_item->setCheckState(0, Qt::Checked);
+
+    // zaznaczenie podswietla, "Utworz obiekty" tworzy polilinie i POI jedna komenda na rodzaj
+    track->child(1)->setSelected(true);
+    wpts->child(1)->setSelected(true);
+    int highlighted = 0;
+    for (QGraphicsItem* item : f.scene.items())
+        if (item->zValue() == HIGHLIGHTED_POLY_Z_VAL) ++highlighted;
+    QCOMPARE(highlighted, 0);  // dwie pozycje zaznaczone - bez podswietlenia
+    const size_t before = f.map->objects().size();
+    dock.create_from_selection();
+    QCOMPARE(f.map->objects().size(), before + 2);
+    QCOMPARE(f.stack.count(), 2);
+    // lista pokazuje wykorzystane elementy
+    QVERIFY(tree->topLevelItem(0)->child(0)->child(1)->text(0).contains(QString::fromUtf8("użyta")));
+    dock.tree()->topLevelItem(0)->setSelected(true);
+    dock.remove_selected_file();
+    QCOMPARE(layers.file_count(), 0);
+    QCOMPARE(tree->topLevelItemCount(), 0);
 }
 
 QTEST_MAIN(EditTests)

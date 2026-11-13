@@ -1,6 +1,6 @@
 // pwMapEdit - edytor map w formacie mp (port C++/Qt6 wersji Python).
 //   pwmapedit [plik.mp] [--screenshot plik.png] [--zoom N] [--level L] [--select N] [--edit-nodes]
-//             [--weblayer osm|geoportal|google]
+//             [--weblayer osm|geoportal|google] [--gps plik.gpx]
 // --screenshot: po wczytaniu mapy zapisuje zrzut okna i konczy program (do testow bez klikania);
 // --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy;
 // --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow;
@@ -15,6 +15,7 @@
 #include "map_items.hpp"
 #include "map_scene.hpp"
 #include "web_layers.hpp"
+#include "gps_dock.hpp"
 #include "map_styles.hpp"
 #include "map_view.hpp"
 
@@ -27,6 +28,7 @@ int main(int argc, char* argv[]) {
     int zoom = 0, level = 0, select = -1;
     bool edit_nodes = false;
     QString weblayer;
+    QStringList gps_files;
     const QStringList args = QApplication::arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == "--screenshot" && i + 1 < args.size())
@@ -41,6 +43,8 @@ int main(int argc, char* argv[]) {
             edit_nodes = true;
         else if (args[i] == "--weblayer" && i + 1 < args.size())
             weblayer = args[++i].toLower();
+        else if (args[i] == "--gps" && i + 1 < args.size())
+            gps_files << args[++i];
         else
             file_name = args[i];
     }
@@ -64,6 +68,7 @@ int main(int argc, char* argv[]) {
             for (int i = 0; i < -zoom; ++i) window.view()->zoom_out();
             if (level) window.select_map_level(level);
             if (edit_nodes) window.select_tool(pwm::gui::Tool::EditNodes);
+            if (!gps_files.isEmpty()) window.load_gps_files(gps_files);
             if (select >= 0) {
                 if (auto* item = window.scene()->item_for_object(static_cast<size_t>(select))) {
                     item->graphics_item()->setSelected(true);

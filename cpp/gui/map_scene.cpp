@@ -553,7 +553,9 @@ long long MapScene::last_used_type(ObjectKind kind) const { return last_used_typ
 
 void MapScene::set_last_used_type(ObjectKind kind, long long type) { last_used_type_[static_cast<int>(kind)] = type; }
 
-std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector<QPointF>& nodes) {
+std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector<QPointF>& nodes,
+                                              const std::vector<std::string>& fields,
+                                              const std::vector<std::string>& comments) {
     if (!map_ || nodes.empty() || kind == ObjectKind::Basic) return std::nullopt;
     // Jak w Pythonie: rekord z Type i Data0 we wspolrzednych geograficznych. 10 miejsc po przecinku, zeby nie
     // podniesc precyzji zapisu calej mapy (cyfry powyzej 6 nie wplywaja na precyzje); zapis uzywa precyzji mapy.
@@ -569,8 +571,12 @@ std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector
         if (i) data += ',';
         data += QString::asprintf("(%.10f,%.10f)", g.latitude, g.longitude).toStdString();
     }
-    std::vector<std::string> lines{object_kind_section(kind),
-                                   QString::asprintf("Type=0x%llx", last_used_type(kind)).toStdString(), data};
+    std::vector<std::string> lines;
+    for (const std::string& c : comments) lines.push_back(";" + c);
+    lines.push_back(object_kind_section(kind));
+    lines.push_back(QString::asprintf("Type=0x%llx", last_used_type(kind)).toStdString());
+    lines.insert(lines.end(), fields.begin(), fields.end());
+    lines.push_back(data);
     std::optional<MapObject> obj = map_->object_from_record(lines);
     if (!obj) return std::nullopt;
     QString text;
@@ -597,20 +603,31 @@ std::optional<QPointF> MapScene::closest_node(const QPointF& pos, double max_dis
     double best_distance = max_distance;
     const QRectF area(pos.x() - max_distance, pos.y() - max_distance, 2 * max_distance, 2 * max_distance);
     const QList<QGraphicsItem*> under = items(area);
+    auto consider = [&](const QPointF& node) {
+        const QPointF d = node - pos;
+        const double distance = std::hypot(d.x(), d.y());
+        if (distance <= best_distance) {
+            best_distance = distance;
+            best = node;
+        }
+    };
+    std::vector<QPointF> points;
     for (QGraphicsItem* graphics : under) {
+        if (!graphics->isVisible()) continue;
+        if (graphics->type() == GpsTrackItemType || graphics->type() == GpsWaypointItemType) {
+            // punkty sladow GPS i waypointy
+            if (auto* source = dynamic_cast<SnapSource*>(graphics)) {
+                points.clear();
+                source->snap_points(points);
+                for (const QPointF& p : points) consider(p);
+            }
+            continue;
+        }
         if (graphics->type() != PolylineItemType && graphics->type() != PolygonItemType) continue;
         auto* item = static_cast<PolyItem*>(graphics);
-        if (item == excluded || !item->isVisible() || item->object().deleted) continue;
-        for (const auto& poly : item->shown_nodes()) {
-            for (const QPointF& node : poly) {
-                const QPointF d = node - pos;
-                const double distance = std::hypot(d.x(), d.y());
-                if (distance <= best_distance) {
-                    best_distance = distance;
-                    best = node;
-                }
-            }
-        }
+        if (item == excluded || item->object().deleted) continue;
+        for (const auto& poly : item->shown_nodes())
+            for (const QPointF& node : poly) consider(node);
     }
     return best;
 }

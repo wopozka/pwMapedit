@@ -29,6 +29,15 @@ enum ItemType {
     ArrowHeadItemType,
     RulerItemType,
     GripItemType,
+    GpsTrackItemType,
+    GpsWaypointItemType,
+};
+
+// Element, do ktorego punktow przyciagaja sie wezly (Ctrl), np. slady GPS.
+class SnapSource {
+public:
+    virtual ~SnapSource() = default;
+    virtual void snap_points(std::vector<QPointF>& out) const = 0;
 };
 
 class GripItem;
