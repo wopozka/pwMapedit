@@ -27,6 +27,7 @@
 #include "map_scene.hpp"
 #include "map_styles.hpp"
 #include "map_view.hpp"
+#include "properties_dock.hpp"
 
 namespace pwm::gui {
 
@@ -81,6 +82,14 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     ruler_ = new MapRuler(view_, default_projection_.get());
     scene_->add_persistent_item(ruler_);
     view_->set_ruler(ruler_);
+
+    properties_ = new PropertiesDock(scene_, this);
+    addDockWidget(Qt::RightDockWidgetArea, properties_);
+    // panel pokazuje zaznaczony obiekt albo wezel aktywnego uchwytu i wypelnia sie od nowa po kazdej zmianie
+    connect(scene_, &QGraphicsScene::selectionChanged, properties_, &PropertiesDock::refresh);
+    connect(scene_, &MapScene::active_grip_changed, properties_, &PropertiesDock::refresh);
+    connect(scene_, &MapScene::tool_changed, properties_, &PropertiesDock::refresh);
+    connect(undo_stack_, &QUndoStack::indexChanged, properties_, &PropertiesDock::refresh);
 
     connect(scene_, &MapScene::progress, this, &MainWindow::set_progress);
     connect(view_, &MapView::status_message, info_text_, &QLabel::setText);
@@ -295,6 +304,7 @@ void MainWindow::file_loaded() {
     if (!map_->warnings().empty()) msg += tr(", ostrzeżeń: %1").arg(map_->warnings().size());
     show_message(msg);
     view_->update_status(false);
+    properties_->refresh();
     emit map_loaded(true);
 }
 

@@ -144,6 +144,8 @@ katalogu, a na końcu w katalogu `icons/` repozytorium (ścieżka wkompilowana).
 |---|---|
 | `gui/main_window.*` | `pwMapEdit.py` (okno, menu, pasek narzędzi, pasek stanu, otwieranie/zapis) |
 | `gui/commands.*` | `commands.py` (komendy undo/redo) |
+| `gui/properties_dock.*` | `map_obj_properties_dockwidget.py` (panel właściwości) |
+| `gui/type_names.*` | `icons/icons_names.py`, `type_aliases.py`, `line_polygon_names.py` (generowane przez `tools/gen_type_names.py`) |
 | `gui/map_scene.*` | `mapCanvas.py` |
 | `gui/map_view.*` | `mapRender.py` |
 | `gui/map_items.*` | graficzna część `map_items.py` (POI, polilinie, polygony, etykiety, strzałki, numery adresowe, HLevel, linijka) |
@@ -231,9 +233,34 @@ Różnice względem Pythona (celowe):
 - Usuwanie węzła sprawdza minimalną liczbę węzłów w każdej części obiektu (Python sprawdzał łączną liczbę
   uchwytów, więc w obiekcie wieloczęściowym mogła zostać część z jednym węzłem).
 
+### Etap 3b.3 (zrobione): panel właściwości
+
+Panel „Właściwości” po prawej stronie okna pokazuje jedyny zaznaczony obiekt:
+- **Główny**: typ (lista z nazwami i ikonami POI, wpisany tekst filtruje listę), Label/Label2/Label3, EndLevel,
+  DirIndicator i odwrócenie polilinii, komentarz (zapis po opuszczeniu pola), Extras (menu kontekstowe: dodaj
+  i usuń wiersz);
+- **Adres** (POI): StreetDesc, HouseNumber, Phone;
+- **Elements**: części obiektu na poziomach Data (zewnętrzne i wewnętrzne części polygonu, pierwszy punkt,
+  liczba węzłów); wybrana część jest podświetlana na mapie;
+- **Routing** (polilinie): 12 wartości RouteParam;
+- **Węzły** (tryb edycji węzłów, po kliknięciu uchwytu): numeracja adresowa po obu stronach i HLevel węzła.
+
+Panel nie trzyma kopii danych. Każda zmiana pola to kopia obiektu ze zmienioną wartością przekazana do
+`MapScene::replace_object` (jedna komenda undo, tylko gdy zapis obiektu do mp rzeczywiście się zmienia). Po każdej
+zmianie stosu undo panel wypełnia się od nowa z danych. Zmiana typu przerysowuje element (ikona, kolor, wypełnienie).
+
+Różnice względem Pythona (celowe):
+- Aliasy typów POI są dopasowywane numerycznie; Python porównywał tekst `hex(typ)` z kluczem, więc aliasy typów
+  zapisanych z zerem wiodącym (np. `0x0600`) nie pojawiały się na liście.
+- Karta Routing pokazuje wartości obiektu także wtedy, gdy wszystkie są zerami (Python zostawiał wtedy wartości
+  poprzednio pokazanego obiektu).
+- W trybie edycji węzłów, dopóki nie kliknięto uchwytu, panel pokazuje właściwości obiektu (w Pythonie był pusty).
+- Po edycji panel zostaje na bieżącej karcie (Python wracał na kartę Główny).
+- Puste pole (etykieta, adres) usuwa wartość z obiektu; puste końcowe wiersze komentarza są pomijane.
+- Karta Elements nie ma kolumny „Obszar” ani menu „Usuń/Kopiuj do” (w Pythonie nie były zaimplementowane).
+
 ### Następne kroki
 
-- 3b.3: panel właściwości (`map_obj_properties_dockwidget.py`), każda zmiana jako komenda undo.
 - 3b.4: kopiuj/wklej obiektów.
 - 3c: tworzenie obiektów (POI, polilinia, okrąg, polygon), przyciąganie do węzłów, warstwy WWW (`web_layers.py`).
 

@@ -63,6 +63,8 @@ public:
     // Poziom Data, ktorego wezly sa teraz pokazywane (moze byc nizszy niz poziom mapy), -1 gdy zaden.
     virtual int shown_data_level() const = 0;
     virtual QGraphicsItem* graphics_item() = 0;
+    // Wyglad wedlug typu obiektu (ikona, pioro, wypelnienie) - po zmianie typu w panelu wlasciwosci.
+    virtual void apply_style() {}
     // Odpowiednik set_z_value: z wedlug typu obiektu (bez podniesienia za zaznaczenie).
     virtual void set_z_value() = 0;
     void set_selection_z_value();
@@ -89,6 +91,7 @@ public:
 
     void set_map_level(int level) override;
     void refresh() override;
+    void apply_style() override;
     int shown_data_level() const override { return shown_level_; }
     void set_z_value() override { setZValue(20); }
     void add_label();
@@ -179,6 +182,7 @@ public:
     PolylineItem(MapData* map, size_t index, const QPen& pen);
     int type() const override { return PolylineItemType; }
     void set_z_value() override { setZValue(10); }
+    void apply_style() override;
     QPainterPath shape() const override { return stroke_shape(); }
 
 protected:
@@ -199,6 +203,7 @@ public:
     PolygonItem(MapData* map, size_t index, const QPen& pen, const QBrush& brush, int z_value);
     int type() const override { return PolygonItemType; }
     void set_z_value() override { setZValue(z_value_); }
+    void apply_style() override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     bool small_poly() const;
 

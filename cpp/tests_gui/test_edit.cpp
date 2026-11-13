@@ -9,6 +9,14 @@
 #include "map_scene.hpp"
 #include "map_styles.hpp"
 #include "map_view.hpp"
+#include "properties_dock.hpp"
+#include <QCheckBox>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QTabWidget>
+#include <QTableWidget>
+#include <QTreeWidget>
 
 using namespace pwm;
 using namespace pwm::gui;
@@ -77,6 +85,22 @@ struct Fixture {
     }
 };
 
+// Panel wlasciwosci podlaczony do sceny tak jak w MainWindow.
+struct DockFixture : Fixture {
+    PropertiesDock dock{&scene};
+    DockFixture() {
+        QObject::connect(&scene, &QGraphicsScene::selectionChanged, &dock, &PropertiesDock::refresh);
+        QObject::connect(&scene, &MapScene::active_grip_changed, &dock, &PropertiesDock::refresh);
+        QObject::connect(&scene, &MapScene::tool_changed, &dock, &PropertiesDock::refresh);
+        QObject::connect(&stack, &QUndoStack::indexChanged, &dock, &PropertiesDock::refresh);
+    }
+    const MapObject& obj(size_t i) const { return map->objects()[i]; }
+    void edit_line(QLineEdit* edit, const QString& text) {
+        edit->setText(text);
+        emit edit->editingFinished();
+    }
+};
+
 // Widok do testow z mysza: polilinia na srodku, bez zmiany skali.
 struct ViewFixture : Fixture {
     MapView view{&scene};
@@ -112,6 +136,13 @@ private slots:
     void split_and_merge_polyline();
     void grip_drag_ctrl_click_and_split_key();
     void shift_click_inserts_node();
+    // 3b.3: panel wlasciwosci
+    void dock_follows_selection();
+    void dock_labels_endlevel_direction();
+    void dock_type_comment_extras();
+    void dock_address_and_routing();
+    void dock_node_hlevel_and_numbers();
+    void dock_elements_highlight();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -434,6 +465,180 @@ void EditTests::shift_click_inserts_node() {
     QCOMPARE(f.stack.count(), 1);
     f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::dock_follows_selection() {
+    DockFixture f;
+    QVERIFY(!f.dock.shown_object());
+    QVERIFY(!f.dock.tabs()->isTabEnabled(PropertiesDock::MainTab));
+    f.select_only(f.poi());
+    QCOMPARE(f.dock.shown_object(), std::optional<size_t>(0));
+    QVERIFY(f.dock.tabs()->isTabEnabled(PropertiesDock::AddressTab));
+    QVERIFY(!f.dock.tabs()->isTabEnabled(PropertiesDock::RoutingTab));
+    QCOMPARE(f.dock.label_edit(1)->text(), QString("Stacja"));
+    f.select_only(f.polyline());
+    QCOMPARE(f.dock.shown_object(), std::optional<size_t>(1));
+    QVERIFY(!f.dock.tabs()->isTabEnabled(PropertiesDock::AddressTab));
+    QVERIFY(f.dock.tabs()->isTabEnabled(PropertiesDock::RoutingTab));
+    QCOMPARE(f.dock.tabs()->currentIndex(), int(PropertiesDock::MainTab));
+    QCOMPARE(f.dock.label_edit(1)->text(), QString("Ulica"));
+    QVERIFY(f.dock.dir_indicator()->isChecked());
+    f.poi()->graphics_item()->setSelected(true);  // kilka obiektow - panel pusty
+    QVERIFY(!f.dock.shown_object());
+}
+
+void EditTests::dock_labels_endlevel_direction() {
+    DockFixture f;
+    f.select_only(f.polyline());
+    f.edit_line(f.dock.label_edit(1), QString::fromUtf8("Górczewska"));
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(*f.obj(1).label1, std::string("G\xf3rczewska"));  // cp1250
+    f.edit_line(f.dock.label_edit(1), QString::fromUtf8("Górczewska"));  // bez zmiany - bez komendy
+    QCOMPARE(f.stack.count(), 1);
+    f.edit_line(f.dock.label_edit(2), "Druga");
+    QCOMPARE(*f.obj(1).label2, std::string("Druga"));
+
+    emit f.dock.end_level()->activated(3);
+    QCOMPARE(f.obj(1).endlevel, 3LL);
+
+    f.dock.dir_indicator()->click();
+    QVERIFY(!f.obj(1).dirindicator);
+    QCOMPARE(f.stack.count(), 4);
+
+    f.stack.undo();
+    QVERIFY(f.obj(1).dirindicator);
+    QVERIFY(f.dock.dir_indicator()->isChecked());
+    f.stack.undo();
+    f.stack.undo();
+    QVERIFY(!f.obj(1).label2);
+    QCOMPARE(f.dock.label_edit(2)->text(), QString());
+    f.stack.undo();
+    QCOMPARE(f.dock.label_edit(1)->text(), QString("Ulica"));
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::dock_type_comment_extras() {
+    DockFixture f;
+    f.select_only(f.polyline());
+    QComboBox* type = f.dock.type_selector();
+    QCOMPARE(type->currentData().toLongLong(), 0x6LL);
+    const int motorway = type->findData(QVariant::fromValue<long long>(0x1));
+    QVERIFY(motorway >= 0);
+    type->setCurrentIndex(motorway);
+    emit type->activated(motorway);
+    QCOMPARE(*f.obj(1).type, 0x1LL);
+    QVERIFY(f.map->to_mp_string().find("Type=0x1\n") != std::string::npos);
+    // element dostal wyglad nowego typu (widac po odznaczeniu)
+    f.scene.clearSelection();
+    auto* line = static_cast<QGraphicsPathItem*>(f.polyline()->graphics_item());
+    QCOMPARE(line->pen().color(), f.styles.polyline_pen(0x1).color());
+    QVERIFY(line->pen().color() != f.styles.polyline_pen(0x6).color());
+    f.select_only(f.polyline());
+
+    QPlainTextEdit* comment = f.dock.comment();
+    QFocusEvent focus_in(QEvent::FocusIn), focus_out(QEvent::FocusOut);
+    QCoreApplication::sendEvent(comment, &focus_in);
+    comment->setPlainText(QString::fromUtf8("pierwsza\nłódź\n\n"));
+    QCoreApplication::sendEvent(comment, &focus_out);
+    QVERIFY(f.obj(1).comment);
+    QCOMPARE(f.obj(1).comment->size(), size_t{2});
+    QCOMPARE(f.obj(1).comment->at(1), std::string("\xb3\xf3\x64\x9f"));
+
+    QTableWidget* extras = f.dock.extras();
+    QCOMPARE(extras->rowCount(), 1);  // tylko pusty wiersz na nowy wpis
+    extras->setItem(0, 0, new QTableWidgetItem("Miasto"));
+    extras->setItem(0, 1, new QTableWidgetItem("Wola"));
+    emit extras->cellChanged(0, 1);
+    QCOMPARE(f.obj(1).others.size(), size_t{1});
+    QCOMPARE(f.obj(1).others[0].first, std::string("Miasto"));
+    QCOMPARE(extras->rowCount(), 2);
+    QCOMPARE(f.stack.count(), 3);
+
+    f.stack.undo();
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+    QCOMPARE(type->currentData().toLongLong(), 0x6LL);
+}
+
+void EditTests::dock_address_and_routing() {
+    DockFixture f;
+    f.select_only(f.poi());
+    f.edit_line(f.dock.street_desc(), "Prosta");
+    f.edit_line(f.dock.house_number(), "12a");
+    f.edit_line(f.dock.phone(), "123");
+    QCOMPARE(*f.obj(0).streetdesc, std::string("Prosta"));
+    QCOMPARE(*f.obj(0).housenumber, std::string("12a"));
+    QCOMPARE(*f.obj(0).phone, std::string("123"));
+
+    f.select_only(f.polyline());
+    QVERIFY(!f.obj(1).routeparam);
+    f.dock.route_check(2)->click();  // One way
+    QVERIFY(f.obj(1).routeparam);
+    QCOMPARE((*f.obj(1).routeparam)[2], 1LL);
+    f.dock.route_combo(0)->setCurrentIndex(4);
+    emit f.dock.route_combo(0)->activated(4);
+    QCOMPARE((*f.obj(1).routeparam)[0], 4LL);
+    QVERIFY(f.map->to_mp_string().find("RouteParam=4,0,1,0,0,0,0,0,0,0,0,0") != std::string::npos);
+    QCOMPARE(f.stack.count(), 5);
+    for (int i = 0; i < 5; ++i) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::dock_node_hlevel_and_numbers() {
+    DockFixture f;
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.polyline());
+    QVERIFY(!f.dock.shows_node());
+    f.scene.set_active_grip(1, 0, 0, 1);
+    QVERIFY(f.dock.shows_node());
+    QCOMPARE(f.dock.tabs()->currentIndex(), int(PropertiesDock::NodesTab));
+    QVERIFY(!f.dock.tabs()->isTabEnabled(PropertiesDock::MainTab));
+    QVERIFY(!f.dock.node_has_numbers()->isChecked());
+
+    QComboBox* hlevel = f.dock.node_hlevel();
+    const int two = hlevel->findData(QVariant::fromValue<long long>(2));
+    hlevel->setCurrentIndex(two);
+    emit hlevel->activated(two);
+    QCOMPARE(f.node(1, 0, 1).hlevel(), OptInt(2));
+    QVERIFY(f.dock.shows_node());  // po zmianie panel dalej pokazuje ten wezel
+    QCOMPARE(hlevel->currentIndex(), two);
+
+    // numeracja w wezle srodkowym: wartosci wyliczone z odcinka 1-5 / 2-6
+    f.dock.node_has_numbers()->click();
+    QVERIFY(f.node(1, 0, 1).numbers() != nullptr);
+    QVERIFY(f.dock.node_has_numbers()->isChecked());
+    f.dock.number_after(true)->setText("31");
+    emit f.dock.number_after(true)->editingFinished();
+    QCOMPARE(f.node(1, 0, 1).numbers()->left_side_number_after, OptInt(31));
+    QCOMPARE(f.stack.count(), 3);
+
+    f.dock.node_has_numbers()->click();
+    QVERIFY(f.node(1, 0, 1).numbers() == nullptr);
+    for (int i = 0; i < 4; ++i) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+    QCOMPARE(f.dock.node_hlevel()->currentIndex(), 0);
+}
+
+void EditTests::dock_elements_highlight() {
+    DockFixture f;
+    f.select_only(f.polyline());
+    QTreeWidget* tree = f.dock.elements();
+    QCOMPARE(tree->topLevelItemCount(), 2);  // Data0, Data1
+    QCOMPARE(tree->topLevelItem(0)->text(0), QString("Data0"));
+    QTreeWidgetItem* poly = tree->topLevelItem(0)->child(0);
+    QCOMPARE(poly->text(3), QString("3"));
+    auto highlighted = [&] {
+        int n = 0;
+        for (QGraphicsItem* item : f.scene.items())
+            if (item->zValue() == HIGHLIGHTED_POLY_Z_VAL) ++n;
+        return n;
+    };
+    QCOMPARE(highlighted(), 0);
+    poly->setSelected(true);
+    QCOMPARE(highlighted(), 1);
+    f.scene.clearSelection();
+    QCOMPARE(highlighted(), 0);
 }
 
 QTEST_MAIN(EditTests)

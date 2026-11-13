@@ -2,6 +2,7 @@
 #pragma once
 
 #include <QGraphicsScene>
+#include <QPainterPath>
 #include <QPointF>
 #include <optional>
 #include <vector>
@@ -9,6 +10,7 @@
 #include "constants.hpp"
 #include "map_data.hpp"
 
+class QGraphicsPathItem;
 class QUndoCommand;
 class QUndoStack;
 
@@ -18,6 +20,14 @@ class MapStyles;
 class MapObjectItem;
 class PolyItem;
 class GripItem;
+
+// Wezel wskazany uchwytem: obiekt (indeks w MapData), poziom Data, czesc i numer wezla.
+struct GripRef {
+    size_t obj;
+    int level;
+    size_t poly;
+    size_t node;
+};
 
 class MapScene : public QGraphicsScene {
     Q_OBJECT
@@ -88,6 +98,13 @@ public:
     // bo przebudowuja uchwyty, czyli usuwaja ten, ktory je zglosil.
     void grip_hovered(GripItem* grip, bool hovered);
     void set_active_grip(size_t obj, int level, size_t poly, size_t node);
+    // Ostatnio klikniety uchwyt (wezel edytowany w panelu wlasciwosci); brak, gdy uchwyty zdjeto.
+    const std::optional<GripRef>& active_grip() const { return active_grip_; }
+
+    // Zamiana danych obiektu jedna komenda undo (panel wlasciwosci: typ, etykiety, numeracja wezla...).
+    void replace_object(size_t obj, MapObject after, const QString& text);
+    // Podswietlenie czesci obiektu wybranej w panelu (karta Elements); pusta sciezka zdejmuje podswietlenie.
+    void highlight_path(const QPainterPath& path, bool polygon);
     void request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos);
     void request_node_removal(size_t obj, int level, size_t poly, size_t node);
     void request_split(size_t obj, int level, size_t poly, size_t node);
@@ -101,6 +118,8 @@ signals:
     void progress(int value, int maximum);
     // Kursor nad uchwytem wezla: okno wylacza wtedy skroty jednoliterowe (klawisz 's' dzieli linie).
     void grip_hover_changed(bool hovered);
+    void active_grip_changed();
+    void tool_changed();
 
 private:
     void apply_transformation_flags(bool ignore);
@@ -122,13 +141,8 @@ private:
     std::vector<MapObjectItem*> selection_order_;
     std::vector<PolyItem*> decorated_;
     GripItem* hovered_grip_ = nullptr;
-    struct GripRef {
-        size_t obj;
-        int level;
-        size_t poly;
-        size_t node;
-    };
     std::optional<GripRef> active_grip_;
+    QGraphicsPathItem* highlight_ = nullptr;
 };
 
 }  // namespace pwm::gui

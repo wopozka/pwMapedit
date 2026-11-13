@@ -12,6 +12,7 @@
 
 #include "constants.hpp"
 #include "map_scene.hpp"
+#include "map_styles.hpp"
 #include "map_view.hpp"
 #include "misc.hpp"
 
@@ -147,7 +148,13 @@ void PoiItem::set_map_level(int level) {
     }
 }
 
+void PoiItem::apply_style() {
+    MapScene* s = map_scene();
+    if (s && s->styles()) setPixmap(s->styles()->poi_icon(object_type()));
+}
+
 void PoiItem::refresh() {
+    apply_style();
     read_positions();
     delete label_;
     label_ = nullptr;
@@ -355,6 +362,7 @@ void PolyItem::rebuild() {
 }
 
 void PolyItem::refresh() {
+    apply_style();
     const bool was_decorated = decorated();
     undecorate();
     // po przesunieciu sciezka jest juz w nowym miejscu, a polozenie elementu wraca do (0, 0)
@@ -477,6 +485,13 @@ PolylineItem::PolylineItem(MapData* map, size_t index, const QPen& pen) : PolyIt
     set_z_value();
 }
 
+void PolylineItem::apply_style() {
+    MapScene* s = map_scene();
+    if (!s || !s->styles()) return;
+    orig_pen_ = s->styles()->polyline_pen(object_type());
+    if (!isSelected()) setPen(orig_pen_);  // zaznaczony obiekt ma pioro zaznaczenia
+}
+
 void PolylineItem::remove_level_items() {
     for (QGraphicsItem* item : level_items_) delete item;
     level_items_.clear();
@@ -569,6 +584,22 @@ PolygonItem::PolygonItem(MapData* map, size_t index, const QPen& pen, const QBru
 void PolygonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
     if (scene_viewer_scale(this) <= SCALE_WITHOUT_SMALL_POLYS && small_poly()) return;
     PolyItem::paint(painter, option, widget);
+}
+
+void PolygonItem::apply_style() {
+    MapScene* s = map_scene();
+    if (!s || !s->styles()) return;
+    const long long type = object_type();
+    orig_pen_ = s->styles()->polygon_pen(type);
+    setBrush(QBrush(s->styles()->polygon_fill_colour(type)));
+    z_value_ = s->styles()->polygon_z_value(type);
+    if (isSelected()) {
+        setZValue(z_value_);
+        set_selection_z_value();
+    } else {
+        setPen(orig_pen_);
+        set_z_value();
+    }
 }
 
 bool PolygonItem::small_poly() const {

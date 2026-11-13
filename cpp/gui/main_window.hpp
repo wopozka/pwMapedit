@@ -19,6 +19,7 @@ class MapScene;
 class MapView;
 class MapStyles;
 class MapRuler;
+class PropertiesDock;
 
 struct LoadResult {
     std::unique_ptr<MapData> map;
@@ -40,6 +41,7 @@ public:
 
     MapView* view() const { return view_; }
     MapScene* scene() const { return scene_; }
+    PropertiesDock* properties_dock() const { return properties_; }
 
 signals:
     void map_loaded(bool ok);
@@ -74,6 +76,7 @@ private:
     MapScene* scene_ = nullptr;
     MapView* view_ = nullptr;
     MapRuler* ruler_ = nullptr;
+    PropertiesDock* properties_ = nullptr;
     QUndoStack* undo_stack_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;
     QLabel* info_text_ = nullptr;

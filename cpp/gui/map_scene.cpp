@@ -2,6 +2,8 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QGraphicsPathItem>
+#include <QGraphicsView>
 #include <QTimer>
 #include <QUndoStack>
 #include <algorithm>
@@ -25,6 +27,7 @@ void MapScene::clear_map() {
     selection_order_.clear();
     decorated_.clear();
     active_grip_.reset();
+    highlight_path(QPainterPath(), false);
     if (!object_items_.empty()) {
         // Usuwanie elementow pojedynczo kosztuje O(liczba elementow) na kazdy element (lista elementow
         // najwyzszego poziomu, indeks), czyli przy duzej mapie dziesiatki sekund. clear() usuwa wszystko naraz,
@@ -240,6 +243,7 @@ void MapScene::reverse_selected_polylines() {
 void MapScene::set_tool(Tool tool) {
     tool_ = tool;
     update_decorations();
+    emit tool_changed();
 }
 
 PolyItem* MapScene::poly_item(size_t index) const {
@@ -283,7 +287,10 @@ void MapScene::update_decorations() {
     }
     if (active_grip_) {
         PolyItem* item = poly_item(active_grip_->obj);
-        if (!item || !item->decorated()) active_grip_.reset();
+        if (!item || !item->decorated()) {
+            active_grip_.reset();
+            emit active_grip_changed();
+        }
     }
 }
 
@@ -300,6 +307,29 @@ void MapScene::grip_hovered(GripItem* grip, bool hovered) {
 
 void MapScene::set_active_grip(size_t obj, int level, size_t poly, size_t node) {
     active_grip_ = GripRef{obj, level, poly, node};
+    emit active_grip_changed();
+}
+
+void MapScene::replace_object(size_t obj, MapObject after, const QString& text) {
+    if (!map_ || obj >= map_->objects().size()) return;
+    push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text));
+}
+
+void MapScene::highlight_path(const QPainterPath& path, bool polygon) {
+    // jak highlight_element w Pythonie: ciemnoczerwona polprzezroczysta sciezka nad obiektami
+    delete highlight_;
+    highlight_ = nullptr;
+    if (path.isEmpty()) return;
+    highlight_ = new QGraphicsPathItem(path);
+    QPen pen(Qt::darkRed);
+    pen.setWidth(5);
+    pen.setCosmetic(true);
+    highlight_->setPen(pen);
+    if (polygon) highlight_->setBrush(QBrush(Qt::darkRed));
+    highlight_->setZValue(HIGHLIGHTED_POLY_Z_VAL);
+    highlight_->setOpacity(0.5);
+    addItem(highlight_);
+    for (QGraphicsView* view : views()) view->ensureVisible(highlight_);
 }
 
 void MapScene::request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos) {
