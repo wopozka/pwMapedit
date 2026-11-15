@@ -214,6 +214,21 @@ void MainWindow::create_actions_and_menus() {
         map_level_group_->addAction(act);
         map_level_actions_.append(act);
     }
+    // wypelnienie polygonow: stale albo przezroczyste (jak zaznaczone); wybor zapamietany w ustawieniach
+    QMenu* fill_menu = view_menu->addMenu(tr("&Wypełnienie polygonów"));
+    auto* fill_group = new QActionGroup(this);
+    const bool transparent = settings_->value("transparent_polygons", false).toBool();
+    scene_->set_transparent_polygons(transparent);
+    for (bool option : {false, true}) {
+        QAction* act = fill_menu->addAction(option ? tr("&Transparentne") : tr("&Stałe"));
+        act->setCheckable(true);
+        act->setChecked(option == transparent);
+        fill_group->addAction(act);
+        connect(act, &QAction::triggered, this, [this, option] {
+            scene_->set_transparent_polygons(option);
+            settings_->setValue("transparent_polygons", option);
+        });
+    }
 
     // Weblayers: jedna warstwa naraz albo zadna; E wlacza/wylacza ostatnio uzywana (background_on_off)
     QMenu* web_menu = menuBar()->addMenu(tr("&Weblayers"));

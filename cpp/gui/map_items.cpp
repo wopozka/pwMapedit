@@ -641,6 +641,15 @@ PolygonItem::PolygonItem(MapData* map, size_t index, const QPen& pen, const QBru
 
 void PolygonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
     if (scene_viewer_scale(this) <= SCALE_WITHOUT_SMALL_POLYS && small_poly()) return;
+    // tryb przezroczysty: niezaznaczony polygon jak zaznaczony (opacity 0.5); zaznaczony ma ja juz ustawiona
+    MapScene* s = map_scene();
+    if (s && s->transparent_polygons() && !isSelected()) {
+        painter->save();
+        painter->setOpacity(painter->opacity() * 0.5);
+        PolyItem::paint(painter, option, widget);
+        painter->restore();
+        return;
+    }
     PolyItem::paint(painter, option, widget);
 }
 

@@ -25,6 +25,7 @@
 #include "web_layers.hpp"
 #include <QTemporaryDir>
 #include <QImage>
+#include <QPainter>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
@@ -136,6 +137,7 @@ struct ViewFixture : Fixture {
 class EditTests : public QObject {
     Q_OBJECT
 private slots:
+    void transparent_polygon_fill();
     void move_polyline_undo_redo();
     void move_poi_and_undo();
     void delete_and_undo();
@@ -1780,6 +1782,44 @@ void EditTests::convert_polyline_polygon_both_ways() {
     f.stack.undo();
     f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), before);
+}
+
+void EditTests::transparent_polygon_fill() {
+    // polygon na bialym tle: w trybie transparentnym srodek jest jasniejszy (opacity 0.5), zaznaczony - jak dotad
+    auto map = std::make_unique<MapData>(std::make_unique<MercatorProjection>());
+    map->load_from_string(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n[POLYGON]\nType=0x4e\n"
+        "Data0=(52.10000,21.00000),(52.10000,21.01000),(52.11000,21.01000),(52.11000,21.00000)\n[END]\n\n");
+    Projection& projection = map->projection();
+    projection.set_map_bounding_box(map->map_bounding_box());
+    projection.calculate_data_offset();
+    MapStyles styles{MapStyles::find_icons_dir()};
+    MapScene scene;
+    scene.set_canvas_rectangle(map->map_bounding_box(), projection);
+    scene.set_map(map.get(), &styles);
+    QGraphicsItem* item = scene.item_for_object(0)->graphics_item();
+    const QRectF rect = item->sceneBoundingRect();
+    auto centre = [&] {
+        QImage image(100, 100, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        scene.render(&painter, QRectF(0, 0, 100, 100), rect);
+        painter.end();
+        return image.pixelColor(50, 50);
+    };
+    const QColor solid = centre();
+    QVERIFY(solid != QColor(Qt::white));
+    scene.set_transparent_polygons(true);
+    const QColor transparent = centre();
+    QVERIFY(transparent.lightness() > solid.lightness());
+    QVERIFY(transparent != QColor(Qt::white));
+    item->setSelected(true);  // zaznaczony: ta sama przezroczystosc, bez podwajania
+    QCOMPARE(centre(), transparent);
+    scene.set_transparent_polygons(false);
+    QCOMPARE(centre(), transparent);  // zaznaczony jest przezroczysty takze w trybie stalym
+    item->setSelected(false);
+    QCOMPARE(centre(), solid);
+    scene.clear_map();
 }
 
 QTEST_MAIN(EditTests)

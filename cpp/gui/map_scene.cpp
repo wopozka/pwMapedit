@@ -114,6 +114,12 @@ MapObjectItem* MapScene::create_item(size_t i) {
     return result;
 }
 
+void MapScene::set_transparent_polygons(bool transparent) {
+    if (transparent_polygons_ == transparent) return;
+    transparent_polygons_ = transparent;
+    update();
+}
+
 void MapScene::set_map_level(int level) {
     if (level == map_level_ || level < 0 || level >= MAP_LEVELS) return;
     map_level_ = level;

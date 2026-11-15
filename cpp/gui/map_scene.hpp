@@ -51,6 +51,10 @@ public:
     double viewer_scale() const { return viewer_scale_; }
     void set_viewer_scale(double scale);
 
+    // Wypelnienie polygonow: stale (domyslnie) albo polprzezroczyste - jak polygon zaznaczony.
+    bool transparent_polygons() const { return transparent_polygons_; }
+    void set_transparent_polygons(bool transparent);
+
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.
     void set_tool(Tool tool);
@@ -180,6 +184,7 @@ private:
     QUndoStack* undo_stack_ = nullptr;
     QList<QGraphicsItem*> persistent_items_;
     int map_level_ = 0;
+    bool transparent_polygons_ = false;
     double viewer_scale_ = 1.0;
     Tool tool_ = Tool::SelectObjects;
     std::vector<MapObjectItem*> selection_order_;

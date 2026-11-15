@@ -19,6 +19,7 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 | przesunąć mapę | przeciągnij **prawym** przyciskiem myszy |
 | powiększyć / pomniejszyć | **Ctrl + kółko** myszy albo klawisze **=** i **-** |
 | zmienić poziom szczegółów | klawisze **0–4** (View → Levels) |
+| widzieć, co jest pod polygonami | **View → Wypełnienie polygonów → Transparentne** (wybór jest zapamiętywany) |
 | włączyć podkład z internetu | menu **Weblayers** (OSM, Geoportal, Google); **E** włącza/wyłącza |
 | przejść do współrzędnych | **Ctrl+G** i wpisz np. `52.123456, 21.123456` |
 
