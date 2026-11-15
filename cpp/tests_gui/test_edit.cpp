@@ -29,6 +29,8 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QVBoxLayout>
+#include <QAction>
 #include <QPlainTextEdit>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -159,6 +161,7 @@ private slots:
     // 3b.3: panel wlasciwosci
     void dock_follows_selection();
     void dock_labels_endlevel_direction();
+    void dock_endlevel_digit_keys();
     void dock_type_comment_extras();
     void dock_address_and_routing();
     void dock_node_hlevel_and_numbers();
@@ -688,6 +691,44 @@ void EditTests::dock_labels_endlevel_direction() {
     QCOMPARE(f.map->to_mp_string(), f.original);
 }
 
+void EditTests::dock_endlevel_digit_keys() {
+    // Lista EndLevel z fokusem: cyfra wybiera EndLevel obiektu, a globalny skrot poziomu mapy (View->Levels)
+    // nie odpala. Bez fokusu na liscie skrot dziala jak dotad.
+    QWidget window;  // przed f: panel (dziecko okna) niszczony pierwszy i sam odpina sie od okna
+    DockFixture f;
+    auto* layout = new QVBoxLayout(&window);
+    auto* other = new QLineEdit(&window);
+    layout->addWidget(other);
+    layout->addWidget(&f.dock);
+    int level_shortcut = -1;
+    for (int level = 0; level < 5; ++level) {
+        auto* act = new QAction(&window);
+        act->setShortcut(QKeySequence(QString::number(level)));
+        QObject::connect(act, &QAction::triggered, [&level_shortcut, level] { level_shortcut = level; });
+        window.addAction(act);
+    }
+    window.show();
+    QApplication::setActiveWindow(&window);
+    QVERIFY(QTest::qWaitForWindowActive(&window));
+    f.select_only(f.polyline());
+
+    f.dock.end_level()->setFocus();
+    QTest::keyClick(f.dock.end_level(), Qt::Key_2);
+    QCOMPARE(f.obj(1).endlevel, 2LL);
+    QCOMPARE(level_shortcut, -1);
+    QTest::keyClick(f.dock.end_level(), Qt::Key_5);  // 5 tez, choc nie ma takiego poziomu mapy
+    QCOMPARE(f.obj(1).endlevel, 5LL);
+    QCOMPARE(f.dock.end_level()->currentIndex(), 5);
+    const int commands = f.stack.count();
+    QTest::keyClick(f.dock.end_level(), Qt::Key_5);  // ten sam poziom - bez komendy
+    QCOMPARE(f.stack.count(), commands);
+
+    window.setFocus();
+    QTest::keyClick(&window, Qt::Key_3);
+    QCOMPARE(level_shortcut, 3);
+    QCOMPARE(f.obj(1).endlevel, 5LL);
+}
+
 void EditTests::dock_type_comment_extras() {
     DockFixture f;
     f.select_only(f.polyline());
@@ -828,6 +869,17 @@ void EditTests::dock_numbers_on_road_without_numbering() {
     for (const std::string& line : f.map->objects()[obj].to_mp_record(f.map->precision()))
         if (line.rfind("Numbers1=0,O,1,", 0) == 0) found = true;
     QVERIFY(found);
+
+    // wybor "None" wylacza numeracje strony: czysci numer poczatkowy (wczesniej zostawal i numeracja trwala)
+    style->setCurrentIndex(0);
+    emit style->activated(0);
+    QVERIFY(f.dock.number_after(true)->text().isEmpty());
+    QVERIFY(!f.node(obj, 0, 0).starts_numeration());
+    for (const std::string& line : f.map->objects()[obj].to_mp_record(f.map->precision()))
+        QVERIFY(line.rfind("Numbers1=", 0) != 0);
+    style->setCurrentIndex(2);
+    emit style->activated(2);
+    QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_number_after, OptInt(0));
 
     // odznaczenie usuwa numeracje
     f.dock.node_has_numbers()->click();

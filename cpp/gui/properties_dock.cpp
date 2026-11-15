@@ -11,6 +11,7 @@
 #include <QIntValidator>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -144,6 +145,7 @@ QWidget* PropertiesDock::build_main_tab() {
     connect(end_level_, &QComboBox::activated, this, [this](int index) {
         commit(tr("Zmiana endlevel"), [index](MapObject& o) { o.endlevel = index; });
     });
+    end_level_->installEventFilter(this);  // cyfry wybieraja EndLevel zamiast globalnego poziomu mapy
     form->addRow(tr("EndLevel"), end_level_);
     box->addLayout(form);
 
@@ -253,7 +255,7 @@ PropertiesDock::NumberingSide PropertiesDock::build_numbering_side(const QString
     side.style = new QComboBox(side.box);
     side.style->addItems({tr("None"), tr("Parzysty (2, 4, 6, 8)"), tr("Nieparzysty (1, 3, 5, 7)"),
                           tr("Ciągły (1, 2, 3, 4)")});
-    connect(side.style, &QComboBox::activated, this, [this] { numbering_edited(); });
+    connect(side.style, &QComboBox::activated, this, [this] { numbering_edited(true); });
     form->addRow(tr("Styl numeracji"), side.style);
     auto line = [&](QLineEdit*& edit, const QString& name, bool number) {
         edit = new QLineEdit(side.box);
@@ -546,6 +548,21 @@ void PropertiesDock::type_chosen(int index) {
 }
 
 bool PropertiesDock::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == end_level_ && (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)) {
+        // Lista EndLevel z fokusem: cyfra wybiera poziom na liscie, a nie przelacza poziomu mapy (skroty 0-4
+        // z menu View). ShortcutOverride zaakceptowany = skrot globalny nie odpala, klawisz trafia tutaj.
+        auto* key = static_cast<QKeyEvent*>(event);
+        const Qt::KeyboardModifiers mods = key->modifiers() & ~Qt::KeypadModifier;
+        const int index = key->key() - Qt::Key_0;
+        if (mods == Qt::NoModifier && index >= 0 && index <= 9 && index < end_level_->count()) {
+            event->accept();
+            if (event->type() == QEvent::KeyPress && index != end_level_->currentIndex()) {
+                end_level_->setCurrentIndex(index);
+                emit end_level_->activated(index);
+            }
+            return true;
+        }
+    }
     if (watched == comment_) {
         if (event->type() == QEvent::FocusIn)
             comment_at_focus_ = comment_->toPlainText();
@@ -661,14 +678,16 @@ void PropertiesDock::route_params_edited() {
     commit(tr("modyfikacja RouteParams"), [&](MapObject& o) { o.routeparam = values; });
 }
 
-void PropertiesDock::numbering_edited() {
+void PropertiesDock::numbering_edited(bool style_changed) {
     if (filling_ || !grip_) return;
     NumbersDefinition def;
-    auto read_side = [](NumberingSide& side, OptStr& style, OptInt& after, OptInt& before, OptStr& zip, OptStr& city,
-                        OptStr& region, OptStr& country) {
+    auto read_side = [style_changed](NumberingSide& side, OptStr& style, OptInt& after, OptInt& before, OptStr& zip,
+                                     OptStr& city, OptStr& region, OptStr& country) {
         style = style_from_index(side.style->currentIndex());
-        // wybrany styl wymaga numeru poczatkowego (jak command_numeration_style_edited)
+        // jak command_numeration_style_edited: wybrany styl wymaga numeru poczatkowego, a "None" go czysci
+        // (inaczej numer "po" zostaje i wezel dalej zaczyna numeracje)
         if (style && side.after->text().trimmed().isEmpty()) side.after->setText("0");
+        if (!style && style_changed) side.after->clear();
         after = number_from_ui(side.after->text());
         before = number_from_ui(side.before->text());
         zip = from_ui(side.zip->text());

@@ -121,7 +121,7 @@ private:
     void comment_edited();
     void extras_edited();
     void route_params_edited();
-    void numbering_edited();
+    void numbering_edited(bool style_changed = false);
     void node_numbers_toggled(bool on);
     void element_selected();
     void elements_context_menu(const QPoint& pos);
