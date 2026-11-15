@@ -147,6 +147,7 @@ private slots:
     void edit_nodes_tool_decorates_selection();
     void interpolated_numbers_in_edit_nodes_mode();
     void edit_nodes_cross_cursor_over_edges();
+    void drag_from_edge_inserts_and_moves_node();
     void move_remove_insert_node_undo();
     void remove_node_keeps_minimum();
     void insert_node_extends_polyline_end();
@@ -429,6 +430,57 @@ void EditTests::edit_nodes_cross_cursor_over_edges() {
     QCOMPARE(shape_at(inside), Qt::ArrowCursor);
     f.scene.clearSelection();
     QCOMPARE(shape_at(edge), Qt::ArrowCursor);
+}
+
+void EditTests::drag_from_edge_inserts_and_moves_node() {
+    ViewFixture f;
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.polyline());
+    const PointF a = f.node(1, 0, 0).pos(), b = f.node(1, 0, 1).pos();
+    const QPoint mid = f.view_pos(PointF{(a.x + b.x) / 2, (a.y + b.y) / 2});
+    const QPoint target = mid + QPoint(15, 25);
+
+    // samo klikniecie na krawedzi niczego nie dodaje, obiekt zostaje w edycji
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, mid);
+    QTest::qWait(20);
+    QCOMPARE(f.stack.count(), 0);
+    QVERIFY(f.poly(1)->decorated());
+    QCOMPARE(f.grips(1).size(), size_t{3});  // kwadrat podgladu znika
+    QCOMPARE(f.poly(1)->path().elementCount(), 3);
+
+    // nacisniecie na krawedzi i przeciagniecie: nowy wezel jedzie za kursorem, jedna komenda po puszczeniu
+    QTest::mousePress(f.vp(), Qt::LeftButton, Qt::NoModifier, mid);
+    // od razu po nacisnieciu: nowy wezel na krawedzi z kwadratem uchwytu
+    QCOMPARE(f.grips(1).size(), size_t{4});
+    QCOMPARE(f.poly(1)->path().elementCount(), 4);
+    auto new_grip = [&]() -> GripItem* {
+        for (GripItem* g : f.grips(1))
+            if (!g->acceptHoverEvents()) return g;
+        return nullptr;
+    };
+    QVERIFY(new_grip());
+    QVERIFY((f.view.mapFromScene(new_grip()->scenePos()) - mid).manhattanLength() <= 2);
+    for (int d = 1; d <= 5; ++d) QTest::mouseMove(f.vp(), mid + (target - mid) * d / 5);
+    QCOMPARE(f.stack.count(), 0);  // w trakcie tylko podglad
+    QCOMPARE(f.view.mapFromScene(new_grip()->scenePos()), target);
+    QCOMPARE(f.poly(1)->path().elementCount(), 4);
+    QTest::mouseRelease(f.vp(), Qt::LeftButton, Qt::NoModifier, target);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.node_count(1), size_t{4});
+    const QPointF expected = f.view.mapToScene(target);
+    QVERIFY(qAbs(f.node(1, 0, 1).x() - expected.x()) < 1e-6);
+    QVERIFY(qAbs(f.node(1, 0, 1).y() - expected.y()) < 1e-6);
+    QVERIFY(f.poly(1)->decorated());
+    QCOMPARE(f.grips(1).size(), size_t{4});
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+
+    // daleko od krawedzi przeciaganie nie dodaje wezla
+    QTest::mousePress(f.vp(), Qt::LeftButton, Qt::NoModifier, mid + QPoint(0, 200));
+    QTest::mouseMove(f.vp(), mid + QPoint(30, 230));
+    QTest::mouseRelease(f.vp(), Qt::LeftButton, Qt::NoModifier, mid + QPoint(30, 230));
+    QCOMPARE(f.stack.index(), 0);
+    QCOMPARE(f.node_count(1), size_t{3});
 }
 
 void EditTests::move_remove_insert_node_undo() {

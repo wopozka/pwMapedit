@@ -147,6 +147,8 @@ public:
     bool decorated() const { return !grips_.empty(); }
     // Podglad przeciagania uchwytu: sciezka z jednym wezlem w nowym miejscu (bez zmiany danych).
     void preview_node_position(size_t poly_num, size_t node_num, const QPointF& pos);
+    // Podglad wstawiania wezla (przeciaganie z krawedzi): sciezka z nowym wezlem przed indeksem index.
+    void preview_inserted_node(size_t poly_num, size_t index, const QPointF& pos);
 
     // Miejsce wstawienia nowego wezla najblizej punktu: czesc, indeks (przed ktorym wstawic) i polozenie.
     struct NodeInsertion {
@@ -248,6 +250,9 @@ public:
     int data_level() const { return data_level_; }
     size_t poly_num() const { return poly_num_; }
     size_t node_num() const { return node_num_; }
+    // Uchwyt tylko do pokazania (nowy wezel przeciagany z krawedzi): wyglada jak przeciagany uchwyt,
+    // nie reaguje na mysz i jego przesuniecie nie zmienia sciezki obiektu.
+    void set_preview_only();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;

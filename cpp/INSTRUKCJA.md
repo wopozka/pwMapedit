@@ -49,6 +49,7 @@ zmienia się w krzyżyk.
 | dociągnąć węzeł do węzła innego obiektu | przeciągaj z wciśniętym **Ctrl** (niebieskie kółko pokazuje miejsce) |
 | usunąć węzeł | **Ctrl+klik** na kwadracie |
 | dodać węzeł | **Shift+klik** na krawędzi albo **Insert** pod kursorem (za końcem linii – przedłuża ją) |
+| dodać węzeł i od razu go przesunąć | przy kursorze-krzyżyku naciśnij krawędź i przeciągnij (z **Ctrl** – dociąga do węzła) |
 | podzielić linię w węźle | najedź na kwadrat i naciśnij **s** |
 | ustawić numerację adresową / HLevel węzła | kliknij kwadrat → karta **Węzły** w panelu Właściwości |
 | połączyć linie | zaznacz je (Ctrl+klik, w kolejności) → **Edit → Połącz polilinie** |

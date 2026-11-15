@@ -319,6 +319,13 @@ void PolyItem::preview_node_position(size_t poly_num, size_t node_num, const QPo
     setPath(make_path(polys, is_polygon()));
 }
 
+void PolyItem::preview_inserted_node(size_t poly_num, size_t index, const QPointF& pos) {
+    auto polys = shown_nodes();
+    if (poly_num >= polys.size() || index > polys[poly_num].size()) return;
+    polys[poly_num].insert(polys[poly_num].begin() + static_cast<long>(index), pos);
+    setPath(make_path(polys, is_polygon()));
+}
+
 std::optional<PolyItem::NodeInsertion> PolyItem::node_insertion(const QPointF& p, bool on_segment,
                                                                  bool extend_ends) const {
     std::optional<NodeInsertion> best;
@@ -886,6 +893,14 @@ GripItem::GripItem(PolyItem* parent, int data_level, size_t poly_num, size_t nod
     setAcceptHoverEvents(true);
     setCursor(Qt::PointingHandCursor);
     ready_ = true;
+}
+
+void GripItem::set_preview_only() {
+    ready_ = false;
+    setAcceptedMouseButtons(Qt::NoButton);
+    setAcceptHoverEvents(false);
+    setFlag(QGraphicsItem::ItemIsMovable, false);
+    set_hover(true);
 }
 
 GripItem::~GripItem() {

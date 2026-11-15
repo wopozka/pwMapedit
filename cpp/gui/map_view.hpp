@@ -17,6 +17,8 @@ namespace pwm::gui {
 class MapScene;
 class MapRuler;
 class MapObjectItem;
+class PolyItem;
+class GripItem;
 
 
 class MapView : public QGraphicsView {
@@ -73,7 +75,11 @@ protected:
     void scrollContentsBy(int dx, int dy) override;
 
 private:
-    void select_on_press(QMouseEvent* event);
+    void select_on_press(QMouseEvent* event, bool allow_edge_drag = true);
+    // Przeciaganie z krawedzi obiektu w edycji wezlow: nowy wezel pod kursorem, od razu przesuwany.
+    bool start_edge_drag(QMouseEvent* event, const QList<QGraphicsItem*>& under);
+    void move_edge_drag(Qt::KeyboardModifiers modifiers);
+    void finish_edge_drag(QMouseEvent* event);
     bool creation_tool() const;
     // Polozenie nowego wezla: przyciagniety wezel (Ctrl) albo punkt pod kursorem.
     QPointF creation_position() const;
@@ -102,6 +108,17 @@ private:
     std::vector<QPointF> circle_nodes_;  // okrag: wezly wyliczone dla biezacego polozenia kursora
     QGraphicsPathItem* creation_preview_ = nullptr;
     QString last_coords_text_;
+    struct EdgeDrag {
+        PolyItem* item = nullptr;
+        size_t poly_num = 0;
+        size_t index = 0;  // wezel wstawiany przed tym indeksem
+        QPointF press_pos;  // polozenie nacisniecia w widoku
+        QPointF global_pos;
+        QPointF position;  // biezace polozenie nowego wezla (scena)
+        bool started = false;  // przekroczony MIN_MOVE_DISTANCE - wezel jest przesuwany
+        GripItem* grip = nullptr;  // kwadrat nowego wezla, widoczny od nacisniecia przycisku
+    };
+    std::optional<EdgeDrag> edge_drag_;
 };
 
 }  // namespace pwm::gui

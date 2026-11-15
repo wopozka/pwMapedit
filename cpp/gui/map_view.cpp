@@ -110,6 +110,11 @@ void MapView::mouseMoveEvent(QMouseEvent* event) {
     if (!scene()) return;
     view_mouse_ = event->position().toPoint();
     scene_mouse_ = mapToScene(view_mouse_);
+    if (edge_drag_) {
+        move_edge_drag(event->modifiers());
+        update_status(true);
+        return;
+    }
     QGraphicsView::mouseMoveEvent(event);
     if (!right_button_drag_) {
         update_snap(event->modifiers());
@@ -134,7 +139,73 @@ void MapView::mousePressEvent(QMouseEvent* event) {
     }
 }
 
-void MapView::select_on_press(QMouseEvent* event) {
+bool MapView::start_edge_drag(QMouseEvent* event, const QList<QGraphicsItem*>& under) {
+    MapScene* s = map_scene();
+    if (!s || event->modifiers() != Qt::NoModifier) return false;
+    const QPointF scene_pos = mapToScene(event->position().toPoint());
+    const double max_distance = NODE_INSERT_DISTANCE / std::max(s->viewer_scale(), 1e-9);
+    for (MapObjectItem* obj : s->selected_object_items()) {
+        auto* item = dynamic_cast<PolyItem*>(obj);
+        // obiekt w edycji ma ksztalt tylko wzdluz linii/krawedzi - trafienie oznacza kursor-krzyzyk nad krawedzia
+        if (!item || !item->decorated() || !under.contains(item)) continue;
+        const auto ins = item->node_insertion(item->mapFromScene(scene_pos), true, false);
+        if (!ins || ins->distance > max_distance) continue;
+        edge_drag_ = EdgeDrag{item, ins->poly_num, ins->index, event->position(), event->globalPosition(),
+                              item->mapToScene(ins->position), false, nullptr};
+        // wezel powstaje od razu w miejscu nacisniecia (na krawedzi) razem z kwadratem uchwytu
+        edge_drag_->grip = new GripItem(item, item->shown_data_level(), ins->poly_num, ins->index, ins->position);
+        edge_drag_->grip->set_preview_only();
+        item->preview_inserted_node(ins->poly_num, ins->index, ins->position);
+        return true;
+    }
+    return false;
+}
+
+void MapView::move_edge_drag(Qt::KeyboardModifiers modifiers) {
+    MapScene* s = map_scene();
+    EdgeDrag& d = *edge_drag_;
+    if (!d.started) {
+        const QPointF delta = QPointF(view_mouse_) - d.press_pos;
+        if (std::max(std::abs(delta.x()), std::abs(delta.y())) < MIN_MOVE_DISTANCE) return;
+        d.started = true;
+    }
+    d.position = scene_mouse_;
+    // Ctrl: przyciaganie do wezla innego obiektu, jak przy przeciaganiu uchwytu
+    std::optional<QPointF> snap;
+    if (modifiers & Qt::ControlModifier)
+        snap = s->closest_node(d.position, SNAP_DISTANCE / std::max(s->viewer_scale(), 1e-9), d.item);
+    s->show_snap_indicator(snap);
+    if (snap) d.position = *snap;
+    const QPointF pos = d.item->mapFromScene(d.position);
+    d.grip->setPos(pos);
+    d.item->preview_inserted_node(d.poly_num, d.index, pos);
+}
+
+void MapView::finish_edge_drag(QMouseEvent* event) {
+    const EdgeDrag d = *edge_drag_;
+    edge_drag_.reset();
+    delete d.grip;
+    MapScene* s = map_scene();
+    if (!d.started) {
+        s->refresh_object(d.item->object_index());  // usuwa podglad wezla
+        // zwykle klikniecie na krawedzi: obsluga jak bez przeciagania (np. wybor kolejnego obiektu pod kursorem)
+        QMouseEvent press(QEvent::MouseButtonPress, d.press_pos, d.global_pos, Qt::LeftButton, Qt::LeftButton,
+                          Qt::NoModifier);
+        select_on_press(&press, false);
+        QGraphicsView::mouseReleaseEvent(event);
+        return;
+    }
+    s->show_snap_indicator(std::nullopt);
+    const size_t obj = d.item->object_index();
+    const int level = d.item->shown_data_level();
+    const QPointF pos = d.item->mapFromScene(d.position);
+    if (s->insert_node(obj, level, d.poly_num, d.index, pos))
+        s->set_active_grip(obj, level, d.poly_num, d.index);
+    else
+        s->refresh_object(obj);  // przywraca sciezke sprzed podgladu
+}
+
+void MapView::select_on_press(QMouseEvent* event, bool allow_edge_drag) {
     MapScene* s = map_scene();
     if (!s) return;
 
@@ -155,6 +226,11 @@ void MapView::select_on_press(QMouseEvent* event) {
         // uchwyt wezla obsluguje klikniecie sam (przeciaganie, Ctrl+klik), zaznaczenie sie nie zmienia
         if (!under.isEmpty() && under.front()->type() == GripItemType) {
             QGraphicsView::mousePressEvent(event);
+            return;
+        }
+        // przeciagniecie z krawedzi obiektu z uchwytami dodaje wezel pod kursorem i od razu go przesuwa
+        if (tool == Tool::EditNodes && allow_edge_drag && start_edge_drag(event, under)) {
+            event->accept();
             return;
         }
         // Shift+klik na krawedzi obiektu z uchwytami dodaje wezel
@@ -236,6 +312,11 @@ void MapView::mouseReleaseEvent(QMouseEvent* event) {
         setDragMode(QGraphicsView::NoDrag);
         setInteractive(true);
         right_button_drag_ = false;
+        return;
+    }
+    if (event->button() == Qt::LeftButton && edge_drag_) {
+        finish_edge_drag(event);
+        event->accept();
         return;
     }
     if (event->button() == Qt::LeftButton && creation_tool()) {
