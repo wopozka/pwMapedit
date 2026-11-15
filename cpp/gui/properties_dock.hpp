@@ -43,7 +43,8 @@ public:
 
     // ---- schowek tabeli Extras (jak ExtrasTable.copy/paste w Pythonie) ----
     // Zaznaczone komorki: application/json (lista par [klucz, wartosc]) i tekst "klucz<TAB>wartosc".
-    QMimeData* copy_extras() const;
+    // all: cala tabela (wszystkie wiersze) w tym samym formacie, niezaleznie od zaznaczenia komorek.
+    QMimeData* copy_extras(bool all = false) const;
     // Wkleja pary od biezacego wiersza w dol (dopisuje wiersze) i zapisuje zmiane jedna komenda.
     void paste_extras(const QMimeData* mime);
     void clear_selected_extras();

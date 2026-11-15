@@ -173,6 +173,14 @@ void MainWindow::create_actions_and_menus() {
     paste->setShortcut(QKeySequence::Paste);
     QAction* del = edit_menu->addAction(tr("&Usuń"), this, &MainWindow::delete_action);
     del->setShortcut(QKeySequence::Delete);
+    // cala tabela Extras zaznaczonego obiektu - tak jak kopiowanie zaznaczonych komorek
+    QAction* copy_extras = edit_menu->addAction(tr("Kopiuj &Extras obiektu"), this, [this] {
+        if (QMimeData* mime = properties_->copy_extras(true)) {
+            QApplication::clipboard()->setMimeData(mime);
+            show_message(tr("Skopiowano Extras"));
+        }
+    });
+    copy_extras->setShortcut(QKeySequence(tr("Ctrl+Alt+C")));
     edit_menu->addSeparator();
     edit_menu->addAction(tr("&Odwróć polilinię"), scene_, &MapScene::reverse_selected_polylines);
     split_action_ = edit_menu->addAction(tr("&Podziel polilinię w węźle"), scene_, &MapScene::split_at_active_grip);

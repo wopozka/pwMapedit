@@ -583,14 +583,15 @@ void PropertiesDock::extras_edited() {
     commit(tr("Zmiana extras"), [&](MapObject& o) { o.others = others; });
 }
 
-QMimeData* PropertiesDock::copy_extras() const {
-    // wiersze, w ktorych zaznaczono klucz albo wartosc (jak ExtrasTable.copy)
+QMimeData* PropertiesDock::copy_extras(bool all) const {
+    // wiersze, w ktorych zaznaczono klucz albo wartosc (jak ExtrasTable.copy); all - wszystkie komorki
+    if (all && (!obj_ || grip_)) return nullptr;
     QJsonArray pairs;
     QString text;
     for (int row = 0; row < extras_->rowCount(); ++row) {
         QString key, value;
-        if (const QTableWidgetItem* k = extras_->item(row, 0); k && k->isSelected()) key = k->text();
-        if (const QTableWidgetItem* v = extras_->item(row, 1); v && v->isSelected()) value = v->text();
+        if (const QTableWidgetItem* k = extras_->item(row, 0); k && (all || k->isSelected())) key = k->text();
+        if (const QTableWidgetItem* v = extras_->item(row, 1); v && (all || v->isSelected())) value = v->text();
         if (key.isEmpty() && value.isEmpty()) continue;
         pairs.append(QJsonArray{key, value});
         text += key + '\t' + value + '\n';

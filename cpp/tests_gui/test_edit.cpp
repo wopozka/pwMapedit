@@ -1170,6 +1170,14 @@ void EditTests::extras_copy_paste_between_objects() {
     QVERIFY(mime);
     QCOMPARE(mime->text(), QString("Miasto\tWola\nPlik\ta.txt\n"));
 
+    // Ctrl+Alt+C: cala tabela bez zaznaczania - ten sam wynik co po zaznaczeniu wszystkiego
+    f.dock.extras()->clearSelection();
+    QVERIFY(!std::unique_ptr<QMimeData>(f.dock.copy_extras()));
+    std::unique_ptr<QMimeData> all(f.dock.copy_extras(true));
+    QVERIFY(all);
+    QCOMPARE(all->text(), mime->text());
+    QCOMPARE(all->data("application/json"), mime->data("application/json"));
+
     // wklejenie do innego obiektu - jedna komenda
     f.select_only(f.poi());
     f.dock.extras()->setCurrentCell(0, 0);

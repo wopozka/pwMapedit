@@ -32,6 +32,7 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 | przesunąć obiekt | przeciągnij go lewym przyciskiem |
 | usunąć | **Delete** |
 | kopiować / wyciąć / wkleić | **Ctrl+C / Ctrl+X / Ctrl+V** – wklejone obiekty trafiają pod kursor |
+| skopiować całą tabelę Extras zaznaczonego obiektu | **Ctrl+Alt+C** (wkleja się jak skopiowane komórki) |
 | cofnąć / ponowić | **Ctrl+Z / Ctrl+Y** (działa dla każdej zmiany) |
 | zmienić typ, nazwę, adres, routing… | panel **Właściwości** po prawej (zaznacz jeden obiekt) |
 | odwrócić kierunek linii | **Edit → Odwróć polilinię** albo przycisk w panelu Właściwości |
