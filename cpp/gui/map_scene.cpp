@@ -168,6 +168,20 @@ MapObjectItem* MapScene::item_for_object(size_t index) const {
 
 void MapScene::refresh_object(size_t index) {
     if (MapObjectItem* item = item_for_object(index)) item->refresh();
+    // Aktywny wezel jest pamietany numerem. Po zmianie liczby wezlow (usuniecie wezla, undo dodania) numer moze
+    // wskazywac poza linie - panel wlasciwosci czytalby nieistniejacy wezel (MpError i zamkniecie programu).
+    if (active_grip_ && active_grip_->obj == index && !active_grip_valid()) {
+        active_grip_.reset();
+        emit active_grip_changed();
+    }
+}
+
+bool MapScene::active_grip_valid() const {
+    if (!active_grip_ || !map_ || active_grip_->obj >= map_->objects().size()) return false;
+    const MapObject& obj = map_->objects()[active_grip_->obj];
+    if (obj.deleted || !obj.data) return false;
+    const auto* polys = obj.data->polys_for_data_level(active_grip_->level);
+    return polys && active_grip_->poly < polys->size() && active_grip_->node < (*polys)[active_grip_->poly].size();
 }
 
 std::vector<MapObjectItem*> MapScene::selected_object_items() const {

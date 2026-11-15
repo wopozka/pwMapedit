@@ -108,11 +108,13 @@ private:
     void fill_elements();
     void fill_routing();
     void fill_node();
+    void fill_numbering(const NumbersDefinition& d);
     void set_numbering_fields_enabled(bool enabled);
 
     // Kopia obiektu -> change -> komenda (gdy zapis obiektu do mp sie zmienil).
     void commit(const QString& text, const std::function<void(MapObject&)>& change);
-    void commit_node(const QString& text, const std::function<void(DataX&, const GripRef&)>& change);
+    // Zwraca true, gdy zmiana trafila na stos undo.
+    bool commit_node(const QString& text, const std::function<void(DataX&, const GripRef&)>& change);
 
     void type_chosen(int index);
     void comment_edited();

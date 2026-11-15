@@ -166,6 +166,7 @@ signals:
 
 private:
     void apply_transformation_flags(bool ignore);
+    bool active_grip_valid() const;
     void push_command(QUndoCommand* command);
     MapObjectItem* create_item(size_t index);
     PolyItem* poly_item(size_t index) const;

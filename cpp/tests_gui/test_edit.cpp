@@ -160,6 +160,8 @@ private slots:
     void dock_type_comment_extras();
     void dock_address_and_routing();
     void dock_node_hlevel_and_numbers();
+    void dock_numbers_on_road_without_numbering();
+    void ctrl_click_last_node_with_dock();
     void dock_elements_highlight();
     // 3b.4: schowek
     void copy_paste_at_cursor_and_undo();
@@ -785,6 +787,81 @@ void EditTests::dock_node_hlevel_and_numbers() {
     for (int i = 0; i < 4; ++i) f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), f.original);
     QCOMPARE(f.dock.node_hlevel()->currentIndex(), 0);
+}
+
+void EditTests::dock_numbers_on_road_without_numbering() {
+    // Droga bez numeracji: pusta numeracja nie zmienia rekordu MP, wiec checkbox nie moze sie od razu odznaczac
+    // (wczesniej odznaczal sie i pola zostawaly wylaczone). Jak w Pythonie numeracje zapisuje dopiero wybor stylu.
+    DockFixture f;
+    QMimeData mime;
+    mime.setText("[POLYLINE]\nType=0x6\nData0=(52.1000,21.0000),(52.1005,21.0010),(52.1010,21.0020)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 1);
+    const size_t obj = f.map->objects().size() - 1;
+    const int start = f.stack.count();
+    f.scene.set_tool(Tool::EditNodes);
+    f.scene.clearSelection();
+    f.scene.item_for_object(obj)->graphics_item()->setSelected(true);
+    f.scene.set_active_grip(obj, 0, 0, 0);
+    QVERIFY(f.dock.shows_node());
+    QVERIFY(!f.dock.node_has_numbers()->isChecked());
+    QVERIFY(!f.dock.number_after(true)->isEnabled());
+
+    f.dock.node_has_numbers()->click();
+    QVERIFY(f.dock.node_has_numbers()->isChecked());
+    QVERIFY(f.dock.number_after(true)->isEnabled());
+    QVERIFY(f.dock.numbering_style(true)->isEnabled());
+    QCOMPARE(f.stack.count(), start);  // jeszcze nic do zapisania
+
+    // wybor stylu (nieparzyste) zapisuje numeracje z numerem poczatkowym 0, potem wpisany numer
+    QComboBox* style = f.dock.numbering_style(true);
+    style->setCurrentIndex(2);
+    emit style->activated(2);
+    QCOMPARE(f.stack.count(), start + 1);
+    QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_numbering_style, OptStr("O"));
+    f.dock.number_after(true)->setText("1");
+    emit f.dock.number_after(true)->editingFinished();
+    QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_number_after, OptInt(1));
+    QVERIFY(f.dock.node_has_numbers()->isChecked());
+    bool found = false;
+    for (const std::string& line : f.map->objects()[obj].to_mp_record(f.map->precision()))
+        if (line.rfind("Numbers1=0,O,1,", 0) == 0) found = true;
+    QVERIFY(found);
+
+    // odznaczenie usuwa numeracje
+    f.dock.node_has_numbers()->click();
+    QVERIFY(!f.dock.node_has_numbers()->isChecked());
+    QVERIFY(f.node(obj, 0, 0).numbers() == nullptr);
+}
+
+void EditTests::ctrl_click_last_node_with_dock() {
+    // Ctrl+klik na ostatnim wezle: aktywny wezel wskazywal poza linie i panel wywracal program (MpError)
+    DockFixture f;
+    MapView view{&f.scene};
+    view.set_projection(&f.map->projection());
+    view.resize(800, 600);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    const PointF a = f.node(1, 0, 1).pos(), b = f.node(1, 0, 2).pos();
+    view.centerOn(QPointF((a.x + b.x) / 2, (a.y + b.y) / 2));
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.polyline());
+    const QPoint last = view.mapFromScene(QPointF(b.x, b.y));
+    QTest::mouseMove(view.viewport(), last);
+    QTest::mouseClick(view.viewport(), Qt::LeftButton, Qt::ControlModifier, last);
+    QTRY_COMPARE(f.stack.count(), 1);
+    QCOMPARE(f.node_count(1), size_t{2});
+    QVERIFY(!f.scene.active_grip());
+    QVERIFY(!f.dock.shows_node());
+
+    // ten sam przypadek przez undo: aktywny ostatni wezel, cofniecie dodania wezla
+    f.stack.undo();
+    QCOMPARE(f.node_count(1), size_t{3});
+    QVERIFY(f.scene.insert_node(1, 0, 0, 3, QPointF(b.x + 10, b.y)));
+    f.scene.set_active_grip(1, 0, 0, 3);
+    QVERIFY(f.dock.shows_node());
+    f.stack.undo();
+    QVERIFY(!f.scene.active_grip());
+    QCOMPARE(f.map->to_mp_string(), f.original);
 }
 
 void EditTests::dock_elements_highlight() {

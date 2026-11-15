@@ -487,8 +487,13 @@ void PropertiesDock::fill_node() {
     const NumbersDefinition* def = node->numbers();
     node_has_numbers_->setChecked(def != nullptr);
     set_numbering_fields_enabled(def != nullptr);
-    const NumbersDefinition empty;
-    const NumbersDefinition& d = def ? *def : empty;
+    fill_numbering(def ? *def : NumbersDefinition{});
+    QSignalBlocker block(hlevel_);
+    const OptInt& h = node->hlevel();
+    hlevel_->setCurrentIndex(h ? hlevel_->findData(QVariant::fromValue<long long>(*h)) : 0);
+}
+
+void PropertiesDock::fill_numbering(const NumbersDefinition& d) {
     auto fill_side = [](NumberingSide& side, const OptStr& style, const OptInt& after, const OptInt& before,
                         const OptStr& zip, const OptStr& city, const OptStr& region, const OptStr& country) {
         QSignalBlocker block(side.style);
@@ -504,9 +509,6 @@ void PropertiesDock::fill_node() {
               d.left_side_zip_code, d.left_side_city, d.left_side_region, d.left_side_country);
     fill_side(right_, d.right_side_numbering_style, d.right_side_number_after, d.right_side_number_before,
               d.right_side_zip_code, d.right_side_city, d.right_side_region, d.right_side_country);
-    QSignalBlocker block(hlevel_);
-    const OptInt& h = node->hlevel();
-    hlevel_->setCurrentIndex(h ? hlevel_->findData(QVariant::fromValue<long long>(*h)) : 0);
 }
 
 // ---------------------------------------------------------------- zmiany
@@ -520,18 +522,19 @@ void PropertiesDock::commit(const QString& text, const std::function<void(MapObj
     scene_->replace_object(*obj_, std::move(after), text);
 }
 
-void PropertiesDock::commit_node(const QString& text, const std::function<void(DataX&, const GripRef&)>& change) {
+bool PropertiesDock::commit_node(const QString& text, const std::function<void(DataX&, const GripRef&)>& change) {
     const MapObject* o = object();
-    if (filling_ || !o || !grip_ || !o->data) return;
+    if (filling_ || !o || !grip_ || !o->data) return false;
     MapObject after = *o;
     try {
         change(*after.data, *grip_);
     } catch (const MpError&) {
-        return;
+        return false;
     }
     const int precision = scene_->map()->precision();
-    if (after.to_mp_record(precision) == o->to_mp_record(precision)) return;
+    if (after.to_mp_record(precision) == o->to_mp_record(precision)) return false;
     scene_->replace_object(*obj_, std::move(after), text);
+    return true;
 }
 
 void PropertiesDock::type_chosen(int index) {
@@ -686,19 +689,31 @@ void PropertiesDock::numbering_edited() {
 
 void PropertiesDock::node_numbers_toggled(bool on) {
     if (filling_ || !grip_) return;
-    commit_node(on ? tr("Dodaj numerację") : tr("Usuń numerację"), [on](DataX& data, const GripRef& g) {
-        Node* node = data.poly_node(g.level, g.poly, static_cast<long>(g.node));
-        if (!node) return;
-        if (on) {
-            // jak switch_on_of_numerations: numeracja wyliczona z sasiednich wezlow
-            std::optional<NumbersDefinition> def = data.calculated_housenumber_defs_for_node(g.level, g.poly, g.node);
-            node->set_numbers(def ? *def : NumbersDefinition{});
-        } else {
-            node->set_numbers(std::optional<NumbersDefinition>());
-        }
-        data.clean_numbers_definitions(g.level, g.poly);
-    });
-    // gdy numeracja nie zostala zapisana (np. czyszczenie ja usunelo), pola wracaja do stanu z danych
+    std::optional<NumbersDefinition> calculated;
+    const bool committed =
+        commit_node(on ? tr("Dodaj numerację") : tr("Usuń numerację"), [on, &calculated](DataX& data, const GripRef& g) {
+            Node* node = data.poly_node(g.level, g.poly, static_cast<long>(g.node));
+            if (!node) return;
+            if (on) {
+                // jak switch_on_of_numerations: numeracja wyliczona z sasiednich wezlow
+                calculated = data.calculated_housenumber_defs_for_node(g.level, g.poly, g.node);
+                node->set_numbers(calculated ? *calculated : NumbersDefinition{});
+            } else {
+                node->set_numbers(std::optional<NumbersDefinition>());
+            }
+            data.clean_numbers_definitions(g.level, g.poly);
+        });
+    if (committed) return;  // panel odswiezyl sie po zmianie na stosie undo
+    if (on) {
+        // Nic nie zapisano (np. droga bez numeracji: pusta definicja nie zmienia rekordu MP). Jak w Pythonie:
+        // checkbox zostaje zaznaczony, pola sa wlaczone i czekaja na wybor stylu numeracji - dopiero on
+        // (z numerem poczatkowym 0) zapisuje numeracje wezla.
+        filling_ = true;
+        set_numbering_fields_enabled(true);
+        fill_numbering(calculated ? *calculated : NumbersDefinition{});
+        filling_ = false;
+        return;
+    }
     refresh();
 }
 
