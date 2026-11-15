@@ -145,6 +145,8 @@ private slots:
     void mouse_drag_moves_poi_when_zoomed_in();
     // 3b.2: edycja wezlow
     void edit_nodes_tool_decorates_selection();
+    void interpolated_numbers_in_edit_nodes_mode();
+    void edit_nodes_cross_cursor_over_edges();
     void move_remove_insert_node_undo();
     void remove_node_keeps_minimum();
     void insert_node_extends_polyline_end();
@@ -359,6 +361,74 @@ void EditTests::edit_nodes_tool_decorates_selection() {
     f.select_only(f.poi());
     f.scene.delete_selected();
     QCOMPARE(f.stack.count(), 0);
+}
+
+void EditTests::interpolated_numbers_in_edit_nodes_mode() {
+    Fixture f;
+    auto labels = [&] {
+        QStringList texts;
+        for (QGraphicsItem* child : f.poly(1)->childItems())
+            if (child->type() == MapLabelItemType)
+                texts << static_cast<QGraphicsSimpleTextItem*>(child)->text();
+        texts.sort();
+        return texts;
+    };
+    const QStringList plain = labels();
+    // Numbers1=0,O,1,5,E,2,6: miedzy wezlami z numeracja lewa strona 3, prawa 4
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.polyline());
+    QStringList expected = plain;
+    expected << "3" << "4";
+    expected.sort();
+    QCOMPARE(labels(), expected);
+    // przesuniecie wezla przebudowuje uchwyty i numery (bez dublowania)
+    QVERIFY(f.scene.move_node(1, 0, 0, 1, QPointF(f.node(1, 0, 1).x() + 5, f.node(1, 0, 1).y())));
+    QCOMPARE(labels(), expected);
+    f.scene.clearSelection();
+    QCOMPARE(labels(), plain);
+}
+
+void EditTests::edit_nodes_cross_cursor_over_edges() {
+    // jak w Pythonie: krzyzyk tylko nad obiektem w edycji wezlow (zaznaczonym, z uchwytami)
+    ViewFixture f;
+    const PointF a = f.node(1, 0, 0).pos(), b = f.node(1, 0, 1).pos();
+    const QPoint mid = f.view_pos(PointF{(a.x + b.x) / 2, (a.y + b.y) / 2});
+    const QPoint away = mid + QPoint(0, 200);
+    auto shape_at = [&](const QPoint& p) {
+        QTest::mouseMove(f.vp(), away + QPoint(1, 0));
+        QTest::mouseMove(f.vp(), p);
+        return f.vp()->cursor().shape();
+    };
+    f.select_only(f.polyline());
+    QCOMPARE(shape_at(mid), Qt::ArrowCursor);  // tryb zaznaczania
+    f.scene.set_tool(Tool::EditNodes);
+    QCOMPARE(shape_at(mid), Qt::CrossCursor);
+    QCOMPARE(shape_at(away), Qt::ArrowCursor);
+    f.scene.clearSelection();  // niezaznaczona droga - zwykly kursor
+    QCOMPARE(shape_at(mid), Qt::ArrowCursor);
+    f.select_only(f.polyline());
+    QCOMPARE(shape_at(mid), Qt::CrossCursor);
+    f.scene.set_tool(Tool::SelectObjects);
+    QCOMPARE(shape_at(mid), Qt::ArrowCursor);
+
+    // polygon w edycji: krzyzyk tylko na krawedzi, wnetrze nie nalezy do ksztaltu
+    QMimeData mime;
+    mime.setText("[POLYGON]\nType=0x4e\nData0=(52.1002,21.0020),(52.1002,21.0028),(52.1008,21.0028),"
+                 "(52.1008,21.0020)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 1);
+    auto* polygon = f.poly(f.map->objects().size() - 1);
+    const auto& poly_nodes = f.map->objects().back().data->polys_for_data_level(0)->front();
+    const PointF p0 = poly_nodes[0].pos(), p1 = poly_nodes[1].pos(), p2 = poly_nodes[2].pos();
+    f.view.centerOn(QPointF((p0.x + p2.x) / 2, (p0.y + p2.y) / 2));
+    const QPoint edge = f.view_pos(PointF{(p0.x + p1.x) / 2, (p0.y + p1.y) / 2});
+    const QPoint inside = f.view_pos(PointF{(p0.x + p2.x) / 2, (p0.y + p2.y) / 2});
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(polygon);
+    QVERIFY(polygon->decorated());
+    QCOMPARE(shape_at(edge), Qt::CrossCursor);
+    QCOMPARE(shape_at(inside), Qt::ArrowCursor);
+    f.scene.clearSelection();
+    QCOMPARE(shape_at(edge), Qt::ArrowCursor);
 }
 
 void EditTests::move_remove_insert_node_undo() {

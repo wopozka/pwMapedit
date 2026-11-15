@@ -1,6 +1,8 @@
 #include "pyutil.hpp"
 
+#include <algorithm>
 #include <charconv>
+#include <limits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -98,9 +100,12 @@ std::optional<double> to_float(std::string_view s) {
     auto res = std::from_chars(s.data(), s.data() + s.size(), v);
     if (res.ec != std::errc() || res.ptr != s.data() + s.size()) {
         if (res.ec == std::errc::result_out_of_range && res.ptr == s.data() + s.size()) {
-            // Python: float('1e999') == inf, float('1e-999') == 0.0
-            std::string tmp(s);
-            return std::strtod(tmp.c_str(), nullptr);
+            // Python: float('1e999') == inf, float('1e-999') == 0.0 (bez strtod - zalezy od locale)
+            const bool neg = s[0] == '-';
+            const auto e = s.find_first_of("eE");
+            const bool tiny = e != std::string_view::npos && e + 1 < s.size() && s[e + 1] == '-';
+            const double r = tiny ? 0.0 : std::numeric_limits<double>::infinity();
+            return neg ? -r : r;
         }
         return std::nullopt;
     }
@@ -115,6 +120,8 @@ void append_fixed(std::string& out, double v, int precision) {
     } else {
         std::string big(4096, '\0');
         int n = std::snprintf(big.data(), big.size(), "%.*f", precision, v);
+        // printf uzywa separatora dziesietnego z locale (np. przecinek po setlocale w aplikacji Qt)
+        std::replace(big.begin(), big.begin() + n, ',', '.');
         out.append(big.data(), n);
     }
 }
@@ -128,8 +135,12 @@ std::string format_fixed(double v, int precision) {
 double round(double v, int ndigits) {
     if (!std::isfinite(v)) return v;
     // CPython: zaokraglenie przez poprawnie zaokraglona reprezentacje dziesietna.
+    // from_chars zamiast strtod: strtod zalezy od locale, a QApplication ustawia locale systemowe
+    // (w polskim separatorem jest przecinek i strtod("-0.81818") dawalo -0).
     std::string s = format_fixed(v, ndigits);
-    return std::strtod(s.c_str(), nullptr);
+    double result = 0;
+    std::from_chars(s.data(), s.data() + s.size(), result);
+    return result;
 }
 
 double floordiv(double vx, double wx) {

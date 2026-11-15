@@ -177,6 +177,9 @@ protected:
 
     virtual void remove_level_items() {}
     virtual void add_level_items() {}
+    // Dodatki widoczne tylko w trybie edycji wezlow (np. interpolowane numery adresowe polilinii).
+    virtual void add_decoration_items() {}
+    virtual void remove_decoration_items() {}
 
     QPen orig_pen_;
     bool polygon_;
@@ -203,8 +206,11 @@ private:
     void add_label();
     void add_hlevel_labels();
     void add_housenumber_labels();
+    void add_decoration_items() override;
+    void remove_decoration_items() override;
 
     std::vector<QGraphicsItem*> level_items_;
+    std::vector<QGraphicsItem*> decoration_items_;  // interpolowane numery adresowe w trybie edycji wezlow
 };
 
 class PolygonItem : public PolyItem {
@@ -214,6 +220,8 @@ public:
     void set_z_value() override { setZValue(z_value_); }
     void apply_style() override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    // Jak shape() w Pythonie: w trybie edycji wezlow tylko krawedz (krzyzyk i najechanie tylko na obwodzie).
+    QPainterPath shape() const override { return decorated() ? stroke_shape() : QGraphicsPathItem::shape(); }
     bool small_poly() const;
 
 protected:

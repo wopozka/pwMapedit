@@ -1,5 +1,7 @@
 // Port tests/test_misc_functions.py + testy pomocnikow zgodnosci z Pythonem i kodowania.
+#include <clocale>
 #include <cmath>
+#include <string>
 
 #include "../core/misc.hpp"
 #include "../core/projection.hpp"
@@ -29,6 +31,21 @@ TEST(vector_angle) {
                 C{-1, 1, true, 225}, C{0, 1, true, 270}, C{1, 1, true, 315}}) {
         CHECK_EQ(misc::vector_angle(c.x, c.y, c.cw, false), c.ans);
     }
+}
+
+// Aplikacja Qt ustawia locale systemowe (setlocale(LC_ALL, "")); w polskim separatorem dziesietnym jest przecinek.
+// Wczesniej py::round korzystalo ze strtod i w GUI zwracalo 0 - strzalki kierunku byly zawsze poziome.
+TEST(vector_angle_with_comma_locale) {
+    const std::string old = std::setlocale(LC_NUMERIC, nullptr);
+    if (!std::setlocale(LC_NUMERIC, "pl_PL.UTF-8") && !std::setlocale(LC_NUMERIC, "pl_PL.utf8")) return;
+    const double rounded = py::round(-0.818181818, 5);
+    const double angle = misc::vector_angle(110, -90, true, true);
+    const auto big = py::to_float("1e999"), tiny = py::to_float("-1e-999");
+    std::setlocale(LC_NUMERIC, old.c_str());
+    CHECK_EQ(rounded, -0.81818);
+    CHECK(std::fabs(angle - (360 - std::atan(0.81818) * 180 / M_PI)) < 1e-9);
+    CHECK(big && std::isinf(*big) && *big > 0);
+    CHECK(tiny && *tiny == 0.0 && std::signbit(*tiny));
 }
 
 TEST(label_angle) {

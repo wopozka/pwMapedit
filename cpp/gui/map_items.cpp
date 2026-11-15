@@ -292,13 +292,24 @@ void PolyItem::decorate() {
     for (size_t poly_num = 0; poly_num < polys.size(); ++poly_num)
         for (size_t node_num = 0; node_num < polys[poly_num].size(); ++node_num)
             grips_.push_back(new GripItem(this, level, poly_num, node_num, polys[poly_num][node_num]));
+    add_decoration_items();
     setFlag(QGraphicsItem::ItemIsMovable, false);
+    // jak _decorate w Pythonie: nad obiektem w edycji kursor jest krzyzykiem (polygon w edycji reaguje
+    // tylko na krawedz, patrz PolygonItem::shape)
+    prepareGeometryChange();
+    setCursor(Qt::CrossCursor);
 }
 
 void PolyItem::undecorate() {
+    remove_decoration_items();
     for (GripItem* grip : grips_) delete grip;
+    const bool was_decorated = !grips_.empty();
     grips_.clear();
     setFlag(QGraphicsItem::ItemIsMovable, true);
+    if (was_decorated) {
+        prepareGeometryChange();
+        unsetCursor();
+    }
 }
 
 void PolyItem::preview_node_position(size_t poly_num, size_t node_num, const QPointF& pos) {
@@ -569,6 +580,46 @@ void PolylineItem::add_housenumber_labels() {
             add(def->right_side_number_before, n - 1, PolylineAddressNumber::RightBefore, false);
             add(def->right_side_number_after, n, PolylineAddressNumber::RightAfter, false);
         }
+    }
+}
+
+void PolylineItem::remove_decoration_items() {
+    for (QGraphicsItem* item : decoration_items_) delete item;
+    decoration_items_.clear();
+}
+
+void PolylineItem::add_decoration_items() {
+    // Port add_interpolated_housenumber_labels/get_interpolated_housenumbers: numery miedzy wezlami z numeracja,
+    // rozlozone rowno wzdluz linii, odsuniete od niej prostopadle o 10 (wektor po stronie numeru).
+    remove_decoration_items();
+    const MapObject& obj = object();
+    if (!obj.data) return;
+    const int level = shown_data_level();
+    if (level < 0) return;
+    const size_t polys_count = shown_nodes().size();
+    for (size_t poly_num = 0; poly_num < polys_count; ++poly_num) {
+        InterpolatedNumbers numbers;
+        try {
+            numbers = obj.data->interpolated_housenumbers_for_poly(level, poly_num);
+        } catch (const std::exception&) {
+            continue;
+        }
+        auto add = [&](const InterpolatedNumber& num, bool left) {
+            const QPointF position(num.position.x, num.position.y);
+            QLineF along(position, QPointF(num.vector.p2.x, num.vector.p2.y));
+            // numer dokladnie na koncu odcinka: kierunek bierzemy z calego odcinka
+            if (along.length() == 0) along = QLineF(num.vector.p1.x, num.vector.p1.y, num.vector.p2.x, num.vector.p2.y);
+            if (along.length() == 0) return;
+            along.translate(position - along.p1());
+            QLineF vector = along.normalVector();
+            if (!left) vector = vector.normalVector().normalVector();
+            QLineF number_vector = vector.unitVector();
+            number_vector.setLength(10);
+            decoration_items_.push_back(
+                new PolylineAddressNumber(number_vector, QString::number(num.number), this, left, true));
+        };
+        for (const InterpolatedNumber& num : numbers.left) add(num, true);
+        for (const InterpolatedNumber& num : numbers.right) add(num, false);
     }
 }
 

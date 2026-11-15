@@ -39,6 +39,9 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 ## 4. Edycja węzłów (klawisz **m**)
 
 Kliknij linię albo polygon – na węzłach pojawią się kwadraty (pierwszy węzeł jest czerwony).
+Na drodze z numeracją adresową pojawiają się też numery interpolowane między węzłami z numeracją
+(jaśniejsze, rozłożone równo wzdłuż drogi). Nad edytowaną linią albo krawędzią edytowanego obszaru kursor
+zmienia się w krzyżyk.
 
 | Co chcesz zrobić | Jak |
 |---|---|
