@@ -33,10 +33,49 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 | przesunąć obiekt | przeciągnij go lewym przyciskiem |
 | usunąć | **Delete** |
 | kopiować / wyciąć / wkleić | **Ctrl+C / Ctrl+X / Ctrl+V** – wklejone obiekty trafiają pod kursor |
-| skopiować całą tabelę Extras zaznaczonego obiektu | **Ctrl+Alt+C** (wkleja się jak skopiowane komórki) |
+| skopiować całą tabelę Extras zaznaczonego obiektu | **Ctrl+Alt+C** (szczegóły niżej) |
 | cofnąć / ponowić | **Ctrl+Z / Ctrl+Y** (działa dla każdej zmiany) |
 | zmienić typ, nazwę, adres, routing… | panel **Właściwości** po prawej (zaznacz jeden obiekt) |
 | odwrócić kierunek linii | **Edit → Odwróć polilinię** albo przycisk w panelu Właściwości |
+
+### Wybór typu obiektu
+
+Pole **Type** w panelu Właściwości można przeszukiwać: kliknij w nie i zacznij pisać. Lista podpowiedzi pokazuje
+typy, które zawierają wpisany tekst w **dowolnym miejscu** opisu (wielkość liter nie ma znaczenia) – można więc
+wpisać kod (`0x2f00`, `2f0`), kategorię albo fragment nazwy po polsku lub angielsku (`stacja`, `fuel`, `las`,
+`residential`). Wybierz typ z listy strzałkami i **Enter** albo kliknięciem – zmiana trafia od razu do obiektu
+(i do historii **Ctrl+Z**), a nowo rysowane obiekty tego rodzaju dostaną ten sam typ.
+
+### Schowek: obiekty jako tekst MP
+
+- **Ctrl+C** na zaznaczonych obiektach zapisuje w schowku także ich **zapis w formacie MP** – po wklejeniu do
+  Notatnika albo innego pliku `.txt` widać dokładnie te rekordy, które trafiłyby do pliku mapy, np.:
+
+  ```
+  [POLYLINE]
+  Type=0x6
+  Label=Ulica
+  Data0=(52.10000,21.00000),(52.10100,21.00100)
+  [END]
+  ```
+
+- Działa to też w drugą stronę: zaznacz w edytorze tekstu jeden lub kilka rekordów (od `[POI]`/`[POLYLINE]`/
+  `[POLYGON]` do `[END]`), skopiuj je i naciśnij **Ctrl+V** w oknie mapy – obiekty zostaną dodane do mapy
+  (jedna operacja do cofnięcia **Ctrl+Z**) i zaznaczone. Można w ten sposób przenosić obiekty między mapami,
+  poprawiać je ręcznie w tekście albo wklejać fragmenty innych plików `.mp`.
+- Obiekty wklejone **z tekstu** trafiają w miejsce zapisane we współrzędnych `Data`. Obiekty skopiowane
+  **w pwMapEdit** i wklejone od razu z powrotem trafiają **pod kursor**.
+
+### Schowek: tabela Extras
+
+Tabela **Extras** (dodatkowe pola rekordu, np. `Miasto=…`) ma własny schowek, gdy kursor jest w tabeli:
+
+- zaznacz komórki i **Ctrl+C / Ctrl+X / Ctrl+V** (albo prawy przycisk → Kopiuj / Wklej); wklejanie zaczyna się
+  od bieżącego wiersza i w razie potrzeby dopisuje nowe wiersze; **Delete** czyści zaznaczone komórki,
+- **Ctrl+Alt+C** kopiuje **całą** tabelę Extras zaznaczonego obiektu bez zaznaczania komórek (kursor może być
+  gdziekolwiek) – potem zaznacz inny obiekt, kliknij w jego tabelę Extras i **Ctrl+V**,
+- w edytorze tekstu skopiowane Extras wyglądają jak wiersze `klucz<TAB>wartość`; wkleić do tabeli można też
+  tekst w postaci `klucz=wartość` (np. linie skopiowane z pliku `.mp`) albo dwie kolumny z arkusza.
 
 ## 4. Edycja węzłów (klawisz **m**)
 
