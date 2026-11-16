@@ -25,13 +25,26 @@ public:
     void redo() override;
     void undo() override;
 
-private:
+protected:
     void apply(const MapObject& obj);
 
     MapScene* scene_;
     size_t index_;
     MapObject before_;
     MapObject after_;
+};
+
+// Obrot obiektu (Shift+kolko w edycji wezlow): kolejne zabki tego samego gestu (gesture) laczone sa w jedna
+// komende, wiec caly obrot cofa sie jednym Ctrl+Z.
+class RotateObjectCmd : public ReplaceObjectCmd {
+public:
+    RotateObjectCmd(MapScene* scene, size_t index, MapObject before, MapObject after, const QString& text,
+                    int gesture);
+    int id() const override { return 1; }
+    bool mergeWith(const QUndoCommand* other) override;
+
+private:
+    int gesture_;
 };
 
 // DeleteObjectsCmd: oznacza obiekty jako usuniete (zapis je pomija) i ukrywa ich elementy.

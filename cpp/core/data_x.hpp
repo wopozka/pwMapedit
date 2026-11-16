@@ -180,6 +180,15 @@ public:
     // Przesuwa wszystkie wezly poziomu o wektor (we wspolrzednych sceny) - odpowiednik petli
     // update_node_coordinates w SelectModeMoveItem/SelectModeMovePoi. Rzuca MpError, gdy poziomu nie ma.
     void translate_data_level(int data_level, PointF delta);
+    // Srodek ciezkosci poziomu (wspolrzedne sceny), wszystkie czesci razem. polygon: srodek ciezkosci
+    // powierzchni (pola czesci ze znakiem, jak zapisane); gdy pole jest zerowe albo polilinia - srodek
+    // ciezkosci linii (srodki odcinkow wazone dlugoscia), a gdy i dlugosc zerowa - srednia wezlow.
+    // Brak poziomu albo wezlow - nullopt.
+    std::optional<PointF> centroid(int data_level, bool polygon) const;
+    // Obrot wszystkich wezlow wszystkich poziomow wokol center o angle (radiany) we wspolrzednych sceny:
+    // x' = cx + dx*cos - dy*sin, y' = cy + dx*sin + dy*cos. Os y sceny jest skierowana w dol, wiec dodatni
+    // kat obraca na ekranie zgodnie z ruchem wskazowek zegara. Przelicza obwiednie.
+    void rotate(PointF center, double angle);
     bool is_splitting_possible(int data_level, size_t poly_num, long node_num) const;
     // Zwraca {czesc1, czesc2} albo pusty wektor, gdy podzial niemozliwy.
     std::vector<DataX> split_data_x(int data_level, size_t poly_num, long node_num) const;

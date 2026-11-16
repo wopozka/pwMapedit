@@ -94,6 +94,7 @@ zmienia się w krzyżyk.
 | dodać węzeł | **Shift+klik** na krawędzi albo **Insert** pod kursorem (za końcem linii – przedłuża ją) |
 | dodać węzeł i od razu go przesunąć | przy kursorze-krzyżyku naciśnij krawędź i przeciągnij (z **Ctrl** – dociąga do węzła) |
 | podzielić linię w węźle | najedź na kwadrat i naciśnij **s** |
+| obrócić obiekt wokół jego środka ciężkości | kursor nad obiektem (polygon i zamknięta linia, np. rondo – także w środku), **Shift + kółko**: 1° na ząbek, z **Ctrl** 0,1°; kółko od siebie – w lewo. Obraca wszystkie poziomy Data; czerwony krzyżyk pokazuje środek, kąt widać na pasku stanu; cały obrót cofa jedno **Ctrl+Z** |
 | ustawić numerację adresową / HLevel węzła | kliknij kwadrat → karta **Węzły** w panelu Właściwości |
 | połączyć linie | zaznacz je (Ctrl+klik, w kolejności) → **Edit → Połącz polilinie** |
 
@@ -126,6 +127,12 @@ zmienia się w krzyżyk.
   (mniejszy wewnątrz → dziura; częściowo → wycięcie). Wariant „i usuń drugi” usuwa też odejmowany.
 - **Zamiana:** zaznacz polygon albo polilinię → **Tools → Zamień polygon na polilinię / polilinię na polygon**
   (menu Tools pokazuje tylko operacje pasujące do zaznaczenia).
+- **Bojki wiadukt:** zaznacz co najmniej dwie drogi (**Ctrl+klik**) → **Tools → Dodaj bojki wiadukt** – w każdym
+  miejscu, gdzie drogi się przecinają, powstaje POI WIADUKT (0x1709). Wspólny węzeł (zwykłe skrzyżowanie)
+  i droga kończąca się na drugiej nie są przecięciem; tam, gdzie POI wiadukt już stoi, nowy nie jest dodawany.
+- **Bojki ślepy:** zaznacz drogi → **Tools → Dodaj bojki ślepy** – POI SLEPY (0x1708) na każdym końcu zaznaczonej
+  drogi, który nie ma wspólnego węzła z żadną inną drogą na mapie (kolej, rzeka itp. się nie liczą). Zamknięta
+  linia (rondo) nie ma końców; tam, gdzie POI ślepy już stoi, nowy nie jest dodawany.
 - **Części i poziomy:** panel Właściwości → karta **Elements**, prawy przycisk:
   - na „Poly: N” – **Usuń element**, **Ekstrahuj element** (część staje się osobnym obiektem),
   - na „DataN” – **Przenieś na poziom** / **Skopiuj na poziom**.

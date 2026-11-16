@@ -30,6 +30,10 @@ constexpr double SMALL_POLY_PERIMETER = 500;
 constexpr int WEBLAYER_DOWNLOAD_TIMEOUT = 15;
 constexpr int MAP_LEVELS = 5;
 constexpr int MAX_RECENT_FILES = 10;
+// POI "Flyover" / WIADUKT - stawiany przez Tools -> Dodaj bojki wiadukt.
+constexpr long long VIADUCT_POI_TYPE = 0x1709;
+// POI "Dead end" / SLEPY - stawiany przez Tools -> Dodaj bojki ślepy.
+constexpr long long DEAD_END_POI_TYPE = 0x1708;
 
 // View -> Levels -> Automatycznie: poziom mapy dla skali 1:denominator.
 // Wiecej niz 1:10 000 (np. 1:5 000) - 0; 1:10 000-1:50 000 - 1; 1:50 000-1:200 000 - 2;

@@ -119,6 +119,7 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     connect(scene_, &MapScene::tool_changed, properties_, &PropertiesDock::refresh);
     connect(undo_stack_, &QUndoStack::indexChanged, properties_, &PropertiesDock::refresh);
     connect(properties_, &PropertiesDock::message, this, &MainWindow::show_message);
+    connect(scene_, &MapScene::message, this, &MainWindow::show_message);
 
     connect(scene_, &MapScene::progress, this, &MainWindow::set_progress);
     connect(view_, &MapView::status_message, info_text_, &QLabel::setText);
@@ -333,6 +334,8 @@ void MainWindow::create_actions_and_menus() {
                                                  [this] { convert_selected(ObjectKind::Polygon); });
     QAction* to_polygon = tools_menu->addAction(tr("Zamień polilinię na polygon"), this,
                                                 [this] { convert_selected(ObjectKind::Polyline); });
+    QAction* viaducts = tools_menu->addAction(tr("Dodaj bojki wiadukt"), this, &MainWindow::add_viaduct_pois);
+    QAction* dead_ends = tools_menu->addAction(tr("Dodaj bojki ślepy"), this, &MainWindow::add_dead_end_pois);
     // menu pokazuje tylko operacje pasujace do zaznaczenia
     connect(tools_menu, &QMenu::aboutToShow, this, [=] {
         const bool polygons = scene_->has_selected(ObjectKind::Polygon);
@@ -341,6 +344,8 @@ void MainWindow::create_actions_and_menus() {
         subtract_delete->setVisible(polygons);
         to_polyline->setVisible(polygons);
         to_polygon->setVisible(polylines);
+        viaducts->setVisible(polylines);
+        dead_ends->setVisible(polylines);
         objects_separator->setVisible(polygons || polylines);
     });
     // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
@@ -744,6 +749,24 @@ void MainWindow::subtract_polygons(bool delete_second) {
         show_message(result);
     else
         QMessageBox::information(this, tr("Odejmowanie polygonów"), result);
+}
+
+void MainWindow::add_viaduct_pois() {
+    bool changed = false;
+    const QString result = scene_->add_viaduct_pois(&changed);
+    if (changed || quiet_)
+        show_message(result);
+    else
+        QMessageBox::information(this, tr("Bojki wiadukt"), result);
+}
+
+void MainWindow::add_dead_end_pois() {
+    bool changed = false;
+    const QString result = scene_->add_dead_end_pois(&changed);
+    if (changed || quiet_)
+        show_message(result);
+    else
+        QMessageBox::information(this, tr("Bojki ślepy"), result);
 }
 
 void MainWindow::merge_polylines() {

@@ -340,6 +340,21 @@ void MapView::mouseReleaseEvent(QMouseEvent* event) {
 }
 
 void MapView::wheelEvent(QWheelEvent* event) {
+    // Shift+kolko w edycji wezlow nad obiektem z uchwytami: obrot o 1 stopien na zabek (z Ctrl o 0,1),
+    // kolko od siebie - przeciwnie do ruchu wskazowek zegara. Poza obiektem Shift+kolko dziala jak zwykle.
+    MapScene* s = map_scene();
+    if (s && (event->modifiers() & Qt::ShiftModifier) && s->tool() == Tool::EditNodes) {
+        const QPointF pos = mapToScene(event->position().toPoint());
+        if (PolyItem* item = s->decorated_item_at(pos, NODE_INSERT_DISTANCE / std::max(s->viewer_scale(), 1e-9))) {
+            // Shift moze zamienic os kolka (ruch poziomy) - liczy sie ta, ktora sie ruszyla
+            int delta = event->angleDelta().y();
+            if (delta == 0) delta = event->angleDelta().x();
+            const double step = (event->modifiers() & Qt::ControlModifier) ? 0.1 : 1.0;
+            if (delta != 0) s->rotate_object(item->object_index(), step * delta / 120.0);
+            event->accept();
+            return;
+        }
+    }
     if (event->modifiers() == Qt::ControlModifier) {
         view_mouse_ = event->position().toPoint();
         scene_mouse_ = mapToScene(view_mouse_);

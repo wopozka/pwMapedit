@@ -939,6 +939,64 @@ void DataX::translate_data_level(int data_level, PointF delta) {
         for (Node& n : poly) n.set_pos(PointF{n.x() + delta.x, n.y() + delta.y});
 }
 
+std::optional<PointF> DataX::centroid(int data_level, bool polygon) const {
+    const auto* polys = polys_for_data_level(data_level);
+    if (!polys) return std::nullopt;
+    if (polygon) {
+        // wzor Gaussa (shoelace) dla kazdej czesci, czesc domknieta przez ostatni-pierwszy. Liczone wzgledem
+        // pierwszego wezla: wspolrzedne sceny sa rzedu milionow, a iloczyny tak duzych liczb traca dokladnosc.
+        PointF o{0, 0};
+        for (const Poly& poly : *polys)
+            if (!poly.empty()) {
+                o = poly.front().pos();
+                break;
+            }
+        double area2 = 0, cx = 0, cy = 0;
+        for (const Poly& poly : *polys) {
+            for (size_t i = 0; i < poly.size(); ++i) {
+                const Node& na = poly[i];
+                const Node& nb = poly[(i + 1) % poly.size()];
+                const double ax = na.x() - o.x, ay = na.y() - o.y, bx = nb.x() - o.x, by = nb.y() - o.y;
+                const double cross = ax * by - bx * ay;
+                area2 += cross;
+                cx += (ax + bx) * cross;
+                cy += (ay + by) * cross;
+            }
+        }
+        if (std::fabs(area2) > 1e-12) return PointF{o.x + cx / (3 * area2), o.y + cy / (3 * area2)};
+    }
+    double length = 0, cx = 0, cy = 0, sx = 0, sy = 0;
+    size_t nodes = 0;
+    for (const Poly& poly : *polys) {
+        for (size_t i = 0; i < poly.size(); ++i) {
+            sx += poly[i].x();
+            sy += poly[i].y();
+            ++nodes;
+            if (i + 1 == poly.size()) break;
+            const Node& a = poly[i];
+            const Node& b = poly[i + 1];
+            const double l = std::hypot(b.x() - a.x(), b.y() - a.y());
+            length += l;
+            cx += (a.x() + b.x()) / 2 * l;
+            cy += (a.y() + b.y()) / 2 * l;
+        }
+    }
+    if (nodes == 0) return std::nullopt;
+    if (length > 0) return PointF{cx / length, cy / length};
+    return PointF{sx / static_cast<double>(nodes), sy / static_cast<double>(nodes)};
+}
+
+void DataX::rotate(PointF center, double angle) {
+    const double c = std::cos(angle), s = std::sin(angle);
+    for (auto& polys : polys_)
+        for (Poly& poly : polys)
+            for (Node& n : poly) {
+                const double dx = n.x() - center.x, dy = n.y() - center.y;
+                n.set_pos(PointF{center.x + dx * c - dy * s, center.y + dx * s + dy * c});
+            }
+    recalculate_bounding_box();
+}
+
 bool DataX::is_splitting_possible(int data_level, size_t poly_num, long node_num) const {
     auto idx = data_level_index(data_level);
     if (!idx) return false;

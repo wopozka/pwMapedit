@@ -20,6 +20,18 @@ void ReplaceObjectCmd::apply(const MapObject& obj) {
     scene_->refresh_object(index_);
 }
 
+RotateObjectCmd::RotateObjectCmd(MapScene* scene, size_t index, MapObject before, MapObject after,
+                                 const QString& text, int gesture)
+    : ReplaceObjectCmd(scene, index, std::move(before), std::move(after), text), gesture_(gesture) {}
+
+bool RotateObjectCmd::mergeWith(const QUndoCommand* other) {
+    const auto* o = dynamic_cast<const RotateObjectCmd*>(other);
+    if (!o || o->gesture_ != gesture_ || o->index_ != index_) return false;
+    after_ = o->after_;  // stan przed zostaje z pierwszego zabka, stan po - z ostatniego
+    setText(o->text());
+    return true;
+}
+
 DeleteObjectsCmd::DeleteObjectsCmd(MapScene* scene, std::vector<size_t> indexes, const QString& text,
                                    QUndoCommand* parent)
     : QUndoCommand(text, parent), scene_(scene), indexes_(std::move(indexes)) {}

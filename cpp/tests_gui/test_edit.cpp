@@ -71,8 +71,8 @@ struct Fixture {
     MapScene scene;
     std::string original;
 
-    Fixture() {
-        map->load_from_string(SAMPLE_MAP);
+    explicit Fixture(const char* mp = SAMPLE_MAP) {
+        map->load_from_string(mp);
         Projection& projection = map->projection();
         projection.set_map_bounding_box(map->map_bounding_box());
         projection.calculate_data_offset();
@@ -200,6 +200,9 @@ private slots:
     void convert_polyline_polygon_both_ways();
     void road_casing_under_roads_only();
     void map_level_for_scale_ranges();
+    void shift_wheel_rotates_object_in_edit_nodes();
+    void viaduct_pois_at_crossings();
+    void dead_end_pois_at_unconnected_ends();
     void auto_map_level_follows_scale();
 };
 
@@ -1979,6 +1982,258 @@ void EditTests::road_casing_under_roads_only() {
     scene.set_road_casing(false);
     QCOMPARE(render(), plain);
     scene.clear_map();
+}
+
+namespace {
+void send_wheel(QWidget* viewport, const QPoint& pos, int delta, Qt::KeyboardModifiers modifiers) {
+    QWheelEvent ev(QPointF(pos), QPointF(viewport->mapToGlobal(pos)), QPoint(), QPoint(0, delta), Qt::NoButton,
+                   modifiers, Qt::NoScrollPhase, false);
+    QApplication::sendEvent(viewport, &ev);
+}
+
+// Kat (stopnie, uklad sceny) wektora od srodka do wezla.
+double node_angle(const PointF& center, const Node& n) {
+    return std::atan2(n.y() - center.y, n.x() - center.x) * 180 / std::acos(-1.0);
+}
+}  // namespace
+
+void EditTests::shift_wheel_rotates_object_in_edit_nodes() {
+    {
+        ViewFixture f;
+        QStringList messages;
+        QObject::connect(&f.scene, &MapScene::message, [&](const QString& m) { messages << m; });
+        // pozycja w widoku liczona przy kazdym zdarzeniu: Shift+kolko poza obiektem przewija widok
+        auto on_line = [&] {
+            const PointF a = f.node(1, 0, 0).pos(), b = f.node(1, 0, 1).pos();
+            return f.view_pos(PointF{(a.x + b.x) / 2, (a.y + b.y) / 2});
+        };
+        auto away = [&] { return on_line() + QPoint(0, 200); };
+        const PointF center = *f.map->objects()[1].data->centroid(0, false);
+        const double angle0 = node_angle(center, f.node(1, 0, 0));
+        const PointF level1_node = f.node(1, 1, 1).pos();
+        const double angle1 = node_angle(center, f.node(1, 1, 1));
+
+        // w trybie zaznaczania Shift+kolko nie obraca
+        f.select_only(f.polyline());
+        send_wheel(f.vp(), on_line(), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 0);
+
+        f.scene.set_tool(Tool::EditNodes);
+        f.select_only(f.polyline());
+        // poza obiektem - nic
+        send_wheel(f.vp(), away(), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 0);
+        // 3 zabki od siebie: 3 stopnie przeciwnie do wskazowek zegara (w ukladzie sceny z osia y w dol kat maleje)
+        for (int i = 0; i < 3; ++i) send_wheel(f.vp(), on_line(), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 1);  // jeden gest - jeden krok undo
+        QCOMPARE(f.stack.text(0), QString("Obróć obiekt"));
+        QVERIFY(f.scene.rotation_active());
+        QCOMPARE(messages.last(), QString("Obrót: +3.0°"));
+        QVERIFY(qAbs(node_angle(center, f.node(1, 0, 0)) - (angle0 - 3)) < 1e-6);
+        // drugi poziom Data obrocony o ten sam kat wokol tego samego srodka
+        QVERIFY(qAbs(node_angle(center, f.node(1, 1, 1)) - (angle1 - 3)) < 1e-6);
+        QVERIFY(f.node(1, 1, 1).pos() != level1_node);
+        // uchwyty przebudowane w nowych miejscach wezlow
+        QCOMPARE(f.grips(1).size(), f.node_count(1));
+        QVERIFY(QLineF(f.grips(1)[0]->scenePos(), QPointF(f.node(1, 0, 0).x(), f.node(1, 0, 0).y())).length() < 1e-6);
+        // Ctrl: 0,1 stopnia, w druga strone; nadal ten sam gest
+        send_wheel(f.vp(), on_line(), -120, Qt::ShiftModifier | Qt::ControlModifier);
+        QCOMPARE(f.stack.count(), 1);
+        QCOMPARE(messages.last(), QString("Obrót: +2.9°"));
+        QVERIFY(qAbs(node_angle(center, f.node(1, 0, 0)) - (angle0 - 2.9)) < 1e-6);
+        // cofniecie przywraca mape
+        f.stack.undo();
+        QCOMPARE(f.map->to_mp_string(), f.original);
+        QVERIFY(!f.scene.rotation_active());
+        // po czasie gestu kolejny obrot to nowy krok undo
+        f.stack.redo();
+        send_wheel(f.vp(), on_line(), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 2);
+        QTRY_VERIFY_WITH_TIMEOUT(!f.scene.rotation_active(), MapScene::ROTATION_GESTURE_MS * 3);
+        send_wheel(f.vp(), on_line(), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 3);
+    }
+    {
+        // polygon: obraca sie takze z kursorem we wnetrzu; srodek ciezkosci zostaje na miejscu
+        Fixture f(
+            "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+            "[POLYGON]\nType=0x13\n"
+            "Data0=(52.10000,21.00000),(52.10000,21.00300),(52.10100,21.00300),(52.10100,21.00000)\n[END]\n\n");
+        MapView view(&f.scene);
+        view.set_projection(&f.map->projection());
+        view.resize(800, 600);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+        const PointF center = *f.map->objects()[0].data->centroid(0, true);
+        view.centerOn(QPointF(center.x, center.y));
+        f.scene.set_tool(Tool::EditNodes);
+        f.select_only(f.scene.item_for_object(0));
+        const QPoint inside = view.mapFromScene(QPointF(center.x, center.y)) + QPoint(5, 3);
+        const double angle0 = node_angle(center, f.node(0, 0, 2));
+        for (int i = 0; i < 90; ++i) send_wheel(view.viewport(), inside, 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 1);
+        QVERIFY(qAbs(node_angle(center, f.node(0, 0, 2)) - (angle0 - 90)) < 1e-6);
+        const PointF after = *f.map->objects()[0].data->centroid(0, true);
+        QVERIFY(std::hypot(after.x - center.x, after.y - center.y) < 1e-6);
+        f.stack.undo();
+        QCOMPARE(f.map->to_mp_string(), f.original);
+    }
+    {
+        // rondo: zamknieta polilinia z 12 wezlami; obraca sie z kursorem w srodku i tuz przy wezle od zewnatrz
+        // (tam zaden odcinek nie lezy "naprzeciw" kursora, a mimo to kursor jest przy linii)
+        std::string mp = "[IMG ID]\nName=test\n[END-IMG ID]\n\n[POLYLINE]\nType=0xc\nData0=";
+        for (int i = 0; i <= 12; ++i) {
+            const double a = 2 * std::acos(-1.0) * (i % 12) / 12;
+            mp += QString::asprintf("%s(%.6f,%.6f)", i ? "," : "", 52.1 + 0.0003 * std::sin(a),
+                                    21.0 + 0.0005 * std::cos(a))
+                      .toStdString();
+        }
+        mp += "\n[END]\n\n";
+        Fixture f(mp.c_str());
+        MapView view(&f.scene);
+        view.set_projection(&f.map->projection());
+        view.resize(800, 600);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+        const PointF center = *f.map->objects()[0].data->centroid(0, false);
+        view.centerOn(QPointF(center.x, center.y));
+        f.scene.set_tool(Tool::EditNodes);
+        f.select_only(f.scene.item_for_object(0));
+        const double angle0 = node_angle(center, f.node(0, 0, 3));
+        // srodek ronda
+        send_wheel(view.viewport(), view.mapFromScene(QPointF(center.x, center.y)), 120, Qt::ShiftModifier);
+        QCOMPARE(f.stack.count(), 1);
+        QVERIFY(qAbs(node_angle(center, f.node(0, 0, 3)) - (angle0 - 1)) < 1e-6);
+        // 3 piksele od wezla na zewnatrz ronda
+        auto outside_node = [&] {
+            const Node& n = f.node(0, 0, 3);
+            const QPointF radial = QPointF(n.x() - center.x, n.y() - center.y);
+            const QPointF unit = radial / std::hypot(radial.x(), radial.y());
+            return view.mapFromScene(QPointF(n.x(), n.y())) + (unit * 3).toPoint();
+        };
+        send_wheel(view.viewport(), outside_node(), 120, Qt::ShiftModifier);
+        QVERIFY(qAbs(node_angle(center, f.node(0, 0, 3)) - (angle0 - 2)) < 1e-6);
+        // daleko poza rondem - bez obrotu
+        send_wheel(view.viewport(), view.mapFromScene(QPointF(center.x, center.y)) + QPoint(300, 0), 120,
+                   Qt::ShiftModifier);
+        QVERIFY(qAbs(node_angle(center, f.node(0, 0, 3)) - (angle0 - 2)) < 1e-6);
+        QCOMPARE(f.stack.count(), 1);
+    }
+}
+
+void EditTests::viaduct_pois_at_crossings() {
+    // A pozioma (3 wezly), B przecina A, C krzyzuje sie z A we wspolnym wezle (zwykle skrzyzowanie), D daleko
+    Fixture f(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00000),(52.10000,21.00150),(52.10000,21.00300)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.09900,21.00050),(52.10100,21.00050)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.09900,21.00150),(52.10000,21.00150),(52.10100,21.00150)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.10500,21.00000),(52.10500,21.00300)\n[END]\n\n");
+    auto select = [&](std::initializer_list<size_t> objs) {
+        f.scene.clearSelection();
+        for (size_t i : objs) f.scene.item_for_object(i)->graphics_item()->setSelected(true);
+    };
+    bool changed = true;
+    select({0});
+    QVERIFY(f.scene.add_viaduct_pois(&changed).contains("co najmniej dwie"));
+    QVERIFY(!changed);
+    select({0, 3});
+    QCOMPARE(f.scene.add_viaduct_pois(&changed), QString("Nie znaleziono przecięć zaznaczonych dróg."));
+    QVERIFY(!changed);
+    select({0, 2});  // wspolny wezel - skrzyzowanie, nie wiadukt
+    QCOMPARE(f.scene.add_viaduct_pois(&changed), QString("Nie znaleziono przecięć zaznaczonych dróg."));
+    QCOMPARE(f.stack.count(), 0);
+
+    // A + B + C: jedno przeciecie (A z B); B i C sie nie przecinaja
+    select({0, 1, 2});
+    QCOMPARE(f.scene.add_viaduct_pois(&changed), QString("Dodano bojki wiadukt: 1"));
+    QVERIFY(changed);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.stack.text(0), QString("Dodaj bojki wiadukt (1)"));
+    const auto& objects = f.map->objects();
+    QCOMPARE(objects.size(), size_t{5});
+    const MapObject& poi = objects.back();
+    QCOMPARE(poi.kind(), ObjectKind::Poi);
+    QCOMPARE(poi.type.value_or(0), VIADUCT_POI_TYPE);
+    const PointF b0 = f.node(1, 0, 0).pos();
+    const PointF a0 = f.node(0, 0, 0).pos();
+    const PointF at = poi.data->raw_polys()[0][0][0].pos();
+    QVERIFY(std::hypot(at.x - b0.x, at.y - a0.y) < 1e-3);  // x drogi B, y drogi A
+    QVERIFY(f.map->to_mp_string().find("Type=0x1709") != std::string::npos);
+    QVERIFY(f.scene.item_for_object(4) != nullptr);
+
+    // ponownie - POI juz stoi, nic nie dodaje
+    QCOMPARE(f.scene.add_viaduct_pois(&changed), QString("Wszystkie przecięcia (1) mają już POI wiadukt."));
+    QVERIFY(!changed);
+    QCOMPARE(f.stack.count(), 1);
+    f.stack.undo();
+    QVERIFY(f.map->objects()[4].deleted);
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
+
+void EditTests::dead_end_pois_at_unconnected_ends() {
+    Fixture f(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        // 0 A: poczatek styka sie tylko z kolejka (nie droga), koniec ma wspolny wezel z C
+        "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00000),(52.10000,21.00100),(52.10000,21.00200)\n[END]\n\n"
+        // 1 B: zaczyna sie w srodkowym wezle A
+        "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00100),(52.10100,21.00100)\n[END]\n\n"
+        // 2 C: zaczyna sie na koncu A
+        "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00200),(52.10100,21.00250)\n[END]\n\n"
+        // 3 kolej przy poczatku A
+        "[POLYLINE]\nType=0x14\nData0=(52.10000,21.00000),(52.09900,21.00000)\n[END]\n\n"
+        // 4 rondo (zamkniete)
+        "[POLYLINE]\nType=0xc\nData0=(52.10500,21.00000),(52.10500,21.00050),(52.10550,21.00050),"
+        "(52.10500,21.00000)\n[END]\n\n"
+        // 5 D: osobna droga
+        "[POLYLINE]\nType=0x6\nData0=(52.10800,21.00000),(52.10800,21.00100)\n[END]\n\n");
+    auto select = [&](std::initializer_list<size_t> objs) {
+        f.scene.clearSelection();
+        for (size_t i : objs) f.scene.item_for_object(i)->graphics_item()->setSelected(true);
+    };
+    auto pois_at = [&](const PointF& p) {
+        int n = 0;
+        for (const MapObject& obj : f.map->objects())
+            if (!obj.deleted && obj.kind() == ObjectKind::Poi && obj.type.value_or(0) == DEAD_END_POI_TYPE &&
+                std::hypot(obj.data->raw_polys()[0][0][0].x() - p.x, obj.data->raw_polys()[0][0][0].y() - p.y) < 1e-3)
+                ++n;
+        return n;
+    };
+    bool changed = true;
+    f.scene.clearSelection();
+    QCOMPARE(f.scene.add_dead_end_pois(&changed), QString("Zaznacz co najmniej jedną drogę."));
+    QVERIFY(!changed);
+    select({4});
+    QVERIFY(f.scene.add_dead_end_pois(&changed).startsWith("Nie znaleziono ślepych końców"));
+    QCOMPARE(f.stack.count(), 0);
+
+    // A: tylko poczatek (kolej nie jest droga); koniec polaczony z C
+    select({0});
+    QCOMPARE(f.scene.add_dead_end_pois(&changed), QString("Dodano bojki ślepy: 1"));
+    QVERIFY(changed);
+    QCOMPARE(f.stack.text(0), QString("Dodaj bojki ślepy (1)"));
+    QCOMPARE(pois_at(f.node(0, 0, 0).pos()), 1);
+    QCOMPARE(pois_at(f.node(0, 0, 2).pos()), 0);
+
+    // B, C, D: konce B i C (poczatki polaczone z A) i oba konce D
+    select({1, 2, 5});
+    QCOMPARE(f.scene.add_dead_end_pois(&changed), QString("Dodano bojki ślepy: 4"));
+    QCOMPARE(pois_at(f.node(1, 0, 0).pos()), 0);
+    QCOMPARE(pois_at(f.node(1, 0, 1).pos()), 1);
+    QCOMPARE(pois_at(f.node(2, 0, 0).pos()), 0);
+    QCOMPARE(pois_at(f.node(2, 0, 1).pos()), 1);
+    QCOMPARE(pois_at(f.node(5, 0, 0).pos()), 1);
+    QCOMPARE(pois_at(f.node(5, 0, 1).pos()), 1);
+    QVERIFY(f.map->to_mp_string().find("Type=0x1708") != std::string::npos);
+
+    // ponownie A - POI juz jest
+    select({0});
+    QCOMPARE(f.scene.add_dead_end_pois(&changed), QString("Wszystkie ślepe końce (1) mają już POI ślepy."));
+    QVERIFY(!changed);
+    QCOMPARE(f.stack.count(), 2);
+    f.stack.undo();
+    f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
 }
 
 void EditTests::map_level_for_scale_ranges() {

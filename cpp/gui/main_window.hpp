@@ -93,6 +93,10 @@ private slots:
     void merge_polylines();
     void subtract_polygons(bool delete_second);
     void convert_selected(ObjectKind from);
+    // Tools -> Dodaj bojki wiadukt (MapScene::add_viaduct_pois); bez zmian - okno z informacja.
+    void add_viaduct_pois();
+    // Tools -> Dodaj bojki ślepy (MapScene::add_dead_end_pois); bez zmian - okno z informacja.
+    void add_dead_end_pois();
     void set_single_key_shortcuts_enabled(bool enabled);
     // Tryb automatyczny: ustawia poziom wedlug biezacej skali (bez zmiany, gdy poziom sie zgadza).
     void update_auto_map_level();

@@ -13,6 +13,7 @@
 class QGraphicsEllipseItem;
 class QGraphicsPathItem;
 class QMimeData;
+class QTimer;
 class QUndoCommand;
 class QUndoStack;
 
@@ -79,7 +80,7 @@ public:
 
     // Stos undo/redo okna; komendy edycji sa na nim umieszczane przez widok i okno.
     QUndoStack* undo_stack() const { return undo_stack_; }
-    void set_undo_stack(QUndoStack* stack) { undo_stack_ = stack; }
+    void set_undo_stack(QUndoStack* stack);
 
     // ---- edycja (kazda operacja to jedna komenda na stosie undo) ----
     // Przesuniecie obiektow o wektory (we wspolrzednych sceny), np. po przeciagnieciu mysza.
@@ -133,6 +134,19 @@ public:
     // Podzial w wezle ostatnio kliknietego uchwytu (menu Edit).
     bool split_at_active_grip();
 
+    // ---- obrot (Shift+kolko w edycji wezlow) ----
+    // Obiekt z uchwytami pod kursorem: polygon - wnetrze albo krawedz, polilinia - linia w odleglosci max_distance.
+    // Przy kilku - najblizszy. nullptr, gdy zaden.
+    PolyItem* decorated_item_at(const QPointF& scene_pos, double max_distance) const;
+    // Obrot obiektu o degrees (dodatnie - przeciwnie do ruchu wskazowek zegara na ekranie) wokol jego srodka
+    // ciezkosci, wszystkie poziomy Data. Kolejne wywolania dla tego samego obiektu tworza jeden gest: srodek
+    // liczony raz (z pokazywanego poziomu), jedna komenda undo, krzyzyk w srodku i laczny kat w komunikacie.
+    // Gest konczy sie po ROTATION_GESTURE_MS bez obrotu albo przy innej zmianie (undo, narzedzie, zaznaczenie).
+    bool rotate_object(size_t obj, double degrees);
+    void end_rotation();
+    bool rotation_active() const { return rotation_.has_value(); }
+    static constexpr int ROTATION_GESTURE_MS = 1000;
+
     // Wywolywane przez uchwyty. Operacje wykonywane sa po zakonczeniu obslugi zdarzenia myszy/klawiatury,
     // bo przebudowuja uchwyty, czyli usuwaja ten, ktory je zglosil.
     void grip_hovered(GripItem* grip, bool hovered);
@@ -155,6 +169,15 @@ public:
     // Zwraca opis wyniku; changed - czy mapa sie zmienila.
     QString convert_selected(ObjectKind from, bool* changed = nullptr);
     bool has_selected(ObjectKind kind) const;
+    // Tools -> Dodaj bojki wiadukt: POI WIADUKT (VIADUCT_POI_TYPE) w punktach, w ktorych zaznaczone polilinie
+    // przecinaja sie (kazda para, pokazywany poziom; bez wspolnych wezlow i stykow - patrz line_crossings).
+    // Przeciecia, przy ktorych POI wiadukt juz stoi, sa pomijane. Jedna komenda undo.
+    // Zwraca opis wyniku; changed - czy dodano POI.
+    QString add_viaduct_pois(bool* changed = nullptr);
+    // Tools -> Dodaj bojki ślepy: POI SLEPY (DEAD_END_POI_TYPE) na kazdym koncu zaznaczonej polilinii, ktory nie
+    // ma wspolnego wezla z inna droga (dowolny wezel drogi, pokazywany poziom; tez z inna czescia tej linii).
+    // Linia zamknieta nie ma koncow. Konce z POI slepy sa pomijane. Jedna komenda undo.
+    QString add_dead_end_pois(bool* changed = nullptr);
     // Podswietlenie czesci obiektu wybranej w panelu (karta Elements); pusta sciezka zdejmuje podswietlenie.
     void highlight_path(const QPainterPath& path, bool polygon);
     void request_node_move(size_t obj, int level, size_t poly, size_t node, const QPointF& pos);
@@ -172,9 +195,15 @@ signals:
     void grip_hover_changed(bool hovered);
     void active_grip_changed();
     void tool_changed();
+    // Komunikat dla paska stanu (np. laczny kat obrotu).
+    void message(const QString& text);
 
 private:
     void apply_transformation_flags(bool ignore);
+    // POI typu type (Data0) w punktach (wspolrzedne sceny) jedna komenda undo o tekscie text (%1 - liczba POI).
+    // Punkty blizsze niz distance istniejacemu POI tego typu sa pomijane (licznik w skipped). Zwraca liczbe dodanych.
+    int add_marker_pois(long long type, const std::vector<PointF>& points, double distance, const QString& text,
+                        size_t* skipped);
     bool active_grip_valid() const;
     void push_command(QUndoCommand* command);
     MapObjectItem* create_item(size_t index);
@@ -199,6 +228,17 @@ private:
     QGraphicsPathItem* highlight_ = nullptr;
     QGraphicsEllipseItem* snap_indicator_ = nullptr;
     RoadCasingLayer* road_casing_ = nullptr;
+    struct RotationGesture {
+        size_t obj;
+        PointF center;
+        double total_degrees;
+        int id;
+    };
+    std::optional<RotationGesture> rotation_;
+    int rotation_gestures_ = 0;
+    bool pushing_rotation_ = false;
+    QTimer* rotation_timer_ = nullptr;
+    QGraphicsPathItem* rotation_marker_ = nullptr;
     long long last_used_type_[4] = {0, 0, 0, 0};  // wedlug ObjectKind
 };
 

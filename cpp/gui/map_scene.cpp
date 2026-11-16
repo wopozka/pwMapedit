@@ -11,8 +11,10 @@
 #include <QTimer>
 #include <QUndoStack>
 #include <algorithm>
+#include <cmath>
 
 #include "commands.hpp"
+#include "line_crossings.hpp"
 #include "map_items.hpp"
 #include "misc.hpp"
 #include "polygon_ops.hpp"
@@ -44,6 +46,9 @@ void MapScene::clear_map() {
     highlight_path(QPainterPath(), false);
     delete snap_indicator_;
     snap_indicator_ = nullptr;
+    end_rotation();
+    delete rotation_marker_;
+    rotation_marker_ = nullptr;
     if (!object_items_.empty()) {
         // Usuwanie elementow pojedynczo kosztuje O(liczba elementow) na kazdy element (lista elementow
         // najwyzszego poziomu, indeks), czyli przy duzej mapie dziesiatki sekund. clear() usuwa wszystko naraz,
@@ -278,6 +283,7 @@ void MapScene::reverse_selected_polylines() {
 
 // ---------------------------------------------------------------- tryb edycji wezlow
 void MapScene::set_tool(Tool tool) {
+    end_rotation();
     tool_ = tool;
     update_decorations();
     emit tool_changed();
@@ -295,6 +301,11 @@ void MapScene::selection_changed() {
     for (MapObjectItem* item : selected_object_items())
         if (std::find(order.begin(), order.end(), item) == order.end()) order.push_back(item);
     selection_order_ = std::move(order);
+    // inny obiekt w edycji - nastepny obrot to nowy gest; ten sam obiekt (przebudowa po zabku obrotu) - bez zmian
+    if (rotation_) {
+        MapObjectItem* rotated = item_for_object(rotation_->obj);
+        if (!rotated || !rotated->graphics_item()->isSelected()) end_rotation();
+    }
     update_decorations();
 }
 
@@ -420,6 +431,150 @@ bool MapScene::has_selected(ObjectKind kind) const {
     for (MapObjectItem* item : selected_object_items())
         if (item->object().kind() == kind) return true;
     return false;
+}
+
+QString MapScene::add_viaduct_pois(bool* changed) {
+    if (changed) *changed = false;
+    if (!map_) return {};
+    std::vector<PolyItem*> lines;
+    for (MapObjectItem* item : selected_object_items())
+        if (item->object().kind() == ObjectKind::Polyline)
+            if (auto* poly = dynamic_cast<PolyItem*>(item)) lines.push_back(poly);
+    if (lines.size() < 2)
+        return tr("Zaznacz co najmniej dwie drogi (Ctrl + klik) – bojki wiadukt stawiane są w miejscach ich przecięć.");
+
+    // przeciecia kazdej pary (wspolrzedne sceny, ok. 0,6 m na jednostke - punkty blizsze niz 1 sa laczone)
+    const double merge = 1.0;
+    std::vector<std::vector<LinePart>> parts;
+    for (PolyItem* item : lines) {
+        std::vector<LinePart> item_parts;
+        for (const auto& nodes : item->shown_nodes()) {
+            LinePart part;
+            for (const QPointF& p : nodes) part.push_back(PointF{p.x(), p.y()});
+            item_parts.push_back(std::move(part));
+        }
+        parts.push_back(std::move(item_parts));
+    }
+    std::vector<PointF> crossings;
+    for (size_t i = 0; i < parts.size(); ++i)
+        for (size_t j = i + 1; j < parts.size(); ++j)
+            for (const PointF& p : line_crossings(parts[i], parts[j], merge)) {
+                bool known = false;
+                for (const PointF& c : crossings) known = known || std::hypot(c.x - p.x, c.y - p.y) < merge;
+                if (!known) crossings.push_back(p);
+            }
+    if (crossings.empty()) return tr("Nie znaleziono przecięć zaznaczonych dróg.");
+
+    size_t skipped = 0;
+    const int added = add_marker_pois(VIADUCT_POI_TYPE, crossings, merge, tr("Dodaj bojki wiadukt (%1)"), &skipped);
+    if (added == 0) return tr("Wszystkie przecięcia (%1) mają już POI wiadukt.").arg(crossings.size());
+    if (changed) *changed = true;
+    QString result = tr("Dodano bojki wiadukt: %1").arg(added);
+    if (skipped) result += tr(" (pominięto %1 – POI wiadukt już tam jest)").arg(skipped);
+    return result;
+}
+
+int MapScene::add_marker_pois(long long type, const std::vector<PointF>& points, double distance,
+                              const QString& text, size_t* skipped) {
+    // punkty, przy ktorych stoi juz POI tego typu, sa pomijane (ponowne uzycie nie dubluje POI)
+    std::vector<PointF> existing;
+    for (const MapObject& obj : map_->objects()) {
+        if (obj.deleted || obj.kind() != ObjectKind::Poi || obj.type.value_or(-1) != type || !obj.data) continue;
+        for (const auto& level : obj.data->raw_polys())
+            for (const Poly& poly : level)
+                for (const Node& n : poly) existing.push_back(n.pos());
+    }
+    const Projection& projection = map_->projection();
+    auto* command = new QUndoCommand;
+    for (const PointF& p : points) {
+        bool exists = false;
+        for (const PointF& e : existing) exists = exists || std::hypot(e.x - p.x, e.y - p.y) < distance;
+        if (exists) {
+            if (skipped) ++*skipped;
+            continue;
+        }
+        GeoPoint g;
+        try {
+            g = projection.canvas_to_geo(p.x, p.y);
+        } catch (const std::exception&) {
+            continue;
+        }
+        // 10 miejsc po przecinku jak create_object - zapis i tak uzywa precyzji mapy
+        std::optional<MapObject> poi = map_->object_from_record(
+            {object_kind_section(ObjectKind::Poi), QString::asprintf("Type=0x%llx", type).toStdString(),
+             QString::asprintf("Data0=(%.10f,%.10f)", g.latitude, g.longitude).toStdString()});
+        if (poi) new AddObjectCmd(this, std::move(*poi), QString(), command);
+    }
+    const int added = command->childCount();
+    if (added == 0) {
+        delete command;
+        return 0;
+    }
+    command->setText(text.arg(added));
+    push_command(command);
+    return added;
+}
+
+QString MapScene::add_dead_end_pois(bool* changed) {
+    if (changed) *changed = false;
+    if (!map_) return {};
+    std::vector<PolyItem*> lines;
+    for (MapObjectItem* item : selected_object_items())
+        if (item->object().kind() == ObjectKind::Polyline)
+            if (auto* poly = dynamic_cast<PolyItem*>(item)) lines.push_back(poly);
+    if (lines.empty()) return tr("Zaznacz co najmniej jedną drogę.");
+
+    // Konce czesci zaznaczonych linii (pokazywany poziom); linia zamknieta (np. rondo) nie ma koncow.
+    struct End {
+        PointF pos;
+        size_t obj;
+        size_t part;
+    };
+    std::vector<End> ends;
+    for (PolyItem* item : lines) {
+        const int level = item->shown_data_level();
+        const auto* polys = item->object().data ? item->object().data->polys_for_data_level(level) : nullptr;
+        if (!polys) continue;
+        for (size_t part = 0; part < polys->size(); ++part) {
+            const Poly& poly = (*polys)[part];
+            if (poly.size() < 2 || poly.front().pos() == poly.back().pos()) continue;
+            ends.push_back({poly.front().pos(), item->object_index(), part});
+            ends.push_back({poly.back().pos(), item->object_index(), part});
+        }
+    }
+    // Koniec jest polaczony, gdy w tym samym miejscu jest wezel innej drogi (dowolny wezel, pokazywany poziom)
+    // albo innej czesci tej samej linii. Wezly porownywane z tolerancja 0,01 jednostki (ok. 6 mm).
+    const double same = 0.01;
+    std::vector<bool> connected(ends.size(), false);
+    QRectF area;
+    for (const End& e : ends) area = area.united(QRectF(e.pos.x - same, e.pos.y - same, 2 * same, 2 * same));
+    for (MapObjectItem* item : object_items_) {
+        QGraphicsItem* g = item->graphics_item();
+        if (g->type() != PolylineItemType || !g->isVisible()) continue;
+        const MapObject& obj = item->object();
+        if (!obj.data || !MapStyles::is_road(obj.type.value_or(-1))) continue;
+        if (!g->sceneBoundingRect().intersects(area)) continue;  // szybkie odrzucenie dalekich drog
+        const auto* polys = obj.data->polys_for_data_level(item->shown_data_level());
+        if (!polys) continue;
+        for (size_t part = 0; part < polys->size(); ++part)
+            for (const Node& n : (*polys)[part])
+                for (size_t k = 0; k < ends.size(); ++k) {
+                    if (connected[k] || (ends[k].obj == item->object_index() && ends[k].part == part)) continue;
+                    if (std::hypot(n.x() - ends[k].pos.x, n.y() - ends[k].pos.y) < same) connected[k] = true;
+                }
+    }
+    std::vector<PointF> dead_ends;
+    for (size_t k = 0; k < ends.size(); ++k)
+        if (!connected[k]) dead_ends.push_back(ends[k].pos);
+    if (dead_ends.empty()) return tr("Nie znaleziono ślepych końców – każdy koniec zaznaczonych dróg łączy się z inną drogą.");
+
+    size_t skipped = 0;
+    const int added = add_marker_pois(DEAD_END_POI_TYPE, dead_ends, 1.0, tr("Dodaj bojki ślepy (%1)"), &skipped);
+    if (added == 0) return tr("Wszystkie ślepe końce (%1) mają już POI ślepy.").arg(dead_ends.size());
+    if (changed) *changed = true;
+    QString result = tr("Dodano bojki ślepy: %1").arg(added);
+    if (skipped) result += tr(" (pominięto %1 – POI ślepy już tam jest)").arg(skipped);
+    return result;
 }
 
 QString MapScene::convert_selected(ObjectKind from, bool* changed) {
@@ -830,5 +985,98 @@ void MapScene::show_snap_indicator(std::optional<QPointF> pos) {
 }
 
 bool MapScene::snap_indicator_visible() const { return snap_indicator_ && snap_indicator_->isVisible(); }
+
+// ---------------------------------------------------------------- obrot
+void MapScene::set_undo_stack(QUndoStack* stack) {
+    if (undo_stack_) disconnect(undo_stack_, nullptr, this, nullptr);
+    undo_stack_ = stack;
+    // cofniecie albo inna zmiana konczy gest obrotu (nastepny obrot to nowy krok undo z nowym srodkiem)
+    if (undo_stack_)
+        connect(undo_stack_, &QUndoStack::indexChanged, this, [this] {
+            if (!pushing_rotation_) end_rotation();
+        });
+}
+
+PolyItem* MapScene::decorated_item_at(const QPointF& scene_pos, double max_distance) const {
+    PolyItem* best = nullptr;
+    double best_distance = max_distance;
+    for (PolyItem* item : decorated_) {
+        if (!item->isVisible() || !item->decorated()) continue;
+        // wnetrze: polygon i linia zamknieta (np. rondo - pierwszy wezel rowny ostatniemu)
+        bool inside = false;
+        if (item->is_polygon()) {
+            inside = item->path().contains(scene_pos - item->pos());
+        } else {
+            for (const auto& nodes : item->shown_nodes())
+                if (nodes.size() > 3 && nodes.front() == nodes.back() &&
+                    QPolygonF(QList<QPointF>(nodes.begin(), nodes.end())).containsPoint(scene_pos, Qt::OddEvenFill))
+                    inside = true;
+        }
+        double distance = 0;
+        if (!inside) {
+            // odleglosc od najblizszego odcinka albo wezla (on_segment=false: bez martwych pol przy wezlach
+            // po zewnetrznej stronie zakretu, ktore pomija Shift+klik)
+            const auto ins = item->node_insertion(scene_pos, false, false);
+            if (!ins) continue;
+            distance = ins->distance;
+        }
+        if (distance <= best_distance) {
+            best = item;
+            best_distance = distance;
+        }
+    }
+    return best;
+}
+
+bool MapScene::rotate_object(size_t obj, double degrees) {
+    PolyItem* item = poly_item(obj);
+    if (!map_ || !item || !map_->objects()[obj].data) return false;
+    const MapObject& current = map_->objects()[obj];
+    if (!rotation_ || rotation_->obj != obj) {
+        end_rotation();
+        const auto center = current.data->centroid(item->shown_data_level(), item->is_polygon());
+        if (!center) return false;
+        rotation_ = RotationGesture{obj, *center, 0, ++rotation_gestures_};
+        if (!rotation_marker_) {
+            QPainterPath cross;
+            cross.moveTo(-8, 0);
+            cross.lineTo(8, 0);
+            cross.moveTo(0, -8);
+            cross.lineTo(0, 8);
+            rotation_marker_ = new QGraphicsPathItem(cross);
+            QPen pen(QColor("red"), 2);
+            pen.setCosmetic(true);
+            rotation_marker_->setPen(pen);
+            rotation_marker_->setZValue(150);
+            rotation_marker_->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+            rotation_marker_->setAcceptedMouseButtons(Qt::NoButton);
+            addItem(rotation_marker_);
+        }
+        rotation_marker_->setPos(center->x, center->y);
+        rotation_marker_->setVisible(true);
+    }
+    if (!rotation_timer_) {
+        rotation_timer_ = new QTimer(this);
+        rotation_timer_->setSingleShot(true);
+        connect(rotation_timer_, &QTimer::timeout, this, &MapScene::end_rotation);
+    }
+    rotation_->total_degrees += degrees;
+    MapObject after = current;
+    // os y sceny w dol: kat ujemny w ukladzie sceny to obrot przeciwny do ruchu wskazowek zegara na ekranie
+    const double pi = std::acos(-1.0);
+    after.data->rotate(rotation_->center, -degrees * pi / 180);
+    pushing_rotation_ = true;
+    push_command(new RotateObjectCmd(this, obj, current, std::move(after), tr("Obróć obiekt"), rotation_->id));
+    pushing_rotation_ = false;
+    rotation_timer_->start(ROTATION_GESTURE_MS);
+    emit message(tr("Obrót: %1°").arg(QString::asprintf("%+.1f", rotation_->total_degrees)));
+    return true;
+}
+
+void MapScene::end_rotation() {
+    rotation_.reset();
+    if (rotation_timer_) rotation_timer_->stop();
+    if (rotation_marker_) rotation_marker_->setVisible(false);
+}
 
 }  // namespace pwm::gui

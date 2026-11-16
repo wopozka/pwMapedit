@@ -305,3 +305,65 @@ TEST(levels_delete_extract_move_copy) {
     d.delete_polys(4, {0, 0, 7});  // powtorzenia i indeksy poza zakresem sa ignorowane
     CHECK(d.data_levels() == std::vector<int>{1});
 }
+
+TEST(centroid_and_rotate) {
+    // polygon: wspolrzedne sceny ustawione wprost (prostokat 4x2 i trojkat)
+    DataX rect = make({"Data0=(51.0,19.0),(51.1,19.1),(51.2,19.2),(51.3,19.3)"});
+    const std::vector<PointF> corners{{0, 0}, {4, 0}, {4, 2}, {0, 2}};
+    for (size_t i = 0; i < corners.size(); ++i) rect.update_node_coordinates(0, 0, static_cast<long>(i), corners[i]);
+    auto c = rect.centroid(0, true);
+    CHECK(c.has_value());
+    CHECK_NEAR(c->x, 2.0, 1e-9);
+    CHECK_NEAR(c->y, 1.0, 1e-9);
+    // kierunek obiegu nie ma znaczenia
+    DataX rect_rev = rect;
+    rect_rev.reverse_poly(0);
+    CHECK_NEAR(rect_rev.centroid(0, true)->x, 2.0, 1e-9);
+    CHECK_NEAR(rect_rev.centroid(0, true)->y, 1.0, 1e-9);
+    // trojkat: srodek ciezkosci powierzchni = srednia wierzcholkow
+    DataX tri = make({"Data0=(51.0,19.0),(51.1,19.1),(51.2,19.2)"});
+    tri.update_node_coordinates(0, 0, 0, {0, 0});
+    tri.update_node_coordinates(0, 0, 1, {6, 0});
+    tri.update_node_coordinates(0, 0, 2, {0, 3});
+    CHECK_NEAR(tri.centroid(0, true)->x, 2.0, 1e-9);
+    CHECK_NEAR(tri.centroid(0, true)->y, 1.0, 1e-9);
+
+    // polilinia w ksztalcie L: odcinki (0,0)-(4,0) i (4,0)-(4,2), srodki wazone dlugoscia
+    DataX line = make({"Data0=(51.0,19.0),(51.1,19.1),(51.2,19.2)"});
+    line.update_node_coordinates(0, 0, 0, {0, 0});
+    line.update_node_coordinates(0, 0, 1, {4, 0});
+    line.update_node_coordinates(0, 0, 2, {4, 2});
+    c = line.centroid(0, false);
+    CHECK_NEAR(c->x, (2.0 * 4 + 4.0 * 2) / 6, 1e-9);
+    CHECK_NEAR(c->y, (0.0 * 4 + 1.0 * 2) / 6, 1e-9);
+    // polilinia z jednym punktem powtorzonym - srednia wezlow
+    DataX dot = make({"Data0=(51.0,19.0),(51.1,19.1)"});
+    dot.update_node_coordinates(0, 0, 0, {3, 5});
+    dot.update_node_coordinates(0, 0, 1, {3, 5});
+    CHECK_NEAR(dot.centroid(0, false)->x, 3.0, 1e-9);
+    CHECK(!dot.centroid(2, false).has_value());  // brak poziomu
+
+    // obrot o 90 stopni wokol srodka: (dx, dy) -> (-dy, dx); srodek zostaje na miejscu
+    const double pi = std::acos(-1.0);
+    DataX r = rect;
+    r.rotate(PointF{2, 1}, pi / 2);
+    const Poly& p = r.raw_polys()[0][0];
+    CHECK_NEAR(p[0].x(), 3.0, 1e-9);  // (0,0): d=(-2,-1) -> (1,-2) -> (3,-1)
+    CHECK_NEAR(p[0].y(), -1.0, 1e-9);
+    CHECK_NEAR(r.centroid(0, true)->x, 2.0, 1e-9);
+    CHECK_NEAR(r.centroid(0, true)->y, 1.0, 1e-9);
+    CHECK(r.obj_bounding_box().valid);
+    // obrot i obrot odwrotny daja ksztalt wyjsciowy
+    r.rotate(PointF{2, 1}, -pi / 2);
+    for (size_t i = 0; i < corners.size(); ++i) {
+        CHECK_NEAR(r.raw_polys()[0][0][i].x(), corners[i].x, 1e-9);
+        CHECK_NEAR(r.raw_polys()[0][0][i].y(), corners[i].y, 1e-9);
+    }
+    // obrot dotyczy wszystkich poziomow Data
+    DataX two = make({"Data0=(51.0,19.0),(51.1,19.1)", "Data1=(51.0,19.0),(51.1,19.1)"});
+    const PointF before0 = two.raw_polys()[0][0][1].pos(), before1 = two.raw_polys()[1][0][1].pos();
+    const PointF centre = two.raw_polys()[0][0][0].pos();
+    two.rotate(centre, pi);
+    CHECK_NEAR(two.raw_polys()[0][0][1].x(), 2 * centre.x - before0.x, 1e-6);
+    CHECK_NEAR(two.raw_polys()[1][0][1].y(), 2 * centre.y - before1.y, 1e-6);
+}
