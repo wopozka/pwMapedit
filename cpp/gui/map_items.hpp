@@ -31,6 +31,7 @@ enum ItemType {
     GripItemType,
     GpsTrackItemType,
     GpsWaypointItemType,
+    RoadCasingItemType,
 };
 
 // Element, do ktorego punktow przyciagaja sie wezly (Ctrl), np. slady GPS.
@@ -331,6 +332,25 @@ public:
     DirectionArrowHead(const QPointF& pos, QGraphicsItem* parent);
     int type() const override { return ArrowHeadItemType; }
     QGraphicsItem* screen_sized_item() override { return this; }
+};
+
+// Obwodki drog: jeden element dla calej mapy, miedzy polygonami (z 1-8) a poliliniami (z 10). Rysuje szersza,
+// ciemniejsza linie pod kazda widoczna droga w odswiezanym fragmencie widoku. Wszystkie obwodki leza pod
+// wszystkimi drogami, wiec skrzyzowania sa czyste (obwodka jednej drogi nie przecina drugiej). Nie reaguje
+// na mysz (pusty ksztalt) i nie ma wlasnych danych - sciezki bierze z elementow drog przy kazdym rysowaniu.
+class RoadCasingLayer : public QGraphicsItem {
+public:
+    explicit RoadCasingLayer(const MapScene* scene);
+    int type() const override { return RoadCasingItemType; }
+    QRectF boundingRect() const override { return rect_; }
+    QPainterPath shape() const override { return {}; }
+    // Obszar mapy (prostokat sceny); obwodki poza nim nie sa rysowane.
+    void set_rect(const QRectF& rect);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+private:
+    const MapScene* map_scene_;
+    QRectF rect_;
 };
 
 // Linijka skali w lewym gornym rogu widoku: odcinek dlugosci 1 cm na ekranie i jego dlugosc w terenie.

@@ -823,6 +823,51 @@ DirectionArrowHead::DirectionArrowHead(const QPointF& pos, QGraphicsItem* parent
     apply_transformation_flag(scene_ignores_transformations(this));
 }
 
+// ================================================================ RoadCasingLayer
+RoadCasingLayer::RoadCasingLayer(const MapScene* scene) : map_scene_(scene) {
+    setZValue(ROAD_CASING_Z_VAL);
+    setAcceptedMouseButtons(Qt::NoButton);
+    setAcceptHoverEvents(false);
+    // exposedRect w paint(): rysowane sa tylko drogi w odswiezanym fragmencie, nie cala mapa
+    setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);
+}
+
+void RoadCasingLayer::set_rect(const QRectF& rect) {
+    if (rect == rect_) return;
+    prepareGeometryChange();
+    rect_ = rect;
+}
+
+void RoadCasingLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+    Q_UNUSED(widget);
+    const MapStyles* styles = map_scene_->styles();
+    if (!styles || !map_scene_->map()) return;
+    // obwodka wychodzi poza prostokat drogi o kilka pikseli - z zapasem, zeby nie ucinac drog przy brzegu
+    const double scale = std::max(painter->worldTransform().m11(), 1e-9);
+    const double margin = 8 / scale;
+    const QRectF exposed = option->exposedRect.adjusted(-margin, -margin, margin, margin);
+    long long last_type = -1;
+    for (MapObjectItem* obj : map_scene_->object_items()) {
+        QGraphicsItem* item = obj->graphics_item();
+        if (item->type() != PolylineItemType || !item->isVisible()) continue;
+        if (!item->sceneBoundingRect().intersects(exposed)) continue;
+        const long long type = obj->object_type();
+        if (!MapStyles::is_road(type)) continue;
+        if (type != last_type) {
+            painter->setPen(styles->road_casing_pen(type));
+            last_type = type;
+        }
+        const QPointF pos = item->pos();  // przy przeciaganiu droga ma przesuniete polozenie
+        if (pos.isNull()) {
+            painter->drawPath(static_cast<QGraphicsPathItem*>(item)->path());
+        } else {
+            painter->translate(pos);
+            painter->drawPath(static_cast<QGraphicsPathItem*>(item)->path());
+            painter->translate(-pos);
+        }
+    }
+}
+
 // ================================================================ MapRuler
 MapRuler::MapRuler(MapView* view, const Projection* projection)
     : view_(view), projection_(projection), screen_dpi_(view->physicalDpiX()) {

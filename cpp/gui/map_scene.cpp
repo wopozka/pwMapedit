@@ -26,7 +26,15 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     // przy rysowaniu kosztuje kilkadziesiat ms. Python uzywal BSP, ale tam koszt ginal w narzucie interpretera.
     setItemIndexMethod(QGraphicsScene::NoIndex);
     connect(this, &QGraphicsScene::selectionChanged, this, &MapScene::selection_changed);
+    // jeden element na cala mape, przetrwa clear_map(); niewidoczny (wylaczony) nic nie kosztuje
+    road_casing_ = new RoadCasingLayer(this);
+    road_casing_->setVisible(false);
+    add_persistent_item(road_casing_);
 }
+
+bool MapScene::road_casing() const { return road_casing_->isVisible(); }
+
+void MapScene::set_road_casing(bool on) { road_casing_->setVisible(on); }
 
 void MapScene::clear_map() {
     clearSelection();  // zdejmuje tez uchwyty (selection_changed)
@@ -165,6 +173,7 @@ void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& proje
     PointF start = projection.geo_to_canvas(bbox.N + cor, bbox.W - cor);
     PointF end = projection.geo_to_canvas(bbox.S - cor, bbox.E + cor);
     setSceneRect(start.x, start.y, end.x - start.x, end.y - start.y);
+    road_casing_->set_rect(sceneRect());
 }
 
 // ---------------------------------------------------------------- edycja

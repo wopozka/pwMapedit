@@ -22,6 +22,7 @@ class MapStyles;
 class MapObjectItem;
 class PolyItem;
 class GripItem;
+class RoadCasingLayer;
 
 // Wezel wskazany uchwytem: obiekt (indeks w MapData), poziom Data, czesc i numer wezla.
 struct GripRef {
@@ -54,6 +55,10 @@ public:
     // Wypelnienie polygonow: stale (domyslnie) albo polprzezroczyste - jak polygon zaznaczony.
     bool transparent_polygons() const { return transparent_polygons_; }
     void set_transparent_polygons(bool transparent);
+
+    // Obwodki drog (ciemniejsza, szersza linia pod droga - widac jasne drogi na jasnym tle). Domyslnie wylaczone.
+    bool road_casing() const;
+    void set_road_casing(bool on);
 
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.
@@ -193,6 +198,7 @@ private:
     std::optional<GripRef> active_grip_;
     QGraphicsPathItem* highlight_ = nullptr;
     QGraphicsEllipseItem* snap_indicator_ = nullptr;
+    RoadCasingLayer* road_casing_ = nullptr;
     long long last_used_type_[4] = {0, 0, 0, 0};  // wedlug ObjectKind
 };
 

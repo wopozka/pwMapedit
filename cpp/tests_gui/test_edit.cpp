@@ -197,6 +197,7 @@ private slots:
     void subtract_polygons_hole_partial_and_delete();
     void ctrl_click_adds_polygon_lying_on_selected_one();
     void convert_polyline_polygon_both_ways();
+    void road_casing_under_roads_only();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1871,6 +1872,79 @@ void EditTests::transparent_polygon_fill() {
     QCOMPARE(centre(), transparent);  // zaznaczony jest przezroczysty takze w trybie stalym
     item->setSelected(false);
     QCOMPARE(centre(), solid);
+    scene.clear_map();
+}
+
+void EditTests::road_casing_under_roads_only() {
+    // Dwie drogi 0x5 (jasnozolte) krzyzujace sie pod katem prostym i rzeka 0x1f obok.
+    auto map = std::make_unique<MapData>(std::make_unique<MercatorProjection>());
+    map->load_from_string(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x5\nData0=(52.10000,21.00000),(52.10000,21.00200)\n[END]\n\n"
+        "[POLYLINE]\nType=0x5\nData0=(52.09900,21.00100),(52.10100,21.00100)\n[END]\n\n"
+        "[POLYLINE]\nType=0x1f\nData0=(52.10060,21.00000),(52.10060,21.00200)\n[END]\n\n");
+    Projection& projection = map->projection();
+    projection.set_map_bounding_box(map->map_bounding_box());
+    projection.calculate_data_offset();
+    MapStyles styles{MapStyles::find_icons_dir()};
+    MapScene scene;
+    scene.set_canvas_rectangle(map->map_bounding_box(), projection);
+    scene.set_map(map.get(), &styles);
+    QVERIFY(!scene.road_casing());
+
+    const QRectF lines = scene.item_for_object(0)->graphics_item()->sceneBoundingRect().united(
+        scene.item_for_object(1)->graphics_item()->sceneBoundingRect());
+    const QRectF rect(lines.center() - QPointF(lines.width() / 2, lines.width() / 2), QSizeF(lines.width(), lines.width()));
+    const int size = 200;
+    auto render = [&] {
+        QImage image(size, size, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        scene.render(&painter, QRectF(0, 0, size, size), rect);
+        painter.end();
+        return image;
+    };
+    auto to_image = [&](const QPointF& scene_point) {
+        return QPoint(int((scene_point.x() - rect.left()) * size / rect.width()),
+                      int((scene_point.y() - rect.top()) * size / rect.height()));
+    };
+    const QColor road = styles.polyline_colour(0x5);
+    const QColor road_casing = styles.road_casing_pen(0x5).color();
+    const QColor river_casing = styles.road_casing_pen(0x1f).color();
+    const QPoint crossing = to_image(scene.item_for_object(1)->graphics_item()->sceneBoundingRect().center());
+    const int river_y = to_image(scene.item_for_object(2)->graphics_item()->sceneBoundingRect().center()).y();
+    auto count_in_column = [&](const QImage& image, int x, int y_from, int y_to, const QColor& colour) {
+        int n = 0;
+        // rgb(): kolor z darker() ma skladowe 16-bitowe, piksel obrazu 8-bitowe
+        for (int y = y_from; y <= y_to; ++y) n += image.pixel(x, y) == colour.rgb();
+        return n;
+    };
+    const int x = crossing.x() - 40;  // na drodze poziomej, daleko od skrzyzowania
+
+    QImage plain = render();
+    QCOMPARE(plain.pixelColor(x, crossing.y()), road);
+    QCOMPARE(count_in_column(plain, x, crossing.y() - 8, crossing.y() + 8, road_casing), 0);
+
+    scene.set_road_casing(true);
+    QVERIFY(scene.road_casing());
+    QImage cased = render();
+    QCOMPARE(cased.pixelColor(x, crossing.y()), road);
+    // obwodka po obu stronach drogi (po 1 pikselu)
+    QCOMPARE(count_in_column(cased, x, crossing.y() - 8, crossing.y() - 1, road_casing), 1);
+    QCOMPARE(count_in_column(cased, x, crossing.y() + 1, crossing.y() + 8, road_casing), 1);
+    // skrzyzowanie: obwodka drogi pionowej nie przecina poziomej (wszystkie obwodki pod wszystkimi drogami)
+    for (int dx = -4; dx <= 4; ++dx) QCOMPARE(cased.pixelColor(crossing.x() + dx, crossing.y()), road);
+    // rzeka nie jest droga - bez obwodki
+    QCOMPARE(count_in_column(cased, x, river_y - 8, river_y + 8, river_casing), 0);
+    // warstwa nie przechwytuje myszy: pod kursorem na drodze jest droga
+    const QPointF on_road = scene.item_for_object(0)->graphics_item()->sceneBoundingRect().center() +
+                            QPointF(-lines.width() / 4, 0);
+    const QList<QGraphicsItem*> under = scene.items(on_road);
+    QVERIFY(!under.isEmpty());
+    for (QGraphicsItem* item : under) QVERIFY(item->type() != RoadCasingItemType);
+
+    scene.set_road_casing(false);
+    QCOMPARE(render(), plain);
     scene.clear_map();
 }
 

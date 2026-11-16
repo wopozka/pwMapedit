@@ -229,6 +229,15 @@ void MainWindow::create_actions_and_menus() {
             settings_->setValue("transparent_polygons", option);
         });
     }
+    // obwodki drog: ciemniejsza, szersza linia pod droga; wybor zapamietany w ustawieniach
+    QAction* casing = view_menu->addAction(tr("&Obwódki dróg"));
+    casing->setCheckable(true);
+    casing->setChecked(settings_->value("road_casing", false).toBool());
+    scene_->set_road_casing(casing->isChecked());
+    connect(casing, &QAction::toggled, this, [this](bool on) {
+        scene_->set_road_casing(on);
+        settings_->setValue("road_casing", on);
+    });
 
     // Weblayers: jedna warstwa naraz albo zadna; E wlacza/wylacza ostatnio uzywana (background_on_off)
     QMenu* web_menu = menuBar()->addMenu(tr("&Weblayers"));

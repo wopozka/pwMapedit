@@ -23,6 +23,10 @@ public:
     int polyline_width(long long poly_type) const;
     Qt::PenStyle polyline_dash(long long poly_type) const;
     QPen polyline_pen(long long poly_type) const;
+    // Drogi (typy 0x0-0xf i chodnik 0x16, bez kolei i promow) - dostaja obwodke, gdy jest wlaczona.
+    static bool is_road(long long poly_type);
+    // Obwodka drogi: kolor drogi przyciemniony, linia ciagla szersza o 1 piksel z kazdej strony.
+    QPen road_casing_pen(long long poly_type) const;
 
     QColor polygon_fill_colour(long long poly_type) const;
     QPen polygon_pen(long long poly_type) const;

@@ -12,6 +12,8 @@ constexpr double SCALE_WITHOUT_LABELS = 0.5;
 constexpr double SCALE_WITHOUT_POIS = 0.25;
 constexpr double SCALE_WITHOUT_SMALL_POLYS = 0.25;
 constexpr double NEW_OBJECT_CREATION_Z_VAL = 200;
+// Obwodki drog: nad polygonami (z 1-8), pod poliliniami (z 10).
+constexpr double ROAD_CASING_Z_VAL = 9;
 constexpr double SELECTED_OBJECT_Z_VAL = 1000;
 constexpr double HIGHLIGHTED_POLY_Z_VAL = 2000;
 constexpr Qt::GlobalColor LEFT_SIDE_NUM_MAIN = Qt::blue;

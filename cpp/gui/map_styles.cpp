@@ -213,6 +213,19 @@ QPen MapStyles::polyline_pen(long long poly_type) const {
     return pen;
 }
 
+bool MapStyles::is_road(long long poly_type) {
+    return (poly_type >= 0x0 && poly_type <= 0xf) || poly_type == 0x16;
+}
+
+QPen MapStyles::road_casing_pen(long long poly_type) const {
+    QPen pen(polyline_colour(poly_type).darker(250));
+    pen.setWidth(polyline_width(poly_type) + 2);
+    pen.setCosmetic(true);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    return pen;
+}
+
 QColor MapStyles::polygon_fill_colour(long long poly_type) const {
     return polygon_fill_.value(poly_type, QColor("gainsboro"));
 }
