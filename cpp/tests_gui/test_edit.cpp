@@ -31,6 +31,7 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QAction>
+#include <QActionGroup>
 #include <QPlainTextEdit>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -198,6 +199,8 @@ private slots:
     void ctrl_click_adds_polygon_lying_on_selected_one();
     void convert_polyline_polygon_both_ways();
     void road_casing_under_roads_only();
+    void map_level_for_scale_ranges();
+    void auto_map_level_follows_scale();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -1882,7 +1885,8 @@ void EditTests::road_casing_under_roads_only() {
         "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
         "[POLYLINE]\nType=0x5\nData0=(52.10000,21.00000),(52.10000,21.00200)\n[END]\n\n"
         "[POLYLINE]\nType=0x5\nData0=(52.09900,21.00100),(52.10100,21.00100)\n[END]\n\n"
-        "[POLYLINE]\nType=0x1f\nData0=(52.10060,21.00000),(52.10060,21.00200)\n[END]\n\n");
+        "[POLYLINE]\nType=0x1f\nData0=(52.10060,21.00000),(52.10060,21.00200)\n[END]\n\n"
+        "[POLYLINE]\nType=0x14\nData0=(52.09940,21.00000),(52.09940,21.00200)\n[END]\n\n");
     Projection& projection = map->projection();
     projection.set_map_bounding_box(map->map_bounding_box());
     projection.calculate_data_offset();
@@ -1896,9 +1900,10 @@ void EditTests::road_casing_under_roads_only() {
         scene.item_for_object(1)->graphics_item()->sceneBoundingRect());
     const QRectF rect(lines.center() - QPointF(lines.width() / 2, lines.width() / 2), QSizeF(lines.width(), lines.width()));
     const int size = 200;
+    const QColor background(200, 200, 200);  // szare, zeby odroznic biale tlo kolei od tla obrazu
     auto render = [&] {
         QImage image(size, size, QImage::Format_ARGB32);
-        image.fill(Qt::white);
+        image.fill(background);
         QPainter painter(&image);
         scene.render(&painter, QRectF(0, 0, size, size), rect);
         painter.end();
@@ -1936,6 +1941,34 @@ void EditTests::road_casing_under_roads_only() {
     for (int dx = -4; dx <= 4; ++dx) QCOMPARE(cased.pixelColor(crossing.x() + dx, crossing.y()), road);
     // rzeka nie jest droga - bez obwodki
     QCOMPARE(count_in_column(cased, x, river_y - 8, river_y + 8, river_casing), 0);
+    // kolej: bez obwodek przerwy miedzy czarnymi odcinkami maja kolor tla; z obwodkami czarny brzeg z obu stron,
+    // a w srodku tylko czarne odcinki i biale przerwy
+    const int rail_y = to_image(scene.item_for_object(3)->graphics_item()->sceneBoundingRect().center()).y();
+    auto row_colours = [&](const QImage& image, int y) {
+        QSet<QRgb> colours;
+        for (int rx = crossing.x() - 80; rx <= crossing.x() - 20; ++rx) colours.insert(image.pixel(rx, y));
+        return colours;
+    };
+    const QRgb black = QColor(Qt::black).rgb(), white = QColor(Qt::white).rgb();
+    QCOMPARE(row_colours(plain, rail_y), (QSet<QRgb>{black, background.rgb()}));
+    QCOMPARE(row_colours(cased, rail_y), (QSet<QRgb>{black, white}));
+    // odcinki i przerwy pol na pol (okres 18 px przy szerokosci 3 px, okno 61 px)
+    int black_count = 0, white_count = 0;
+    for (int rx = crossing.x() - 80; rx <= crossing.x() - 20; ++rx) {
+        black_count += cased.pixel(rx, rail_y) == black;
+        white_count += cased.pixel(rx, rail_y) == white;
+    }
+    QVERIFY2(std::abs(black_count - white_count) <= 9,
+             qPrintable(QString("czarne %1, biale %2").arg(black_count).arg(white_count)));
+    // w przekroju przez przerwe: tlo, czarny brzeg, biale (szerokosc kolei 3 px), czarny brzeg, tlo
+    int gap_x = -1;
+    for (int rx = crossing.x() - 80; rx <= crossing.x() - 20 && gap_x < 0; ++rx)
+        if (cased.pixel(rx, rail_y) == white) gap_x = rx;
+    QVERIFY(gap_x >= 0);
+    const QList<QRgb> expected_section{background.rgb(), black, white, white, white, black, background.rgb()};
+    QList<QRgb> section;
+    for (int y = rail_y - 3; y <= rail_y + 3; ++y) section.append(cased.pixel(gap_x, y));
+    QCOMPARE(section, expected_section);
     // warstwa nie przechwytuje myszy: pod kursorem na drodze jest droga
     const QPointF on_road = scene.item_for_object(0)->graphics_item()->sceneBoundingRect().center() +
                             QPointF(-lines.width() / 4, 0);
@@ -1946,6 +1979,118 @@ void EditTests::road_casing_under_roads_only() {
     scene.set_road_casing(false);
     QCOMPARE(render(), plain);
     scene.clear_map();
+}
+
+void EditTests::map_level_for_scale_ranges() {
+    QCOMPARE(map_level_for_scale(0), 0);
+    QCOMPARE(map_level_for_scale(2500), 0);
+    QCOMPARE(map_level_for_scale(9999), 0);
+    QCOMPARE(map_level_for_scale(10000), 1);
+    QCOMPARE(map_level_for_scale(49999), 1);
+    QCOMPARE(map_level_for_scale(50000), 2);
+    QCOMPARE(map_level_for_scale(199999), 2);
+    QCOMPARE(map_level_for_scale(200000), 3);
+    QCOMPARE(map_level_for_scale(999999), 3);
+    QCOMPARE(map_level_for_scale(1000000), 4);
+    QCOMPARE(map_level_for_scale(5e7), 4);
+}
+
+void EditTests::auto_map_level_follows_scale() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString map_file = dir.filePath("mapa.mp");
+    {
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(SAMPLE_MAP);
+    }
+    auto auto_action = [](MainWindow& w) -> QAction* {
+        for (QAction* act : w.findChildren<QAction*>())
+            if (act->text().startsWith("&Automatycznie")) return act;
+        return nullptr;
+    };
+    auto expected_level = [](MainWindow& w) { return map_level_for_scale(w.view()->ruler()->map_scale()); };
+    {
+        // tryb automatyczny wlaczony od uruchomienia
+        MainWindow w(MapStyles::find_icons_dir());
+        QAction* act = auto_action(w);
+        QVERIFY(act);
+        QVERIFY(act->isCheckable() && act->isChecked() && w.auto_map_level());
+        QCOMPARE(act->actionGroup()->isExclusive(), true);  // jedna kropka: poziomy albo Automatycznie
+        QString status;
+        QObject::connect(w.view(), &MapView::status_message, &w, [&](const QString& text) { status = text; });
+        w.show();
+        QSignalSpy loaded(&w, &MainWindow::map_loaded);
+        w.open_file(map_file);
+        QVERIFY(loaded.wait(10000));
+        QVERIFY(w.auto_map_level());
+        QCOMPARE(w.scene()->map_level(), expected_level(w));
+        QVERIFY(act->text().contains(QString("Level %1").arg(w.scene()->map_level())));
+        QVERIFY2(status.endsWith(QString("map level: %1").arg(w.scene()->map_level())), qPrintable(status));
+
+        // oddalanie az skala wypadnie w innym przedziale - poziom zmienia sie sam (z opoznieniem)
+        const int start = w.scene()->map_level();
+        for (int i = 0; i < 200 && expected_level(w) == start; ++i) w.view()->zoom_out();
+        QVERIFY(expected_level(w) != start);
+        QTRY_COMPARE_WITH_TIMEOUT(w.scene()->map_level(), expected_level(w), 5000);
+        QVERIFY(w.scene()->map_level() > start);
+        // pasek stanu pokazuje nowy poziom
+        QVERIFY2(status.endsWith(QString("map level: %1").arg(w.scene()->map_level())), qPrintable(status));
+        // i z powrotem przy przyblizaniu
+        for (int i = 0; i < 200 && expected_level(w) != start; ++i) w.view()->zoom_in();
+        QTRY_COMPARE_WITH_TIMEOUT(w.scene()->map_level(), start, 5000);
+        QVERIFY2(status.endsWith(QString("map level: %1").arg(start)), qPrintable(status));
+    }
+    {
+        // wybor konkretnego poziomu wylacza tryb automatyczny
+        MainWindow w(MapStyles::find_icons_dir());
+        QVERIFY(w.auto_map_level());
+        w.show();
+        QSignalSpy loaded(&w, &MainWindow::map_loaded);
+        w.open_file(map_file);
+        QVERIFY(loaded.wait(10000));
+        QCOMPARE(w.scene()->map_level(), expected_level(w));
+        const int other = expected_level(w) == 1 ? 2 : 1;
+        w.select_map_level(other);
+        QVERIFY(!w.auto_map_level());
+        QVERIFY(!auto_action(w)->isChecked());
+        QCOMPARE(w.scene()->map_level(), other);
+        // zmiana skali nie zmienia juz poziomu
+        for (int i = 0; i < 30; ++i) w.view()->zoom_out();
+        QTest::qWait(MainWindow::AUTO_LEVEL_DELAY_MS * 2);
+        QCOMPARE(w.scene()->map_level(), other);
+
+        // klawisz '.' wlacza tryb automatyczny, cyfra wybiera poziom i go wylacza
+        QApplication::setActiveWindow(&w);
+        QVERIFY(QTest::qWaitForWindowActive(&w));
+        w.view()->setFocus();
+        QTest::keyClick(w.view(), Qt::Key_Period);
+        QVERIFY(w.auto_map_level());
+        QCOMPARE(w.scene()->map_level(), expected_level(w));
+        QTest::keyClick(w.view(), Qt::Key_Period);  // ponowne wcisniecie nie wylacza
+        QVERIFY(w.auto_map_level());
+        const int digit_level = expected_level(w) == 1 ? 2 : 1;
+        QTest::keyClick(w.view(), Qt::Key(Qt::Key_0 + digit_level));
+        QVERIFY(!w.auto_map_level());
+        QCOMPARE(w.scene()->map_level(), digit_level);
+
+        // kropka w polu tekstowym (etykieta "ul. Dluga") wpisuje sie i nie wlacza trybu automatycznego
+        w.scene()->item_for_object(1)->graphics_item()->setSelected(true);
+        QLineEdit* label = w.properties_dock()->label_edit(1);
+        QVERIFY(label->isEnabled());
+        label->setFocus();
+        label->clear();
+        QTest::keyClicks(label, "ul. Dluga");
+        QCOMPARE(label->text(), QString("ul. Dluga"));
+        QVERIFY(!w.auto_map_level());
+    }
+    {
+        // wybor konkretnego poziomu nie jest zapamietywany - kolejne uruchomienie znow w trybie automatycznym
+        MainWindow w(MapStyles::find_icons_dir());
+        QVERIFY(w.auto_map_level());
+    }
+    qunsetenv("PWMAPEDIT_SETTINGS");
 }
 
 QTEST_MAIN(EditTests)

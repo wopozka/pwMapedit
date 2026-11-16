@@ -26,6 +26,8 @@
 #include <QSettings>
 #include <QTableWidget>
 #include <QShortcut>
+#include <QTimer>
+#include <algorithm>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QUndoStack>
@@ -214,6 +216,31 @@ void MainWindow::create_actions_and_menus() {
         map_level_group_->addAction(act);
         map_level_actions_.append(act);
     }
+    // Automatycznie: poziom wedlug skali. W tej samej grupie co poziomy (kropka), wiec wybor konkretnego
+    // poziomu go wylacza. Zmiana skali uruchamia przebudowe z opoznieniem (kilka krokow kolka - jedna przebudowa).
+    level_menu->addSeparator();
+    auto_level_action_ = level_menu->addAction(tr("&Automatycznie"));
+    auto_level_action_->setCheckable(true);
+    // kropka - obok cyfr 0-4 wybierajacych konkretny poziom (w polach tekstowych kropka nadal sie wpisuje)
+    auto_level_action_->setShortcut(QKeySequence(QStringLiteral(".")));
+    map_level_group_->addAction(auto_level_action_);
+    auto_level_timer_ = new QTimer(this);
+    auto_level_timer_->setSingleShot(true);
+    auto_level_timer_->setInterval(AUTO_LEVEL_DELAY_MS);
+    connect(auto_level_timer_, &QTimer::timeout, this, &MainWindow::update_auto_map_level);
+    connect(view_, &MapView::view_changed, this, [this] {
+        if (auto_map_level()) auto_level_timer_->start();
+    });
+    connect(auto_level_action_, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            update_auto_map_level();
+        } else {
+            auto_level_timer_->stop();
+            auto_level_action_->setText(tr("&Automatycznie"));
+        }
+    });
+    // tryb automatyczny jest domyslny przy kazdym uruchomieniu (wybor nie jest zapamietywany)
+    auto_level_action_->setChecked(true);
     // wypelnienie polygonow: stale albo przezroczyste (jak zaznaczone); wybor zapamietany w ustawieniach
     QMenu* fill_menu = view_menu->addMenu(tr("&Wypełnienie polygonów"));
     auto* fill_group = new QActionGroup(this);
@@ -443,6 +470,7 @@ void MainWindow::file_loaded() {
     view_->setScene(scene_);
     view_->centerOn(scene_->sceneRect().center());
     ruler_->scale_to();
+    update_auto_map_level();
     update_window_title();
 
     QString msg = tr("Wczytano %1 obiektów w %2 s, rysowanie %3 s")
@@ -663,6 +691,21 @@ void MainWindow::select_map_level(int level) {
     QApplication::setOverrideCursor(Qt::WaitCursor);
     scene_->set_map_level(level);
     QApplication::restoreOverrideCursor();
+    view_->update_status(false);  // "map level" na pasku stanu
+}
+
+bool MainWindow::auto_map_level() const { return auto_level_action_ && auto_level_action_->isChecked(); }
+
+void MainWindow::update_auto_map_level() {
+    if (!auto_map_level()) return;
+    const int level = std::clamp(map_level_for_scale(ruler_->map_scale()), 0, MAP_LEVELS - 1);
+    // w menu widac, ktory poziom wybral tryb automatyczny
+    auto_level_action_->setText(tr("&Automatycznie (Level %1)").arg(level));
+    if (!map_ || level == scene_->map_level()) return;
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    scene_->set_map_level(level);
+    QApplication::restoreOverrideCursor();
+    view_->update_status(false);
 }
 
 void MainWindow::select_tool(Tool tool) {

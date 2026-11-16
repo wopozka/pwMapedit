@@ -846,17 +846,7 @@ void RoadCasingLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
     const double scale = std::max(painter->worldTransform().m11(), 1e-9);
     const double margin = 8 / scale;
     const QRectF exposed = option->exposedRect.adjusted(-margin, -margin, margin, margin);
-    long long last_type = -1;
-    for (MapObjectItem* obj : map_scene_->object_items()) {
-        QGraphicsItem* item = obj->graphics_item();
-        if (item->type() != PolylineItemType || !item->isVisible()) continue;
-        if (!item->sceneBoundingRect().intersects(exposed)) continue;
-        const long long type = obj->object_type();
-        if (!MapStyles::is_road(type)) continue;
-        if (type != last_type) {
-            painter->setPen(styles->road_casing_pen(type));
-            last_type = type;
-        }
+    auto draw = [painter](QGraphicsItem* item) {
         const QPointF pos = item->pos();  // przy przeciaganiu droga ma przesuniete polozenie
         if (pos.isNull()) {
             painter->drawPath(static_cast<QGraphicsPathItem*>(item)->path());
@@ -865,6 +855,32 @@ void RoadCasingLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
             painter->drawPath(static_cast<QGraphicsPathItem*>(item)->path());
             painter->translate(-pos);
         }
+    };
+    // 1. obwodki wszystkich drog i kolei
+    std::vector<std::pair<QGraphicsItem*, long long>> with_base;
+    long long last_type = -1;
+    for (MapObjectItem* obj : map_scene_->object_items()) {
+        QGraphicsItem* item = obj->graphics_item();
+        if (item->type() != PolylineItemType || !item->isVisible()) continue;
+        if (!item->sceneBoundingRect().intersects(exposed)) continue;
+        const long long type = obj->object_type();
+        if (!MapStyles::has_casing(type)) continue;
+        if (type != last_type) {
+            painter->setPen(styles->road_casing_pen(type));
+            last_type = type;
+        }
+        draw(item);
+        if (MapStyles::is_railway(type)) with_base.emplace_back(item, type);
+    }
+    // 2. tlo pod linia przerywana (kolej) - nad wszystkimi obwodkami, zeby na rozjazdach czarna obwodka jednego
+    // toru nie przecinala bialego tla drugiego
+    last_type = -1;
+    for (const auto& [item, type] : with_base) {
+        if (type != last_type) {
+            if (auto pen = styles->casing_base_pen(type)) painter->setPen(*pen);
+            last_type = type;
+        }
+        draw(item);
     }
 }
 

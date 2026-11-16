@@ -31,6 +31,17 @@ constexpr int WEBLAYER_DOWNLOAD_TIMEOUT = 15;
 constexpr int MAP_LEVELS = 5;
 constexpr int MAX_RECENT_FILES = 10;
 
+// View -> Levels -> Automatycznie: poziom mapy dla skali 1:denominator.
+// Wiecej niz 1:10 000 (np. 1:5 000) - 0; 1:10 000-1:50 000 - 1; 1:50 000-1:200 000 - 2;
+// 1:200 000-1:1 000 000 - 3; mniej niz 1:1 000 000 - 4.
+constexpr int map_level_for_scale(double denominator) {
+    if (denominator < 10000) return 0;
+    if (denominator < 50000) return 1;
+    if (denominator < 200000) return 2;
+    if (denominator < 1000000) return 3;
+    return 4;
+}
+
 enum class Tool {
     None,
     ZoomMap,

@@ -209,6 +209,12 @@ QPen MapStyles::polyline_pen(long long poly_type) const {
     pen.setWidth(polyline_width(poly_type));
     pen.setBrush(polyline_colour(poly_type));
     pen.setStyle(polyline_dash(poly_type));
+    if (is_railway(poly_type)) {
+        // kolej: odcinki i przerwy rownej dlugosci (po 3 szerokosci linii); plaskie konce, bo kwadratowe
+        // wydluzaja kazdy odcinek o pol szerokosci z obu stron i zjadaja przerwy
+        pen.setDashPattern({3, 3});
+        pen.setCapStyle(Qt::FlatCap);
+    }
     pen.setCosmetic(true);
     return pen;
 }
@@ -217,11 +223,31 @@ bool MapStyles::is_road(long long poly_type) {
     return (poly_type >= 0x0 && poly_type <= 0xf) || poly_type == 0x16;
 }
 
+bool MapStyles::is_railway(long long poly_type) {
+    return poly_type == 0x14 || poly_type == 0x10e14;
+}
+
+bool MapStyles::has_casing(long long poly_type) {
+    return is_road(poly_type) || is_railway(poly_type);
+}
+
 QPen MapStyles::road_casing_pen(long long poly_type) const {
-    QPen pen(polyline_colour(poly_type).darker(250));
+    // kolej jest czarna - przyciemniony kolor bylby ta sama czernia, wiec obwodka jest po prostu czarna
+    QPen pen(is_railway(poly_type) ? QColor(Qt::black) : polyline_colour(poly_type).darker(250));
     pen.setWidth(polyline_width(poly_type) + 2);
     pen.setCosmetic(true);
     pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    return pen;
+}
+
+std::optional<QPen> MapStyles::casing_base_pen(long long poly_type) const {
+    // Kolej: biale tlo pod czarnymi odcinkami (przerwy sa biale, a nie w kolorze obwodki) - jak kolej na mapach.
+    if (!is_railway(poly_type)) return std::nullopt;
+    QPen pen(Qt::white);
+    pen.setWidth(polyline_width(poly_type));
+    pen.setCosmetic(true);
+    pen.setCapStyle(Qt::FlatCap);
     pen.setJoinStyle(Qt::RoundJoin);
     return pen;
 }

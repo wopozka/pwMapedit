@@ -7,6 +7,7 @@
 #include <QPen>
 #include <QPixmap>
 #include <QString>
+#include <optional>
 
 namespace pwm::gui {
 
@@ -23,10 +24,14 @@ public:
     int polyline_width(long long poly_type) const;
     Qt::PenStyle polyline_dash(long long poly_type) const;
     QPen polyline_pen(long long poly_type) const;
-    // Drogi (typy 0x0-0xf i chodnik 0x16, bez kolei i promow) - dostaja obwodke, gdy jest wlaczona.
+    // Drogi (typy 0x0-0xf i chodnik 0x16, bez promow) i kolej (0x14, 0x10e14) - dostaja obwodke, gdy jest wlaczona.
     static bool is_road(long long poly_type);
-    // Obwodka drogi: kolor drogi przyciemniony, linia ciagla szersza o 1 piksel z kazdej strony.
+    static bool is_railway(long long poly_type);
+    static bool has_casing(long long poly_type);
+    // Obwodka: kolor drogi przyciemniony (kolej: czarny), linia ciagla szersza o 1 piksel z kazdej strony.
     QPen road_casing_pen(long long poly_type) const;
+    // Drugie pociagniecie warstwy obwodek, nad wszystkimi obwodkami: tlo pod linia przerywana (kolej - biale).
+    std::optional<QPen> casing_base_pen(long long poly_type) const;
 
     QColor polygon_fill_colour(long long poly_type) const;
     QPen polygon_pen(long long poly_type) const;

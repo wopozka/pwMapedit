@@ -13,6 +13,7 @@ class QMenu;
 class QSettings;
 class QLabel;
 class QProgressBar;
+class QTimer;
 class QUndoStack;
 
 namespace pwm::gui {
@@ -44,7 +45,13 @@ public:
     QStringList recent_files() const;
     void set_recent_files(const QStringList& files);
     void add_recent_file(const QString& file_name);
+    // Wybor konkretnego poziomu (menu View -> Levels, klawisze 0-4) - wylacza tez tryb automatyczny.
     void select_map_level(int level);
+    // View -> Levels -> Automatycznie: poziom mapy wedlug skali (map_level_for_scale), zmieniany po
+    // przyblizeniu/oddaleniu. Wylacza go wybor konkretnego poziomu. Wlaczony przy kazdym uruchomieniu.
+    bool auto_map_level() const;
+    // Opoznienie, z jakim tryb automatyczny reaguje na zmiane skali (kilka krokow kolka myszy - jedna przebudowa).
+    static constexpr int AUTO_LEVEL_DELAY_MS = 250;
     // Wybiera narzedzie tak jak z menu Tools (zaznacza tez akcje na pasku).
     void select_tool(Tool tool);
     // Tryb bez okien komunikatow (zrzuty ekranu z linii polecen): ostrzezenia trafiaja do paska stanu.
@@ -87,6 +94,8 @@ private slots:
     void subtract_polygons(bool delete_second);
     void convert_selected(ObjectKind from);
     void set_single_key_shortcuts_enabled(bool enabled);
+    // Tryb automatyczny: ustawia poziom wedlug biezacej skali (bez zmiany, gdy poziom sie zgadza).
+    void update_auto_map_level();
 
 private:
     void create_actions_and_menus();
@@ -123,6 +132,8 @@ private:
     QLabel* message_label_ = nullptr;
     QActionGroup* map_level_group_ = nullptr;
     QList<QAction*> map_level_actions_;
+    QAction* auto_level_action_ = nullptr;
+    QTimer* auto_level_timer_ = nullptr;
     QActionGroup* tools_group_ = nullptr;
     QAction* split_action_ = nullptr;
     QAction* merge_action_ = nullptr;

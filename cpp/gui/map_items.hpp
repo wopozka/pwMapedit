@@ -334,8 +334,9 @@ public:
     QGraphicsItem* screen_sized_item() override { return this; }
 };
 
-// Obwodki drog: jeden element dla calej mapy, miedzy polygonami (z 1-8) a poliliniami (z 10). Rysuje szersza,
-// ciemniejsza linie pod kazda widoczna droga w odswiezanym fragmencie widoku. Wszystkie obwodki leza pod
+// Obwodki drog i kolei: jeden element dla calej mapy, miedzy polygonami (z 1-8) a poliliniami (z 10). Rysuje
+// szersza, ciemniejsza linie pod kazda widoczna droga w odswiezanym fragmencie widoku (pod kolejka dodatkowo
+// biale tlo, wiec przerwy miedzy czarnymi odcinkami sa biale). Wszystkie obwodki leza pod
 // wszystkimi drogami, wiec skrzyzowania sa czyste (obwodka jednej drogi nie przecina drugiej). Nie reaguje
 // na mysz (pusty ksztalt) i nie ma wlasnych danych - sciezki bierze z elementow drog przy kazdym rysowaniu.
 class RoadCasingLayer : public QGraphicsItem {

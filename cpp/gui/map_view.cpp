@@ -51,8 +51,9 @@ void MapView::update_status(bool with_mouse_coords) {
                                               scene_mouse_.x(), -scene_mouse_.y());
     }
     double ruler_scale = ruler_ ? ruler_->map_scale() : 0.0;
+    const int level = map_scene() ? map_scene()->map_level() : 0;
     emit status_message(last_coords_text_ + QString::asprintf("view_render scale: %.3f, ", map_scale_) +
-                        QString::asprintf("map scale: 1:%.0f", ruler_scale));
+                        QString::asprintf("map scale: 1:%.0f, map level: %d", ruler_scale, level));
 }
 
 void MapView::set_map_scale(double factor) {
