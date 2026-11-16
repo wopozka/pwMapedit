@@ -308,7 +308,9 @@ void PolyItem::undecorate() {
     setFlag(QGraphicsItem::ItemIsMovable, true);
     if (was_decorated) {
         prepareGeometryChange();
-        unsetCursor();
+        // nie unsetCursor(): w Qt 6.12 czyta ostatnie zdarzenie myszy widoku, ktorego moze nie byc
+        // (wywalenie w QEventPoint::position, np. przy Shift+kliku bez wczesniejszego ruchu myszy)
+        setCursor(Qt::ArrowCursor);
     }
 }
 

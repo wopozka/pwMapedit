@@ -1,4 +1,5 @@
 // Port tests/test_misc_functions.py + testy pomocnikow zgodnosci z Pythonem i kodowania.
+#define _USE_MATH_DEFINES  // M_PI w <cmath> (mingw w trybie scislego standardu)
 #include <clocale>
 #include <cmath>
 #include <string>
