@@ -146,6 +146,7 @@ public:
     void decorate();
     void undecorate();
     bool decorated() const { return !grips_.empty(); }
+    const std::vector<GripItem*>& grips() const { return grips_; }
     // Podglad przeciagania uchwytu: sciezka z jednym wezlem w nowym miejscu (bez zmiany danych).
     void preview_node_position(size_t poly_num, size_t node_num, const QPointF& pos);
     // Podglad wstawiania wezla (przeciaganie z krawedzi): sciezka z nowym wezlem przed indeksem index.
@@ -254,6 +255,9 @@ public:
     // Uchwyt tylko do pokazania (nowy wezel przeciagany z krawedzi): wyglada jak przeciagany uchwyt,
     // nie reaguje na mysz i jego przesuniecie nie zmienia sciezki obiektu.
     void set_preview_only();
+    // Uchwyt aktywnego wezla (pokazywanego w panelu wlasciwosci) rysowany jest na niebiesko.
+    bool is_active() const;
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;

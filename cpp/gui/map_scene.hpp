@@ -153,6 +153,11 @@ public:
     void set_active_grip(size_t obj, int level, size_t poly, size_t node);
     // Ostatnio klikniety uchwyt (wezel edytowany w panelu wlasciwosci); brak, gdy uchwyty zdjeto.
     const std::optional<GripRef>& active_grip() const { return active_grip_; }
+    // Wezel sasiadujacy z aktywnym (delta -1: poprzedni, +1: nastepny) w kolejnosci czesci poziomu Data
+    // i wezlow w czesci; brak, gdy aktywny jest pierwszy/ostatni wezel albo nie ma aktywnego uchwytu.
+    std::optional<GripRef> neighbour_grip(int delta) const;
+    // Uaktywnia wezel jak klikniecie uchwytu i przewija widoki tak, zeby byl widoczny.
+    void activate_grip(const GripRef& grip);
 
     // Zamiana danych obiektu jedna komenda undo (panel wlasciwosci: typ, etykiety, numeracja wezla...).
     void replace_object(size_t obj, MapObject after, const QString& text);
@@ -208,6 +213,8 @@ private:
     void push_command(QUndoCommand* command);
     MapObjectItem* create_item(size_t index);
     PolyItem* poly_item(size_t index) const;
+    // Przerysowanie uchwytow obiektu (wyrozniony uchwyt aktywnego wezla).
+    void update_grips(size_t obj) const;
     void selection_changed();
     void update_decorations();
 

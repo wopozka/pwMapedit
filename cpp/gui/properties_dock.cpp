@@ -275,6 +275,16 @@ PropertiesDock::NumberingSide PropertiesDock::build_numbering_side(const QString
 QWidget* PropertiesDock::build_nodes_tab() {
     auto* page = new QWidget;
     auto* box = new QVBoxLayout(page);
+    auto* steps = new QHBoxLayout;
+    prev_node_ = new QPushButton(tr("Poprzedni"), page);
+    next_node_ = new QPushButton(tr("Następny"), page);
+    prev_node_->setToolTip(tr("Przejdź do poprzedniego węzła"));
+    next_node_->setToolTip(tr("Przejdź do następnego węzła"));
+    connect(prev_node_, &QPushButton::clicked, this, [this] { step_node(-1); });
+    connect(next_node_, &QPushButton::clicked, this, [this] { step_node(1); });
+    steps->addWidget(prev_node_);
+    steps->addWidget(next_node_);
+    box->addLayout(steps);
     auto* form = new QFormLayout;
     node_has_numbers_ = new QCheckBox(page);
     connect(node_has_numbers_, &QCheckBox::clicked, this, &PropertiesDock::node_numbers_toggled);
@@ -486,6 +496,8 @@ void PropertiesDock::fill_node() {
     const MapObject& o = *object();
     const Node* node = o.data->poly_node(grip_->level, grip_->poly, static_cast<long>(grip_->node));
     if (!node) return;
+    prev_node_->setEnabled(scene_->neighbour_grip(-1).has_value());
+    next_node_->setEnabled(scene_->neighbour_grip(1).has_value());
     const NumbersDefinition* def = node->numbers();
     node_has_numbers_->setChecked(def != nullptr);
     set_numbering_fields_enabled(def != nullptr);
@@ -705,6 +717,11 @@ void PropertiesDock::numbering_edited(bool style_changed) {
         node->set_numbers(def);
         data.clean_numbers_definitions(g.level, g.poly);
     });
+}
+
+void PropertiesDock::step_node(int delta) {
+    if (!grip_) return;
+    if (const auto g = scene_->neighbour_grip(delta)) scene_->activate_grip(*g);  // panel odswiezy sygnal sceny
 }
 
 void PropertiesDock::node_numbers_toggled(bool on) {

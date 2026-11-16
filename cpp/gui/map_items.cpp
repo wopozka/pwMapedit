@@ -985,6 +985,24 @@ void GripItem::set_hover(bool hover) {
     setBrush(QBrush(red ? QColor("red") : QColor("green")));
 }
 
+bool GripItem::is_active() const {
+    auto* s = qobject_cast<MapScene*>(scene());
+    if (!s || !ready_) return false;
+    const auto& g = s->active_grip();
+    return g && g->obj == parent_->object_index() && g->level == data_level_ && g->poly == poly_num_ &&
+           g->node == node_num_;
+}
+
+void GripItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+    if (!is_active()) {
+        QGraphicsPathItem::paint(painter, option, widget);
+        return;
+    }
+    painter->setPen(QPen(Qt::black, 1));
+    painter->setBrush(QColor(0, 120, 255));
+    painter->drawPath(path());
+}
+
 QVariant GripItem::itemChange(GraphicsItemChange change, const QVariant& value) {
     if (change == ItemPositionHasChanged && ready_) parent_->preview_node_position(poly_num_, node_num_, pos());
     return QGraphicsPathItem::itemChange(change, value);

@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTreeWidget>
@@ -204,6 +205,7 @@ private slots:
     void viaduct_pois_at_crossings();
     void dead_end_pois_at_unconnected_ends();
     void auto_map_level_follows_scale();
+    void dock_prev_next_node_buttons();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -2346,6 +2348,59 @@ void EditTests::auto_map_level_follows_scale() {
         QVERIFY(w.auto_map_level());
     }
     qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+void EditTests::dock_prev_next_node_buttons() {
+    // Poprzedni/Nastepny: wezly kolejnych czesci poziomu Data po kolei, przyciski wyszarzone na koncach,
+    // widok przewijany do wezla, ktorego nie widac.
+    DockFixture f;
+    QMimeData mime;
+    mime.setText("[POLYLINE]\nType=0x6\nData0=(52.1000,21.0000),(52.1002,21.0002)\n"
+                 "Data0=(52.1015,21.0025),(52.1017,21.0027),(52.1019,21.0029)\n[END]\n");
+    QCOMPARE(f.scene.paste(&mime, std::nullopt), 1);
+    const size_t obj = f.map->objects().size() - 1;
+    MapView view(&f.scene);
+    view.set_projection(&f.map->projection());
+    view.resize(400, 300);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    const auto& polys = *f.obj(obj).data->polys_for_data_level(0);
+    view.centerOn(QPointF(polys[0][0].x(), polys[0][0].y()));
+    view.scale(20, 20);
+    view.centerOn(QPointF(polys[0][0].x(), polys[0][0].y()));
+    const QPointF last(polys[1][2].x(), polys[1][2].y());
+    QVERIFY(!view.viewport()->rect().contains(view.mapFromScene(last)));
+
+    f.scene.set_tool(Tool::EditNodes);
+    f.select_only(f.scene.item_for_object(obj));
+    f.scene.set_active_grip(obj, 0, 0, 0);
+    QVERIFY(f.dock.shows_node());
+    QVERIFY(!f.dock.prev_node()->isEnabled());
+    QVERIFY(f.dock.next_node()->isEnabled());
+    const int start = f.stack.count();
+
+    f.dock.next_node()->click();
+    QCOMPARE(f.scene.active_grip()->poly, size_t(0));
+    QCOMPARE(f.scene.active_grip()->node, size_t(1));
+    f.dock.next_node()->click();  // druga czesc
+    QCOMPARE(f.scene.active_grip()->poly, size_t(1));
+    QCOMPARE(f.scene.active_grip()->node, size_t(0));
+    QVERIFY(f.dock.prev_node()->isEnabled());
+    f.dock.next_node()->click();
+    f.dock.next_node()->click();
+    QCOMPARE(f.scene.active_grip()->node, size_t(2));
+    QVERIFY(f.dock.shows_node());
+    QVERIFY(!f.dock.next_node()->isEnabled());
+    QVERIFY(f.dock.prev_node()->isEnabled());
+    QVERIFY(view.viewport()->rect().contains(view.mapFromScene(last)));  // widok przesuniety
+
+    f.dock.prev_node()->click();
+    QCOMPARE(f.scene.active_grip()->node, size_t(1));
+    f.dock.prev_node()->click();
+    f.dock.prev_node()->click();  // z powrotem na ostatni wezel pierwszej czesci
+    QCOMPARE(f.scene.active_grip()->poly, size_t(0));
+    QCOMPARE(f.scene.active_grip()->node, size_t(1));
+    QCOMPARE(f.stack.count(), start);  // przechodzenie niczego nie zmienia
 }
 
 QTEST_MAIN(EditTests)

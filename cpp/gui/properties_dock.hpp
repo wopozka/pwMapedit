@@ -76,6 +76,8 @@ public:
     QLineEdit* number_after(bool left) const { return left ? left_.after : right_.after; }
     QLineEdit* number_before(bool left) const { return left ? left_.before : right_.before; }
     QComboBox* node_hlevel() const { return hlevel_; }
+    QPushButton* prev_node() const { return prev_node_; }
+    QPushButton* next_node() const { return next_node_; }
 
 signals:
     // komunikat dla paska stanu okna
@@ -123,6 +125,7 @@ private:
     void route_params_edited();
     void numbering_edited(bool style_changed = false);
     void node_numbers_toggled(bool on);
+    void step_node(int delta);
     void element_selected();
     void elements_context_menu(const QPoint& pos);
 
@@ -148,6 +151,8 @@ private:
     QTreeWidget* elements_ = nullptr;
     QComboBox* route_combos_[2] = {};
     QCheckBox* route_checks_[12] = {};  // indeksy 2-11
+    QPushButton* prev_node_ = nullptr;
+    QPushButton* next_node_ = nullptr;
     QCheckBox* node_has_numbers_ = nullptr;
     NumberingSide left_, right_;
     QComboBox* hlevel_ = nullptr;

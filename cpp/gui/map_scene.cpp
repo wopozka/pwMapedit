@@ -354,8 +354,43 @@ void MapScene::grip_hovered(GripItem* grip, bool hovered) {
 }
 
 void MapScene::set_active_grip(size_t obj, int level, size_t poly, size_t node) {
+    const std::optional<size_t> previous = active_grip_ ? std::optional(active_grip_->obj) : std::nullopt;
     active_grip_ = GripRef{obj, level, poly, node};
+    if (previous && *previous != obj) update_grips(*previous);
+    update_grips(obj);
     emit active_grip_changed();
+}
+
+void MapScene::update_grips(size_t obj) const {
+    if (PolyItem* item = poly_item(obj))
+        for (GripItem* grip : item->grips()) grip->update();
+}
+
+std::optional<GripRef> MapScene::neighbour_grip(int delta) const {
+    if (!active_grip_valid()) return std::nullopt;
+    const GripRef g = *active_grip_;
+    const auto& polys = *map_->objects()[g.obj].data->polys_for_data_level(g.level);
+    if (delta < 0) {
+        if (g.node > 0) return GripRef{g.obj, g.level, g.poly, g.node - 1};
+        for (size_t p = g.poly; p-- > 0;)
+            if (!polys[p].empty()) return GripRef{g.obj, g.level, p, polys[p].size() - 1};
+    } else if (delta > 0) {
+        if (g.node + 1 < polys[g.poly].size()) return GripRef{g.obj, g.level, g.poly, g.node + 1};
+        for (size_t p = g.poly + 1; p < polys.size(); ++p)
+            if (!polys[p].empty()) return GripRef{g.obj, g.level, p, 0};
+    }
+    return std::nullopt;
+}
+
+void MapScene::activate_grip(const GripRef& grip) {
+    set_active_grip(grip.obj, grip.level, grip.poly, grip.node);
+    PolyItem* item = poly_item(grip.obj);
+    if (!item) return;
+    const auto nodes = item->shown_nodes();
+    if (grip.poly >= nodes.size() || grip.node >= nodes[grip.poly].size()) return;
+    // ensureVisible przewija tylko wtedy, gdy wezla (z marginesem w pikselach) nie widac
+    const QRectF point(nodes[grip.poly][grip.node], QSizeF(0, 0));
+    for (QGraphicsView* view : views()) view->ensureVisible(point, 60, 60);
 }
 
 void MapScene::replace_object(size_t obj, MapObject after, const QString& text) {
