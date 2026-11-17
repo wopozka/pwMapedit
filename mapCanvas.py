@@ -15,7 +15,7 @@ import commands
 import math
 from pwm_core import projection
 import json
-from pwm_core import mp_format, mp_file, data_x
+from pwm_core import mp_format, mp_file, data_x, map_object
 import os.path
 import map_items
 import map_object_properties
@@ -138,12 +138,11 @@ class mapCanvas(QGraphicsScene):
 
     def command_create_poi(self, position):
         # creates new POI object
-        new_poi = map_items.PoiAsPixmap(None, map_objects_properties=self._map_objects_properties,
-                                        _projection=self._projection)
+        poi = map_object.Poi(None, _projection=self._projection)
         _pos = self._projection.canvas_to_geo(position.x(), position.y())
         obj_data = OrderedDict({(0, 'Type'): hex(map_items.PoiAsPixmap.last_used_type), (1, 'Data0'): str(_pos)})
-        new_poi.set_data('', obj_data)
-        new_poi.set_mp_data()
+        poi.set_data('', obj_data)
+        new_poi = map_items.map_item_for_object(poi, self._map_objects_properties)
         command = commands.CreateNewPoiCmd(new_poi, self.parent.map_objects, self, 'Utwórz POI',
                                            mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
@@ -153,14 +152,12 @@ class mapCanvas(QGraphicsScene):
         new_poi.set_selected(True)
 
     def command_create_polyline(self, coordinates):
-        new_poly = map_items.PolylineQGraphicsPathItem(None,
-                                                       map_objects_properties=self._map_objects_properties,
-                                                       _projection=self._projection)
+        poly = map_object.Polyline(None, _projection=self._projection)
         data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): hex(map_items.PolylineQGraphicsPathItem.last_used_type),
                                 (1, 'Data0'): data0})
-        new_poly.set_data('', obj_data)
-        new_poly.set_mp_data()
+        poly.set_data('', obj_data)
+        new_poly = map_items.map_item_for_object(poly, self._map_objects_properties)
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polyline',
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
@@ -170,14 +167,12 @@ class mapCanvas(QGraphicsScene):
         new_poly.set_selected(True)
 
     def command_create_polygon(self, coordinates):
-        new_poly = map_items.PolygonQGraphicsPathItem(None,
-                                                      map_objects_properties=self._map_objects_properties,
-                                                      _projection=self._projection)
+        poly = map_object.Polygon(None, _projection=self._projection)
         data0 = ','.join([str(self._projection.canvas_to_geo(coord.x(), coord.y())) for coord in coordinates])
         obj_data = OrderedDict({(0, 'Type'): hex(map_items.PolygonQGraphicsPathItem.last_used_type),
                                 (1, 'Data0'): data0})
-        new_poly.set_data('', obj_data)
-        new_poly.set_mp_data()
+        poly.set_data('', obj_data)
+        new_poly = map_items.map_item_for_object(poly, self._map_objects_properties)
         command = commands.CreateNewPolyCmd(new_poly, self.parent.map_objects, self, 'Utwórz Polygon',
                                             mouse_scene_pos=None)
         self.undo_redo_stack.push(command)
@@ -213,7 +208,7 @@ class mapCanvas(QGraphicsScene):
             if (isinstance(item, map_items.PoiAsPixmap) or isinstance(item, map_items.PolylineQGraphicsPathItem) or
                     isinstance(item, map_items.PolygonQGraphicsPathItem)):
                 m_pos = [f'MouseScenePos={item._mouse_release_scene_pos.x()},{item._mouse_release_scene_pos.y()}']
-                item_def = m_pos + item.to_mp_record()
+                item_def = m_pos + item.map_object.to_mp_record()
                 item_def.append('[END]')
                 items_defs.append(item_def)
         if not items_defs:
@@ -251,7 +246,7 @@ class mapCanvas(QGraphicsScene):
         #       % (self.num_polygons, self.num_polygons_added, self.num_polygons_subtracted))
 
     def draw_object_on_map(self, mapobject):
-        if isinstance(mapobject, map_items.PoiAsPixmap) or isinstance(mapobject, map_items.AddrLabel):
+        if isinstance(mapobject, map_items.PoiAsPixmap):
             self.addItem(mapobject)
             mapobject.add_label()
             mapobject.set_map_level()
@@ -260,7 +255,7 @@ class mapCanvas(QGraphicsScene):
             # set_map_level najpierw: gdy obiekt ma dane dla biezacego poziomu, sam tworzy etykiete (i ewentualne
             # strzalki), wiec wczesniejsze add_label/strzalki bylyby od razu usuwane i tworzone od nowa
             mapobject.set_map_level()
-            if mapobject.get_param('DirIndicator'):
+            if mapobject.map_object.get_param('DirIndicator'):
                 mapobject.set_mp_dir_indicator(True)
             if mapobject.label is None:
                 mapobject.add_label()
@@ -495,7 +490,8 @@ class mapCanvas(QGraphicsScene):
         except data_x.MergeError as e:
             QMessageBox.warning(window, 'Łączenie polylinii', str(e))
             return
-        if reversed_any and any(a.get_param('DirIndicator') or a.is_oneway() for a in selected):
+        if reversed_any and any(a.map_object.get_param('DirIndicator') or a.map_object.is_oneway()
+                                for a in selected):
             answer = QMessageBox.question(window, 'Łączenie polylinii',
                                           'Linie mają przeciwne kierunki, a co najmniej jedna z nich jest '
                                           'jednokierunkowa albo ma DirIndicator. Po połączeniu wszystkie odcinki '

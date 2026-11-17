@@ -107,10 +107,10 @@ class MapFileOpener(QObject):
         line_num = 0
         for record in reader.records():
             line_num = record.line_num
-            map_object = map_items.map_item_from_record(record, _map_object_properties, _projection)
-            if map_object is not None:
-                mp_file.add_object_to_map(map_objects, map_object)
-                objs_to_draw.append(map_object)
+            map_item = map_items.map_item_from_record(record, _map_object_properties, _projection)
+            if map_item is not None:
+                mp_file.add_object_to_map(map_objects, map_item.map_object)
+                objs_to_draw.append(map_item)
             if len(objs_to_draw) == 10000:
                 print(f'{line_num}')
                 self.draw_poi_polyline_polygon.emit(objs_to_draw, None)
@@ -702,9 +702,9 @@ class pwMapeditPy(QMainWindow):
         for poi_polyline_polygon in pois_polylines_polygons:
             poi_polyline_polygon.set_projection(self.projection)
             poi_polyline_polygon.set_map_objects_properties(self.map_objects_properties)
-            self.map_objects_to_be_drawn.add(poi_polyline_polygon.get_id())
+            self.map_objects_to_be_drawn.add(poi_polyline_polygon.map_object.get_id())
             self.map_canvas.draw_object_on_map(poi_polyline_polygon)
-            self.map_objects_to_be_drawn.remove(poi_polyline_polygon.get_id())
+            self.map_objects_to_be_drawn.remove(poi_polyline_polygon.map_object.get_id())
 
         print('koniec rysowania')
         if map_objects is not None:

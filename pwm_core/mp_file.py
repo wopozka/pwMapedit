@@ -81,15 +81,12 @@ class MpFileReader(object):
         return MpRecord(poi_poly_type[0], comments, fields, line_num)
 
 
-def create_map_object(record, object_classes=None, map_objects_properties=None, projection=None):
-    """Tworzy obiekt mapy z rekordu. object_classes: slownik rodzaj rekordu -> klasa obiektu (GUI podaje swoje
-    klasy). Zwraca None dla rekordow, ktorych nie obslugujemy ([RESTRICT], [SIGN])."""
-    if object_classes is None:
-        object_classes = CORE_OBJECT_CLASSES
-    obj_class = object_classes.get(record.kind)
+def create_map_object(record, projection=None):
+    """Tworzy obiekt mapy z rekordu. Zwraca None dla rekordow, ktorych nie obslugujemy ([RESTRICT], [SIGN])."""
+    obj_class = CORE_OBJECT_CLASSES.get(record.kind)
     if obj_class is None:
         return None
-    map_object = obj_class(None, map_objects_properties=map_objects_properties, _projection=projection)
+    map_object = obj_class(None, _projection=projection)
     map_object.set_data(record.comments, record.fields)
     return map_object
 
@@ -106,13 +103,12 @@ def new_map_data(reader, filename, map_objects_properties=None, projection=None)
     return map_data
 
 
-def load_map_data(filename, projection, object_classes=None, map_objects_properties=None):
+def load_map_data(filename, projection, map_objects_properties=None):
     """Wczytuje cala mape do MapData (bez GUI)."""
     reader = MpFileReader(filename)
     map_data = new_map_data(reader, filename, map_objects_properties=map_objects_properties, projection=projection)
     for record in reader.records():
-        map_object = create_map_object(record, object_classes=object_classes,
-                                       map_objects_properties=map_objects_properties, projection=projection)
+        map_object = create_map_object(record, projection=projection)
         if map_object is not None:
             add_object_to_map(map_data, map_object)
     return map_data

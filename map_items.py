@@ -12,9 +12,8 @@ from pwmapedit_constants import (IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_L
 import commands
 import itertools
 import pwmapedit_constants
-from pwm_core import geometry, mp_format, mp_file
-from pwm_core.data_x import Data_X, MergeError
-from pwm_core.map_object import BasicMapItem
+from pwm_core import geometry, mp_file
+from pwm_core.map_object import Poi, Polyline, Polygon
 
 Closest_Point = namedtuple('Closest_Point', ['distance', 'segment_pos', 'path_num', 'coord_index'])
 Grip_Index = namedtuple('Grip_Index', ['poly_num', 'node_index'])
@@ -31,16 +30,16 @@ def to_qpointf(point):
     return QPointF(point.x(), point.y())
 
 
-class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
+class PoiAsPixmap(QGraphicsPixmapItem):
+    """POI na scenie. Dane POI (zapisywane w pliku MP) sa w map_object (pwm_core.map_object.Poi)."""
     _accept_map_level_change = True
     # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
     last_used_type = 0x0
 
-    # basic class for poi with pixmap icon
-    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
-        # super(PoiAsPixmap, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
-        QGraphicsPixmapItem.__init__(self)
+    def __init__(self, map_object, map_objects_properties=None):
+        super().__init__()
+        self.map_object = map_object
+        self._map_objects_properties = map_objects_properties
         # używane do zapisania pozycji wyjsciowej obiektu podczas przesuwania myszka
         self.recorded_pos = None
         # potrzebujemy tego aby sprawdzić czy podczas przesuwania myszką obiektu można już go ruszać
@@ -139,9 +138,9 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
             self.setVisible(True)
-        elif self._mp_data[level] is None and self.get_endlevel() < level:
+        elif self._mp_data[level] is None and self.map_object.get_endlevel() < level:
             self.setVisible(False)
-        elif self._mp_data[level] is None and self.get_endlevel() >= level:
+        elif self._mp_data[level] is None and self.map_object.get_endlevel() >= level:
             self.setVisible(True)
         self._current_map_level = level
         self.update()
@@ -149,7 +148,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_datax(given_level)
+            data = self.map_object.get_datax(given_level)
             if not data:
                 continue
             if self.pixmap().isNull():
@@ -163,7 +162,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
                 self.current_data_x = level
 
     def set_projection(self, _projection):
-        self._projection = _projection
+        self.map_object.set_projection(_projection)
 
     def set_map_objects_properties(self, _map_objects_properties):
         self._map_objects_properties = _map_objects_properties
@@ -183,12 +182,12 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
             self.setZValue(self.zValue() + pwmapedit_constants.SELECTED_OBJECT_Z_VAL)
 
     def __str__(self):
-        return f'<POI, Object ID: {self._id}, Type: {self._map_type}>'
+        return str(self.map_object)
 
     def add_label(self):
         # etykiet POI sa setki tysiecy, a widac je dopiero przy przyblizeniu. Tutaj tylko zaznaczamy, ze etykiete
         # trzeba utworzyc, tworzy ja create_pending_labels wywolywane przez scene (patrz paint)
-        label = self.get_label1()
+        label = self.map_object.get_label1()
         if label is not None and label:
             self._label_pending = True
             self.update()
@@ -197,7 +196,7 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         if not self._label_pending:
             return
         self._label_pending = False
-        label = self.get_label1()
+        label = self.map_object.get_label1()
         if label is not None and label:
             self.label = PoiLabel(label, self)
             if self._mp_label is None:
@@ -207,11 +206,8 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         pass
 
     def set_pixmap(self):
-        self.setPixmap(self._map_objects_properties.get_poi_icon(self.get_type()))
+        self.setPixmap(self._map_objects_properties.get_poi_icon(self.map_object.get_type()))
 
-    @staticmethod
-    def to_mp_record_header():
-        return ['[POI]']
 
     def decorate(self):
         pass
@@ -267,88 +263,6 @@ class PoiAsPixmap(BasicMapItem, QGraphicsPixmapItem):
         self.label = None
 
 
-class AddrLabel(BasicMapItem, QGraphicsSimpleTextItem):
-    _accept_map_level_change = True
-
-    def __init__(self, map_objects_properties=None, _projection=None):
-        # super(AddrLabel, self).__init__(map_objects_properties=map_objects_properties, projection=projection)
-        BasicMapItem.__init__(self, map_objects_properties=map_objects_properties, _projection=_projection)
-        QGraphicsSimpleTextItem.__init__(self)
-        self.setZValue(20)
-        self.setText('__tmp__')
-        self._mp_data = [None, None, None, None, None]
-        # self._mp_end_level = 0
-        self._mp_label = ''
-        # setting level 4, makes it easier to handle levels when file is loaded
-        self._current_map_level = 4
-        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
-        self.current_data_x = 4
-        self.set_transformation_flag()
-
-    @staticmethod
-    def accept_map_level_change():
-        return True
-
-    def paint(self, painter, option, widget):
-        if self.set_transformation_flag():
-            self.update()
-        super().paint(painter, option, widget)
-
-    def set_transformation_flag(self):
-        if self.scene() is None:
-            return False
-        if self.scene().get_viewer_scale() > IGNORE_TRANSFORMATION_TRESHOLD:
-            if not bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-                return True
-        else:
-            if bool(self.flags() & QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations):
-                self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, False)
-                return True
-        return False
-
-    def set_map_level(self):
-        level = self.scene().get_map_level()
-        if self._mp_data[level] is not None:
-            self.setPos(self._mp_data[level])
-            self.setVisible(True)
-        elif self._mp_data[level] is None and self.get_endlevel() < level:
-            self.setVisible(False)
-        elif self._mp_data[level] is None and self.get_endlevel() >= level:
-            self.setVisible(True)
-        self._current_map_level = level
-        self.update()
-        return
-
-    def set_mp_data(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_datax(given_level)
-            if not data:
-                continue
-            level = int(given_level[-1])
-            node = data[0]
-            x, y = node[0].get_canvas_coords()
-            self._mp_data[level] = QPointF(x, y)
-            if self.pos().isNull():
-                self.setPos(self._mp_data[level])
-                self.current_data_x = level
-
-    def add_label(self):
-        label = self.get_label1()
-        if label is not None and label:
-            self._mp_label = label
-            self.setText(label)
-
-    def set_brush(self):
-        pass
-
-    def decorate(self):
-        pass
-
-    def undecorate(self):
-        pass
-
-
 class HoveredShapePainterPath(QGraphicsPathItem):
     _accept_map_level_change = False
 
@@ -356,8 +270,9 @@ class HoveredShapePainterPath(QGraphicsPathItem):
         super(HoveredShapePainterPath, self).__init__(path)
 
 
-class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
-    # basic class for Polyline and Polygon, for presentation on maps
+class PolyQGraphicsPathItem(QGraphicsPathItem):
+    # basic class for Polyline and Polygon, for presentation on maps. Dane obiektu (zapisywane w pliku MP) sa
+    # w map_object (pwm_core.map_object.Polyline albo Polygon)
     decorated_z_value = 100
     closest_node_circle_definition = QGraphicsEllipseItem(- 10, - 10, 20, 20)
     closest_node_circle_definition.setZValue(150)
@@ -379,9 +294,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
     _threshold = None
     _accept_map_level_change = True
 
-    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
-        BasicMapItem.__init__(self, map_obj_id, map_objects_properties=map_objects_properties, _projection=_projection)
-        QGraphicsPathItem.__init__(self)
+    def __init__(self, map_object, map_objects_properties=None):
+        super().__init__()
+        self.map_object = map_object
+        self._map_objects_properties = map_objects_properties
         self.hovered = False
         self.hover_enter_for_create_mode = False
         self.orig_pen = None
@@ -686,7 +602,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         command = commands.RemoveNodeCmd(self, grip.grip_indexes, polygons, 'Usuń węzeł')
         self.scene().undo_redo_stack.push(command)
 
-        # self.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
+        # self.map_object.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
         # self.setPath(self.create_painter_path(polygons))
         # self.undecorate()
         # self.update_arrow_heads()
@@ -772,10 +688,10 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         return True if self.node_grip_items else False
 
     def get_hlevels_for_poly(self, data_level, poly_num):
-        return self.data0.get_hlevels_for_poly(data_level, poly_num)
+        return self.map_object.data0.get_hlevels_for_poly(data_level, poly_num)
 
     def get_housenumbers_for_poly(self, data_level, poly_num):
-        return self.data0.get_housenumbers_for_poly(data_level, poly_num)
+        return self.map_object.data0.get_housenumbers_for_poly(data_level, poly_num)
 
     def get_interpolated_housenumbers(self, data_level, poly_num):
         return None
@@ -1013,7 +929,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
             self.current_data_x = level
             self.add_items_after_new_map_level_set()
             self.setVisible(True)
-        elif self.get_endlevel() < level:
+        elif self.map_object.get_endlevel() < level:
             if self.isVisible():
                 self.setVisible(False)
         else:
@@ -1052,7 +968,7 @@ class PolyQGraphicsPathItem(BasicMapItem, QGraphicsPathItem):
         super().setPen(pen)
 
     def set_projection(self, _projection):
-        self._projection = _projection
+        self.map_object.set_projection(_projection)
 
     def set_map_objects_properties(self, _map_objects_properties):
         self._map_objects_properties = _map_objects_properties
@@ -1112,9 +1028,8 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
     last_used_type = 0x0
 
-    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
-        super(PolylineQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
-                                                        _projection=_projection)
+    def __init__(self, map_object, map_objects_properties=None):
+        super().__init__(map_object, map_objects_properties=map_objects_properties)
         self.arrow_head_items = []
         self.hlevel_labels = None
         self.housenumber_labels = None
@@ -1123,7 +1038,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         self._label_pending = False
         self._housenumber_labels_pending = False
         self.interpolated_house_numbers_labels = None
-        self._mp_hlevels = [None, None, None, None, None]
         self._mp_address_numbers = [None, None, None, None, None]
         self._mp_dir_indicator = False
         self.set_z_value()
@@ -1168,7 +1082,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def create_pending_labels(self):
         if self._label_pending:
             self._label_pending = False
-            label = self.get_label1()
+            label = self.map_object.get_label1()
             if label is not None and label:
                 self.label = PolylineLabel(label, self)
         if self._housenumber_labels_pending:
@@ -1230,7 +1144,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def add_label(self):
         # tylko zaznaczamy etykiete do utworzenia, patrz add_housenumber_labels i create_pending_labels
-        label = self.get_label1()
+        label = self.map_object.get_label1()
         if label is not None and label:
             self._label_pending = True
             self.update()
@@ -1265,52 +1179,23 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def command_split_poly(self, grip):
         grip_indexes = grip.get_grip_indexes()
-        data12 = self.data0.split_data_x(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index)
-        if data12:
-            data1 = data12[0]
-            data2 = data12[1]
-            s_data = self.to_mp_record()
-            poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(s_data)
-            map_object1 = PolylineQGraphicsPathItem(self.get_id(),
-                                                    map_objects_properties=self._map_objects_properties,
-                                                    _projection=self._projection)
-            map_object1.set_data(obj_comment, obj_data)
-            map_object1.data0 = data1
-            map_object1.set_mp_data()
-            map_object2 = PolylineQGraphicsPathItem(None, map_objects_properties=self._map_objects_properties,
-                                                    _projection=self._projection)
-            map_object2.set_data(obj_comment, obj_data)
-            map_object2.data0 = data2
-            map_object2.set_mp_data()
-            command = commands.SplitPolylineCmd(self, map_object1, map_object2,
-                                                self.scene().parent.map_objects, 'Podziel polyline')
-            self.scene().undo_redo_stack.push(command)
+        split_objects = self.map_object.split(self.current_data_x, grip_indexes.poly_num, grip_indexes.node_index)
+        if split_objects is None:
+            return
+        item1, item2 = (map_item_for_object(obj, self._map_objects_properties) for obj in split_objects)
+        command = commands.SplitPolylineCmd(self, item1, item2, self.scene().parent.map_objects, 'Podziel polyline')
+        self.scene().undo_redo_stack.push(command)
 
-    def create_merged_polyline(self, other_objects):
+    def create_merged_polyline(self, other_items):
         """
-        Tworzy nowa polylinie z polaczenia tej (pierwszej) i other_objects. Nowa linia dziedziczy id i wszystkie
-        wlasciwosci tej linii, dostaje sklejone Data.
+        Tworzy nowa polylinie z polaczenia tej (pierwszej) i other_items, patrz pwm_core.map_object.Polyline.merged_with
         Returns
         -------
         (PolylineQGraphicsPathItem, list of int, bool): nowa linia, pominiete poziomy Data, czy ktoras z linii
         trzeba bylo odwrocic. Raises MergeError, gdy linii nie da sie polaczyc.
         """
-        merged_data, skipped_levels, reversed_any = Data_X.merge_polylines(
-            [self.data0] + [obj.data0 for obj in other_objects])
-        s_data = self.to_mp_record()
-        poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(s_data)
-        merged_object = PolylineQGraphicsPathItem(self.get_id(), map_objects_properties=self._map_objects_properties,
-                                                  _projection=self._projection)
-        merged_object.set_data(obj_comment, obj_data)
-        merged_object.data0 = merged_data
-        # set_data ustawilo obwiednie pierwszej linii, zastepujemy ja obwiednia polaczonej
-        merged_object.obj_bounding_box = dict(merged_data.get_obj_bounding_box())
-        merged_object.set_mp_data()
-        return merged_object, skipped_levels, reversed_any
-
-    def is_oneway(self):
-        route_params = self.get_route_params()
-        return bool(route_params) and len(route_params) > 2 and route_params[2] == 1
+        merged, skipped_levels, reversed_any = self.map_object.merged_with([item.map_object for item in other_items])
+        return map_item_for_object(merged, self._map_objects_properties), skipped_levels, reversed_any
 
     def command_update_type(self, new_type):
         PolylineQGraphicsPathItem.last_used_type = new_type
@@ -1358,7 +1243,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         return QLineF(v_start_point, QLineF(v_start, v_end).normalVector().p2())
 
     def get_interpolated_housenumbers(self, data_level, poly_num):
-        inter_num = self.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
+        inter_num = self.map_object.data0.get_interpolated_housenumbers_for_poly(data_level, poly_num)
         numbers = []
         for side in ('left', 'right',):
             for num_def in inter_num[side]:
@@ -1375,7 +1260,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_datax(given_level)
+            data = self.map_object.get_datax(given_level)
             if not data:
                 continue
             level = int(given_level[-1])
@@ -1387,25 +1272,16 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
                 self.setPath(self._mp_data[level])
                 self.current_data_x = level
 
-    # niepotrzebne
-    def set_mp_hlevels(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_hlevels(given_level)
-            if not data:
-                continue
-            level = int(given_level[-1])
-            self._mp_hlevels[level] = data
-
     def set_pen(self):
         self.orig_pen = None
-        pen = self._map_objects_properties.get_polyline_qpen(self.get_type())
+        pen = self._map_objects_properties.get_polyline_qpen(self.map_object.get_type())
         self.setPen(pen)
 
     def set_z_value(self):
         self.setZValue(10)
 
     def __str__(self):
-        return f'<POLYLINE, Object ID: {self._id}, Type: {self._map_type}>'
+        return str(self.map_object)
 
     def remove_items_before_new_map_level_set(self):
         if self.arrow_head_items is not None and self.arrow_head_items:
@@ -1441,9 +1317,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def shape(self):
         return self._shape()
 
-    @staticmethod
-    def to_mp_record_header():
-        return ['[POLYLINE]']
     
     def remove_arrow_heads(self):
         for arrow_head in self.arrow_head_items:
@@ -1489,7 +1362,7 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def update_hlevel_in_node(self, grip, hlevel_value):
         grip_poly_num, grip_coord_num = grip.grip_indexes
-        self.data0.set_hlevel_to_node(self.current_data_x, grip_poly_num, grip_coord_num, hlevel_value)
+        self.map_object.data0.set_hlevel_to_node(self.current_data_x, grip_poly_num, grip_coord_num, hlevel_value)
         self.update_hlevel_labels()
 
     def remove_hlevel_labels(self, node_num):
@@ -1556,9 +1429,8 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
     # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
     last_used_type = 0x0
 
-    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
-        super(PolygonQGraphicsPathItem, self).__init__(map_obj_id, map_objects_properties=map_objects_properties,
-                                                       _projection=_projection)
+    def __init__(self, map_object, map_objects_properties=None):
+        super().__init__(map_object, map_objects_properties=map_objects_properties)
         self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable | QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
         self.setAcceptHoverEvents(True)
 
@@ -1569,7 +1441,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
 
     def set_mp_data(self):
         for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.get_datax(given_level)
+            data = self.map_object.get_datax(given_level)
             if not data:
                 continue
             level = int(given_level[-1])
@@ -1586,28 +1458,25 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
             return super().shape()
         return self._shape()
 
-    @staticmethod
-    def to_mp_record_header():
-        return ['[POLYGON]']
 
     def remove_items_before_new_map_level_set(self):
         if self.label is not None:
             self.remove_label()
 
     def set_brush(self):
-        color = self._map_objects_properties.get_polygon_fill_colour(self.get_type())
+        color = self._map_objects_properties.get_polygon_fill_colour(self.map_object.get_type())
         self.setBrush(QBrush(color))
 
     def set_pen(self):
         self.orig_pen = None
-        pen = self._map_objects_properties.get_polygon_qpen(self.get_type())
+        pen = self._map_objects_properties.get_polygon_qpen(self.map_object.get_type())
         self.setPen(pen)
 
     def set_z_value(self):
-        self.setZValue(self._map_objects_properties.get_polygon_z_value(self.get_type()))
+        self.setZValue(self._map_objects_properties.get_polygon_z_value(self.map_object.get_type()))
 
     def __str__(self):
-        return f'<POLYGON, Object ID: {self._id}, Type: {self._map_type}>'
+        return str(self.map_object)
 
     def add_items_after_new_map_level_set(self):
         self.add_label()
@@ -1624,7 +1493,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         super().paint(painter, option, widget=widget)
 
     def small_poly(self):
-        return self.data0.get_perimeter() < SMALL_POLY_PERIMETER
+        return self.map_object.data0.get_perimeter() < SMALL_POLY_PERIMETER
 
     def remove_grip(self, grip):
         if grip in self.node_grip_items:
@@ -1637,7 +1506,7 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         return num_elems_in_path >= 4
 
     def add_label(self):
-        label = self.get_label1()
+        label = self.map_object.get_label1()
         if label is not None and label:
             self.label = PolygonLabel(self._mp_label, self)
 
@@ -1977,7 +1846,7 @@ class GripItem(QGraphicsPathItem):
         return self._boundingRect
 
     def get_id(self):
-        return self.parent.get_id()
+        return self.parent.map_object.get_id()
 
     def get_grip_indexes(self):
         return self.grip_indexes
@@ -1985,22 +1854,22 @@ class GripItem(QGraphicsPathItem):
     def node_grip_has_numeration(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.data0.get_poly_node(data_level, poly_num, node_num).node_has_numeration()
+        return self.parent.map_object.data0.get_poly_node(data_level, poly_num, node_num).node_has_numeration()
 
     def node_grip_get_numeration(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.data0.get_poly_node(data_level, poly_num, node_num).get_numbers_definition()
+        return self.parent.map_object.data0.get_poly_node(data_level, poly_num, node_num).get_numbers_definition()
 
     def node_grip_get_calculated_numeration(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
+        return self.parent.map_object.data0.get_calculated_housenumber_defs_for_node(data_level, poly_num, node_num)
 
     def node_grip_get_hlevel(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.data0.get_poly_node(data_level, poly_num, node_num).get_hlevel_definition()
+        return self.parent.map_object.data0.get_poly_node(data_level, poly_num, node_num).get_hlevel_definition()
 
     def node_grip_set_numeration(self, numeration):
         self.parent.command_set_numeration_to_node(self, numeration)
@@ -2397,18 +2266,24 @@ class PolygonAnnotation(QGraphicsPolygonItem):
         super().mousePressEvent(event)
 
 
-def map_item_from_record(record, map_objects_properties, _projection):
-    """Tworzy element sceny (POI, polylinie, polygon) z rekordu pliku MP (pwm_core.mp_file.MpRecord); None dla
-    rekordow, ktorych nie obslugujemy."""
-    map_object = mp_file.create_map_object(record, object_classes=MAP_ITEM_CLASSES,
-                                           map_objects_properties=map_objects_properties, projection=_projection)
-    if map_object is not None:
-        map_object.set_mp_data()
-    return map_object
-
-
 MAP_ITEM_CLASSES = {
-    mp_format.MAP_OBJECT_POI: PoiAsPixmap,
-    mp_format.MAP_OBJECT_POLYLINE: PolylineQGraphicsPathItem,
-    mp_format.MAP_OBJECT_POLYGON: PolygonQGraphicsPathItem,
+    Poi: PoiAsPixmap,
+    Polyline: PolylineQGraphicsPathItem,
+    Polygon: PolygonQGraphicsPathItem,
 }
+
+
+def map_item_for_object(map_object, map_objects_properties):
+    """Tworzy element sceny (POI, polylinie, polygon) dla obiektu mapy z pwm_core."""
+    item = MAP_ITEM_CLASSES[type(map_object)](map_object, map_objects_properties=map_objects_properties)
+    item.set_mp_data()
+    return item
+
+
+def map_item_from_record(record, map_objects_properties, _projection):
+    """Tworzy element sceny z rekordu pliku MP (pwm_core.mp_file.MpRecord); None dla rekordow, ktorych nie
+    obslugujemy."""
+    map_object = mp_file.create_map_object(record, projection=_projection)
+    if map_object is None:
+        return None
+    return map_item_for_object(map_object, map_objects_properties)

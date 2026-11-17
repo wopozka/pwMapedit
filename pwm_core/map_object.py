@@ -8,25 +8,25 @@ from pwm_core import mp_format
 
 
 class BasicMapItem(object):
-    def __init__(self, map_obj_id, map_objects_properties=None, _projection=None):
+    """Obiekt mapy (POI, polylinia, polygon) - dane zapisywane w pliku MP. Czesc graficzna (element sceny Qt)
+    trzyma obiekt w polu map_object, patrz map_items."""
+    # naglowek rekordu w pliku MP, ustawiany w klasach pochodnych
+    mp_record_header = None
+    # nazwa rodzaju obiektu do opisu (__str__)
+    kind_name = 'OBJECT'
+
+    def __init__(self, map_obj_id, _projection=None):
         """
-        basic map items properties, derived map items inherit from it
         Parameters
         ----------
-        map_objects_properties = class for map elements appearance: icons, line types, area patterns and filling
-        projection = projection class
+        map_obj_id: id obiektu na mapie (pozycja w MapData), None dla nowych obiektow - MapData nada pierwsze wolne
+        _projection: projekcja, potrzebna do przeliczania wspolrzednych wezlow
         """
-        # super(BasicMapItem, self).__init__()
         self._id = map_obj_id
         # used for marking objects that were removed from map. For undo/redo actions it is easier to mark object as
         # removed than to copy it and then remove.
         self._deleted = False
-        self._projection = None
-        self._map_objects_properties = None
-        if _projection is not None:
-            self._projection = _projection
-        if map_objects_properties is not None:
-            self._map_objects_properties = map_objects_properties
+        self._projection = _projection
         self.obj_comment = None
         self._map_type = None
         self.label1 = None
@@ -55,8 +55,7 @@ class BasicMapItem(object):
     #     return str(self._map_type)
 
     def __str__(self):
-        # redefine in other classes
-        return
+        return f'<{self.kind_name}, Object ID: {self._id}, Type: {self._map_type}>'
 
     def clear_others(self):
         self.others = None
@@ -254,6 +253,12 @@ class BasicMapItem(object):
     def set_id(self, obj_id):
         self._id = obj_id
 
+    def get_projection(self):
+        return self._projection
+
+    def set_projection(self, _projection):
+        self._projection = _projection
+
     def set_others(self, key, value):
         if self.others is None:
             self.others = list()
@@ -363,33 +368,65 @@ class BasicMapItem(object):
             mp_record.append('Label3=' + self.label3)
         return mp_record + self.to_mp_record_others()
 
-    @staticmethod
-    def to_mp_record_header():
-        return []
+    def to_mp_record_header(self):
+        return [] if self.mp_record_header is None else [self.mp_record_header]
 
     def to_mp_record_others(self):
         return [f'{key}={val}' for key, val in self.get_others()]
 
+    def copy_with_data(self, data0, obj_id):
+        """Nowy obiekt tej samej klasy, z tymi samymi wlasciwosciami (Type, Label, komentarze...), ale z danymi
+        data0 (Data_X) i id obj_id. Uzywane przy podziale i laczeniu linii."""
+        poi_poly_type, obj_comment, obj_data = mp_format.map_strings_record_to_dict_record(self.to_mp_record())
+        new_object = type(self)(obj_id, _projection=self._projection)
+        new_object.set_data(obj_comment, obj_data)
+        new_object.data0 = data0
+        # set_data ustawilo obwiednie tego obiektu, zastepujemy ja obwiednia nowych danych (o ile jest znana - dla
+        # danych z podzialu linii bywa nieustawiona)
+        data_bounding_box = data0.get_obj_bounding_box()
+        if all(data_bounding_box.get(key) is not None for key in ('S', 'N', 'E', 'W')):
+            new_object.obj_bounding_box = dict(data_bounding_box)
+        return new_object
+
 
 class Poi(BasicMapItem):
-    """POI bez czesci graficznej"""
-    @staticmethod
-    def to_mp_record_header():
-        return [mp_format.MAP_OBJECT_POI]
+    mp_record_header = mp_format.MAP_OBJECT_POI
+    kind_name = 'POI'
 
 
 class Polyline(BasicMapItem):
-    """Polylinia bez czesci graficznej"""
-    @staticmethod
-    def to_mp_record_header():
-        return [mp_format.MAP_OBJECT_POLYLINE]
+    mp_record_header = mp_format.MAP_OBJECT_POLYLINE
+    kind_name = 'POLYLINE'
+
+    def is_oneway(self):
+        route_params = self.get_route_params()
+        return bool(route_params) and len(route_params) > 2 and route_params[2] == 1
+
+    def split(self, data_level, poly_num, node_num):
+        """Dzieli linie w wezle node_num. Zwraca dwie nowe linie: pierwsza ma id tej linii, druga id None (nowy
+        obiekt), albo None, gdy w tym miejscu nie da sie podzielic linii."""
+        data12 = self.data0.split_data_x(data_level, poly_num, node_num)
+        if not data12:
+            return None
+        return self.copy_with_data(data12[0], self.get_id()), self.copy_with_data(data12[1], None)
+
+    def merged_with(self, other_polylines):
+        """
+        Tworzy nowa polylinie z polaczenia tej (pierwszej) i other_polylines. Nowa linia dziedziczy id i wszystkie
+        wlasciwosci tej linii, dostaje sklejone Data.
+        Returns
+        -------
+        (Polyline, list of int, bool): nowa linia, pominiete poziomy Data, czy ktoras z linii trzeba bylo odwrocic.
+        Raises MergeError, gdy linii nie da sie polaczyc.
+        """
+        merged_data, skipped_levels, reversed_any = Data_X.merge_polylines(
+            [self.data0] + [obj.data0 for obj in other_polylines])
+        return self.copy_with_data(merged_data, self.get_id()), skipped_levels, reversed_any
 
 
 class Polygon(BasicMapItem):
-    """Polygon bez czesci graficznej"""
-    @staticmethod
-    def to_mp_record_header():
-        return [mp_format.MAP_OBJECT_POLYGON]
+    mp_record_header = mp_format.MAP_OBJECT_POLYGON
+    kind_name = 'POLYGON'
 
 
 class BasicSignRestrict(object):

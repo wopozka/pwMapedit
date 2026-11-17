@@ -438,23 +438,23 @@ class MapObjPropDock(QDockWidget):
             self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], False)
         else:
             self.tab_widget.setTabEnabled(self.tab_names_vs_index['adres'], True)
-            if self.map_object_id.get_street_desc():
-                self.streetdesc.setText(self.map_object_id.get_street_desc())
+            if self.map_object_id.map_object.get_street_desc():
+                self.streetdesc.setText(self.map_object_id.map_object.get_street_desc())
             else:
                 self.streetdesc.clear()
-            if self.map_object_id.get_house_number():
-                self.housenumber.setText(self.map_object_id.get_house_number())
+            if self.map_object_id.map_object.get_house_number():
+                self.housenumber.setText(self.map_object_id.map_object.get_house_number())
             else:
                 self.housenumber.clear()
-            if self.map_object_id.get_phone_number():
-                self.phone.setText(self.map_object_id.get_phone_number())
+            if self.map_object_id.map_object.get_phone_number():
+                self.phone.setText(self.map_object_id.map_object.get_phone_number())
             else:
                 self.phone.clear()
             self.save_current_address()
 
     def fill_map_object_properties_comment(self):
-        if self.map_object_id.get_comment():
-            self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.get_comment()) + '\n')
+        if self.map_object_id.map_object.get_comment():
+            self.comment_text_edit.setPlainText('\n'.join(self.map_object_id.map_object.get_comment()) + '\n')
         else:
             self.comment_text_edit.clear()
 
@@ -463,10 +463,10 @@ class MapObjPropDock(QDockWidget):
         # self.elements_table.itemSelectionChanged.disconnect()
         self.elements_table.clear()
         if isinstance(self.map_object_id, map_items.PoiAsPixmap):
-            data_level = self.map_object_id.data0.get_data_levels()[0]
+            data_level = self.map_object_id.map_object.data0.get_data_levels()[0]
             data_item = ElementsItem(self.elements_table)
             data_item.setText(0, str('Data' + str(data_level)))
-            scene_coords = self.map_object_id.data0.get_polys_for_data_level(data_level)[0][0]
+            scene_coords = self.map_object_id.map_object.data0.get_polys_for_data_level(data_level)[0][0]
             lat, lon = scene_coords.get_geo_coordinates()
             poly_item = ElementsItem(data_item)
             poly_item.setText(0, 'POI')
@@ -476,13 +476,14 @@ class MapObjPropDock(QDockWidget):
             pp.addEllipse(QPointF(scene_coords.x(), scene_coords.y()), 10, 10)
             poly_item.setData(2, Qt.ItemDataRole.UserRole, pp)
         else:
-            for data_level_num, data_level in enumerate(self.map_object_id.data0.get_data_levels()):
+            data0 = self.map_object_id.map_object.data0
+            for data_level_num, data_level in enumerate(data0.get_data_levels()):
                 data_level_polygons = self.map_object_id._mp_data[data_level].toSubpathPolygons()
                 data_item = ElementsItem(self.elements_table)
                 data_item.setText(0, str('Data' + str(data_level)))
                 # poly_pp = QPainterPath()
                 outer_poly = None
-                for poly_num, poly in enumerate(self.map_object_id.data0.get_polys_for_data_level(data_level)):
+                for poly_num, poly in enumerate(data0.get_polys_for_data_level(data_level)):
                     if outer_poly is None:
                         poly_pp = QPainterPath()
                         outer_poly = ElementsItem(data_item)
@@ -521,14 +522,14 @@ class MapObjPropDock(QDockWidget):
 
     def fill_map_object_properties_endlevel(self):
         self.disconnect_end_level_widget_signal()
-        if self.map_object_id.get_endlevel():
-            self.end_level.setCurrentIndex(self.map_object_id.get_endlevel())
+        if self.map_object_id.map_object.get_endlevel():
+            self.end_level.setCurrentIndex(self.map_object_id.map_object.get_endlevel())
         else:
             self.end_level.setCurrentIndex(0)
         self.connect_end_level_widget_signals()
 
     def fill_map_object_properties_others(self):
-        others = self.map_object_id.get_others()
+        others = self.map_object_id.map_object.get_others()
         self.extras_table.cellChanged.disconnect()
         if others:
             self.extras_table.clear_contents()
@@ -542,16 +543,16 @@ class MapObjPropDock(QDockWidget):
         self.extras_table.cellChanged.connect(self.command_extras_table_changed)
 
     def fill_map_object_properties_labels(self):
-        if self.map_object_id.get_label1():
-            self.label1_entry.setText(self.map_object_id.get_label1())
+        if self.map_object_id.map_object.get_label1():
+            self.label1_entry.setText(self.map_object_id.map_object.get_label1())
         else:
             self.label1_entry.clear()
-        if self.map_object_id.get_label2():
-            self.label2_entry.setText(self.map_object_id.get_label2())
+        if self.map_object_id.map_object.get_label2():
+            self.label2_entry.setText(self.map_object_id.map_object.get_label2())
         else:
             self.label2_entry.clear()
-        if self.map_object_id.get_label3():
-            self.label3_entry.setText(self.map_object_id.get_label3())
+        if self.map_object_id.map_object.get_label3():
+            self.label3_entry.setText(self.map_object_id.map_object.get_label3())
         else:
             self.label3_entry.clear()
         self.save_current_labels()
@@ -563,7 +564,7 @@ class MapObjPropDock(QDockWidget):
         else:
             self.poly_direction.setDisabled(False)
             self.reverse_direction_button.setDisabled(False)
-            if self.map_object_id.get_dirindicator():
+            if self.map_object_id.map_object.get_dirindicator():
                 self.poly_direction.setChecked(True)
             else:
                 self.poly_direction.setChecked(False)
@@ -574,8 +575,8 @@ class MapObjPropDock(QDockWidget):
         else:
             self.tab_widget.setTabEnabled(self.tab_names_vs_index['routing'], True)
             # jesli route param ma dany obiekt to wypelnij je
-            if self.map_object_id.get_route_params() is not None:
-                routing_data = self.map_object_id.get_route_params()
+            if self.map_object_id.map_object.get_route_params() is not None:
+                routing_data = self.map_object_id.map_object.get_route_params()
                 if all(a == 0 for a in routing_data):
                     return
                 for index, val in enumerate(routing_data):
@@ -607,7 +608,7 @@ class MapObjPropDock(QDockWidget):
                 name = val[2] + ', '
                 aliases = val[3]
                 self.type_selector.addItem(icon, p_type + category + name + aliases, userData=poi_type)
-                if poi_type == self.map_object_id.get_type():
+                if poi_type == self.map_object_id.map_object.get_type():
                     self.type_selector.setCurrentIndex(cur_index)
                 self.type_selector.setItemData(cur_index, poi_type)
         else:
@@ -623,7 +624,7 @@ class MapObjPropDock(QDockWidget):
                 name_en = val[1]
                 name_pl = ', ' + val[2] if val[2] else ''
                 self.type_selector.addItem(p_type + category + name_en + name_pl)
-                if poly_type == self.map_object_id.get_type():
+                if poly_type == self.map_object_id.map_object.get_type():
                     self.type_selector.setCurrentIndex(cur_index)
                 self.type_selector.setItemData(cur_index, poly_type)
         self.type_selector.currentIndexChanged.connect(self.command_type_changed)
