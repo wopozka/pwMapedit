@@ -76,7 +76,7 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.hovered_shape.setPen(hovered_over_pen)
 
     def command_move_poi(self):
-        command = commands.SelectModeMovePoi(self, self.recorded_pos, 'Przesun POI')
+        command = commands.SelectModeMovePoi(self, 'Przesun POI')
         self.scene().undo_redo_stack.push(command)
 
     def command_update_comment(self, new_comment):
@@ -137,6 +137,8 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         level = self.scene().get_map_level()
         if self._mp_data[level] is not None:
             self.setPos(self._mp_data[level])
+            # edycja (przesuwanie) dotyczy danych poziomu, ktory jest wyswietlany
+            self.current_data_x = level
             self.setVisible(True)
         elif self._mp_data[level] is None and self.map_object.get_endlevel() < level:
             self.setVisible(False)
@@ -146,20 +148,32 @@ class PoiAsPixmap(QGraphicsPixmapItem):
         self.update()
         return
 
+    def _update_mp_data(self):
+        # polozenie POI na scenie dla kazdego poziomu Data, liczone z danych obiektu
+        self._mp_data = [None, None, None, None, None]
+        for level in range(len(self._mp_data)):
+            node = self.map_object.get_position(level)
+            if node is not None:
+                self._mp_data[level] = QPointF(*node.get_canvas_coords())
+
     def set_mp_data(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.map_object.get_datax(given_level)
-            if not data:
+        self._update_mp_data()
+        for level, position in enumerate(self._mp_data):
+            if position is None:
                 continue
             if self.pixmap().isNull():
                 self.set_pixmap()
-            level = int(given_level[-1])
-            node = data[0]
-            x, y = node[0].get_canvas_coords()
-            self._mp_data[level] = QPointF(x, y)
             if self.pos().isNull():
-                self.setPos(self._mp_data[level])
+                self.setPos(position)
                 self.current_data_x = level
+
+    def update_from_map_object(self):
+        """Odswieza polozenie POI na scenie po zmianie danych obiektu (map_object)."""
+        self._update_mp_data()
+        if self._mp_data[self.current_data_x] is not None:
+            self.setPos(self._mp_data[self.current_data_x])
+        if self.scene() is not None:
+            self.set_map_level()
 
     def set_projection(self, _projection):
         self.map_object.set_projection(_projection)
@@ -517,20 +531,10 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.scene().undo_redo_stack.push(command)
 
     def command_insert_point(self, path_num, coord_num, pos):
-        # index is always > 0, so the first element will always be moveTo
-        polygons = self.get_polygons_from_path(self.path())
-        try:
-            polygon = polygons[path_num]
-            if coord_num == 0:
-                polygon_modified = [pos] + polygon
-            elif coord_num == -1:
-                polygon_modified = polygon + [pos]
-            else:
-                polygon_modified = polygon[:coord_num] + [pos] + polygon[coord_num:]
-            polygons[path_num] = polygon_modified
-        except IndexError:
+        # coord_num: 0 - przed pierwszym wezlem, -1 - za ostatnim, inaczej przed wezlem coord_num
+        if not 0 <= path_num < len(self.map_object.get_datax('Data%s' % self.current_data_x)):
             return
-        command = commands.InsertNodeCmd(self, path_num, coord_num, pos, polygons, 'Dodaj nod')
+        command = commands.InsertNodeCmd(self, path_num, coord_num, pos, 'Dodaj nod')
         self.scene().undo_redo_stack.push(command)
 
     def command_move_grip2(self, grip):
@@ -578,7 +582,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self.scene().undo_redo_stack.push(command)
 
     def command_move_item(self):
-        command = commands.SelectModeMoveItem(self, 'Przesun poly', self.pos())
+        command = commands.SelectModeMoveItem(self, 'Przesun poly')
         self.scene().undo_redo_stack.push(command)
         return
 
@@ -599,7 +603,7 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         if not self.is_point_removal_possible(len(polygons[grip_poly_num])):
             return
 
-        command = commands.RemoveNodeCmd(self, grip.grip_indexes, polygons, 'Usuń węzeł')
+        command = commands.RemoveNodeCmd(self, grip.grip_indexes, 'Usuń węzeł')
         self.scene().undo_redo_stack.push(command)
 
         # self.map_object.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
@@ -915,14 +919,36 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     def set_hover_over_for_address_labels(self, value):
         return
 
+    def _update_mp_data(self):
+        # sciezki obiektu dla kazdego poziomu Data, liczone z danych obiektu
+        self._mp_data = [None, None, None, None, None]
+        for level in range(len(self._mp_data)):
+            polys = self.map_object.get_datax('Data%s' % level)
+            if polys:
+                self._mp_data[level] = self.create_painter_path(polys)
+
     def set_mp_data(self):
-        # to be defined separately for polygon and polyline
-        pass
+        self._update_mp_data()
+        for level, path in enumerate(self._mp_data):
+            if path is not None and self.path().isEmpty():
+                self.setPath(path)
+                self.current_data_x = level
+
+    def update_from_map_object(self):
+        """Odswieza ksztalt obiektu na scenie (sciezke, etykiety, strzalki, numery) po zmianie danych obiektu
+        (map_object). Ksztalt na scenie wynika zawsze z danych - komendy zmieniaja dane, a potem wolaja te metode."""
+        self._update_mp_data()
+        if self._mp_data[self.current_data_x] is not None:
+            self.setPath(self._mp_data[self.current_data_x])
+        self.setPos(0, 0)
+        self.update_arrow_heads()
+        self.update_label_pos()
+        self.update_hlevel_labels()
+        self.update_housenumber_labels()
+        self.update_interpolated_housenumber_labels()
 
     def set_map_level(self):
         level = self.scene().get_map_level()
-        # lets save the current path in case it's changed
-        self._mp_data[self.current_data_x] = self.path()
         if self._mp_data[level] is not None:
             self.remove_items_before_new_map_level_set()
             self.setPath(self._mp_data[level])
@@ -1019,10 +1045,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def update_interpolated_housenumber_labels(self):
         return
-
-    def update_items_after_obj_move(self):
-        self.remove_items_before_new_map_level_set()
-        self.add_items_after_new_map_level_set()
 
 class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     # typ ostatnio wybrany przez uzytkownika dla tego rodzaju obiektu, nadawany nowo tworzonym obiektom
@@ -1258,20 +1280,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
         #     numbers.append((vector.unitVector(), num_def.number,))
         return numbers
 
-    def set_mp_data(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.map_object.get_datax(given_level)
-            if not data:
-                continue
-            level = int(given_level[-1])
-            polylines_list = list()
-            for nodes in data:
-                polylines_list.append(nodes)
-            self._mp_data[level] = self.create_painter_path(polylines_list)
-            if self.path().isEmpty():
-                self.setPath(self._mp_data[level])
-                self.current_data_x = level
-
     def set_pen(self):
         self.orig_pen = None
         pen = self._map_objects_properties.get_polyline_qpen(self.map_object.get_type())
@@ -1438,20 +1446,6 @@ class PolygonQGraphicsPathItem(PolyQGraphicsPathItem):
         PolygonQGraphicsPathItem.last_used_type = new_type
         command = commands.UpdatePolygonType(self, new_type, f'Edycja type polygonu na: {new_type}')
         self.scene().undo_redo_stack.push(command)
-
-    def set_mp_data(self):
-        for given_level in ('Data0', 'Data1', 'Data2', 'Data3', 'Data4'):
-            data = self.map_object.get_datax(given_level)
-            if not data:
-                continue
-            level = int(given_level[-1])
-            nodes_qpointfs = list()
-            for nodes in data:
-                nodes_qpointfs.append(nodes)
-            self._mp_data[level] = self.create_painter_path(nodes_qpointfs)
-            if self.path().isEmpty():
-                self.setPath(self._mp_data[level])
-                self.current_data_x = level
 
     def shape(self):
         if not self.decorated():

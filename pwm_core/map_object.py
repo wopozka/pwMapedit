@@ -4,6 +4,7 @@ i polygonow, bez czesci graficznej."""
 from collections import OrderedDict
 
 from pwm_core.data_x import Node, Data_X
+from pwm_core.geometry import Point
 from pwm_core import mp_format
 
 
@@ -368,6 +369,12 @@ class BasicMapItem(object):
             mp_record.append('Label3=' + self.label3)
         return mp_record + self.to_mp_record_others()
 
+    def translate(self, data_level, dx, dy):
+        """Przesuwa wszystkie wezly poziomu data_level o (dx, dy) we wspolrzednych sceny (canvas)."""
+        for poly in self.data0.get_polys_for_data_level(data_level):
+            for node in poly:
+                node.set_coordinates_from_point(Point(node.x() + dx, node.y() + dy))
+
     def to_mp_record_header(self):
         return [] if self.mp_record_header is None else [self.mp_record_header]
 
@@ -392,6 +399,16 @@ class BasicMapItem(object):
 class Poi(BasicMapItem):
     mp_record_header = mp_format.MAP_OBJECT_POI
     kind_name = 'POI'
+
+    def get_position(self, data_level):
+        """Wezel (Node) z polozeniem POI na poziomie data_level albo None, gdy POI nie ma danych na tym poziomie."""
+        if data_level not in self.data0.get_data_levels():
+            return None
+        return self.data0.get_polys_for_data_level(data_level)[0][0]
+
+    def set_position(self, data_level, point):
+        """Przesuwa POI na poziomie data_level. point: obiekt z metodami x() i y() - wspolrzedne sceny (canvas)."""
+        self.data0.update_node_coordinates(data_level, 0, 0, point)
 
 
 class Polyline(BasicMapItem):

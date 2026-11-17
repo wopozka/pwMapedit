@@ -1,4 +1,4 @@
-from PyQt6.QtGui import QPainterPath, QUndoCommand, QUndoStack
+from PyQt6.QtGui import QUndoCommand, QUndoStack
 from PyQt6.QtCore import QPointF
 import copy
 import time
@@ -22,10 +22,8 @@ class CreateNewPoiCmd(QUndoCommand):
             self._placed = True
             poi = self.new_poi_map_object
             cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
-            poi.map_object.data0.update_node_coordinates(poi.current_data_x, 0, 0, cur_mouse_scene_pos)
-            # pozycje POI na poziomach mapy liczone sa z danych
-            poi.set_mp_data()
-            poi.setPos(cur_mouse_scene_pos)
+            poi.map_object.set_position(poi.current_data_x, cur_mouse_scene_pos)
+            poi.update_from_map_object()
 
     def undo(self):
         self.scene.removeItem(self.new_poi_map_object)
@@ -48,19 +46,10 @@ class CreateNewPolyCmd(QUndoCommand):
         self.scene.draw_object_on_map(self.new_poly_map_object)
         if not self._placed:
             self._placed = True
-            cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
-            new_pos = cur_mouse_scene_pos - self.mouse_scene_pos
-            self.new_poly_map_object.setPos(new_pos)
-            polygons = self.new_poly_map_object.get_polygons_from_path(self.new_poly_map_object.mapToScene(self.new_poly_map_object.path()))
-            data_level = self.new_poly_map_object.current_data_x
-            for polygon_num, polygon in enumerate(polygons):
-                for coord_num, pos in enumerate(polygon):
-                    self.new_poly_map_object.map_object.data0.update_node_coordinates(data_level, polygon_num,
-                                                                                      coord_num, pos)
-            self.new_poly_map_object.setPath(self.new_poly_map_object.create_painter_path(polygons))
-            self.new_poly_map_object.setPos(0, 0)
-            self.new_poly_map_object.update_items_after_obj_move()
-
+            poly = self.new_poly_map_object
+            offset = self.scene.views()[0].current_scene_mouse_coords() - self.mouse_scene_pos
+            poly.map_object.translate(poly.current_data_x, offset.x(), offset.y())
+            poly.update_from_map_object()
 
     def undo(self):
         if self.new_poly_map_object.isSelected():
@@ -87,153 +76,90 @@ class DeleteObjectsCmd(QUndoCommand):
             self.scene.addItem(map_obj)
 
 
-class InsertNodeCmd(QUndoCommand):
-    def __init__(self, item, path_num, coord_num, pos, polygons, description):
-        super(InsertNodeCmd, self).__init__(description)
-        self.data0_copy = item.map_object.data0.copy()
-        self.path_copy = QPainterPath(item.path())
+class EditPolyGeometryCmd(QUndoCommand):
+    """Wspolna czesc komend zmieniajacych ksztalt linii albo polygonu: redo zmienia dane obiektu (change_data),
+    undo przywraca kopie danych sprzed zmiany; ksztalt na scenie jest potem odtwarzany z danych."""
+    def __init__(self, item, description):
+        super().__init__(description)
         self.item = item
+        self.data_level = item.current_data_x
+        self.data0_copy = item.map_object.data0.copy()
+
+    def change_data(self):
+        raise NotImplementedError
+
+    def redo(self):
+        self.change_data()
+        self.item.update_from_map_object()
+
+    def undo(self):
+        self.item.scene().clearSelection()
+        self.item.undecorate()
+        self.item.map_object.data0 = self.data0_copy.copy()
+        self.item.update_from_map_object()
+        self.item.set_selected(True)
+        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
+            self.item.decorate()
+
+    def select_after_redo(self, modes):
+        if self.item.scene().get_pw_mapedit_mode() in modes:
+            self.item.set_selected(True)
+
+
+class InsertNodeCmd(EditPolyGeometryCmd):
+    def __init__(self, item, path_num, coord_num, pos, description):
+        super().__init__(item, description)
         self.path_num = path_num
         self.coord_num = coord_num
-        self.pos = pos
-        self.polygons = polygons
-        self.data_level = self.item.current_data_x
+        self.pos = QPointF(pos)
+
+    def change_data(self):
+        self.item.map_object.data0.insert_node_at_position(self.data_level, self.path_num, self.coord_num,
+                                                           self.pos.x(), self.pos.y())
 
     def redo(self):
         if self.item.isSelected():
             self.item.set_selected(False)
-        # self.item.undecorate()
-        self.item.map_object.data0.insert_node_at_position(self.data_level, self.path_num, self.coord_num,
-                                                      self.pos.x(), self.pos.y())
-        self.item.setPath(self.item.create_painter_path(self.polygons))
-        self.update_children()
-        if (self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES or
-                self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS):
-            self.item.set_selected(True)
-        return
-
-    def undo(self):
-        self.item.scene().clearSelection()
-        self.item.undecorate()
-        self.item.map_object.data0 = self.data0_copy.copy()
-        self.item.setPath(QPainterPath(self.path_copy))
-        self.update_children()
-        self.item.set_selected(True)
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.item.decorate()
-        return
-
-    def update_children(self):
-        self.item.update_arrow_heads()
-        self.item.update_label_pos()
-        self.item.update_hlevel_labels()
-        self.item.update_housenumber_labels()
+        super().redo()
+        self.select_after_redo((pwmapedit_constants.Tools.EDIT_NODES, pwmapedit_constants.Tools.SELECT_OBJECTS))
 
 
-class RemoveNodeCmd(QUndoCommand):
-    def __init__(self, item, index, polygons, description):
-        super(RemoveNodeCmd, self).__init__(description)
-        self.data0_copy = item.map_object.data0.copy()
-        self.path_copy = QPainterPath(item.path())
-        self.item = item
+class RemoveNodeCmd(EditPolyGeometryCmd):
+    def __init__(self, item, index, description):
+        super().__init__(item, description)
         self.path_num, self.coord_num = index
-        self.data_level = self.item.current_data_x
-        self.polygons = polygons
-        self.data_level = self.item.current_data_x
 
-    def redo(self):
-        self.item.scene().clearSelection()
-        polygons = copy.deepcopy(self.polygons)
-        polygons[self.path_num].pop(self.coord_num)
+    def change_data(self):
         self.item.map_object.data0.delete_node_at_position(self.data_level, self.path_num, self.coord_num)
-        self.item.setPath(self.item.create_painter_path(polygons))
-        self.item.set_selected(True)
-        self.update_children()
-
-    def undo(self):
-        self.item.scene().clearSelection()
-        self.item.undecorate()
-        self.item.map_object.data0 = self.data0_copy.copy()
-        self.item.setPath(QPainterPath(self.path_copy))
-        self.update_children()
-        if self.item.scene().get_pw_mapedit_mode() in (pwmapedit_constants.Tools.EDIT_NODES,
-                                                             pwmapedit_constants.Tools.SELECT_OBJECTS):
-            self.item.set_selected(True)
-        return
-
-    def update_children(self):
-        self.item.update_arrow_heads()
-        self.item.update_label_pos()
-        self.item.update_hlevel_labels()
-        self.item.update_housenumber_labels()
-
-class ReversePolylineCmd(QUndoCommand):
-    def __init__(self, item, description):
-        super(ReversePolylineCmd, self).__init__(description)
-        self.data0_copy = item.map_object.data0.copy()
-        self.path_copy = item.path()
-        self.item = item
-        self.data_level = item.current_data_x
 
     def redo(self):
+        self.item.scene().clearSelection()
+        super().redo()
+        self.item.set_selected(True)
+
+
+class ReversePolylineCmd(EditPolyGeometryCmd):
+    def change_data(self):
         self.item.map_object.data0.reverse_poly(self.data_level)
-        polygons = self.item.map_object.data0.get_polys_for_data_level(self.data_level)
-        self.item.setPath(self.item.create_painter_path(polygons))
-        self.update_children()
-        return
 
     def undo(self):
-        self.item.map_object.data0 = self.data0_copy
-        self.item.setPath(self.path_copy)
-        self.update_children()
-        return
-
-    def update_children(self):
-        self.item.update_arrow_heads()
-        self.item.update_label_pos()
-        self.item.update_hlevel_labels()
-        self.item.update_housenumber_labels()
+        self.item.map_object.data0 = self.data0_copy.copy()
+        self.item.update_from_map_object()
 
 
-class MoveGripCmd(QUndoCommand):
-    def __init__(self, item, grip, description,):
-        super(MoveGripCmd, self).__init__(description)
+class MoveGripCmd(EditPolyGeometryCmd):
+    def __init__(self, item, grip, description):
+        super().__init__(item, description)
         self.index = grip.grip_indexes
-        self.pos = grip.pos()
-        self.data0_copy = item.map_object.data0.copy()
-        self.path_copy = item.path()
-        self.item = item
-        self.data_level = item.current_data_x
+        self.pos = QPointF(grip.pos())
         self.cmd_time = time.time()
 
     def id(self):
         return self.item.map_object.get_id()
 
-    def redo(self):
-        polygons = self.item.get_polygons_from_path(self.item.path())
+    def change_data(self):
         grip_poly_num, grip_coord_num = self.index
-        polygons[grip_poly_num][grip_coord_num] = self.pos
-        self.item.setPath(self.item.create_painter_path(polygons))
         self.item.map_object.data0.update_node_coordinates(self.data_level, grip_poly_num, grip_coord_num, self.pos)
-        self.update_children()
-
-    def undo(self):
-        self.item.scene().clearSelection()
-        self.item.undecorate()
-        self.item.map_object.data0 = self.data0_copy.copy()
-        self.item.setPath(self.path_copy)
-        self.update_children()
-        self.item.set_selected(True)
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.item.decorate()
-        return
-
-    def update_children(self):
-        self.item.update_arrow_heads()
-        self.item.update_label_pos()
-        self.item.update_hlevel_labels()
-        self.item.update_housenumber_labels()
-        self.item.update_interpolated_housenumber_labels()
 
     def mergeWith(self, other):
         if other.id() != self.id():
@@ -244,56 +170,32 @@ class MoveGripCmd(QUndoCommand):
         return True
 
 
-class SelectModeMoveItem(QUndoCommand):
-    def __init__(self, item, description, pos):
-        super(SelectModeMoveItem, self).__init__(description)
-        self.pos = pos
-        self.data0_copy = item.map_object.data0.copy()
-        self.path_copy = item.path()
-        self.item = item
-        self.data_level = item.current_data_x
-        self.polygons = self.item.get_polygons_from_path(self.item.mapToScene(self.item.path()))
+class SelectModeMoveItem(EditPolyGeometryCmd):
+    def __init__(self, item, description):
+        """item zostal juz przesuniety na scenie (myszka) - jego pozycja to przesuniecie obiektu"""
+        super().__init__(item, description)
+        self.offset = QPointF(item.pos())
 
-    def redo(self):
-        for polygon_num, polygon in enumerate(self.polygons):
-            for coord_num, pos in enumerate(polygon):
-                self.item.map_object.data0.update_node_coordinates(self.data_level, polygon_num, coord_num, pos)
-        self.item.setPath(self.item.create_painter_path(self.polygons))
-        self.item.setPos(0, 0)
-        self.update_children()
+    def change_data(self):
+        self.item.map_object.translate(self.data_level, self.offset.x(), self.offset.y())
 
-    def undo(self):
-        self.item.scene().clearSelection()
-        self.item.undecorate()
-        self.item.map_object.data0 = self.data0_copy
-        self.item.setPath(self.path_copy)
-        self.update_children()
-        self.item.set_selected(True)
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.item.decorate()
-
-        return
-
-    def update_children(self):
-        self.item.update_items_after_obj_move()
 
 class SelectModeMovePoi(QUndoCommand):
-    def __init__(self, item, orig_pos, description):
+    def __init__(self, item, description):
+        """item zostal juz przesuniety na scenie (myszka); undo przywraca dane obiektu sprzed przesuniecia"""
         super(SelectModeMovePoi, self).__init__(description)
-        self.pos = item.pos()
+        self.pos = QPointF(item.pos())
         self.data0_copy = item.map_object.data0.copy()
-        self.pos_copy = QPointF(orig_pos)
         self.item = item
         self.data_level = item.current_data_x
 
     def redo(self):
-        self.item.map_object.data0.update_node_coordinates(self.data_level, 0, 0, self.pos)
-        self.item.setPos(self.pos)
-        return
+        self.item.map_object.set_position(self.data_level, self.pos)
+        self.item.update_from_map_object()
 
     def undo(self):
-        self.item.map_object.data0.update_node_coordinates(self.data_level, 0, 0, self.pos_copy)
-        self.item.setPos(self.pos_copy)
+        self.item.map_object.data0 = self.data0_copy.copy()
+        self.item.update_from_map_object()
         if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.SELECT_OBJECTS:
             self.item.set_selected(True)
 

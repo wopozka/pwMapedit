@@ -31,6 +31,16 @@ def test_record_header_and_str():
     assert str(poi) == '<POI, Object ID: 5, Type: 12032>'
 
 
+def test_poi_position():
+    poi = make(Poi, ['[POI]', 'Type=0x2f00', 'Data0=(52.00000,20.00000)', 'Data1=(52.10000,20.10000)'])
+    assert poi.get_position(2) is None
+    x, y = poi.get_position(0).get_canvas_coords()
+    target = poi.get_position(1)
+    poi.set_position(0, target)
+    assert poi.get_position(0).get_canvas_coords() == target.get_canvas_coords() != (x, y)
+    assert 'Data0=(52.10000,20.10000)' in poi.to_mp_record()
+
+
 def test_is_oneway():
     line = make(Polyline, LINE)
     assert line.is_oneway()
