@@ -10,6 +10,9 @@ danych bit w bit. Błędy znalezione w oryginale są opisane niżej i świadomie
 
 ## Budowanie i testy
 
+Pełna instrukcja dla Linuksa i Windows (z GUI, pakowaniem do zip, AppImage i tar.gz): [BUDOWANIE.md](BUDOWANIE.md).
+Instalacja gotowych pakietów: [INSTALACJA.md](INSTALACJA.md).
+
 ```sh
 cd cpp
 make            # build/libpwmcore.a, build/mptool, build/run_tests

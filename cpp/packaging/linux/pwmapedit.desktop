@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=pwMapEdit
+GenericName=Edytor map MP
+Comment=Edytor map w formacie MP (Polish Format)
+Exec=pwmapedit %f
+Icon=pwmapedit
+Terminal=false
+Categories=Science;Geography;

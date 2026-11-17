@@ -3,3 +3,4 @@ build-debug/
 build-cmake/
 build-dbg/
 dist/
+build-release/
