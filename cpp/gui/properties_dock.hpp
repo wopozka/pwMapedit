@@ -123,7 +123,7 @@ private:
     void comment_edited();
     void extras_edited();
     void route_params_edited();
-    void numbering_edited(bool style_changed = false);
+    void numbering_edited();
     void node_numbers_toggled(bool on);
     void step_node(int delta);
     void element_selected();

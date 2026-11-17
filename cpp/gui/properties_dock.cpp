@@ -255,7 +255,7 @@ PropertiesDock::NumberingSide PropertiesDock::build_numbering_side(const QString
     side.style = new QComboBox(side.box);
     side.style->addItems({tr("None"), tr("Parzysty (2, 4, 6, 8)"), tr("Nieparzysty (1, 3, 5, 7)"),
                           tr("Ciągły (1, 2, 3, 4)")});
-    connect(side.style, &QComboBox::activated, this, [this] { numbering_edited(true); });
+    connect(side.style, &QComboBox::activated, this, [this] { numbering_edited(); });
     form->addRow(tr("Styl numeracji"), side.style);
     auto line = [&](QLineEdit*& edit, const QString& name, bool number) {
         edit = new QLineEdit(side.box);
@@ -269,6 +269,9 @@ PropertiesDock::NumberingSide PropertiesDock::build_numbering_side(const QString
     line(side.city, tr("Miasto"), false);
     line(side.region, tr("Region"), false);
     line(side.country, tr("Państwo"), false);
+    // bez stylu numeracji nie ma numeru poczatkowego
+    connect(side.style, &QComboBox::activated, side.after,
+            [style = side.style, after = side.after] { after->setEnabled(style->currentIndex() != 0); });
     return side;
 }
 
@@ -499,8 +502,9 @@ void PropertiesDock::fill_node() {
     prev_node_->setEnabled(scene_->neighbour_grip(-1).has_value());
     next_node_->setEnabled(scene_->neighbour_grip(1).has_value());
     const NumbersDefinition* def = node->numbers();
-    node_has_numbers_->setChecked(def != nullptr);
-    set_numbering_fields_enabled(def != nullptr);
+    // definicja bez numerow nie jest numeracja (nie trafia do pliku MP) - checkbox musi dac sie odznaczyc
+    node_has_numbers_->setChecked(node->has_numeration());
+    set_numbering_fields_enabled(node->has_numeration());
     fill_numbering(def ? *def : NumbersDefinition{});
     QSignalBlocker block(hlevel_);
     const OptInt& h = node->hlevel();
@@ -513,6 +517,7 @@ void PropertiesDock::fill_numbering(const NumbersDefinition& d) {
         QSignalBlocker block(side.style);
         side.style->setCurrentIndex(style_index(style));
         side.after->setText(after ? QString::number(*after) : QString());
+        side.after->setEnabled(side.style->currentIndex() != 0);
         side.before->setText(before ? QString::number(*before) : QString());
         side.zip->setText(to_ui(zip));
         side.city->setText(to_ui(city));
@@ -690,16 +695,16 @@ void PropertiesDock::route_params_edited() {
     commit(tr("modyfikacja RouteParams"), [&](MapObject& o) { o.routeparam = values; });
 }
 
-void PropertiesDock::numbering_edited(bool style_changed) {
+void PropertiesDock::numbering_edited() {
     if (filling_ || !grip_) return;
     NumbersDefinition def;
-    auto read_side = [style_changed](NumberingSide& side, OptStr& style, OptInt& after, OptInt& before, OptStr& zip,
+    auto read_side = [](NumberingSide& side, OptStr& style, OptInt& after, OptInt& before, OptStr& zip,
                                      OptStr& city, OptStr& region, OptStr& country) {
         style = style_from_index(side.style->currentIndex());
         // jak command_numeration_style_edited: wybrany styl wymaga numeru poczatkowego, a "None" go czysci
         // (inaczej numer "po" zostaje i wezel dalej zaczyna numeracje)
         if (style && side.after->text().trimmed().isEmpty()) side.after->setText("0");
-        if (!style && style_changed) side.after->clear();
+        if (!style) side.after->clear();
         after = number_from_ui(side.after->text());
         before = number_from_ui(side.before->text());
         zip = from_ui(side.zip->text());

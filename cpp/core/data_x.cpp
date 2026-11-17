@@ -569,13 +569,37 @@ void DataX::clean_numbers_definitions(int data_level, size_t poly_num) {
     std::vector<size_t> with_numbers;
     for (size_t i = 0; i < poly.size(); ++i)
         if (poly[i].has_numeration()) with_numbers.push_back(i);
-    if (with_numbers.empty()) return;
-    clean_numbers_definition_first_and_last_nodes(poly);
-    if (with_numbers.size() == 1) {
-        clean_numbers_definitions_only_one_node_case(poly, with_numbers[0]);
-        return;
+    if (!with_numbers.empty()) {
+        clean_numbers_definition_first_and_last_nodes(poly);
+        if (with_numbers.size() == 1)
+            clean_numbers_definitions_only_one_node_case(poly, with_numbers[0]);
+        else
+            clean_numbers_definitions_multiple_nodes_case(poly);
     }
-    clean_numbers_definitions_multiple_nodes_case(poly);
+    clean_orphaned_numbers(poly);
+}
+
+void DataX::clean_orphaned_numbers(Poly& poly) {
+    // Tego Python nie robi. Numer "przed" ma sens tylko wtedy, gdy poprzedni wezel z numeracja zaczyna numeracje
+    // po tej samej stronie - po wylaczeniu numeracji (styl None) na pierwszym numerowanym wezle numer "przed"
+    // zostawal na nastepnym i dalej byl rysowany. Strona bez stylu nie moze miec numeru "po", a definicja bez
+    // zadnego numeru jest usuwana (inaczej wezel wygladal na numerowany i nie dawal sie odznaczyc).
+    auto no_style = [](const OptStr& s) { return !s || *s == "N"; };
+    OptInt left_after, right_after;  // numery "po" ostatniego wezla z numeracja
+    for (Node& node : poly) {
+        if (!node.numbers()) continue;
+        NumbersDefinition& d = node.numbers_or_create();
+        if (no_style(d.left_side_numbering_style)) d.left_side_number_after.reset();
+        if (no_style(d.right_side_numbering_style)) d.right_side_number_after.reset();
+        if (!left_after) d.left_side_number_before.reset();
+        if (!right_after) d.right_side_number_before.reset();
+        if (!node.has_numeration()) {
+            node.clear_numbers();
+            continue;
+        }
+        left_after = d.left_side_number_after;
+        right_after = d.right_side_number_after;
+    }
 }
 
 void DataX::clean_numbers_definition_first_and_last_nodes(Poly& poly) {

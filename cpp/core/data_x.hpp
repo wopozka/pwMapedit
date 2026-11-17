@@ -234,6 +234,7 @@ private:
     void clean_numbers_definition_first_and_last_nodes(Poly& poly);
     void clean_numbers_definitions_only_one_node_case(Poly& poly, size_t node_with_numbers_idx);
     void clean_numbers_definitions_multiple_nodes_case(Poly& poly);
+    static void clean_orphaned_numbers(Poly& poly);
 
     const Projection* projection_ = nullptr;
     std::vector<int> levels_;               // _data_levels: kolejnosc pojawiania sie poziomow

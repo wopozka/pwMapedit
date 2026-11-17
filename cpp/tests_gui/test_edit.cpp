@@ -860,8 +860,8 @@ void EditTests::dock_numbers_on_road_without_numbering() {
 
     f.dock.node_has_numbers()->click();
     QVERIFY(f.dock.node_has_numbers()->isChecked());
-    QVERIFY(f.dock.number_after(true)->isEnabled());
     QVERIFY(f.dock.numbering_style(true)->isEnabled());
+    QVERIFY(!f.dock.number_after(true)->isEnabled());  // styl None: bez numeru poczatkowego
     QCOMPARE(f.stack.count(), start);  // jeszcze nic do zapisania
 
     // wybor stylu (nieparzyste) zapisuje numeracje z numerem poczatkowym 0, potem wpisany numer
@@ -870,6 +870,7 @@ void EditTests::dock_numbers_on_road_without_numbering() {
     emit style->activated(2);
     QCOMPARE(f.stack.count(), start + 1);
     QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_numbering_style, OptStr("O"));
+    QVERIFY(f.dock.number_after(true)->isEnabled());
     f.dock.number_after(true)->setText("1");
     emit f.dock.number_after(true)->editingFinished();
     QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_number_after, OptInt(1));
@@ -883,9 +884,17 @@ void EditTests::dock_numbers_on_road_without_numbering() {
     style->setCurrentIndex(0);
     emit style->activated(0);
     QVERIFY(f.dock.number_after(true)->text().isEmpty());
+    QVERIFY(!f.dock.number_after(true)->isEnabled());
     QVERIFY(!f.node(obj, 0, 0).starts_numeration());
     for (const std::string& line : f.map->objects()[obj].to_mp_record(f.map->precision()))
         QVERIFY(line.rfind("Numbers1=", 0) != 0);
+    // wezel bez numerow nie ma numeracji: zadnej pustej definicji ani numeru "przed" na koncu linii,
+    // checkbox odznaczony (wczesniej zostawal zaznaczony i nie dawal sie odznaczyc)
+    QVERIFY(f.node(obj, 0, 0).numbers() == nullptr);
+    QVERIFY(f.node(obj, 0, 2).numbers() == nullptr);
+    QVERIFY(!f.dock.node_has_numbers()->isChecked());
+    f.dock.node_has_numbers()->click();
+    QVERIFY(f.dock.node_has_numbers()->isChecked());
     style->setCurrentIndex(2);
     emit style->activated(2);
     QCOMPARE(f.node(obj, 0, 0).numbers()->left_side_number_after, OptInt(0));

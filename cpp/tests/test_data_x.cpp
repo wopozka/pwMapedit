@@ -367,3 +367,29 @@ TEST(centroid_and_rotate) {
     CHECK_NEAR(two.raw_polys()[0][0][1].x(), 2 * centre.x - before0.x, 1e-6);
     CHECK_NEAR(two.raw_polys()[1][0][1].y(), 2 * centre.y - before1.y, 1e-6);
 }
+
+TEST(style_none_on_first_numbered_node_drops_orphaned_before) {
+    // Wylaczenie numeracji (styl None) na pierwszym numerowanym wezle zostawialo numer "przed" na nastepnym
+    // wezle, ktory dalej byl rysowany; pusta definicja na wezle nie dawala sie odznaczyc w panelu.
+    DataX d = make({"Data0=(51.0,19.0),(51.1,19.1),(51.2,19.2),(51.3,19.3)"});
+    d.add_housenumbers_from_string("Numbers1=0,O,1,9,E,2,10");
+    d.add_housenumbers_from_string("Numbers2=2,O,11,19,N,-1,-1");
+    const Poly& p = d.raw_polys()[0][0];
+    CHECK(p[2].numbers()->left_side_number_before == OptInt(9));
+    Node& first = *d.poly_node(0, 0, 0);
+    NumbersDefinition none;  // obie strony None
+    first.set_numbers(none);
+    d.clean_numbers_definitions(0, 0);
+    CHECK(p[0].numbers() == nullptr);
+    CHECK(!p[2].numbers()->left_side_number_before);
+    CHECK(!p[2].numbers()->right_side_number_before);
+    CHECK(p[2].numbers()->left_side_number_after == OptInt(11));
+    CHECK(p[3].numbers()->left_side_number_before == OptInt(19));
+
+    // numer "po" bez stylu (np. wpisany przy stylu None) nie zaczyna numeracji
+    NumbersDefinition no_style;
+    no_style.right_side_number_after = 5;
+    d.poly_node(0, 0, 1)->set_numbers(no_style);
+    d.clean_numbers_definitions(0, 0);
+    CHECK(p[1].numbers() == nullptr);
+}
