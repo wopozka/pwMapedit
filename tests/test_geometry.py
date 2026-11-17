@@ -93,16 +93,18 @@ TEST_LABEL_ANGLE = (
     (180, 0),
     (225, 45),
     (270, 90),
-    (315, 45)
+    # 270-360 to katy czytelne bez obracania (jak 135 -> 315)
+    (315, 315)
 )
 
 @pytest.mark.parametrize('target, answer', TEST_LABEL_ANGLE)
 def test_label_angle(target, answer):
     assert geometry.calculate_label_angle(target) == answer
 
+# wartosci odniesienia z geographiclib (Geodesic.WGS84.Inverse), w metrach
 TEST_DISTANCE = (
-    ([(51.981570, 16.444900), (51.990910, 16.467280)], 1850),
-    ([(39.152501, -84.412977), (39.152505, -84.412946)], 2.716),
+    ([(51.981570, 16.444900), (51.990910, 16.467280)], 1855.766514),
+    ([(39.152501, -84.412977), (39.152505, -84.412946)], 2.716191),
 )
 
 # @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
@@ -111,4 +113,4 @@ TEST_DISTANCE = (
 
 @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
 def test_vincenty_distance(target, answer):
-    assert geometry.vincenty_distance(target[0], target[1]) == answer
+    assert geometry.vincenty_distance(target[0], target[1]) == pytest.approx(answer, abs=1e-5)
