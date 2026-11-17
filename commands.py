@@ -11,14 +11,21 @@ class CreateNewPoiCmd(QUndoCommand):
         self.map_objects = map_objects
         self.scene = scene
         self.mouse_scene_pos = mouse_scene_pos
+        # wklejany obiekt jest umieszczany przy kursorze tylko przy pierwszym redo, kolejne (po undo) przywracaja go
+        # w tym samym miejscu
+        self._placed = mouse_scene_pos is None
 
     def redo(self):
         self.map_objects.add_map_object(self.new_poi_map_object.map_object)
         self.scene.draw_object_on_map(self.new_poi_map_object)
-        if self.mouse_scene_pos is not None:
-            self.new_poi_map_object.setPos(0, 0)
+        if not self._placed:
+            self._placed = True
+            poi = self.new_poi_map_object
             cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
-            self.new_poi_map_object.setPos(cur_mouse_scene_pos)
+            poi.map_object.data0.update_node_coordinates(poi.current_data_x, 0, 0, cur_mouse_scene_pos)
+            # pozycje POI na poziomach mapy liczone sa z danych
+            poi.set_mp_data()
+            poi.setPos(cur_mouse_scene_pos)
 
     def undo(self):
         self.scene.removeItem(self.new_poi_map_object)
@@ -32,11 +39,15 @@ class CreateNewPolyCmd(QUndoCommand):
         self.map_objects = map_objects
         self.scene = scene
         self.mouse_scene_pos = mouse_scene_pos
+        # wklejany obiekt jest przesuwany do kursora tylko przy pierwszym redo, kolejne (po undo) przywracaja go
+        # w tym samym miejscu
+        self._placed = mouse_scene_pos is None
 
     def redo(self):
         self.map_objects.add_map_object(self.new_poly_map_object.map_object)
         self.scene.draw_object_on_map(self.new_poly_map_object)
-        if self.mouse_scene_pos is not None:
+        if not self._placed:
+            self._placed = True
             cur_mouse_scene_pos = self.scene.views()[0].current_scene_mouse_coords()
             new_pos = cur_mouse_scene_pos - self.mouse_scene_pos
             self.new_poly_map_object.setPos(new_pos)

@@ -152,6 +152,37 @@ def test_new_object_gets_map_precision(tmp_path):
     assert 'Data0=(52.123457,20.123457)' in save_and_read(map_data, tmp_path / 'out.mp')
 
 
+def test_readding_object_after_undo_restores_it(tmp_path):
+    # undo utworzenia obiektu oznacza go jako usuniety, redo dodaje ten sam obiekt ponownie - ma wrocic do zapisu,
+    # i to raz
+    map_data = load(write_text(tmp_path / 'm.mp', MAP_TEXT))
+    objects_before = map_data.records_number()
+    drawn = Poi(None, _projection=map_data.projection)
+    drawn.set_type('0x2f01')
+    drawn.set_datax('Data0', '(52.10000,20.10000)')
+    map_data.add_map_object(drawn)
+    map_data.set_map_object_deleted(drawn)
+    assert 'Type=0x2f01' not in save_and_read(map_data, tmp_path / 'out1.mp')
+    map_data.add_map_object(drawn)
+    assert map_data.records_number() == objects_before + 1
+    assert save_and_read(map_data, tmp_path / 'out2.mp').count('Type=0x2f01') == 1
+
+
+def test_unset_map_object_deleted(tmp_path):
+    map_data = load(write_text(tmp_path / 'm.mp', MAP_TEXT))
+    map_object = map_data.get_all_map_objects()[1]
+    map_data.set_map_object_deleted(map_object)
+    map_data.unset_map_object_deleted(map_object)
+    assert not map_object.is_deleted()
+
+
+def test_object_id_taken_by_other_object(tmp_path):
+    map_data = load(write_text(tmp_path / 'm.mp', MAP_TEXT))
+    other = Poi(0, _projection=map_data.projection)
+    with pytest.raises(ValueError):
+        map_data.add_map_object(other)
+
+
 def _map_with_test_records(tmp_path):
     # tests/wynik.mp i rekordy obiektow z test_to_mp.py
     tree = ast.parse(open(os.path.join(TESTS_DIR, 'test_to_mp.py'), encoding='utf-8').read())

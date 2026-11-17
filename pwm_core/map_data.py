@@ -86,20 +86,28 @@ class MapData(object):
         return self.precision
 
     def add_map_object(self, map_object):
+        """Dodaje obiekt do mapy. Obiekt, ktory juz jest na mapie (np. redo utworzenia obiektu po undo, ktore
+        oznaczylo go jako usuniety), zostaje przywrocony, a nie dopisany drugi raz."""
         self.update_precision(map_object)
         # dla nowych obiektow id moze byc ustawione na None, wtedy przypisz pierwszy wolny
         if map_object.get_id() is None:
-           map_object.set_id(self.get_object_id())
-        if map_object.get_id() < len(self.mapObjectsList) and self.mapObjectsList[map_object.get_id()] is None:
-            self.mapObjectsList[map_object.get_id()] = map_object
-        else:
+            map_object.set_id(self.get_object_id())
+        obj_id = map_object.get_id()
+        if obj_id < len(self.mapObjectsList):
+            if self.mapObjectsList[obj_id] is not None and self.mapObjectsList[obj_id] is not map_object:
+                raise ValueError(f'Id {obj_id} jest juz zajete przez inny obiekt: {self.mapObjectsList[obj_id]}')
+            self.mapObjectsList[obj_id] = map_object
+        elif obj_id == len(self.mapObjectsList):
             self.mapObjectsList.append(map_object)
+        else:
+            raise ValueError(f'Id {obj_id} poza lista obiektow mapy ({len(self.mapObjectsList)} obiektow)')
+        map_object.set_undeleted()
 
     def set_map_object_deleted(self, map_object):
         self.mapObjectsList[map_object.get_id()].set_deleted()
 
     def unset_map_object_deleted(self, map_object):
-        self.mapObjectsList[map_object.get_id()].unset_deleted()
+        self.mapObjectsList[map_object.get_id()].set_undeleted()
 
     def set_projection(self, _projection):
         self.projection = _projection
