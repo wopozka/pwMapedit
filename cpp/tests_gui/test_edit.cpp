@@ -37,6 +37,7 @@
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTreeWidget>
+#include <QMenu>
 
 using namespace pwm;
 using namespace pwm::gui;
@@ -204,6 +205,7 @@ private slots:
     void shift_wheel_rotates_object_in_edit_nodes();
     void viaduct_pois_at_crossings();
     void dead_end_pois_at_unconnected_ends();
+    void marker_poi_key_sequences();
     void auto_map_level_follows_scale();
     void dock_prev_next_node_buttons();
 };
@@ -2259,6 +2261,55 @@ void EditTests::map_level_for_scale_ranges() {
     QCOMPARE(map_level_for_scale(999999), 3);
     QCOMPARE(map_level_for_scale(1000000), 4);
     QCOMPARE(map_level_for_scale(5e7), 4);
+}
+
+void EditTests::marker_poi_key_sequences() {
+    // skroty d,w (bojki wiadukt) i d,s (bojki slepy); dzialaja tez po otwarciu menu Tools bez zaznaczenia,
+    // ktore ukrywa te akcje (ukryta akcja nie reaguje na skrot)
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString map_file = dir.filePath("mapa.mp");
+    {
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+                "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00000),(52.10000,21.00300)\n[END]\n\n"
+                "[POLYLINE]\nType=0x6\nData0=(52.09900,21.00150),(52.10100,21.00150)\n[END]\n\n");
+    }
+    MainWindow w(MapStyles::find_icons_dir());
+    w.set_quiet(true);
+    w.show();
+    QApplication::setActiveWindow(&w);
+    QVERIFY(QTest::qWaitForWindowActive(&w));
+    QSignalSpy loaded(&w, &MainWindow::map_loaded);
+    w.open_file(map_file);
+    QVERIFY(loaded.wait(10000));
+    QMenu* tools = nullptr;
+    for (QMenu* m : w.findChildren<QMenu*>())
+        if (m->title() == "&Tools" || m->title() == "Tools") tools = m;
+    QVERIFY(tools);
+    emit tools->aboutToShow();  // nic nie zaznaczone - akcje bojek ukryte
+    emit tools->aboutToHide();
+
+    auto count_type = [&](long long type) {
+        int n = 0;
+        for (const MapObject& o : w.scene()->map()->objects())
+            if (o.kind() == ObjectKind::Poi && o.type && *o.type == type) ++n;
+        return n;
+    };
+    for (size_t i : {0, 1}) w.scene()->item_for_object(i)->graphics_item()->setSelected(true);
+    w.view()->setFocus();
+    QTest::keyClick(w.view(), Qt::Key_D);
+    QTest::keyClick(w.view(), Qt::Key_W);
+    QCOMPARE(count_type(0x1709), 1);
+
+    w.scene()->clearSelection();
+    for (size_t i : {0, 1}) w.scene()->item_for_object(i)->graphics_item()->setSelected(true);
+    QTest::keyClick(w.view(), Qt::Key_D);
+    QTest::keyClick(w.view(), Qt::Key_S);
+    QCOMPARE(count_type(0x1708), 4);  // cztery wolne konce
+    w.scene()->undo_stack()->setClean();  // bez pytania o zapis przy zamykaniu
 }
 
 void EditTests::auto_map_level_follows_scale() {

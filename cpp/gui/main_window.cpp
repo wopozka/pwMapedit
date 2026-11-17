@@ -336,6 +336,9 @@ void MainWindow::create_actions_and_menus() {
                                                 [this] { convert_selected(ObjectKind::Polyline); });
     QAction* viaducts = tools_menu->addAction(tr("Dodaj bojki wiadukt"), this, &MainWindow::add_viaduct_pois);
     QAction* dead_ends = tools_menu->addAction(tr("Dodaj bojki ślepy"), this, &MainWindow::add_dead_end_pois);
+    // skroty dwuklawiszowe jak w emacsie, pod lewa reka w rzedzie asdf: d w, d s
+    viaducts->setShortcut(QKeySequence(QStringLiteral("D, W")));
+    dead_ends->setShortcut(QKeySequence(QStringLiteral("D, S")));
     // menu pokazuje tylko operacje pasujace do zaznaczenia
     connect(tools_menu, &QMenu::aboutToShow, this, [=] {
         const bool polygons = scene_->has_selected(ObjectKind::Polygon);
@@ -347,6 +350,11 @@ void MainWindow::create_actions_and_menus() {
         viaducts->setVisible(polylines);
         dead_ends->setVisible(polylines);
         objects_separator->setVisible(polygons || polylines);
+    });
+    // ukryta akcja nie reaguje na skrot - po zamknieciu menu wszystkie znow widoczne
+    connect(tools_menu, &QMenu::aboutToHide, this, [=] {
+        for (QAction* act : {subtract, subtract_delete, to_polyline, to_polygon, viaducts, dead_ends, objects_separator})
+            act->setVisible(true);
     });
     // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
     connect(scene_, &MapScene::tool_changed, this, [this] {

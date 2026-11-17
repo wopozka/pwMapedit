@@ -127,10 +127,10 @@ zmienia się w krzyżyk.
   (mniejszy wewnątrz → dziura; częściowo → wycięcie). Wariant „i usuń drugi” usuwa też odejmowany.
 - **Zamiana:** zaznacz polygon albo polilinię → **Tools → Zamień polygon na polilinię / polilinię na polygon**
   (menu Tools pokazuje tylko operacje pasujące do zaznaczenia).
-- **Bojki wiadukt:** zaznacz co najmniej dwie drogi (**Ctrl+klik**) → **Tools → Dodaj bojki wiadukt** – w każdym
+- **Bojki wiadukt:** zaznacz co najmniej dwie drogi (**Ctrl+klik**) → **Tools → Dodaj bojki wiadukt** albo klawisze **d**, potem **w** – w każdym
   miejscu, gdzie drogi się przecinają, powstaje POI WIADUKT (0x1709). Wspólny węzeł (zwykłe skrzyżowanie)
   i droga kończąca się na drugiej nie są przecięciem; tam, gdzie POI wiadukt już stoi, nowy nie jest dodawany.
-- **Bojki ślepy:** zaznacz drogi → **Tools → Dodaj bojki ślepy** – POI SLEPY (0x1708) na każdym końcu zaznaczonej
+- **Bojki ślepy:** zaznacz drogi → **Tools → Dodaj bojki ślepy** albo klawisze **d**, potem **s** – POI SLEPY (0x1708) na każdym końcu zaznaczonej
   drogi, który nie ma wspólnego węzła z żadną inną drogą na mapie (kolej, rzeka itp. się nie liczą). Zamknięta
   linia (rondo) nie ma końców; tam, gdzie POI ślepy już stoi, nowy nie jest dodawany.
 - **Części i poziomy:** panel Właściwości → karta **Elements**, prawy przycisk:
