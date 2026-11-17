@@ -3,14 +3,13 @@ from collections import namedtuple
 # from singleton_store import Store
 # from PyQt5.QtSvg import QGraphicsSvgItem
 # from PyQt5.QtWidgets import QGraphicsItemGroup
-from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem,     QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem, QGraphicsEllipseItem, QGraphicsLineItem
+from PyQt6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsPathItem, QGraphicsItem,
+                             QGraphicsPolygonItem, QStyle, QGraphicsSimpleTextItem)
 from PyQt6.QtCore import QPointF, Qt, QLineF, QPoint
-from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QVector2D, QFont
-from datetime import datetime
+from PyQt6.QtGui import QPainterPath, QPolygonF, QBrush, QPen, QColor, QPainterPathStroker, QCursor, QFont
 from pwmapedit_constants import (IGNORE_TRANSFORMATION_TRESHOLD, SCALE_WITHOUT_LABELS, SCALE_WITHOUT_POIS,
                                  SCALE_WITHOUT_SMALL_POLYS, SMALL_POLY_PERIMETER)
 import commands
-import itertools
 import pwmapedit_constants
 from pwm_core import geometry, mp_file
 from pwm_core.map_object import Poi, Polyline, Polygon
@@ -288,15 +287,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
     # basic class for Polyline and Polygon, for presentation on maps. Dane obiektu (zapisywane w pliku MP) sa
     # w map_object (pwm_core.map_object.Polyline albo Polygon)
     decorated_z_value = 100
-    closest_node_circle_definition = QGraphicsEllipseItem(- 10, - 10, 20, 20)
-    closest_node_circle_definition.setZValue(150)
-    closest_node_circle_definition.setPen(QPen(QColor("blue")))
-    closest_node_circle_definition.setBrush(QBrush(QColor("blue")))
-    closest_node_circle_definition.setFlag(QGraphicsPathItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
-    closest_node_circle_definition.setOpacity(0.5)
-    closest_node_min_distance = 15
-    closest_node_circle_pen = QPen(QColor("blue"))
-    closest_node_circle_brush = QBrush(QColor("blue"))
     selected_pen = QPen(QColor("red"))
     selected_pen.setCosmetic(True)
     selected_pen.setStyle(Qt.PenStyle.DotLine)
@@ -335,7 +325,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         # potrzebujemy tego w przypadku wklejania obiektu do nowego miejsca. Tak aby wkleić go w położeniu myszki
         self._mouse_release_scene_pos = None
         self._mouse_press_timestamp = None
-        self._closest_node_circle = None
 
     @staticmethod
     def accept_map_level_change():
@@ -369,28 +358,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
 
     def add_label(self):
         return
-
-    def closest_point_to_point(self, event_pos):
-        circle = QPainterPath()
-        circle.addEllipse(event_pos, 30, 30)
-        items_under_circle = self.scene().items(circle)
-        if self in items_under_circle:
-            items_under_circle.remove(self)
-        items_under_circle = [a for a in items_under_circle if (isinstance(a, PolylineQGraphicsPathItem)
-                                                                or isinstance(a, PolygonQGraphicsPathItem))]
-        if items_under_circle:
-            point_node_dist = []
-            for item_under_c in items_under_circle:
-                for polygon in self.get_polygons_from_path(item_under_c.path()):
-                    for point in polygon:
-                        point_event_l = QLineF(event_pos, point)
-                        if point_event_l.length() <= self.closest_node_min_distance:
-                            point_node_dist.append(point_event_l)
-            if point_node_dist:
-                closes_point = sorted(point_node_dist, key=lambda a: a.length())[0]
-                self._closest_node_circle = self.closest_node_circle_definition
-                self._closest_node_circle.setPos(closes_point.p2())
-                self.scene().addItem(self._closest_node_circle)
 
     def _closest_point_to_poly_insert_node(self, event_pos):
         """
@@ -537,29 +504,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         command = commands.InsertNodeCmd(self, path_num, coord_num, pos, 'Dodaj nod')
         self.scene().undo_redo_stack.push(command)
 
-    def command_move_grip2(self, grip):
-        print('ruszam')
-        if grip not in self.node_grip_items:
-            return
-        polygons = self.get_polygons_from_path(self.path())
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        try:
-            polygons[grip_poly_num][grip_coord_num] = grip.pos()
-        except IndexError:
-            return
-        # usuń kółko dociągające, bo jeśli jest może być już niepotrzebne przy self._drag_to_closes_node
-        if self._closest_node_circle is not None:
-            self.scene().removeItem(self._closest_node_circle)
-            self._closest_node_circle = None
-        if self.scene().stick_to_neighbours():
-            self.closest_point_to_point(grip.pos())
-        # jeśli znalazłeś najbliższy nod, wtedy przesuń grip na tę pozycję, przez co obiekt zostanie do tego
-        # dociągnięty
-        if self.scene().stick_to_neighbours() and self._closest_node_circle is not None:
-            grip.setPos(self._closest_node_circle.pos())
-        command = commands.MoveGripCmd(self, grip, 'przesun wezel')
-        self.scene().undo_redo_stack.push(command)
-
     def command_move_grip(self, grip):
         print('ruszam')
         if grip not in self.node_grip_items:
@@ -606,13 +550,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         command = commands.RemoveNodeCmd(self, grip.grip_indexes, 'Usuń węzeł')
         self.scene().undo_redo_stack.push(command)
 
-        # self.map_object.data0.delete_node_at_position(self.current_data_x, grip_poly_num, grip_coord_num)
-        # self.setPath(self.create_painter_path(polygons))
-        # self.undecorate()
-        # self.update_arrow_heads()
-        # self.update_label_pos()
-        # self.update_hlevel_labels()
-        # self.update_housenumber_labels()
         # self.decorate()
 
     def command_reverse_poly(self):
@@ -850,9 +787,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         self._movable = False
         print('closest node circle remove')
         self.scene().closest_node_circle_remove()
-        # if self._closest_node_circle is not None:
-        #     self.scene().removeItem(self._closest_node_circle)
-        #     self._closest_node_circle = None
         self._mouse_press_timestamp = None
         mode = self.scene().get_pw_mapedit_mode()
         if mode == pwmapedit_constants.Tools.SELECT_OBJECTS and self.recorded_pos is not None:
@@ -912,9 +846,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         if self.hovered_shape_id is not None:
             self.scene().removeItem(self.hovered_shape_id)
             self.hovered_shape_id = None
-
-    def remove_hlevel_labels(self, node_num):
-        return
 
     def set_hover_over_for_address_labels(self, value):
         return
@@ -1035,9 +966,6 @@ class PolyQGraphicsPathItem(QGraphicsPathItem):
         return
 
     def update_hlevel_labels(self):
-        return
-
-    def update_hlevel_in_node(self, grip, hlevel_value):
         return
 
     def update_housenumber_labels(self):
@@ -1367,11 +1295,6 @@ class PolylineQGraphicsPathItem(PolyQGraphicsPathItem):
     def update_interpolated_housenumber_labels(self):
         self.remove_interpolated_house_numbers()
         self.add_interpolated_housenumber_labels()
-
-    def update_hlevel_in_node(self, grip, hlevel_value):
-        grip_poly_num, grip_coord_num = grip.grip_indexes
-        self.map_object.data0.set_hlevel_to_node(self.current_data_x, grip_poly_num, grip_coord_num, hlevel_value)
-        self.update_hlevel_labels()
 
     def remove_hlevel_labels(self, node_num):
         # remove hlevels labels when node is removed
@@ -1853,7 +1776,7 @@ class GripItem(QGraphicsPathItem):
     def node_grip_get_numeration(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.map_object.data0.get_poly_node(data_level, poly_num, node_num).get_numbers_definition()
+        return self.parent.map_object.get_node_numbers(data_level, poly_num, node_num)
 
     def node_grip_get_calculated_numeration(self):
         data_level = self.parent.current_data_x
@@ -1863,7 +1786,7 @@ class GripItem(QGraphicsPathItem):
     def node_grip_get_hlevel(self):
         data_level = self.parent.current_data_x
         poly_num, node_num = self.grip_indexes
-        return self.parent.map_object.data0.get_poly_node(data_level, poly_num, node_num).get_hlevel_definition()
+        return self.parent.map_object.get_node_hlevel(data_level, poly_num, node_num)
 
     def node_grip_set_numeration(self, numeration):
         self.parent.command_set_numeration_to_node(self, numeration)
@@ -1888,9 +1811,7 @@ class GripItem(QGraphicsPathItem):
         self._setHover(False)
         # w przypadku gdy grip został przesunięty bo został dociągnięty do węzła, wtedy ucieka spod myszy
         # w takim przypadku jeśli pojawiło się kółko dociągające wtedy usuń je bo inaczej zostawało
-        if self.parent._closest_node_circle is not None:
-            self.scene().removeItem(self.parent._closest_node_circle)
-            self.parent._closest_node_circle = None
+        self.scene().closest_node_circle_remove()
         # to samo dla modyfikatora ctrl,
         self.parent._stick_to_neighbours_nodes = False
 

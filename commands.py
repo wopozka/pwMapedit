@@ -1,4 +1,4 @@
-from PyQt6.QtGui import QUndoCommand, QUndoStack
+from PyQt6.QtGui import QUndoCommand
 from PyQt6.QtCore import QPointF
 import copy
 import time
@@ -265,80 +265,59 @@ class SelectModeRouteParams(QUndoCommand):
         self.item.scene().views()[0].centerOn(self.item)
 
 
-class SetHlevelToNode(QUndoCommand):
-    def __init__(self, item, grip, hlevel, description):
-        super(SetHlevelToNode, self).__init__(description)
+class SetNodeAttributeCmd(QUndoCommand):
+    """Wspolna czesc komend zmieniajacych atrybut wezla linii (HLevel, numeracja adresowa). Undo przywraca kopie
+    danych obiektu - zmiana atrybutu jednego wezla moze zmienic tez inne wezly."""
+    def __init__(self, item, grip, new_value, description):
+        super().__init__(description)
+        self.item = item
         self.grip = grip
         self.poly_num, self.node_num = grip.grip_indexes
-        self.pos = grip.pos()
-        self.poly_num, self.node_num = grip.grip_indexes
-        self.item = item
+        self.pos = QPointF(grip.pos())
         self.data_level = item.current_data_x
-        self.new_hlevel_definition = hlevel
-        self.old_hlevel_definition = self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                                                      self.node_num).get_hlevel_definition()
+        self.new_value = new_value
+        self.data0_copy = item.map_object.data0.copy()
+
+    def set_value(self, value):
+        raise NotImplementedError
+
+    def update_labels(self):
+        raise NotImplementedError
 
     def redo(self):
-        self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                            self.node_num).set_hlevel_definition(self.new_hlevel_definition)
-        self.item.update_hlevel_labels()
+        self.set_value(self.new_value)
+        self.update_labels()
         if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
             if not (self.grip in self.item.scene().items(self.pos) and self.grip.isSelected()):
-                self.item.scene().clearSelection()
-                self.item.set_selected(True)
-                # self.item.decorate()
-                self.item.scene().views()[0].centerOn(self.pos)
-
+                self.select_item()
 
     def undo(self):
-        self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                            self.node_num).set_hlevel_definition(self.old_hlevel_definition)
+        self.item.map_object.data0 = self.data0_copy.copy()
+        self.update_labels()
+        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
+            self.select_item()
+
+    def select_item(self):
+        self.item.scene().clearSelection()
+        self.item.set_selected(True)
+        self.item.scene().views()[0].centerOn(self.pos)
+
+
+class SetHlevelToNode(SetNodeAttributeCmd):
+    def set_value(self, value):
+        self.item.map_object.set_node_hlevel(self.data_level, self.poly_num, self.node_num, value)
+
+    def update_labels(self):
         self.item.update_hlevel_labels()
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.item.scene().clearSelection()
-            self.item.set_selected(True)
-            # self.item.decorate()
-            self.item.scene().views()[0].centerOn(self.pos)
 
 
-class SetNumbersToNode(QUndoCommand):
-    def __init__(self, item, grip, num_definition, description):
-        super(SetNumbersToNode, self).__init__(description)
-        self.grip = grip
-        self.poly_num, self.node_num = grip.grip_indexes
-        self.pos = grip.pos()
-        self.poly_num, self.node_num = grip.grip_indexes
-        self.item = item
-        self.data_level = item.current_data_x
-        self.new_num_definition = num_definition
-        self.old_num_definition = self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num,
-                                                                      self.node_num).get_numbers_definition()
+class SetNumbersToNode(SetNodeAttributeCmd):
+    def set_value(self, value):
+        self.item.map_object.set_node_numbers(self.data_level, self.poly_num, self.node_num, value)
 
-
-    def redo(self):
-        node = self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num)
-        node.set_numbers_definition(self.new_num_definition)
-        self.item.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
+    def update_labels(self):
         self.item.update_housenumber_labels()
         self.item.update_interpolated_housenumber_labels()
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            if not (self.grip in self.item.scene().items(self.pos) and self.grip.isSelected()):
-                self.item.scene().clearSelection()
-                self.item.set_selected(True)
-                # self.item.decorate()
-                self.item.scene().views()[0].centerOn(self.pos)
-
-    def undo(self):
-        node = self.item.map_object.data0.get_poly_node(self.data_level, self.poly_num, self.node_num)
-        node.set_numbers_definition(self.old_num_definition)
-        self.item.map_object.data0.clean_numbers_definitions(self.data_level, self.poly_num)
-        self.item.update_housenumber_labels()
-        self.item.update_interpolated_housenumber_labels()
-        if self.item.scene().get_pw_mapedit_mode() == pwmapedit_constants.Tools.EDIT_NODES:
-            self.item.scene().clearSelection()
-            self.item.set_selected(True)
-            # self.item.decorate()
-            self.item.scene().views()[0].centerOn(self.pos)
 
 
 class SplitPolylineCmd(QUndoCommand):

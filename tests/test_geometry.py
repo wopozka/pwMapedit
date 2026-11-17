@@ -107,10 +107,6 @@ TEST_DISTANCE = (
     ([(39.152501, -84.412977), (39.152505, -84.412946)], 2.716191),
 )
 
-# @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
-# def test_great_circle_distance(target, answer):
-#     assert geometry.great_circle_distance(target[0], target[1]) == answer / 1000
-
 @pytest.mark.parametrize('target, answer', TEST_DISTANCE)
 def test_vincenty_distance(target, answer):
     assert geometry.vincenty_distance(target[0], target[1]) == pytest.approx(answer, abs=1e-5)

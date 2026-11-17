@@ -146,3 +146,27 @@ def test_polyline_shape_follows_data(window):
     assert path_points(line) == shape
     data = [node.get_canvas_coords() for node in line.map_object.data0.get_polys_for_data_level(0)[0]]
     assert data == shape
+
+
+@pytest.mark.parametrize('attribute', ['numbers', 'hlevel'])
+def test_node_attribute_undo_redo(window, tmp_path, attribute):
+    scene = window.map_canvas
+    line = first_polyline(window)
+    window.toolbar_action_trigered(pwmapedit_constants.Tools.EDIT_NODES)
+    scene.clearSelection()
+    line.set_selected(True)
+    grip = [g for g in line.node_grip_items if g.grip_indexes.node_index == 1][0]
+    original = saved_map(window, tmp_path / 'a.mp')
+    if attribute == 'numbers':
+        assert grip.node_grip_get_numeration() is not None
+        grip.node_grip_set_numeration(None)
+    else:
+        grip.node_grip_set_hlevel(3)
+    edited = saved_map(window, tmp_path / 'b.mp')
+    assert edited != original
+    stack = window.undo_redo_stack
+    for _ in range(2):
+        stack.undo()
+        assert saved_map(window, tmp_path / 'c.mp') == original
+        stack.redo()
+        assert saved_map(window, tmp_path / 'd.mp') == edited

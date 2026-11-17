@@ -87,3 +87,27 @@ def test_merged_with_disconnected_lines():
     far = make(Polyline, ['[POLYLINE]', 'Type=0x1', 'Data0=(53.00000,21.00000),(53.00100,21.00100)'])
     with pytest.raises(MergeError):
         first.merged_with([far])
+
+
+NUMBERED_LINE = ['[POLYLINE]', 'Type=0x6',
+                 'Data0=(52.00000,20.00000),(52.00100,20.00100),(52.00200,20.00200),(52.00300,20.00300)',
+                 'Numbers1=0,O,1,5,N,-1,-1', 'Numbers2=2,O,7,9,N,-1,-1', 'HLevel1=(1,2)']
+
+
+def test_node_hlevel():
+    line = make(Polyline, NUMBERED_LINE)
+    assert line.get_node_hlevel(0, 0, 1) == 2
+    line.set_node_hlevel(0, 0, 1, None)
+    line.set_node_hlevel(0, 0, 3, 1)
+    assert [a.split('=', 1)[1] for a in line.to_mp_record() if a.startswith('HLevel')] == ['(3,1)']
+
+
+def test_node_numbers():
+    line = make(Polyline, NUMBERED_LINE)
+    assert line.get_node_numbers(0, 0, 1) is None
+    second = line.get_node_numbers(0, 0, 2)
+    line.set_node_numbers(0, 0, 2, None)
+    assert line.get_node_numbers(0, 0, 2) is None
+    line.set_node_numbers(0, 0, 2, second)
+    assert [a for a in line.to_mp_record() if a.startswith('Numbers')] == ['Numbers1=0,O,1,5,N,-1,-1',
+                                                                          'Numbers2=2,O,7,9,N,-1,-1']

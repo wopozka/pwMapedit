@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """Wlasciwosci obiektu mapy zapisywane w pliku MP (Type, Label, EndLevel...) - czesc wspolna POI, polylinii
 i polygonow, bez czesci graficznej."""
-from collections import OrderedDict
 
-from pwm_core.data_x import Node, Data_X
+from pwm_core.data_x import Data_X
 from pwm_core.geometry import Point
 from pwm_core import mp_format
 
@@ -61,15 +60,6 @@ class BasicMapItem(object):
     def clear_others(self):
         self.others = None
 
-    def coords_from_data_to_nodes(self, data_line):
-        coords = []
-        coordlist = data_line.strip().lstrip('(').rstrip(')')
-        for a in coordlist.split('),('):
-            latitude, longitude = a.split(',')
-            self.set_obj_bounding_box(float(latitude), float(longitude))
-            coords.append(Node(latitude=latitude, longitude=longitude, projection=self._projection))
-        return coords
-
     def get_comment(self):
         return self.obj_comment
 
@@ -92,9 +82,6 @@ class BasicMapItem(object):
         if self.housenumber is None:
             return ''
         return self.housenumber
-
-    def get_housenumbers_along_road(self):
-        return self.data0.get_housenumbers_nodes_defs()
 
     def get_id(self):
         return self._id
@@ -316,25 +303,6 @@ class BasicMapItem(object):
     def set_undeleted(self):
         self._deleted = False
 
-    # niepotrzebne?
-    def get_hlevels(self, level_for_data):
-        # do redefinicji
-        if isinstance(level_for_data, int):
-            level = level_for_data
-        else:
-            level = int(level_for_data[-1])
-        if level == 0:
-            return self.hlevels0 if self.hlevels0 is not None else tuple()
-        elif level == 1:
-            return self.hlevels1 if self.hlevels1 is not None else tuple()
-        elif level == 2:
-            return self.hlevels2 if self.hlevels2 is not None else tuple()
-        elif level == 3:
-            return self.hlevels3 if self.hlevels3 is not None else tuple()
-        elif level == 4:
-            return self.hlevels4 if self.hlevels4 is not None else tuple()
-        return self.hlevels_other if self.hlevels_other is not None else tuple()
-
     def set_hlevels(self, hlevel_items):
         for hlevel_item in hlevel_items.lstrip('(').rstrip(')').split('),('):
             self.data0.add_hlevels_from_string(hlevel_item)
@@ -415,6 +383,22 @@ class Polyline(BasicMapItem):
     mp_record_header = mp_format.MAP_OBJECT_POLYLINE
     kind_name = 'POLYLINE'
 
+    def get_node_hlevel(self, data_level, poly_num, node_num):
+        return self.data0.get_poly_node(data_level, poly_num, node_num).get_hlevel_definition()
+
+    def set_node_hlevel(self, data_level, poly_num, node_num, hlevel):
+        """hlevel: definicja HLevel wezla albo None, gdy wezel ma nie miec HLevel"""
+        self.data0.get_poly_node(data_level, poly_num, node_num).set_hlevel_definition(hlevel)
+
+    def get_node_numbers(self, data_level, poly_num, node_num):
+        return self.data0.get_poly_node(data_level, poly_num, node_num).get_numbers_definition()
+
+    def set_node_numbers(self, data_level, poly_num, node_num, numbers_definition):
+        """Ustawia numeracje adresowa od wezla (Numbers_Definition albo None) i porzadkuje numeracje calej linii
+        (Data_X.clean_numbers_definitions - moze zmienic tez definicje innych wezlow)."""
+        self.data0.get_poly_node(data_level, poly_num, node_num).set_numbers_definition(numbers_definition)
+        self.data0.clean_numbers_definitions(data_level, poly_num)
+
     def is_oneway(self):
         route_params = self.get_route_params()
         return bool(route_params) and len(route_params) > 2 and route_params[2] == 1
@@ -444,34 +428,3 @@ class Polyline(BasicMapItem):
 class Polygon(BasicMapItem):
     mp_record_header = mp_format.MAP_OBJECT_POLYGON
     kind_name = 'POLYGON'
-
-
-class BasicSignRestrict(object):
-    def __init__(self, map_comment_data=None, map_elem_data=None):
-        self.obj_comment = []
-        self.restr_sign_data = None
-        self.restr_sign_data_others = OrderedDict({})
-        if map_comment_data is not None:
-            for _comment in map_comment_data:
-                self.obj_comment.append(_comment)
-        self.set_data(map_elem_data)
-
-    def set_data(self, map_elem_data):
-        for number_keyname in map_elem_data:
-            _, key = number_keyname
-            if key in self.restr_sign_data:
-                self.restr_sign_data[key].append(map_elem_data[number_keyname])
-            else:
-                self.restr_sign_data_others[number_keyname] = map_elem_data[number_keyname]
-
-
-class RoadSign(object):
-    def __init__(self, map_comment_data=None, map_elem_data=None):
-        super(RoadSign, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
-        self.restr_sign_data = OrderedDict({'SignPoints': [], 'SignRoads': [], 'SignParams': []})
-
-
-class Restriction(object):
-    def __init__(self, map_comment_data=None, map_elem_data=None):
-        super(Restriction, self).__init__(map_comment_data=map_comment_data, map_elem_data=map_elem_data)
-        self.restr_sign_data = OrderedDict({'Nod': [], 'TraffPoints': [], 'TraffRoads': []})

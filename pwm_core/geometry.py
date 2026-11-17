@@ -155,15 +155,6 @@ def calculate_label_angle(angle):
         return angle
 
 
-def great_circle_distance(coord1, coord2):
-    lat1 = math.radians(coord1[0])
-    lon1 = math.radians(coord1[1])
-    lat2 = math.radians(coord2[0])
-    lon2 = math.radians(coord1[1])
-    return 6371 * math.acos(math.sin(lat1) * math.sin(lat2) + math.cos(lat1) *
-                            math.cos(lat2) * math.cos(lon1 - lon2))
-
-
 def vincenty_distance(coord1, coord2):
     """
     calculates distance between two earth points
