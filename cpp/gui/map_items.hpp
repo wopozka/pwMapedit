@@ -10,6 +10,7 @@
 #include <QLineF>
 #include <QPainterPath>
 #include <QPen>
+#include <QStaticText>
 #include <optional>
 #include <vector>
 
@@ -25,13 +26,12 @@ enum ItemType {
     PoiItemType = QGraphicsItem::UserType + 1,
     PolylineItemType,
     PolygonItemType,
-    MapLabelItemType,
-    ArrowHeadItemType,
     RulerItemType,
     GripItemType,
     GpsTrackItemType,
     GpsWaypointItemType,
     RoadCasingItemType,
+    AnnotationLayerItemType,
 };
 
 // Element, do ktorego punktow przyciagaja sie wezly (Ctrl), np. slady GPS.
@@ -45,13 +45,25 @@ class GripItem;
 
 QString mp_to_qstring(const std::string& cp1250);
 
-// Elementy, ktore powyzej IGNORE_TRANSFORMATION_TRESHOLD maja stala wielkosc na ekranie.
-// Python przelaczal flage w paint() kazdego elementu; tu robi to scena przy przekroczeniu progu.
-class ScreenSized {
-public:
-    virtual ~ScreenSized() = default;
-    virtual QGraphicsItem* screen_sized_item() = 0;
-    void apply_transformation_flag(bool ignore);
+// Opis obiektu: etykieta, numer adresowy, numer HLevel albo strzalka kierunku. Nie jest elementem sceny - rysuje
+// go AnnotationLayer (setki tysiecy elementow z ItemIgnoresTransformations spowalnialy rysowanie, hover
+// i przelaczanie flagi przy progu skali). Powyzej IGNORE_TRANSFORMATION_TRESHOLD opis ma stala wielkosc
+// na ekranie, ponizej maleje razem z mapa, ponizej SCALE_WITHOUT_LABELS napisy nie sa rysowane (strzalki tak).
+struct Annotation {
+    enum class Kind : unsigned char {
+        Label,          // etykieta: lewy gorny rog w anchor + offset, obrot angle
+        AddressNumber,  // numer adresowy: srodek napisu w anchor + offset (offset w pikselach, nie maleje)
+        LevelNumber,    // HLevel: napis na zoltym tle, lewy gorny rog w anchor
+        Arrow,          // strzalka kierunku w anchor, obrot angle
+    };
+    Kind kind = Kind::Label;
+    bool decoration = false;  // tylko w trybie edycji wezlow (interpolowane numery adresowe)
+    bool prepared = false;    // QStaticText przygotowany dla czcionki rodzaju opisu
+    float angle = 0;          // stopnie
+    QColor colour = Qt::black;
+    QPointF anchor;  // w ukladzie elementu obiektu (dla polilinii i polygonu to wspolrzedne sceny)
+    QPointF offset;  // w pikselach ekranu
+    QStaticText text;
 };
 
 // Wspolna czesc POI/polilinii/polygonu: powiazanie z obiektem w MapData.
@@ -79,9 +91,17 @@ public:
     virtual void set_z_value() = 0;
     void set_selection_z_value();
 
+    // Opisy obiektu (rysuje je AnnotationLayer).
+    std::vector<Annotation>& annotations() { return annotations_; }
+    const std::vector<Annotation>& annotations() const { return annotations_; }
+
 protected:
     MapScene* map_scene() const;
     int scene_map_level() const;
+    // Przerysowanie obszaru opisow - wolac przed i po ich zmianie, przesunieciu, ukryciu elementu.
+    void annotations_changed();
+    // Wspolna obsluga itemChange: przesuniecie, widocznosc i zaznaczenie zmieniaja wyglad opisow.
+    void annotations_item_change(QGraphicsItem::GraphicsItemChange change);
     // Przesuwanie myszka (ItemIsMovable) dopiero po przekroczeniu MIN_MOVE_DISTANCE pikseli i tylko
     // w trybie zaznaczania - jak _movable w Pythonie. Zwraca true, gdy ruch ma byc przekazany do Qt.
     bool accept_mouse_move(QGraphicsSceneMouseEvent* event);
@@ -89,15 +109,19 @@ protected:
     MapData* map_;
     size_t index_;
     bool move_started_ = false;
+    std::vector<Annotation> annotations_;
 };
 
 // ---------------------------------------------------------------- POI
-class PoiItem : public QGraphicsPixmapItem, public MapObjectItem, public ScreenSized {
+// Ikona POI ma zawsze ItemIgnoresTransformations: powyzej IGNORE_TRANSFORMATION_TRESHOLD stala wielkosc
+// na ekranie, ponizej paint() i shape() zmniejszaja ja razem z mapa (bez przelaczania flagi przy progu skali,
+// ktore przy dziesiatkach tysiecy POI kosztowalo). boundingRect zostaje pelnego rozmiaru (nadzbior).
+class PoiItem : public QGraphicsPixmapItem, public MapObjectItem {
 public:
     PoiItem(MapData* map, size_t index, const QPixmap& icon);
     int type() const override { return PoiItemType; }
     QGraphicsItem* graphics_item() override { return this; }
-    QGraphicsItem* screen_sized_item() override { return this; }
+    QPainterPath shape() const override;
 
     void set_map_level(int level) override;
     void refresh() override;
@@ -119,7 +143,6 @@ private:
 
     std::optional<QPointF> mp_data_[5];
     int shown_level_ = -1;
-    QGraphicsItem* label_ = nullptr;
     bool hovered_ = false;
 };
 
@@ -212,9 +235,6 @@ private:
     void add_housenumber_labels();
     void add_decoration_items() override;
     void remove_decoration_items() override;
-
-    std::vector<QGraphicsItem*> level_items_;
-    std::vector<QGraphicsItem*> decoration_items_;  // interpolowane numery adresowe w trybie edycji wezlow
 };
 
 class PolygonItem : public PolyItem {
@@ -234,7 +254,6 @@ protected:
 
 private:
     int z_value_;
-    QGraphicsItem* label_ = nullptr;
 };
 
 // ---------------------------------------------------------------- uchwyt wezla
@@ -281,61 +300,28 @@ private:
     MapScene* hover_scene_ = nullptr;  // scena powiadomiona o najechaniu (do zwolnienia w destruktorze)
 };
 
-// ---------------------------------------------------------------- etykiety i dodatki
-class MapLabel : public QGraphicsSimpleTextItem, public ScreenSized {
+// ---------------------------------------------------------------- opisy
+// Polozenie numeru adresowego przy odcinku: wektor od wezla na zewnatrz linii (port get_numbers_position).
+enum NumberSide { LeftBefore, LeftAfter, RightBefore, RightAfter };
+QLineF numbers_position(const QLineF& segment, int side);
+
+// Jeden element rysujacy opisy (Annotation) wszystkich obiektow mapy w odswiezanym fragmencie widoku, w pikselach
+// ekranu. Nad obiektami (z 30), pod zaznaczonymi. Nie reaguje na mysz (pusty ksztalt).
+class AnnotationLayer : public QGraphicsItem {
 public:
-    MapLabel(const QString& text, QGraphicsItem* parent);
-    int type() const override { return MapLabelItemType; }
-    QGraphicsItem* screen_sized_item() override { return this; }
+    explicit AnnotationLayer(MapScene* scene);
+    int type() const override { return AnnotationLayerItemType; }
+    QRectF boundingRect() const override { return rect_; }
+    QPainterPath shape() const override { return {}; }
+    void set_rect(const QRectF& rect);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
-protected:
-    double viewer_scale() const;
-};
-
-class PoiLabel : public MapLabel {
-public:
-    PoiLabel(const QString& text, QGraphicsItem* parent);
-};
-
-class PolylineLabel : public MapLabel {
-public:
-    PolylineLabel(const QString& text, QGraphicsPathItem* parent);
-};
-
-class PolygonLabel : public MapLabel {
-public:
-    PolygonLabel(const QString& text, QGraphicsPathItem* parent);
-};
-
-// Numer adresowy przy wezle polilinii. position: wektor od wezla na zewnatrz linii.
-class PolylineAddressNumber : public MapLabel {
-public:
-    PolylineAddressNumber(const QLineF& position, const QString& text, QGraphicsItem* parent, bool left_side,
-                          bool interpolated);
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    static QLineF numbers_position(const QLineF& segment, int subj_position);
-
-    // subj_position dla numbers_position
-    enum { LeftBefore, LeftAfter, RightBefore, RightAfter };
+    // Opisy wychodza poza element obiektu najwyzej o tyle pikseli (wybor obiektow do rysowania, przerysowanie).
+    static constexpr double MARGIN_PX = 300;
 
 private:
-    void set_pos();
-    QLineF position_;
-    double current_scale_ = -1;
-};
-
-class PolylineLevelNumber : public MapLabel {
-public:
-    PolylineLevelNumber(long long hlevel, const QPointF& position, QGraphicsItem* parent);
-    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-};
-
-class DirectionArrowHead : public QGraphicsPathItem, public ScreenSized {
-public:
-    DirectionArrowHead(const QPointF& pos, QGraphicsItem* parent);
-    int type() const override { return ArrowHeadItemType; }
-    QGraphicsItem* screen_sized_item() override { return this; }
+    MapScene* map_scene_;
+    QRectF rect_;
 };
 
 // Obwodki drog i kolei: jeden element dla calej mapy, miedzy polygonami (z 1-8) a poliliniami (z 10). Rysuje

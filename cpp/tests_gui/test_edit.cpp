@@ -150,6 +150,7 @@ private slots:
     void reverse_without_polyline_does_nothing();
     void mouse_drag_moves_polyline();
     void mouse_drag_moves_poi_when_zoomed_in();
+    void mouse_drag_moves_poi_when_zoomed_out();
     // 3b.2: edycja wezlow
     void edit_nodes_tool_decorates_selection();
     void interpolated_numbers_in_edit_nodes_mode();
@@ -325,8 +326,10 @@ void EditTests::mouse_drag_moves_polyline() {
     QCOMPARE(f.map->to_mp_string(), f.original);
 }
 
-void EditTests::mouse_drag_moves_poi_when_zoomed_in() {
-    // Powyzej skali 1 ikony POI maja ItemIgnoresTransformations - Qt przelicza wtedy ruch inaczej.
+namespace {
+// Przeciagniecie ikony POI mysza po zoom_steps krokach przyblizenia (ujemne - oddalenia). Ikony POI maja
+// ItemIgnoresTransformations (Qt przelicza wtedy ruch inaczej), a ponizej skali 1 sa zmniejszone w paint/shape.
+void drag_poi(int zoom_steps) {
     Fixture f;
     auto* poi = static_cast<QGraphicsPixmapItem*>(f.poi()->graphics_item());
     if (poi->pixmap().isNull()) QSKIP("brak ikon POI (katalog icons nie znaleziony)");
@@ -335,14 +338,15 @@ void EditTests::mouse_drag_moves_poi_when_zoomed_in() {
     view.resize(800, 600);
     view.show();
     QVERIFY(QTest::qWaitForWindowExposed(&view));
-    for (int i = 0; i < 8; ++i) view.zoom_in();
-    QVERIFY(view.map_scale() > IGNORE_TRANSFORMATION_TRESHOLD);
+    for (int i = 0; i < zoom_steps; ++i) view.zoom_in();
+    for (int i = 0; i < -zoom_steps; ++i) view.zoom_out();
     QVERIFY(poi->flags().testFlag(QGraphicsItem::ItemIgnoresTransformations));
+    const double size = std::min(f.scene.viewer_scale(), 1.0);
 
     const PointF p = f.node(0, 0, 0).pos();
     view.centerOn(QPointF(p.x, p.y));
     // srodek ikony: QGraphicsPixmapItem trafia tylko w nieprzezroczyste piksele (MaskShape)
-    const QPoint press = view.mapFromScene(QPointF(p.x, p.y)) + poi->boundingRect().center().toPoint();
+    const QPoint press = view.mapFromScene(QPointF(p.x, p.y)) + (poi->boundingRect().center() * size).toPoint();
     QWidget* vp = view.viewport();
     QTest::mousePress(vp, Qt::LeftButton, Qt::NoModifier, press);
     QVERIFY(poi->isSelected());
@@ -358,6 +362,15 @@ void EditTests::mouse_drag_moves_poi_when_zoomed_in() {
     QCOMPARE(poi->pos(), QPointF(f.node(0, 0, 0).x(), f.node(0, 0, 0).y()));
     f.stack.undo();
     QCOMPARE(f.map->to_mp_string(), f.original);
+}
+}  // namespace
+
+void EditTests::mouse_drag_moves_poi_when_zoomed_in() {
+    drag_poi(8);
+}
+
+void EditTests::mouse_drag_moves_poi_when_zoomed_out() {
+    drag_poi(-5);  // skala ok. 0,6: ikona zmniejszona, ale jeszcze rysowana (SCALE_WITHOUT_POIS = 0,25)
 }
 
 void EditTests::edit_nodes_tool_decorates_selection() {
@@ -386,9 +399,9 @@ void EditTests::interpolated_numbers_in_edit_nodes_mode() {
     Fixture f;
     auto labels = [&] {
         QStringList texts;
-        for (QGraphicsItem* child : f.poly(1)->childItems())
-            if (child->type() == MapLabelItemType)
-                texts << static_cast<QGraphicsSimpleTextItem*>(child)->text();
+        for (const Annotation& a : f.poly(1)->annotations())
+            if (a.kind == Annotation::Kind::Label || a.kind == Annotation::Kind::AddressNumber)
+                texts << a.text.text();
         texts.sort();
         return texts;
     };

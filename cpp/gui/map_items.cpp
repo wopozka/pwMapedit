@@ -44,8 +44,23 @@ double scene_viewer_scale(const QGraphicsItem* item) {
     return s ? s->viewer_scale() : 1.0;
 }
 
-bool scene_ignores_transformations(const QGraphicsItem* item) {
-    return scene_viewer_scale(item) > IGNORE_TRANSFORMATION_TRESHOLD;
+// Wielkosc elementu o stalym rozmiarze ekranowym: 1 powyzej progu, ponizej maleje razem z mapa.
+double screen_size_factor(const QGraphicsItem* item) {
+    return std::min(scene_viewer_scale(item), IGNORE_TRANSFORMATION_TRESHOLD);
+}
+
+QStaticText make_text(const QString& text) {
+    QStaticText result(text);
+    result.setTextFormat(Qt::PlainText);
+    return result;
+}
+
+Annotation make_label(const QString& text, const QPointF& anchor) {
+    Annotation a;
+    a.kind = Annotation::Kind::Label;
+    a.anchor = anchor;
+    a.text = make_text(text);
+    return a;
 }
 
 // Indeksowanie jak w Pythonie (-1 = ostatni element).
@@ -59,13 +74,6 @@ const typename V::value_type* py_at(const V& v, long idx) {
 
 }  // namespace
 
-// ================================================================ ScreenSized
-void ScreenSized::apply_transformation_flag(bool ignore) {
-    QGraphicsItem* item = screen_sized_item();
-    if (item->flags().testFlag(QGraphicsItem::ItemIgnoresTransformations) != ignore)
-        item->setFlag(QGraphicsItem::ItemIgnoresTransformations, ignore);
-}
-
 // ================================================================ MapObjectItem
 MapScene* MapObjectItem::map_scene() const {
     auto* self = const_cast<MapObjectItem*>(this);
@@ -76,6 +84,24 @@ MapScene* MapObjectItem::map_scene() const {
 int MapObjectItem::scene_map_level() const {
     MapScene* s = map_scene();
     return s ? s->map_level() : 0;
+}
+
+void MapObjectItem::annotations_changed() {
+    if (annotations_.empty()) return;
+    if (MapScene* s = map_scene()) s->update_annotations(this);
+}
+
+void MapObjectItem::annotations_item_change(QGraphicsItem::GraphicsItemChange change) {
+    switch (change) {
+        case QGraphicsItem::ItemPositionChange:         // stare miejsce
+        case QGraphicsItem::ItemPositionHasChanged:     // nowe miejsce
+        case QGraphicsItem::ItemVisibleHasChanged:
+        case QGraphicsItem::ItemSelectedHasChanged:     // przezroczystosc zaznaczonego obiektu
+            annotations_changed();
+            break;
+        default:
+            break;
+    }
 }
 
 bool MapObjectItem::accept_mouse_move(QGraphicsSceneMouseEvent* event) {
@@ -106,8 +132,16 @@ PoiItem::PoiItem(MapData* map, size_t index, const QPixmap& icon) : MapObjectIte
     }
     setPixmap(icon);
     set_z_value();
-    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+    // ItemSendsGeometryChanges: itemChange przy przesunieciu (przerysowanie opisow)
+    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable |
+             QGraphicsItem::ItemSendsGeometryChanges | QGraphicsItem::ItemIgnoresTransformations);
     setAcceptHoverEvents(true);
+}
+
+QPainterPath PoiItem::shape() const {
+    const double size = screen_size_factor(this);
+    const QPainterPath full = QGraphicsPixmapItem::shape();
+    return size < 1 ? QTransform::fromScale(size, size).map(full) : full;
 }
 
 void PoiItem::read_positions() {
@@ -123,7 +157,6 @@ void PoiItem::read_positions() {
 }
 
 void PoiItem::set_map_level(int level) {
-    apply_transformation_flag(scene_ignores_transformations(this));
     if (object().deleted) {
         shown_level_ = -1;
         setVisible(false);
@@ -156,19 +189,27 @@ void PoiItem::apply_style() {
 void PoiItem::refresh() {
     apply_style();
     read_positions();
-    delete label_;
-    label_ = nullptr;
+    annotations_changed();
+    annotations_.clear();
     add_label();
     set_map_level(scene_map_level());
+    annotations_changed();
 }
 
 void PoiItem::add_label() {
     const MapObject& obj = object();
-    if (obj.label1 && !obj.label1->empty()) label_ = new PoiLabel(mp_to_qstring(*obj.label1), this);
+    if (!obj.label1 || obj.label1->empty()) return;
+    // na prawo od ikony, w polowie jej wysokosci
+    Annotation a = make_label(mp_to_qstring(*obj.label1), QPointF());
+    const QRectF r = boundingRect();
+    a.offset = QPointF(r.width(), r.height() / 2);
+    annotations_.push_back(std::move(a));
 }
 
 void PoiItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
     if (scene_viewer_scale(this) < SCALE_WITHOUT_POIS) return;
+    const double size = screen_size_factor(this);
+    if (size < 1) painter->scale(size, size);
     QGraphicsPixmapItem::paint(painter, option, widget);
     if (hovered_ && !isSelected()) {
         QPen pen(QColor("red"));
@@ -208,6 +249,7 @@ void PoiItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
 }
 
 QVariant PoiItem::itemChange(GraphicsItemChange change, const QVariant& value) {
+    annotations_item_change(change);
     if (change == ItemSelectedHasChanged) {
         if (value.toBool()) {
             hovered_ = false;
@@ -243,7 +285,8 @@ PolyItem::PolyItem(MapData* map, size_t index, bool polygon) : MapObjectItem(map
             break;
         }
     }
-    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+    setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable |
+             QGraphicsItem::ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
 }
 
@@ -375,10 +418,12 @@ std::vector<std::vector<QPointF>> PolyItem::polygons_from_path() const {
 }
 
 void PolyItem::rebuild() {
+    annotations_changed();  // obszar starych opisow
     remove_level_items();
     setPath(path_for_level(current_data_x_));
     add_level_items();
     built_data_x_ = current_data_x_;
+    annotations_changed();
 }
 
 void PolyItem::refresh() {
@@ -482,6 +527,7 @@ void PolyItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
 }
 
 QVariant PolyItem::itemChange(GraphicsItemChange change, const QVariant& value) {
+    annotations_item_change(change);
     if (change == ItemSelectedHasChanged) {
         // jak paint() w Pythonie: zaznaczony obiekt jest polprzezroczysty i rysowany czerwona kropkowana linia
         if (value.toBool()) {
@@ -513,8 +559,9 @@ void PolylineItem::apply_style() {
 }
 
 void PolylineItem::remove_level_items() {
-    for (QGraphicsItem* item : level_items_) delete item;
-    level_items_.clear();
+    annotations_.erase(std::remove_if(annotations_.begin(), annotations_.end(),
+                                      [](const Annotation& a) { return !a.decoration; }),
+                       annotations_.end());
 }
 
 void PolylineItem::add_level_items() {
@@ -530,15 +577,41 @@ void PolylineItem::add_arrow_heads() {
     for (int i = 0; i + 1 < p.elementCount(); i += 2) {
         QPointF p1 = p.elementAt(i);
         QPointF p2 = p.elementAt(i + 1);
-        auto* arrow = new DirectionArrowHead(p1 + (p2 - p1) / 2, this);
-        arrow->setRotation(misc::vector_angle(p2.x() - p1.x(), p2.y() - p1.y(), true, true));
-        level_items_.push_back(arrow);
+        Annotation a;
+        a.kind = Annotation::Kind::Arrow;
+        a.anchor = p1 + (p2 - p1) / 2;
+        a.angle = static_cast<float>(misc::vector_angle(p2.x() - p1.x(), p2.y() - p1.y(), true, true));
+        annotations_.push_back(std::move(a));
     }
 }
 
 void PolylineItem::add_label() {
     const MapObject& obj = object();
-    if (obj.label1 && !obj.label1->empty()) level_items_.push_back(new PolylineLabel(mp_to_qstring(*obj.label1), this));
+    if (!obj.label1 || obj.label1->empty()) return;
+    // w polowie srodkowego odcinka, wzdluz niego
+    const QPainterPath& path = this->path();
+    const int n = path.elementCount();
+    if (n == 0) return;
+    Annotation a = make_label(mp_to_qstring(*obj.label1), path.elementAt(0));
+    if (n >= 2) {
+        int i1, i2;
+        if (n == 2) {
+            i1 = 0;
+            i2 = 1;
+        } else if (n % 2 == 0) {
+            i1 = n / 2 - 1;
+            i2 = n / 2;
+        } else {
+            i1 = n / 2;
+            i2 = n / 2 + 1;
+        }
+        QPointF p1 = path.elementAt(i1);
+        QPointF p2 = path.elementAt(i2);
+        a.anchor = p1 + (p2 - p1) / 2;
+        double angle = misc::vector_angle(p2.x() - p1.x(), p2.y() - p1.y(), true, true);
+        a.angle = static_cast<float>(misc::calculate_label_angle(angle));
+    }
+    annotations_.push_back(std::move(a));
 }
 
 void PolylineItem::add_hlevel_labels() {
@@ -554,10 +627,31 @@ void PolylineItem::add_hlevel_labels() {
         }
         for (size_t node_num = 0; node_num < polygons[poly_num].size() && node_num < hlevels.size(); ++node_num) {
             if (!hlevels[node_num]) continue;
-            level_items_.push_back(new PolylineLevelNumber(*hlevels[node_num], polygons[poly_num][node_num], this));
+            Annotation a;
+            a.kind = Annotation::Kind::LevelNumber;
+            a.anchor = polygons[poly_num][node_num];
+            a.text = make_text(QString(QChar(0x2191)) + QString::number(*hlevels[node_num]));
+            annotations_.push_back(std::move(a));
         }
     }
 }
+
+namespace {
+// Numer adresowy: srodek napisu odsuniety od wezla o wektor position (dlugosc w pikselach ekranu).
+Annotation make_address_number(const QLineF& position, long long number, bool left_side, bool interpolated) {
+    Annotation a;
+    a.kind = Annotation::Kind::AddressNumber;
+    a.anchor = position.p1();
+    a.offset = position.p2() - position.p1();
+    a.text = make_text(QString::number(number));
+    if (left_side)
+        a.colour = interpolated ? LEFT_SIDE_NUM_INTER : LEFT_SIDE_NUM_MAIN;
+    else
+        a.colour = interpolated ? RIGHT_SIDE_NUM_INTER : RIGHT_SIDE_NUM_MAIN;
+    a.decoration = interpolated;
+    return a;
+}
+}  // namespace
 
 void PolylineItem::add_housenumber_labels() {
     const MapObject& obj = object();
@@ -573,33 +667,37 @@ void PolylineItem::add_housenumber_labels() {
         } catch (const MpError&) {
             continue;
         }
-        auto add = [&](const OptInt& value, long segment_idx, int subj, bool left) {
+        auto add = [&](const OptInt& value, long segment_idx, int side, bool left) {
             if (!value) return;
             const QLineF* segment = py_at(vectors, segment_idx);
             if (!segment || segment->length() == 0) return;
-            QLineF position = PolylineAddressNumber::numbers_position(*segment, subj);
-            level_items_.push_back(new PolylineAddressNumber(position, QString::number(*value), this, left, false));
+            annotations_.push_back(make_address_number(numbers_position(*segment, side), *value, left, false));
         };
         for (size_t node = 0; node < coords.size() && node < numbers.size(); ++node) {
             const NumbersDefinition* def = numbers[node];
             if (!def) continue;
             long n = static_cast<long>(node);
-            add(def->left_side_number_before, n - 1, PolylineAddressNumber::LeftBefore, true);
-            add(def->left_side_number_after, n, PolylineAddressNumber::LeftAfter, true);
-            add(def->right_side_number_before, n - 1, PolylineAddressNumber::RightBefore, false);
-            add(def->right_side_number_after, n, PolylineAddressNumber::RightAfter, false);
+            add(def->left_side_number_before, n - 1, LeftBefore, true);
+            add(def->left_side_number_after, n, LeftAfter, true);
+            add(def->right_side_number_before, n - 1, RightBefore, false);
+            add(def->right_side_number_after, n, RightAfter, false);
         }
     }
 }
 
 void PolylineItem::remove_decoration_items() {
-    for (QGraphicsItem* item : decoration_items_) delete item;
-    decoration_items_.clear();
+    const bool any = std::any_of(annotations_.begin(), annotations_.end(),
+                                 [](const Annotation& a) { return a.decoration; });
+    if (!any) return;
+    annotations_changed();
+    annotations_.erase(std::remove_if(annotations_.begin(), annotations_.end(),
+                                      [](const Annotation& a) { return a.decoration; }),
+                       annotations_.end());
 }
 
 void PolylineItem::add_decoration_items() {
     // Port add_interpolated_housenumber_labels/get_interpolated_housenumbers: numery miedzy wezlami z numeracja,
-    // rozlozone rowno wzdluz linii, odsuniete od niej prostopadle o 10 (wektor po stronie numeru).
+    // rozlozone rowno wzdluz linii, odsuniete od niej prostopadle o 10 pikseli (wektor po stronie numeru).
     remove_decoration_items();
     const MapObject& obj = object();
     if (!obj.data) return;
@@ -624,12 +722,12 @@ void PolylineItem::add_decoration_items() {
             if (!left) vector = vector.normalVector().normalVector();
             QLineF number_vector = vector.unitVector();
             number_vector.setLength(10);
-            decoration_items_.push_back(
-                new PolylineAddressNumber(number_vector, QString::number(num.number), this, left, true));
+            annotations_.push_back(make_address_number(number_vector, num.number, left, true));
         };
         for (const InterpolatedNumber& num : numbers.left) add(num, true);
         for (const InterpolatedNumber& num : numbers.right) add(num, false);
     }
+    annotations_changed();
 }
 
 // ================================================================ PolygonItem
@@ -676,85 +774,22 @@ bool PolygonItem::small_poly() const {
     return obj.data && obj.data->perimeter() < SMALL_POLY_PERIMETER;
 }
 
-void PolygonItem::remove_level_items() {
-    delete label_;
-    label_ = nullptr;
-}
+void PolygonItem::remove_level_items() { annotations_.clear(); }
 
 void PolygonItem::add_level_items() {
     // W Pythonie etykieta polygonu dostawala pusty tekst (_mp_label nie byl ustawiany); tu pokazujemy Label.
     const MapObject& obj = object();
-    if (obj.label1 && !obj.label1->empty()) label_ = new PolygonLabel(mp_to_qstring(*obj.label1), this);
+    if (obj.label1 && !obj.label1->empty())
+        annotations_.push_back(make_label(mp_to_qstring(*obj.label1), boundingRect().center()));
 }
 
-// ================================================================ etykiety
-MapLabel::MapLabel(const QString& text, QGraphicsItem* parent) : QGraphicsSimpleTextItem(text, parent) {
-    apply_transformation_flag(scene_ignores_transformations(this));
-}
-
-double MapLabel::viewer_scale() const { return scene_viewer_scale(this); }
-
-void MapLabel::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
-    if (viewer_scale() >= SCALE_WITHOUT_LABELS) QGraphicsSimpleTextItem::paint(painter, option, widget);
-}
-
-PoiLabel::PoiLabel(const QString& text, QGraphicsItem* parent) : MapLabel(text, parent) {
-    QRectF r = parent->boundingRect();
-    setPos(r.width(), r.height() / 2);
-    setZValue(20);
-}
-
-PolylineLabel::PolylineLabel(const QString& text, QGraphicsPathItem* parent) : MapLabel(text, parent) {
-    const QPainterPath& path = parent->path();
-    int n = path.elementCount();
-    if (n < 2) {
-        if (n == 1) setPos(QPointF(path.elementAt(0)));
-    } else {
-        int i1, i2;
-        if (n == 2) {
-            i1 = 0;
-            i2 = 1;
-        } else if (n % 2 == 0) {
-            i1 = n / 2 - 1;
-            i2 = n / 2;
-        } else {
-            i1 = n / 2;
-            i2 = n / 2 + 1;
-        }
-        QPointF p1 = path.elementAt(i1);
-        QPointF p2 = path.elementAt(i2);
-        setPos(p1 + (p2 - p1) / 2);
-        double angle = misc::vector_angle(p2.x() - p1.x(), p2.y() - p1.y(), true, true);
-        setRotation(misc::calculate_label_angle(angle));
-    }
-    setZValue(20);
-}
-
-PolygonLabel::PolygonLabel(const QString& text, QGraphicsPathItem* parent) : MapLabel(text, parent) {
-    setPos(parent->boundingRect().center());
-    setZValue(20);
-}
-
-PolylineAddressNumber::PolylineAddressNumber(const QLineF& position, const QString& text, QGraphicsItem* parent,
-                                             bool left_side, bool interpolated)
-    : MapLabel(text, parent), position_(position) {
-    QFont font;
-    font.setPointSize(6);
-    setFont(font);
-    if (left_side)
-        setBrush(QBrush(interpolated ? LEFT_SIDE_NUM_INTER : LEFT_SIDE_NUM_MAIN));
-    else
-        setBrush(QBrush(interpolated ? RIGHT_SIDE_NUM_INTER : RIGHT_SIDE_NUM_MAIN));
-    setFlag(QGraphicsItem::ItemIgnoresParentOpacity, true);
-    set_pos();
-}
-
-QLineF PolylineAddressNumber::numbers_position(const QLineF& segment, int subj_position) {
+// ================================================================ opisy
+QLineF numbers_position(const QLineF& segment, int side) {
     // Port get_numbers_position (wariant nietestowy). Wartosci pointAt dobrane tak, aby wektor prostopadly
     // wskazywal wlasciwa strone w ekranowym ukladzie wspolrzednych (stad zamiana stron).
     double a = 15 / segment.length();
     QPointF start_point, start, end;
-    switch (subj_position) {
+    switch (side) {
         case RightBefore:
             start_point = segment.pointAt(1);
             start = segment.pointAt(1 - a);
@@ -780,47 +815,130 @@ QLineF PolylineAddressNumber::numbers_position(const QLineF& segment, int subj_p
     return QLineF(start_point, QLineF(start, end).normalVector().p2());
 }
 
-void PolylineAddressNumber::set_pos() {
-    double scale = viewer_scale();
-    if (scale == current_scale_) return;
-    current_scale_ = scale;
-    QRectF r = boundingRect();
-    QPointF text_center(-r.width() / 2, -r.height() / 2);
-    setPos(position_.pointAt(1 / scale) + text_center / scale);
+AnnotationLayer::AnnotationLayer(MapScene* scene) : map_scene_(scene) {
+    setZValue(ANNOTATION_Z_VAL);
+    setAcceptedMouseButtons(Qt::NoButton);
+    setAcceptHoverEvents(false);
+    setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);  // exposedRect w paint()
 }
 
-void PolylineAddressNumber::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
-    set_pos();
-    MapLabel::paint(painter, option, widget);
+void AnnotationLayer::set_rect(const QRectF& rect) {
+    if (rect == rect_) return;
+    prepareGeometryChange();
+    rect_ = rect;
 }
 
-PolylineLevelNumber::PolylineLevelNumber(long long hlevel, const QPointF& position, QGraphicsItem* parent)
-    : MapLabel(QString(QChar(0x2191)) + QString::number(hlevel), parent) {
-    QRectF r = boundingRect();
-    setTransformOriginPoint(r.width() / 2, r.height() / 2);
-    setPos(position);
-}
+void AnnotationLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+    Q_UNUSED(widget);
+    if (!map_scene_->map()) return;
+    static const QFont label_font;
+    static const QFont number_font = [] {
+        QFont font;
+        font.setPointSize(6);
+        return font;
+    }();
+    static const QPainterPath arrow = [] {
+        QPainterPath path;
+        path.moveTo(-6, 4);
+        path.lineTo(6, 0);
+        path.lineTo(-6, -4);
+        return path;
+    }();
+    static const QPen arrow_pen(Qt::black, 1);
+    static const QPen level_pen(Qt::black, 0);
 
-void PolylineLevelNumber::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
-    if (viewer_scale() < SCALE_WITHOUT_LABELS) return;
-    QRectF r = boundingRect();
-    painter->setPen(QPen(Qt::black, 0));
-    painter->setBrush(QBrush(Qt::yellow));
-    painter->drawRect(QRect(int(r.x()), int(r.y()), int(r.width()) + 1, int(r.height()) + 1));
-    QGraphicsSimpleTextItem::paint(painter, option, widget);
-}
+    const QTransform world = painter->worldTransform();
+    const double scale = std::max(world.m11(), 1e-9);
+    // powyzej progu stala wielkosc na ekranie, ponizej opisy maleja razem z mapa
+    const double size = std::min(scale, IGNORE_TRANSFORMATION_TRESHOLD);
+    const bool texts = scale >= SCALE_WITHOUT_LABELS;
+    const double margin = MARGIN_PX / scale;
+    const QRectF exposed = option->exposedRect.adjusted(-margin, -margin, margin, margin);
+    const double base_opacity = painter->opacity();
 
-DirectionArrowHead::DirectionArrowHead(const QPointF& pos, QGraphicsItem* parent) : QGraphicsPathItem(parent) {
-    setPos(pos);
-    QPainterPath arrow;
-    arrow.moveTo(-6, 4);
-    arrow.lineTo(6, 0);
-    arrow.lineTo(-6, -4);
-    setPath(arrow);
-    setPen(QPen(Qt::black, 1));
-    setBrush(QBrush(Qt::black));
-    setZValue(30);
-    apply_transformation_flag(scene_ignores_transformations(this));
+    painter->save();
+    const QFont* current_font = nullptr;
+    auto use_font = [&](const QFont& font) {
+        if (current_font != &font) {
+            painter->setFont(font);
+            current_font = &font;
+        }
+    };
+    auto prepare = [](Annotation& a, const QFont& font) {
+        if (a.prepared) return;
+        a.text.prepare(QTransform(), font);
+        a.prepared = true;
+    };
+
+    for (MapObjectItem* obj : map_scene_->object_items()) {
+        std::vector<Annotation>& annotations = obj->annotations();
+        if (annotations.empty()) continue;
+        QGraphicsItem* item = obj->graphics_item();
+        if (!item->isVisible()) continue;
+        const QPointF item_pos = item->pos();  // przy przeciaganiu obiekt ma przesuniete polozenie
+        if (item->type() == PoiItemType ? !exposed.contains(item_pos) : !item->sceneBoundingRect().intersects(exposed))
+            continue;
+        const double opacity = base_opacity * item->opacity();  // zaznaczona polilinia/polygon: 0.5
+        for (Annotation& a : annotations) {
+            if (a.kind != Annotation::Kind::Arrow && !texts) continue;
+            const QPointF p = world.map(item_pos + a.anchor);
+            QTransform t;
+            switch (a.kind) {
+                case Annotation::Kind::Label: {
+                    use_font(label_font);
+                    prepare(a, label_font);
+                    t.translate(p.x(), p.y());
+                    if (a.angle != 0) t.rotate(a.angle);
+                    t.scale(size, size);
+                    t.translate(a.offset.x(), a.offset.y());
+                    painter->setTransform(t);
+                    painter->setOpacity(opacity);
+                    painter->setPen(a.colour);
+                    painter->drawStaticText(QPointF(), a.text);
+                    break;
+                }
+                case Annotation::Kind::AddressNumber: {
+                    use_font(number_font);
+                    prepare(a, number_font);
+                    const QSizeF s = a.text.size();
+                    t.translate(p.x() + a.offset.x(), p.y() + a.offset.y());
+                    t.scale(size, size);
+                    painter->setTransform(t);
+                    painter->setOpacity(base_opacity);  // jak ItemIgnoresParentOpacity
+                    painter->setPen(a.colour);
+                    painter->drawStaticText(QPointF(-s.width() / 2, -s.height() / 2), a.text);
+                    break;
+                }
+                case Annotation::Kind::LevelNumber: {
+                    use_font(label_font);
+                    prepare(a, label_font);
+                    const QSizeF s = a.text.size();
+                    t.translate(p.x(), p.y());
+                    t.scale(size, size);
+                    painter->setTransform(t);
+                    painter->setOpacity(opacity);
+                    painter->setPen(level_pen);
+                    painter->setBrush(Qt::yellow);
+                    painter->drawRect(QRectF(0, 0, std::ceil(s.width()) + 1, std::ceil(s.height()) + 1));
+                    painter->setPen(a.colour);
+                    painter->drawStaticText(QPointF(), a.text);
+                    break;
+                }
+                case Annotation::Kind::Arrow: {
+                    t.translate(p.x(), p.y());
+                    t.rotate(a.angle);
+                    t.scale(size, size);
+                    painter->setTransform(t);
+                    painter->setOpacity(opacity);
+                    painter->setPen(arrow_pen);
+                    painter->setBrush(Qt::black);
+                    painter->drawPath(arrow);
+                    break;
+                }
+            }
+        }
+    }
+    painter->restore();
 }
 
 // ================================================================ RoadCasingLayer

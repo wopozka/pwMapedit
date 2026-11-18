@@ -24,6 +24,7 @@ class MapObjectItem;
 class PolyItem;
 class GripItem;
 class RoadCasingLayer;
+class AnnotationLayer;
 
 // Wezel wskazany uchwytem: obiekt (indeks w MapData), poziom Data, czesc i numer wezla.
 struct GripRef {
@@ -48,8 +49,8 @@ public:
     int map_level() const { return map_level_; }
     void set_map_level(int level);
 
-    // Skala widoku (iloczyn wszystkich powiekszen). Przy przekroczeniu IGNORE_TRANSFORMATION_TRESHOLD
-    // elementy o stalej wielkosci ekranowej (ikony, napisy, strzalki) przelaczaja flage.
+    // Skala widoku (iloczyn wszystkich powiekszen). Ikony POI i opisy maja ponizej
+    // IGNORE_TRANSFORMATION_TRESHOLD rozmiar zmniejszony o te skale, powyzej staly rozmiar na ekranie.
     double viewer_scale() const { return viewer_scale_; }
     void set_viewer_scale(double scale);
 
@@ -193,6 +194,9 @@ public:
         persistent_items_.append(item);
         addItem(item);
     }
+    // Przerysowanie obszaru opisow obiektu (AnnotationLayer); pomijane w trakcie przebudowy wszystkich elementow.
+    void update_annotations(MapObjectItem* item);
+    AnnotationLayer* annotation_layer() const { return annotation_layer_; }
 
 signals:
     void progress(int value, int maximum);
@@ -204,7 +208,6 @@ signals:
     void message(const QString& text);
 
 private:
-    void apply_transformation_flags(bool ignore);
     // POI typu type (Data0) w punktach (wspolrzedne sceny) jedna komenda undo o tekscie text (%1 - liczba POI).
     // Punkty blizsze niz distance istniejacemu POI tego typu sa pomijane (licznik w skipped). Zwraca liczbe dodanych.
     int add_marker_pois(long long type, const std::vector<PointF>& points, double distance, const QString& text,
@@ -235,6 +238,8 @@ private:
     QGraphicsPathItem* highlight_ = nullptr;
     QGraphicsEllipseItem* snap_indicator_ = nullptr;
     RoadCasingLayer* road_casing_ = nullptr;
+    AnnotationLayer* annotation_layer_ = nullptr;
+    bool rebuilding_all_ = false;  // set_map/set_map_level: jedno przerysowanie na koncu zamiast na element
     struct RotationGesture {
         size_t obj;
         PointF center;

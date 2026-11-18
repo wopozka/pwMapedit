@@ -189,7 +189,19 @@ okna i kończy działanie.
 Wydajność (Windows, syntetyczna mapa 19 MB, 110 tys. obiektów z etykietami, numeracją i HLevel): wczytanie 0,4 s,
 utworzenie elementów sceny 2,4 s, przełączenie poziomu mapy 3,2 s, odświeżenie widoku 45–100 ms.
 
-Scena działa bez indeksu BSP (`NoIndex`). Przy setkach tysięcy elementów indeks BSP spowalniał każdą zmianę
+Opisy obiektów (etykiety, numery adresowe, HLevel, strzałki kierunku) nie są elementami sceny: obiekt trzyma listę
+`Annotation`, a rysuje je jeden element `AnnotationLayer` (z 30) w pikselach ekranu – powyżej skali 1 stała wielkość,
+poniżej maleją z mapą, poniżej 0,5 napisy znikają. Nie reagują na mysz. Wcześniej każdy opis był elementem
+z `ItemIgnoresTransformations` (na prawdziwej mapie ok. 590 tys. z 672 tys. elementów sceny), co spowalniało zmianę
+poziomu, rysowanie i hover. Ikony POI mają `ItemIgnoresTransformations` na stałe, a poniżej skali 1 zmniejsza je
+`paint()`/`shape()` – przy progu skali nic nie jest przełączane. Pomiar na mapie z `cpp/tools/gen_bench_map.py`
+(110 tys. obiektów, 51 MB; poprzednia i nowa wersja na zmianę, w tych samych warunkach): zmiana poziomu
+1,3–2,2 s → 0,06–0,09 s, ale pierwsze rysowanie po niej 0,06–0,2 → 0,17–0,6 s (przygotowanie `QStaticText`),
+pierwsze rysowanie po wczytaniu 1,3 → 0,4 s, przybliżenie o 40 kroków 65 → 3 ms, rysowanie po przybliżeniu
+140–155 → 115–125 ms, hover 85–95 → 64–67 ms. Pomiar: `pwmapedit mapa.mp --bench wyniki.txt
+[--index none|bsp|bsp-toggle] [--bsp-depth N]`, wszystkie warianty – `cpp/tools/bench_index.sh`.
+
+Scena działa bez indeksu BSP (`NoIndex`). Po przeniesieniu opisów BSP nadal przegrywa: zmiana poziomu 0,3–1 s. Przy setkach tysięcy elementów indeks BSP spowalniał każdą zmianę
 geometrii (`setPath` przy zmianie poziomu: kilka ms na element, czyli minuty dla całej mapy), a przegląd liniowy
 przy rysowaniu kosztuje kilkadziesiąt ms. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
 bo usuwanie pojedynczo jest kwadratowe.

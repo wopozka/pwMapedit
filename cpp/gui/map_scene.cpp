@@ -32,6 +32,17 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     road_casing_ = new RoadCasingLayer(this);
     road_casing_->setVisible(false);
     add_persistent_item(road_casing_);
+    annotation_layer_ = new AnnotationLayer(this);
+    add_persistent_item(annotation_layer_);
+}
+
+void MapScene::update_annotations(MapObjectItem* item) {
+    if (rebuilding_all_) return;
+    QGraphicsItem* g = item->graphics_item();
+    // POI ma ItemIgnoresTransformations - jego sceneBoundingRect jest w pikselach, a nie w jednostkach sceny
+    const QRectF reference = g->type() == PoiItemType ? QRectF(g->pos(), QSizeF(0, 0)) : g->sceneBoundingRect();
+    const double margin = AnnotationLayer::MARGIN_PX / std::max(viewer_scale_, 1e-9);
+    update(reference.adjusted(-margin, -margin, margin, margin));
 }
 
 bool MapScene::road_casing() const { return road_casing_->isVisible(); }
@@ -81,6 +92,7 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
     emit progress(0, total);
     QElapsedTimer progress_timer;
     progress_timer.start();
+    rebuilding_all_ = true;
     for (size_t i = 0; i < objects.size(); ++i) {
         if (!objects[i].deleted) create_item(i);
         if (progress_timer.elapsed() > 100) {
@@ -89,6 +101,8 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
             progress_timer.restart();
         }
     }
+    rebuilding_all_ = false;
+    update();
     emit progress(total, total);
 }
 
@@ -141,6 +155,7 @@ void MapScene::set_map_level(int level) {
     emit progress(0, total);
     QElapsedTimer progress_timer;
     progress_timer.start();
+    rebuilding_all_ = true;
     for (int i = 0; i < total; ++i) {
         object_items_[static_cast<size_t>(i)]->set_map_level(level);
         if (progress_timer.elapsed() > 100) {
@@ -149,28 +164,12 @@ void MapScene::set_map_level(int level) {
             progress_timer.restart();
         }
     }
+    rebuilding_all_ = false;
+    update();
     emit progress(total, total);
 }
 
-void MapScene::set_viewer_scale(double scale) {
-    bool was_ignoring = viewer_scale_ > IGNORE_TRANSFORMATION_TRESHOLD;
-    viewer_scale_ = scale;
-    bool ignoring = viewer_scale_ > IGNORE_TRANSFORMATION_TRESHOLD;
-    if (was_ignoring != ignoring) apply_transformation_flags(ignoring);
-}
-
-namespace {
-void apply_flag_recursive(QGraphicsItem* item, bool ignore) {
-    if (auto* s = dynamic_cast<ScreenSized*>(item)) s->apply_transformation_flag(ignore);
-    const QList<QGraphicsItem*> children = item->childItems();
-    for (QGraphicsItem* child : children) apply_flag_recursive(child, ignore);
-}
-}  // namespace
-
-void MapScene::apply_transformation_flags(bool ignore) {
-    // scene->items() sortuje wszystkie elementy - przy setkach tysiecy to zbedny koszt
-    for (MapObjectItem* item : object_items_) apply_flag_recursive(item->graphics_item(), ignore);
-}
+void MapScene::set_viewer_scale(double scale) { viewer_scale_ = scale; }
 
 void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& projection) {
     if (!bbox.valid) return;
@@ -179,6 +178,7 @@ void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& proje
     PointF end = projection.geo_to_canvas(bbox.S - cor, bbox.E + cor);
     setSceneRect(start.x, start.y, end.x - start.x, end.y - start.y);
     road_casing_->set_rect(sceneRect());
+    annotation_layer_->set_rect(sceneRect());
 }
 
 // ---------------------------------------------------------------- edycja
