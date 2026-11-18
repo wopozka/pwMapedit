@@ -8,6 +8,9 @@
 // --zoom N: N razy powieksz (N > 0) albo pomniejsz (N < 0) przed zrzutem; --level L: poziom mapy;
 // --select N: zaznacz obiekt o indeksie N i wysrodkuj na nim widok; --edit-nodes: tryb edycji wezlow;
 // --weblayer: wlacz warstwe WWW (zrzut po pobraniu kafelkow, najwyzej 15 s).
+// --bench wyniki.txt [--index none|bsp|bsp-toggle] [--bsp-depth N] [--bench-level L] [--bench-zoom Z]:
+// pomiar indeksu sceny po wczytaniu mapy (bench.hpp), wynik dopisywany do pliku, potem koniec programu.
+// --index bsp i --bsp-depth dzialaja tez bez --bench (do sprawdzenia programu z indeksem BSP w reku).
 #include <QApplication>
 #include <memory>
 #include <QMessageBox>
@@ -16,6 +19,7 @@
 #include <QFileInfo>
 #include <QTimer>
 
+#include "bench.hpp"
 #include "main_window.hpp"
 #include "map_items.hpp"
 #include "map_scene.hpp"
@@ -34,10 +38,23 @@ int main(int argc, char* argv[]) {
     bool edit_nodes = false;
     QString weblayer;
     QStringList gps_files;
+    pwm::gui::IndexBenchOptions bench;
+    bool index_given = false;
     const QStringList args = QApplication::arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == "--screenshot" && i + 1 < args.size())
             screenshot = args[++i];
+        else if (args[i] == "--bench" && i + 1 < args.size())
+            bench.output = args[++i];
+        else if (args[i] == "--index" && i + 1 < args.size()) {
+            bench.index = args[++i].toLower();
+            index_given = true;
+        } else if (args[i] == "--bsp-depth" && i + 1 < args.size())
+            bench.bsp_depth = args[++i].toInt();
+        else if (args[i] == "--bench-level" && i + 1 < args.size())
+            bench.level = args[++i].toInt();
+        else if (args[i] == "--bench-zoom" && i + 1 < args.size())
+            bench.zoom = args[++i].toInt();
         else if (args[i] == "--zoom" && i + 1 < args.size())
             zoom = args[++i].toInt();
         else if (args[i] == "--level" && i + 1 < args.size())
@@ -65,7 +82,19 @@ int main(int argc, char* argv[]) {
     }
 
     pwm::gui::MainWindow window(icons_dir);
-    window.set_quiet(!screenshot.isEmpty());  // zrzut nie moze czekac na zamkniecie okna komunikatu
+    window.set_quiet(!screenshot.isEmpty() || !bench.output.isEmpty());  // nie czekaj na okno komunikatu
+    if (index_given || !bench.output.isEmpty()) pwm::gui::apply_index_mode(window, bench);
+    if (!bench.output.isEmpty()) {
+        window.resize(1400, 900);  // ten sam rozmiar widoku we wszystkich pomiarach
+        // pomiar od razu w slocie - powrot do petli zdarzen przerysowalby widok (i zbudowal indeks) poza pomiarem
+        QObject::connect(&window, &pwm::gui::MainWindow::map_loaded, &window, [&](bool ok) {
+            if (!ok) {
+                QApplication::exit(1);
+                return;
+            }
+            QApplication::exit(pwm::gui::run_index_bench(window, bench, file_name) ? 0 : 2);
+        });
+    }
     window.show();
     if (!screenshot.isEmpty()) {
         QObject::connect(&window, &pwm::gui::MainWindow::map_loaded, &window, [&](bool ok) {
