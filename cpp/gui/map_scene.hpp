@@ -25,6 +25,7 @@ class PolyItem;
 class GripItem;
 class RoadCasingLayer;
 class AnnotationLayer;
+class PoiIconLayer;
 
 // Wezel wskazany uchwytem: obiekt (indeks w MapData), poziom Data, czesc i numer wezla.
 struct GripRef {
@@ -248,6 +249,7 @@ private:
     QGraphicsEllipseItem* snap_indicator_ = nullptr;
     RoadCasingLayer* road_casing_ = nullptr;
     AnnotationLayer* annotation_layer_ = nullptr;
+    PoiIconLayer* poi_icon_layer_ = nullptr;
     bool rebuilding_all_ = false;  // set_map/set_map_level: jedno przerysowanie na koncu zamiast na element
     struct RotationGesture {
         size_t obj;

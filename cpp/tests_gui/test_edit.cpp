@@ -154,6 +154,7 @@ private slots:
     void mouse_drag_moves_poi_when_zoomed_out();
     // element na poziom Data, indeks BSP
     void scene_uses_bsp_index();
+    void poi_icons_drawn_by_layer();
     void item_per_data_level();
     void refresh_syncs_data_level_items();
     // 3b.2: edycja wezlow
@@ -332,8 +333,8 @@ void EditTests::mouse_drag_moves_polyline() {
 }
 
 namespace {
-// Przeciagniecie ikony POI mysza po zoom_steps krokach przyblizenia (ujemne - oddalenia). Ikony POI maja
-// ItemIgnoresTransformations (Qt przelicza wtedy ruch inaczej), a ponizej skali 1 sa zmniejszone w paint/shape.
+// Przeciagniecie ikony POI mysza po zoom_steps krokach przyblizenia (ujemne - oddalenia). POI sa w ukladzie sceny;
+// ikona ma powyzej skali 1 stala wielkosc na ekranie, ponizej jest zmniejszona (shape, paint, PoiIconLayer).
 void drag_poi(int zoom_steps) {
     Fixture f;
     auto* poi = static_cast<QGraphicsPixmapItem*>(f.poi()->graphics_item());
@@ -345,8 +346,13 @@ void drag_poi(int zoom_steps) {
     QVERIFY(QTest::qWaitForWindowExposed(&view));
     for (int i = 0; i < zoom_steps; ++i) view.zoom_in();
     for (int i = 0; i < -zoom_steps; ++i) view.zoom_out();
-    QVERIFY(poi->flags().testFlag(QGraphicsItem::ItemIgnoresTransformations));
+    QVERIFY(!poi->flags().testFlag(QGraphicsItem::ItemIgnoresTransformations));
     const double size = std::min(f.scene.viewer_scale(), 1.0);
+    // ikona na ekranie: pelny rozmiar powyzej skali 1, ponizej zmniejszona
+    const QRectF on_screen =
+        view.mapFromScene(poi->mapToScene(static_cast<PoiItem*>(f.poi())->icon_rect())).boundingRect();
+    QVERIFY2(qAbs(on_screen.width() - poi->pixmap().width() * size) <= 2,
+             qPrintable(QString("ikona %1 px, oczekiwano %2").arg(on_screen.width()).arg(poi->pixmap().width() * size)));
 
     const PointF p = f.node(0, 0, 0).pos();
     view.centerOn(QPointF(p.x, p.y));
@@ -396,6 +402,45 @@ std::vector<int> item_levels(const MapScene& scene, size_t obj) {
     return levels;
 }
 }  // namespace
+
+// Ikony POI rysuje PoiIconLayer; POI rysuje sie sam tylko zaznaczony. Zaden element mapy nie ma
+// ItemIgnoresTransformations - takie elementy indeks BSP przeglada przy kazdym zapytaniu.
+void EditTests::poi_icons_drawn_by_layer() {
+    Fixture f;
+    for (MapObjectItem* item : f.scene.object_items())
+        QVERIFY(!item->graphics_item()->flags().testFlag(QGraphicsItem::ItemIgnoresTransformations));
+    auto* poi = static_cast<PoiItem*>(f.poi());
+    if (poi->pixmap().isNull()) QSKIP("brak ikon POI (katalog icons nie znaleziony)");
+    QVERIFY(!poi->paints_itself());
+    QGraphicsItem* layer = nullptr;
+    for (QGraphicsItem* item : f.scene.items())
+        if (item->type() == PoiIconLayerItemType) layer = item;
+    QVERIFY(layer);
+    // POI znajdowane przez indeks w swoim polozeniu
+    const PointF p = f.node(0, 0, 0).pos();
+    QVERIFY(f.scene.items(QRectF(p.x - 1e-3, p.y - 1e-3, 2e-3, 2e-3), Qt::IntersectsItemBoundingRect).contains(poi));
+
+    // ikone rysuje warstwa: obraz sceny wokol POI z warstwa rozni sie od obrazu bez niej (w tym miejscu zaczyna sie
+    // tez polilinia; opisy ukryte - etykieta obok ikony)
+    f.scene.annotation_layer()->setVisible(false);
+    auto render = [&] {
+        QImage image(64, 64, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        const QRectF icon = poi->mapToScene(poi->icon_rect()).boundingRect();
+        f.scene.render(&painter, QRectF(0, 0, 64, 64), icon.adjusted(-2, -2, 2, 2));
+        return image;
+    };
+    layer->setVisible(false);
+    const QImage without = render();
+    layer->setVisible(true);
+    QVERIFY(render() != without);
+
+    f.select_only(poi);
+    QVERIFY(poi->paints_itself());
+    f.scene.clearSelection();
+    QVERIFY(!poi->paints_itself());
+}
 
 // Polilinia z Data0 i Data1 ma dwa elementy o stalej geometrii; zmiana poziomu przelacza tylko widocznosc.
 void EditTests::item_per_data_level() {

@@ -44,10 +44,6 @@ double scene_viewer_scale(const QGraphicsItem* item) {
     return s ? s->viewer_scale() : 1.0;
 }
 
-// Wielkosc elementu o stalym rozmiarze ekranowym: 1 powyzej progu, ponizej maleje razem z mapa.
-double screen_size_factor(const QGraphicsItem* item) {
-    return std::min(scene_viewer_scale(item), IGNORE_TRANSFORMATION_TRESHOLD);
-}
 
 QStaticText make_text(const QString& text) {
     QStaticText result(text);
@@ -154,15 +150,35 @@ PoiItem::PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon
     setPixmap(icon);
     set_z_value();
     // ItemSendsGeometryChanges: itemChange przy przesunieciu (przerysowanie opisow)
+    // ItemHasNoContents: ikone rysuje PoiIconLayer (Qt nie wola paint())
     setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable |
-             QGraphicsItem::ItemSendsGeometryChanges | QGraphicsItem::ItemIgnoresTransformations);
+             QGraphicsItem::ItemSendsGeometryChanges | QGraphicsItem::ItemHasNoContents);
     setAcceptHoverEvents(true);
 }
 
+double PoiItem::icon_scale() const {
+    // na ekranie: piksele ikony * min(skala, prog), czyli w jednostkach sceny * min(1, prog / skala)
+    const double scale = std::max(scene_viewer_scale(this), 1e-9);
+    return std::min(1.0, IGNORE_TRANSFORMATION_TRESHOLD / scale);
+}
+
+QRectF PoiItem::icon_rect() const {
+    const double k = icon_scale();
+    const QRectF r = boundingRect();
+    return QRectF(r.topLeft() * k, r.size() * k);
+}
+
 QPainterPath PoiItem::shape() const {
-    const double size = screen_size_factor(this);
+    const double k = icon_scale();
     const QPainterPath full = QGraphicsPixmapItem::shape();
-    return size < 1 ? QTransform::fromScale(size, size).map(full) : full;
+    return k < 1 ? QTransform::fromScale(k, k).map(full) : full;
+}
+
+void PoiItem::update_self_painting() {
+    const bool self = hovered_ || isSelected();
+    if (self == paints_itself()) return;
+    setFlag(QGraphicsItem::ItemHasNoContents, !self);
+    update(icon_rect());  // przerysowanie miejsca ikony (element albo warstwa)
 }
 
 void PoiItem::read_positions() {
@@ -219,8 +235,8 @@ void PoiItem::add_label() {
 
 void PoiItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
     if (scene_viewer_scale(this) < SCALE_WITHOUT_POIS) return;
-    const double size = screen_size_factor(this);
-    if (size < 1) painter->scale(size, size);
+    const double k = icon_scale();
+    if (k < 1) painter->scale(k, k);
     QGraphicsPixmapItem::paint(painter, option, widget);
     if (hovered_ && !isSelected()) {
         QPen pen(QColor("red"));
@@ -237,7 +253,7 @@ void PoiItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event) {
     if (s && s->tool() == Tool::SelectObjects && !isSelected() &&
         s->viewer_scale() * 10 >= IGNORE_TRANSFORMATION_TRESHOLD) {
         hovered_ = true;
-        update();
+        update_self_painting();
     }
     QGraphicsPixmapItem::hoverEnterEvent(event);
 }
@@ -245,7 +261,7 @@ void PoiItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event) {
 void PoiItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
     if (hovered_) {
         hovered_ = false;
-        update();
+        update_self_painting();
     }
     QGraphicsPixmapItem::hoverLeaveEvent(event);
 }
@@ -268,6 +284,7 @@ QVariant PoiItem::itemChange(GraphicsItemChange change, const QVariant& value) {
         } else {
             set_z_value();
         }
+        update_self_painting();
     }
     return QGraphicsPixmapItem::itemChange(change, value);
 }
@@ -857,8 +874,7 @@ void AnnotationLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
         QGraphicsItem* item = obj->graphics_item();
         if (!item->isVisible()) continue;
         const QPointF item_pos = item->pos();  // przy przeciaganiu obiekt ma przesuniete polozenie
-        if (item->type() == PoiItemType ? !exposed.contains(item_pos) : !item->sceneBoundingRect().intersects(exposed))
-            continue;
+        if (!item->sceneBoundingRect().intersects(exposed)) continue;
         const double opacity = base_opacity * item->opacity();  // zaznaczona polilinia/polygon: 0.5
         for (Annotation& a : annotations) {
             if (a.kind != Annotation::Kind::Arrow && !texts) continue;
@@ -918,6 +934,48 @@ void AnnotationLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* o
                 }
             }
         }
+    }
+    painter->restore();
+}
+
+// ================================================================ PoiIconLayer
+PoiIconLayer::PoiIconLayer(MapScene* scene) : map_scene_(scene) {
+    setZValue(POI_ICON_Z_VAL);
+    setAcceptedMouseButtons(Qt::NoButton);
+    setAcceptHoverEvents(false);
+    setFlag(QGraphicsItem::ItemUsesExtendedStyleOption, true);  // exposedRect w paint()
+}
+
+void PoiIconLayer::set_rect(const QRectF& rect) {
+    if (rect == rect_) return;
+    prepareGeometryChange();
+    rect_ = rect;
+}
+
+void PoiIconLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
+    Q_UNUSED(widget);
+    if (!map_scene_->map()) return;
+    const QTransform world = painter->worldTransform();
+    const double scale = std::max(world.m11(), 1e-9);
+    if (scale < SCALE_WITHOUT_POIS) return;
+    // powyzej progu stala wielkosc na ekranie, ponizej ikony maleja razem z mapa
+    const double size = std::min(scale, IGNORE_TRANSFORMATION_TRESHOLD);
+    const double base_opacity = painter->opacity();
+    // POI z indeksu sceny (boundingRect POI to nadzbior ikony, wiec nic nie umyka)
+    const QList<QGraphicsItem*> items =
+        map_scene_->items(option->exposedRect, Qt::IntersectsItemBoundingRect, Qt::AscendingOrder);
+    painter->save();
+    for (QGraphicsItem* g : items) {
+        if (g->type() != PoiItemType || !g->isVisible()) continue;
+        auto* poi = static_cast<PoiItem*>(g);
+        if (poi->paints_itself()) continue;
+        const QPointF p = world.map(poi->pos());
+        QTransform t;
+        t.translate(p.x(), p.y());
+        if (size != 1) t.scale(size, size);
+        painter->setTransform(t);
+        painter->setOpacity(base_opacity * poi->opacity());
+        painter->drawPixmap(poi->offset(), poi->pixmap());
     }
     painter->restore();
 }

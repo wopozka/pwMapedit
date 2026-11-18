@@ -36,13 +36,14 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     add_persistent_item(road_casing_);
     annotation_layer_ = new AnnotationLayer(this);
     add_persistent_item(annotation_layer_);
+    poi_icon_layer_ = new PoiIconLayer(this);
+    add_persistent_item(poi_icon_layer_);
 }
 
 void MapScene::update_annotations(MapObjectItem* item) {
     if (rebuilding_all_) return;
     QGraphicsItem* g = item->graphics_item();
-    // POI ma ItemIgnoresTransformations - jego sceneBoundingRect jest w pikselach, a nie w jednostkach sceny
-    const QRectF reference = g->type() == PoiItemType ? QRectF(g->pos(), QSizeF(0, 0)) : g->sceneBoundingRect();
+    const QRectF reference = g->sceneBoundingRect();
     const double margin = AnnotationLayer::MARGIN_PX / std::max(viewer_scale_, 1e-9);
     update(reference.adjusted(-margin, -margin, margin, margin));
 }
@@ -214,6 +215,7 @@ void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& proje
     setSceneRect(start.x, start.y, end.x - start.x, end.y - start.y);
     road_casing_->set_rect(sceneRect());
     annotation_layer_->set_rect(sceneRect());
+    poi_icon_layer_->set_rect(sceneRect());
 }
 
 // ---------------------------------------------------------------- edycja

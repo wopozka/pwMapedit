@@ -32,6 +32,7 @@ enum ItemType {
     GpsWaypointItemType,
     RoadCasingItemType,
     AnnotationLayerItemType,
+    PoiIconLayerItemType,
 };
 
 // Element, do ktorego punktow przyciagaja sie wezly (Ctrl), np. slady GPS.
@@ -128,15 +129,24 @@ protected:
 };
 
 // ---------------------------------------------------------------- POI
-// Ikona POI ma zawsze ItemIgnoresTransformations: powyzej IGNORE_TRANSFORMATION_TRESHOLD stala wielkosc
-// na ekranie, ponizej paint() i shape() zmniejszaja ja razem z mapa (bez przelaczania flagi przy progu skali,
-// ktore przy dziesiatkach tysiecy POI kosztowalo). boundingRect zostaje pelnego rozmiaru (nadzbior).
+// POI w ukladzie sceny (bez ItemIgnoresTransformations - takie elementy indeks BSP przeglada liniowo przy kazdym
+// zapytaniu). Ikone rysuje PoiIconLayer; element ma ItemHasNoContents i sluzy do zaznaczania, najechania
+// i przeciagania. Zaznaczony albo podswietlony POI rysuje sie sam (nad innymi, z ramka). Ikona ma powyzej
+// IGNORE_TRANSFORMATION_TRESHOLD stala wielkosc na ekranie, ponizej maleje razem z mapa: shape() i paint() skaluja
+// ja o icon_scale(). boundingRect jest staly - rozmiar ikony przy skali progu, najwiekszy w jednostkach sceny
+// (nadzbior) - wiec przyblizanie nie zmienia geometrii w indeksie.
 class PoiItem : public QGraphicsPixmapItem, public MapObjectItem {
 public:
     PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon);
     int type() const override { return PoiItemType; }
     QGraphicsItem* graphics_item() override { return this; }
     QPainterPath shape() const override;
+    // Skala ikony w ukladzie elementu: 1 do progu, powyzej prog/skala widoku (stala wielkosc na ekranie).
+    double icon_scale() const;
+    // Prostokat faktycznie rysowanej ikony (w ukladzie elementu).
+    QRectF icon_rect() const;
+    // Czy ikone rysuje sam element (zaznaczony albo podswietlony), a nie PoiIconLayer.
+    bool paints_itself() const { return !(flags() & QGraphicsItem::ItemHasNoContents); }
 
     void set_map_level(int level) override;
     void refresh() override;
@@ -155,6 +165,8 @@ protected:
 
 private:
     void read_positions();
+    // Zaznaczony albo podswietlony POI rysuje sie sam, pozostale rysuje PoiIconLayer.
+    void update_self_painting();
 
     std::optional<QPointF> mp_data_[5];
     int shown_level_ = -1;
@@ -330,6 +342,23 @@ public:
 
     // Opisy wychodza poza element obiektu najwyzej o tyle pikseli (wybor obiektow do rysowania, przerysowanie).
     static constexpr double MARGIN_PX = 300;
+
+private:
+    MapScene* map_scene_;
+    QRectF rect_;
+};
+
+// Ikony POI: jeden element rysujacy ikony wszystkich widocznych POI w odswiezanym fragmencie widoku (z 20, jak POI).
+// POI do rysowania bierze z indeksu sceny. Pomija POI, ktore rysuja sie same (zaznaczone, podswietlone).
+// Nie reaguje na mysz (pusty ksztalt).
+class PoiIconLayer : public QGraphicsItem {
+public:
+    explicit PoiIconLayer(MapScene* scene);
+    int type() const override { return PoiIconLayerItemType; }
+    QRectF boundingRect() const override { return rect_; }
+    QPainterPath shape() const override { return {}; }
+    void set_rect(const QRectF& rect);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
 private:
     MapScene* map_scene_;

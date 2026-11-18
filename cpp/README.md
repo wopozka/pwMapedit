@@ -208,8 +208,10 @@ o stałej głębokości 10 (`SCENE_BSP_TREE_DEPTH`; automatyczna głębokość Q
 Wcześniej element był jeden na obiekt i przy zmianie poziomu dostawał nową ścieżkę, a przy BSP każda zmiana geometrii
 przebudowywała indeks. `item_for_object()` zwraca element widoczny na bieżącym poziomie, `items_for_object()` wszystkie.
 Po zmianie danych obiektu `refresh_object()` usuwa elementy poziomów, których już nie ma, i tworzy brakujące.
-Uwaga: ikony POI mają `ItemIgnoresTransformations`, a takie elementy Qt trzyma poza drzewem BSP i przegląda liniowo
-przy każdym zapytaniu. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
+Żaden element mapy nie ma `ItemIgnoresTransformations` – takie elementy Qt trzyma poza drzewem BSP i przegląda
+liniowo przy każdym zapytaniu (33 tys. ikon POI z tą flagą sprawiało, że zapytanie z indeksem trwało 60–90 ms).
+Ikony POI rysuje `PoiIconLayer` (z 20), biorąc POI z indeksu sceny; element POI ma `ItemHasNoContents`
+i służy do zaznaczania, najechania i przeciągania. Zaznaczony albo podświetlony POI rysuje się sam. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
 bo usuwanie pojedynczo jest kwadratowe.
 
 Różnice względem Pythona (celowe):
