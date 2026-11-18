@@ -45,10 +45,9 @@ void DeleteObjectsCmd::set_deleted(bool deleted) {
     if (!map) return;
     for (size_t index : indexes_) {
         map->set_map_object_deleted(index, deleted);
-        if (MapObjectItem* item = scene_->item_for_object(index)) {
-            if (deleted) item->graphics_item()->setSelected(false);
-            item->refresh();
-        }
+        if (deleted)
+            for (MapObjectItem* item : scene_->items_for_object(index)) item->graphics_item()->setSelected(false);
+        scene_->refresh_object(index);
     }
 }
 
@@ -67,7 +66,7 @@ void AddObjectCmd::redo() {
 void AddObjectCmd::undo() {
     if (!index_) return;
     if (MapData* map = scene_->map()) map->set_map_object_deleted(*index_, true);
-    if (MapObjectItem* item = scene_->item_for_object(*index_)) item->graphics_item()->setSelected(false);
+    for (MapObjectItem* item : scene_->items_for_object(*index_)) item->graphics_item()->setSelected(false);
     scene_->refresh_object(*index_);
 }
 

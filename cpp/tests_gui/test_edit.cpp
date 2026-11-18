@@ -8,6 +8,7 @@
 #include <QtTest>
 #include <memory>
 
+#include "constants.hpp"
 #include "map_items.hpp"
 #include "map_scene.hpp"
 #include "map_styles.hpp"
@@ -151,6 +152,10 @@ private slots:
     void mouse_drag_moves_polyline();
     void mouse_drag_moves_poi_when_zoomed_in();
     void mouse_drag_moves_poi_when_zoomed_out();
+    // element na poziom Data, indeks BSP
+    void scene_uses_bsp_index();
+    void item_per_data_level();
+    void refresh_syncs_data_level_items();
     // 3b.2: edycja wezlow
     void edit_nodes_tool_decorates_selection();
     void interpolated_numbers_in_edit_nodes_mode();
@@ -371,6 +376,90 @@ void EditTests::mouse_drag_moves_poi_when_zoomed_in() {
 
 void EditTests::mouse_drag_moves_poi_when_zoomed_out() {
     drag_poi(-5);  // skala ok. 0,6: ikona zmniejszona, ale jeszcze rysowana (SCALE_WITHOUT_POIS = 0,25)
+}
+
+void EditTests::scene_uses_bsp_index() {
+    Fixture f;
+    QCOMPARE(f.scene.itemIndexMethod(), QGraphicsScene::BspTreeIndex);
+    QCOMPARE(f.scene.bspTreeDepth(), SCENE_BSP_TREE_DEPTH);
+    // po wyczyszczeniu i ponownym wczytaniu mapy indeks zostaje
+    f.scene.clear_map();
+    f.scene.set_map(f.map.get(), &f.styles);
+    QCOMPARE(f.scene.itemIndexMethod(), QGraphicsScene::BspTreeIndex);
+    QCOMPARE(f.scene.bspTreeDepth(), SCENE_BSP_TREE_DEPTH);
+}
+
+namespace {
+std::vector<int> item_levels(const MapScene& scene, size_t obj) {
+    std::vector<int> levels;
+    for (const MapObjectItem* item : scene.items_for_object(obj)) levels.push_back(item->data_level());
+    return levels;
+}
+}  // namespace
+
+// Polilinia z Data0 i Data1 ma dwa elementy o stalej geometrii; zmiana poziomu przelacza tylko widocznosc.
+void EditTests::item_per_data_level() {
+    Fixture f;
+    QCOMPARE(item_levels(f.scene, 0), std::vector<int>{0});
+    QCOMPARE(item_levels(f.scene, 1), (std::vector<int>{0, 1}));
+    auto* data0 = static_cast<PolyItem*>(f.scene.items_for_object(1)[0]);
+    auto* data1 = static_cast<PolyItem*>(f.scene.items_for_object(1)[1]);
+    const QPainterPath path0 = data0->path(), path1 = data1->path();
+    QVERIFY(path0 != path1);
+    QCOMPARE(path0.elementCount(), 3);
+    QCOMPARE(path1.elementCount(), 2);
+    QCOMPARE(f.scene.object_items().size(), size_t(3));
+
+    QVERIFY(data0->isVisible());
+    QVERIFY(!data1->isVisible());
+    QCOMPARE(f.scene.item_for_object(1), static_cast<MapObjectItem*>(data0));
+    QCOMPARE(data0->shown_data_level(), 0);
+
+    f.scene.set_map_level(1);
+    QVERIFY(!data0->isVisible());
+    QVERIFY(data1->isVisible());
+    QCOMPARE(f.scene.item_for_object(1), static_cast<MapObjectItem*>(data1));
+    QCOMPARE(data1->shown_data_level(), 1);
+    QCOMPARE(data0->path(), path0);
+    QCOMPARE(data1->path(), path1);
+    QVERIFY(!f.scene.item_for_object(0)->graphics_item()->isVisible());  // POI tylko Data0, EndLevel 0
+
+    f.scene.set_map_level(0);
+    QVERIFY(data0->isVisible());
+    QVERIFY(!data1->isVisible());
+    QVERIFY(f.scene.item_for_object(0)->graphics_item()->isVisible());
+}
+
+// Zmiana poziomow Data obiektu (komenda i undo): zbedne elementy usuwane, brakujace tworzone, pozostale zostaja.
+void EditTests::refresh_syncs_data_level_items() {
+    Fixture f;
+    MapObjectItem* data0 = f.scene.items_for_object(1)[0];
+    MapObject after = f.map->objects()[1];
+    QVERIFY(after.data->move_data_level(1, 2));
+    f.scene.replace_object(1, after, "przenies Data1");
+    QCOMPARE(item_levels(f.scene, 1), (std::vector<int>{0, 2}));
+    QCOMPARE(f.scene.items_for_object(1)[0], data0);
+    QCOMPARE(f.scene.object_items().size(), size_t(3));
+    f.scene.set_map_level(2);
+    QCOMPARE(f.scene.item_for_object(1)->data_level(), 2);
+    QVERIFY(f.scene.item_for_object(1)->graphics_item()->isVisible());
+    f.scene.set_map_level(1);
+    // brak Data1, EndLevel 0 - obiekt ukryty
+    QVERIFY(!f.scene.item_for_object(1)->graphics_item()->isVisible());
+
+    f.stack.undo();
+    QCOMPARE(item_levels(f.scene, 1), (std::vector<int>{0, 1}));
+    QCOMPARE(f.scene.items_for_object(1)[0], data0);
+    QVERIFY(f.scene.item_for_object(1)->graphics_item()->isVisible());
+    QCOMPARE(f.scene.item_for_object(1)->data_level(), 1);
+    QCOMPARE(f.map->to_mp_string(), f.original);
+
+    // usuniecie obiektu ukrywa wszystkie jego elementy, undo przywraca
+    f.select_only(f.scene.item_for_object(1));
+    f.scene.delete_selected();
+    for (MapObjectItem* item : f.scene.items_for_object(1)) QVERIFY(!item->graphics_item()->isVisible());
+    f.stack.undo();
+    QVERIFY(f.scene.item_for_object(1)->graphics_item()->isVisible());
 }
 
 void EditTests::edit_nodes_tool_decorates_selection() {

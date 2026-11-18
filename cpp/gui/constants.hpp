@@ -16,6 +16,9 @@ constexpr double NEW_OBJECT_CREATION_Z_VAL = 200;
 constexpr double ROAD_CASING_Z_VAL = 9;
 // Opisy (etykiety, numery, strzalki): nad wszystkimi obiektami (z do 20), pod zaznaczonymi.
 constexpr double ANNOTATION_Z_VAL = 30;
+// Glebokosc indeksu BSP sceny (110 tys. obiektow: przy 10 zapytanie o fragment widoku trwa ulamek ms,
+// automatyczna glebokosc Qt dawala 5 albo 17).
+constexpr int SCENE_BSP_TREE_DEPTH = 10;
 constexpr double SELECTED_OBJECT_Z_VAL = 1000;
 constexpr double HIGHLIGHTED_POLY_Z_VAL = 2000;
 constexpr Qt::GlobalColor LEFT_SIDE_NUM_MAIN = Qt::blue;

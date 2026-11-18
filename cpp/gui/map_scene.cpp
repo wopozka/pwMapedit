@@ -23,10 +23,12 @@
 namespace pwm::gui {
 
 MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
-    // Bez indeksu BSP. Przy setkach tysiecy elementow indeks BSP bardzo spowalnia kazda zmiane geometrii
-    // (setPath przy zmianie poziomu mapy: kilka ms na element, czyli minuty dla calej mapy), a przeglad liniowy
-    // przy rysowaniu kosztuje kilkadziesiat ms. Python uzywal BSP, ale tam koszt ginal w narzucie interpretera.
-    setItemIndexMethod(QGraphicsScene::NoIndex);
+    // Indeks BSP o stalej glebokosci (automatyczna glebokosc Qt dla duzych map wychodzi 5 albo 17 - za malo
+    // albo za duzo). Zmiana poziomu mapy nie zmienia geometrii elementow (element na poziom Data obiektu,
+    // przelaczana jest tylko widocznosc), wiec indeks nie jest przy niej przebudowywany.
+    // Glebokosc jest zapisana w obiekcie indeksu - ustawiac po kazdym setItemIndexMethod.
+    setItemIndexMethod(QGraphicsScene::BspTreeIndex);
+    setBspTreeDepth(SCENE_BSP_TREE_DEPTH);
     connect(this, &QGraphicsScene::selectionChanged, this, &MapScene::selection_changed);
     // jeden element na cala mape, przetrwa clear_map(); niewidoczny (wylaczony) nic nie kosztuje
     road_casing_ = new RoadCasingLayer(this);
@@ -88,13 +90,13 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
     auto& objects = map_->objects();
     const int total = static_cast<int>(objects.size());
     object_items_.reserve(objects.size());
-    items_by_object_.assign(objects.size(), nullptr);
+    items_by_object_.assign(objects.size(), {});
     emit progress(0, total);
     QElapsedTimer progress_timer;
     progress_timer.start();
     rebuilding_all_ = true;
     for (size_t i = 0; i < objects.size(); ++i) {
-        if (!objects[i].deleted) create_item(i);
+        if (!objects[i].deleted) create_items(i);
         if (progress_timer.elapsed() > 100) {
             emit progress(static_cast<int>(i), total);
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -106,29 +108,41 @@ void MapScene::set_map(MapData* map, const MapStyles* styles) {
     emit progress(total, total);
 }
 
-MapObjectItem* MapScene::create_item(size_t i) {
+MapObjectItem* MapScene::create_items(size_t i) {
     const MapObject& obj = map_->objects()[i];
     if (!obj.data) return nullptr;
+    MapObjectItem* first = nullptr;
+    for (int level : object_item_levels(obj)) {
+        MapObjectItem* item = create_item(i, level);
+        if (!first) first = item;
+    }
+    return first;
+}
+
+MapObjectItem* MapScene::create_item(size_t i, int data_level) {
+    const MapObject& obj = map_->objects()[i];
     const long long type = obj.type.value_or(0);
     MapObjectItem* result = nullptr;
     switch (obj.kind()) {
         case ObjectKind::Poi: {
-            auto* item = new PoiItem(map_, i, styles_->poi_icon(type));
+            auto* item = new PoiItem(map_, i, data_level, styles_->poi_icon(type));
             addItem(item);
             item->add_label();
             result = item;
             break;
         }
         case ObjectKind::Polyline: {
-            auto* item = new PolylineItem(map_, i, styles_->polyline_pen(type));
+            auto* item = new PolylineItem(map_, i, data_level, styles_->polyline_pen(type));
             addItem(item);
+            item->rebuild();
             result = item;
             break;
         }
         case ObjectKind::Polygon: {
-            auto* item = new PolygonItem(map_, i, styles_->polygon_pen(type), QBrush(styles_->polygon_fill_colour(type)),
-                                         styles_->polygon_z_value(type));
+            auto* item = new PolygonItem(map_, i, data_level, styles_->polygon_pen(type),
+                                         QBrush(styles_->polygon_fill_colour(type)), styles_->polygon_z_value(type));
             addItem(item);
+            item->rebuild();
             result = item;
             break;
         }
@@ -137,8 +151,29 @@ MapObjectItem* MapScene::create_item(size_t i) {
     }
     result->set_map_level(map_level_);
     object_items_.push_back(result);
-    items_by_object_[i] = result;
+    auto& items = items_by_object_[i];
+    auto pos = std::find_if(items.begin(), items.end(),
+                            [&](const MapObjectItem* it) { return it->data_level() > data_level; });
+    items.insert(pos, result);
     return result;
+}
+
+void MapScene::remove_item(MapObjectItem* item) {
+    auto erase = [item](auto& v) {
+        auto it = std::find(v.begin(), v.end(), item);
+        if (it != v.end()) v.erase(it);
+    };
+    erase(object_items_);
+    erase(selection_order_);
+    erase(items_by_object_[item->object_index()]);
+    if (auto* poly = dynamic_cast<PolyItem*>(item)) {
+        erase(decorated_);
+        poly->undecorate();
+    }
+    QGraphicsItem* g = item->graphics_item();
+    g->setSelected(false);
+    update_annotations(item);
+    delete g;  // usuwa tez ze sceny
 }
 
 void MapScene::set_transparent_polygons(bool transparent) {
@@ -183,11 +218,36 @@ void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& proje
 
 // ---------------------------------------------------------------- edycja
 MapObjectItem* MapScene::item_for_object(size_t index) const {
-    return index < items_by_object_.size() ? items_by_object_[index] : nullptr;
+    if (index >= items_by_object_.size()) return nullptr;
+    const auto& items = items_by_object_[index];
+    for (MapObjectItem* item : items)
+        if (item->graphics_item()->isVisible()) return item;
+    return items.empty() ? nullptr : items.front();
+}
+
+const std::vector<MapObjectItem*>& MapScene::items_for_object(size_t index) const {
+    static const std::vector<MapObjectItem*> none;
+    return index < items_by_object_.size() ? items_by_object_[index] : none;
 }
 
 void MapScene::refresh_object(size_t index) {
-    if (MapObjectItem* item = item_for_object(index)) item->refresh();
+    if (map_ && index < items_by_object_.size() && !items_by_object_[index].empty()) {
+        // elementy dopasowane do poziomow Data obiektu: zbedne usuwane, istniejace przebudowane, brakujace dodane
+        const std::vector<int> levels = object_item_levels(map_->objects()[index]);
+        const std::vector<MapObjectItem*> current = items_by_object_[index];
+        for (MapObjectItem* item : current) {
+            if (std::find(levels.begin(), levels.end(), item->data_level()) == levels.end())
+                remove_item(item);
+            else
+                item->refresh();
+        }
+        for (int level : levels) {
+            const auto& items = items_by_object_[index];
+            const bool exists = std::any_of(items.begin(), items.end(),
+                                            [level](const MapObjectItem* it) { return it->data_level() == level; });
+            if (!exists) create_item(index, level);
+        }
+    }
     // Aktywny wezel jest pamietany numerem. Po zmianie liczby wezlow (usuniecie wezla, undo dodania) numer moze
     // wskazywac poza linie - panel wlasciwosci czytalby nieistniejacy wezel (MpError i zamkniecie programu).
     if (active_grip_ && active_grip_->obj == index && !active_grip_valid()) {
@@ -804,8 +864,8 @@ size_t MapScene::add_object(MapObject obj) {
     obj.id.reset();
     MapObject& added = map_->add_map_object(std::move(obj));
     const size_t index = *added.id;
-    if (items_by_object_.size() < map_->objects().size()) items_by_object_.resize(map_->objects().size(), nullptr);
-    create_item(index);
+    if (items_by_object_.size() < map_->objects().size()) items_by_object_.resize(map_->objects().size());
+    create_items(index);
     return index;
 }
 

@@ -49,9 +49,10 @@ int main(int argc, char* argv[]) {
         else if (args[i] == "--index" && i + 1 < args.size()) {
             bench.index = args[++i].toLower();
             index_given = true;
-        } else if (args[i] == "--bsp-depth" && i + 1 < args.size())
+        } else if (args[i] == "--bsp-depth" && i + 1 < args.size()) {
             bench.bsp_depth = args[++i].toInt();
-        else if (args[i] == "--bench-level" && i + 1 < args.size())
+            index_given = true;
+        } else if (args[i] == "--bench-level" && i + 1 < args.size())
             bench.level = args[++i].toInt();
         else if (args[i] == "--bench-zoom" && i + 1 < args.size())
             bench.zoom = args[++i].toInt();

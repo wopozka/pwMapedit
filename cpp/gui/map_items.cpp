@@ -75,6 +75,31 @@ const typename V::value_type* py_at(const V& v, long idx) {
 }  // namespace
 
 // ================================================================ MapObjectItem
+bool object_has_data_level(const MapObject& obj, int level) {
+    if (!obj.data) return false;
+    const auto* polys = obj.data->polys_for_data_level(level);
+    if (!polys || polys->empty()) return false;
+    return obj.kind() != ObjectKind::Poi || !polys->front().empty();
+}
+
+std::vector<int> object_item_levels(const MapObject& obj) {
+    std::vector<int> levels;
+    for (int level = 0; level < MAP_LEVELS; ++level)
+        if (object_has_data_level(obj, level)) levels.push_back(level);
+    if (levels.empty()) levels.push_back(0);
+    return levels;
+}
+
+int object_shown_data_level(const MapObject& obj, int level) {
+    if (obj.deleted) return -1;
+    if (object_has_data_level(obj, level)) return level;
+    if (obj.endlevel < level) return -1;
+    // Python zostawial dane z poprzednio ogladanego poziomu; tu bierzemy najwyzszy nizszy poziom z danymi
+    for (int l = level - 1; l >= 0; --l)
+        if (object_has_data_level(obj, l)) return l;
+    return -1;
+}
+
 MapScene* MapObjectItem::map_scene() const {
     auto* self = const_cast<MapObjectItem*>(this);
     QGraphicsScene* s = self->graphics_item()->scene();
@@ -122,14 +147,10 @@ void MapObjectItem::set_selection_z_value() {
 }
 
 // ================================================================ PoiItem
-PoiItem::PoiItem(MapData* map, size_t index, const QPixmap& icon) : MapObjectItem(map, index) {
+PoiItem::PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon)
+    : MapObjectItem(map, index, data_level) {
     read_positions();
-    for (int level = 0; level < MAP_LEVELS; ++level) {
-        if (mp_data_[level]) {
-            setPos(*mp_data_[level]);
-            break;
-        }
-    }
+    if (mp_data_[data_level_]) setPos(*mp_data_[data_level_]);
     setPixmap(icon);
     set_z_value();
     // ItemSendsGeometryChanges: itemChange przy przesunieciu (przerysowanie opisow)
@@ -157,28 +178,17 @@ void PoiItem::read_positions() {
 }
 
 void PoiItem::set_map_level(int level) {
-    if (object().deleted) {
-        shown_level_ = -1;
-        setVisible(false);
-    } else if (mp_data_[level]) {
-        setPos(*mp_data_[level]);
-        shown_level_ = level;
-        setVisible(true);
-    } else if (object().endlevel < level) {
-        shown_level_ = -1;
-        setVisible(false);
-    } else {
-        // jak w Pythonie: POI pozostaje widoczne w ostatnim polozeniu; bierzemy najwyzszy nizszy poziom
-        shown_level_ = -1;
-        for (int l = level - 1; l >= 0; --l) {
-            if (mp_data_[l]) {
-                setPos(*mp_data_[l]);
-                shown_level_ = l;
-                break;
-            }
-        }
-        setVisible(true);
+    const MapObject& obj = object();
+    const int shown = object_shown_data_level(obj, level);
+    bool visible = shown >= 0 && shown == data_level_;
+    shown_level_ = visible ? shown : -1;
+    if (!visible && shown < 0 && !obj.deleted && obj.endlevel >= level) {
+        // jak w Pythonie: POI bez danych na tym i nizszych poziomach (w zakresie EndLevel) pozostaje widoczne -
+        // tu w polozeniu z najnizszego poziomu, bez pokazywanego poziomu Data
+        const std::vector<int> levels = object_item_levels(obj);
+        visible = mp_data_[data_level_] && levels.front() == data_level_;
     }
+    if (isVisible() != visible) setVisible(visible);
 }
 
 void PoiItem::apply_style() {
@@ -189,6 +199,7 @@ void PoiItem::apply_style() {
 void PoiItem::refresh() {
     apply_style();
     read_positions();
+    if (mp_data_[data_level_]) setPos(*mp_data_[data_level_]);
     annotations_changed();
     annotations_.clear();
     add_label();
@@ -277,25 +288,15 @@ QPainterPath make_path(const std::vector<std::vector<QPointF>>& polys, bool poly
 }
 }  // namespace
 
-PolyItem::PolyItem(MapData* map, size_t index, bool polygon) : MapObjectItem(map, index), polygon_(polygon) {
-    for (int level = 0; level < MAP_LEVELS; ++level) {
-        if (has_data_level(level)) {
-            current_data_x_ = level;
-            setPath(path_for_level(level));
-            break;
-        }
-    }
+PolyItem::PolyItem(MapData* map, size_t index, int data_level, bool polygon)
+    : MapObjectItem(map, index, data_level), polygon_(polygon) {
+    setPath(path_for_level(data_level_));
     setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable |
              QGraphicsItem::ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
 }
 
-bool PolyItem::has_data_level(int level) const {
-    const MapObject& obj = object();
-    if (!obj.data) return false;
-    const auto* polys = obj.data->polys_for_data_level(level);
-    return polys && !polys->empty();
-}
+bool PolyItem::has_data_level(int level) const { return object_has_data_level(object(), level); }
 
 QPainterPath PolyItem::path_for_level(int level) const {
     std::vector<std::vector<QPointF>> polys;
@@ -420,9 +421,8 @@ std::vector<std::vector<QPointF>> PolyItem::polygons_from_path() const {
 void PolyItem::rebuild() {
     annotations_changed();  // obszar starych opisow
     remove_level_items();
-    setPath(path_for_level(current_data_x_));
+    setPath(path_for_level(data_level_));
     add_level_items();
-    built_data_x_ = current_data_x_;
     annotations_changed();
 }
 
@@ -432,37 +432,16 @@ void PolyItem::refresh() {
     undecorate();
     // po przesunieciu sciezka jest juz w nowym miejscu, a polozenie elementu wraca do (0, 0)
     setPos(0, 0);
-    built_data_x_ = -1;
+    rebuild();
     set_map_level(scene_map_level());
     // uchwyty odpowiadaja nowym wezlom (wstawienie lub usuniecie wezla zmienia ich liczbe)
     if (was_decorated && isVisible() && isSelected()) decorate();
 }
 
 void PolyItem::set_map_level(int level) {
-    const MapObject& obj = object();
-    int target = -1;
-    if (obj.deleted) {
-        // ukryty
-    } else if (has_data_level(level)) {
-        target = level;
-    } else if (obj.endlevel >= level) {
-        // Python zostawial sciezke z poprzednio ogladanego poziomu; tu bierzemy najwyzszy nizszy poziom z danymi
-        for (int l = level - 1; l >= 0; --l) {
-            if (has_data_level(l)) {
-                target = l;
-                break;
-            }
-        }
-    }
-    if (target < 0) {
-        if (isVisible()) setVisible(false);
-        return;
-    }
-    if (target != built_data_x_) {
-        current_data_x_ = target;
-        rebuild();
-    }
-    if (!isVisible()) setVisible(true);
+    const int shown = object_shown_data_level(object(), level);
+    const bool visible = shown >= 0 && shown == data_level_;
+    if (isVisible() != visible) setVisible(visible);
 }
 
 QPainterPath PolyItem::stroke_shape() const {
@@ -545,7 +524,8 @@ QVariant PolyItem::itemChange(GraphicsItemChange change, const QVariant& value) 
 }
 
 // ================================================================ PolylineItem
-PolylineItem::PolylineItem(MapData* map, size_t index, const QPen& pen) : PolyItem(map, index, false) {
+PolylineItem::PolylineItem(MapData* map, size_t index, int data_level, const QPen& pen)
+    : PolyItem(map, index, data_level, false) {
     orig_pen_ = pen;
     setPen(pen);
     set_z_value();
@@ -621,7 +601,7 @@ void PolylineItem::add_hlevel_labels() {
     for (size_t poly_num = 0; poly_num < polygons.size(); ++poly_num) {
         std::vector<OptInt> hlevels;
         try {
-            hlevels = obj.data->hlevels_for_poly(current_data_x_, poly_num);
+            hlevels = obj.data->hlevels_for_poly(data_level_, poly_num);
         } catch (const MpError&) {
             continue;
         }
@@ -663,7 +643,7 @@ void PolylineItem::add_housenumber_labels() {
         for (size_t i = 0; i + 1 < coords.size(); ++i) vectors.emplace_back(coords[i], coords[i + 1]);
         std::vector<const NumbersDefinition*> numbers;
         try {
-            numbers = obj.data->housenumbers_for_poly(current_data_x_, poly_num);
+            numbers = obj.data->housenumbers_for_poly(data_level_, poly_num);
         } catch (const MpError&) {
             continue;
         }
@@ -731,8 +711,9 @@ void PolylineItem::add_decoration_items() {
 }
 
 // ================================================================ PolygonItem
-PolygonItem::PolygonItem(MapData* map, size_t index, const QPen& pen, const QBrush& brush, int z_value)
-    : PolyItem(map, index, true), z_value_(z_value) {
+PolygonItem::PolygonItem(MapData* map, size_t index, int data_level, const QPen& pen, const QBrush& brush,
+                         int z_value)
+    : PolyItem(map, index, data_level, true), z_value_(z_value) {
     orig_pen_ = pen;
     setPen(pen);
     setBrush(brush);

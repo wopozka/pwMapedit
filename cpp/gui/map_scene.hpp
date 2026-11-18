@@ -69,10 +69,15 @@ public:
     // Prostokat sceny z prostokata ograniczajacego mapy (+0.001 stopnia z kazdej strony).
     void set_canvas_rectangle(const GeoBBox& bbox, const Projection& projection);
 
+    // Wszystkie elementy obiektow mapy (po jednym na poziom Data obiektu; ukryte tez).
     const std::vector<MapObjectItem*>& object_items() const { return object_items_; }
-    // Element sceny dla obiektu o danym indeksie w MapData (nullptr, gdy obiekt nie ma elementu).
+    // Element sceny obiektu o danym indeksie w MapData: widoczny na biezacym poziomie mapy, a gdy obiekt jest
+    // ukryty - element najnizszego poziomu Data. nullptr, gdy obiekt nie ma elementow.
     MapObjectItem* item_for_object(size_t index) const;
-    // Przebudowuje element obiektu po zmianie jego danych (wywolywane przez komendy undo/redo).
+    // Wszystkie elementy obiektu (rosnaco wedlug poziomu Data).
+    const std::vector<MapObjectItem*>& items_for_object(size_t index) const;
+    // Przebudowuje elementy obiektu po zmianie jego danych (wywolywane przez komendy undo/redo): elementy
+    // poziomow Data, ktorych juz nie ma, sa usuwane, a dla nowych poziomow tworzone.
     void refresh_object(size_t index);
     // Zaznaczone obiekty mapy, w kolejnosci indeksow w MapData.
     std::vector<MapObjectItem*> selected_object_items() const;
@@ -214,7 +219,11 @@ private:
                         size_t* skipped);
     bool active_grip_valid() const;
     void push_command(QUndoCommand* command);
-    MapObjectItem* create_item(size_t index);
+    // Tworzy elementy obiektu dla wszystkich jego poziomow Data; zwraca element najnizszego poziomu.
+    MapObjectItem* create_items(size_t index);
+    MapObjectItem* create_item(size_t index, int data_level);
+    // Usuwa element obiektu (poziom Data zniknal z danych) ze sceny i list.
+    void remove_item(MapObjectItem* item);
     PolyItem* poly_item(size_t index) const;
     // Przerysowanie uchwytow obiektu (wyrozniony uchwyt aktywnego wezla).
     void update_grips(size_t obj) const;
@@ -224,7 +233,7 @@ private:
     MapData* map_ = nullptr;
     const MapStyles* styles_ = nullptr;
     std::vector<MapObjectItem*> object_items_;
-    std::vector<MapObjectItem*> items_by_object_;  // indeks obiektu w MapData -> element
+    std::vector<std::vector<MapObjectItem*>> items_by_object_;  // indeks obiektu w MapData -> elementy
     QUndoStack* undo_stack_ = nullptr;
     QList<QGraphicsItem*> persistent_items_;
     int map_level_ = 0;

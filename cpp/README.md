@@ -201,9 +201,15 @@ pierwsze rysowanie po wczytaniu 1,3 → 0,4 s, przybliżenie o 40 kroków 65 →
 140–155 → 115–125 ms, hover 85–95 → 64–67 ms. Pomiar: `pwmapedit mapa.mp --bench wyniki.txt
 [--index none|bsp|bsp-toggle] [--bsp-depth N]`, wszystkie warianty – `cpp/tools/bench_index.sh`.
 
-Scena działa bez indeksu BSP (`NoIndex`). Po przeniesieniu opisów BSP nadal przegrywa: zmiana poziomu 0,3–1 s. Przy setkach tysięcy elementów indeks BSP spowalniał każdą zmianę
-geometrii (`setPath` przy zmianie poziomu: kilka ms na element, czyli minuty dla całej mapy), a przegląd liniowy
-przy rysowaniu kosztuje kilkadziesiąt ms. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
+Obiekt ma osobny element sceny dla każdego swojego poziomu Data (`object_item_levels`), o stałej geometrii.
+Zmiana poziomu mapy tylko pokazuje albo ukrywa elementy (`object_shown_data_level`: własny poziom, a bez niego
+w zakresie `EndLevel` najwyższy niższy), nie zmienia ścieżek, położeń ani opisów. Dzięki temu scena ma indeks BSP
+o stałej głębokości 10 (`SCENE_BSP_TREE_DEPTH`; automatyczna głębokość Qt dla 110 tys. obiektów wychodziła 5 albo 17).
+Wcześniej element był jeden na obiekt i przy zmianie poziomu dostawał nową ścieżkę, a przy BSP każda zmiana geometrii
+przebudowywała indeks. `item_for_object()` zwraca element widoczny na bieżącym poziomie, `items_for_object()` wszystkie.
+Po zmianie danych obiektu `refresh_object()` usuwa elementy poziomów, których już nie ma, i tworzy brakujące.
+Uwaga: ikony POI mają `ItemIgnoresTransformations`, a takie elementy Qt trzyma poza drzewem BSP i przegląda liniowo
+przy każdym zapytaniu. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
 bo usuwanie pojedynczo jest kwadratowe.
 
 Różnice względem Pythona (celowe):

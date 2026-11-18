@@ -11,8 +11,8 @@ class MainWindow;
 
 struct IndexBenchOptions {
     QString output;              // plik wynikow (wyniki sa dopisywane)
-    QString index = "none";      // none | bsp | bsp-toggle (BSP, ale NoIndex na czas zmiany poziomu)
-    int bsp_depth = 0;           // 0 = glebokosc wybierana automatycznie przez Qt
+    QString index;               // puste = jak w programie (BSP), none | bsp | bsp-toggle (NoIndex na czas zmiany poziomu)
+    int bsp_depth = -1;          // -1 = jak w programie, 0 = glebokosc wybierana automatycznie przez Qt
     int level = 1;               // poziom, na ktory przelacza pomiar (i z powrotem na 0)
     int zoom = 40;               // liczba krokow przyblizenia (1,1^40 = ok. 45x, widok ulic)
 };

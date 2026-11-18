@@ -9,6 +9,7 @@
 
 #include "main_window.hpp"
 #include "map_scene.hpp"
+#include "constants.hpp"
 #include "map_view.hpp"
 
 namespace pwm::gui {
@@ -20,6 +21,7 @@ bool bsp_mode(const IndexBenchOptions& opt) { return opt.index != QLatin1String(
 void enable_bsp(QGraphicsScene* scene, int depth) {
     scene->setItemIndexMethod(QGraphicsScene::BspTreeIndex);
     // glebokosc jest zapisana w obiekcie indeksu - po kazdym setItemIndexMethod trzeba ja ustawic od nowa
+    if (depth < 0) depth = SCENE_BSP_TREE_DEPTH;
     if (depth > 0) scene->setBspTreeDepth(depth);
 }
 
@@ -111,6 +113,10 @@ private:
 }  // namespace
 
 void apply_index_mode(MainWindow& window, const IndexBenchOptions& opt) {
+    if (opt.index.isEmpty()) {  // indeks jak w programie; ewentualnie inna glebokosc
+        if (opt.bsp_depth >= 0) enable_bsp(window.scene(), opt.bsp_depth);
+        return;
+    }
     if (bsp_mode(opt))
         enable_bsp(window.scene(), opt.bsp_depth);
     else
@@ -139,16 +145,15 @@ bool run_index_bench(MainWindow& window, const IndexBenchOptions& opt, const QSt
     QFile file(opt.output);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) return false;
     QTextStream out(&file);
-    QString mode = opt.index;
-    if (bsp_mode(opt))
-        mode += QStringLiteral(", glebokosc %1")
-                    .arg(opt.bsp_depth > 0 ? QString::number(opt.bsp_depth) : QStringLiteral("auto"));
+    QString mode = opt.index.isEmpty() ? QStringLiteral("domyslny") : opt.index;
     out << "=== " << QDateTime::currentDateTime().toString(Qt::ISODate) << "  indeks: " << mode << '\n';
     out << "mapa: " << QFileInfo(map_file).fileName() << ", obiektow " << objects << ", elementow sceny "
         << scene_items << ", widok " << window.view()->viewport()->width() << 'x'
         << window.view()->viewport()->height();
-    if (bsp_mode(opt) && scene->itemIndexMethod() == QGraphicsScene::BspTreeIndex)
-        out << ", bspTreeDepth() " << scene->bspTreeDepth();
+    if (scene->itemIndexMethod() == QGraphicsScene::BspTreeIndex)
+        out << ", indeks BSP, bspTreeDepth() " << scene->bspTreeDepth();
+    else
+        out << ", bez indeksu";
     out << '\n';
     out << QStringLiteral("%1 %2 %3 %4 %5  %6\n")
                .arg(QStringLiteral("krok"), -24)

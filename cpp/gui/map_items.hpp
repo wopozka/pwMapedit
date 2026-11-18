@@ -66,19 +66,33 @@ struct Annotation {
     QStaticText text;
 };
 
-// Wspolna czesc POI/polilinii/polygonu: powiazanie z obiektem w MapData.
+// Czy obiekt ma wezly na poziomie Data level (POI: co najmniej jeden wezel).
+bool object_has_data_level(const MapObject& obj, int level);
+// Poziomy Data obiektu, z ktorych powstaja elementy sceny (rosnaco). Obiekt bez wezlow dostaje jeden, zawsze
+// ukryty element poziomu 0 - zeby mial element (zaznaczanie po undo, odswiezanie po zmianie danych).
+std::vector<int> object_item_levels(const MapObject& obj);
+// Poziom Data pokazywany na poziomie mapy level: wlasny, a gdy go nie ma (w zakresie EndLevel) - najwyzszy nizszy;
+// -1 gdy obiekt jest ukryty (usuniety, poza EndLevel, brak nizszych poziomow).
+int object_shown_data_level(const MapObject& obj, int level);
+
+// Wspolna czesc POI/polilinii/polygonu: powiazanie z obiektem w MapData i jednym jego poziomem Data.
+// Obiekt ma osobny element dla kazdego poziomu Data (object_item_levels). Element ma stala geometrie, a zmiana
+// poziomu mapy tylko go pokazuje albo ukrywa - nie zmienia geometrii, wiec nie przebudowuje indeksu sceny.
 class MapObjectItem {
 public:
-    MapObjectItem(MapData* map, size_t index) : map_(map), index_(index) {}
+    MapObjectItem(MapData* map, size_t index, int data_level)
+        : map_(map), index_(index), data_level_(data_level) {}
     virtual ~MapObjectItem() = default;
 
     MapObject& object() { return map_->objects()[index_]; }
     const MapObject& object() const { return map_->objects()[index_]; }
     size_t object_index() const { return index_; }
     long long object_type() const { return object().type.value_or(0); }
+    // Poziom Data, z ktorego zbudowany jest element (staly).
+    int data_level() const { return data_level_; }
 
-    // Ustawia geometrie i widocznosc dla poziomu mapy (odpowiednik set_map_level).
-    // Obiekt oznaczony jako usuniety jest zawsze ukryty.
+    // Widocznosc dla poziomu mapy (odpowiednik set_map_level): element jest widoczny, gdy na tym poziomie obiekt
+    // pokazuje jego poziom Data. Obiekt oznaczony jako usuniety jest zawsze ukryty.
     virtual void set_map_level(int level) = 0;
     // Przebudowuje element z danych obiektu po ich zmianie (komendy undo/redo): polozenie, sciezka, dodatki.
     virtual void refresh() = 0;
@@ -108,6 +122,7 @@ protected:
 
     MapData* map_;
     size_t index_;
+    int data_level_;
     bool move_started_ = false;
     std::vector<Annotation> annotations_;
 };
@@ -118,7 +133,7 @@ protected:
 // ktore przy dziesiatkach tysiecy POI kosztowalo). boundingRect zostaje pelnego rozmiaru (nadzbior).
 class PoiItem : public QGraphicsPixmapItem, public MapObjectItem {
 public:
-    PoiItem(MapData* map, size_t index, const QPixmap& icon);
+    PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon);
     int type() const override { return PoiItemType; }
     QGraphicsItem* graphics_item() override { return this; }
     QPainterPath shape() const override;
@@ -149,13 +164,12 @@ private:
 // ---------------------------------------------------------------- polilinie i polygony
 class PolyItem : public QGraphicsPathItem, public MapObjectItem {
 public:
-    PolyItem(MapData* map, size_t index, bool polygon);
+    PolyItem(MapData* map, size_t index, int data_level, bool polygon);
 
     QGraphicsItem* graphics_item() override { return this; }
     void set_map_level(int level) override;
     void refresh() override;
-    int shown_data_level() const override { return has_data_level(current_data_x_) ? current_data_x_ : -1; }
-    int current_data_level() const { return current_data_x_; }
+    int shown_data_level() const override { return has_data_level(data_level_) ? data_level_ : -1; }
     bool has_data_level(int level) const;
     bool is_polygon() const { return polygon_; }
 
@@ -191,7 +205,7 @@ public:
     std::vector<std::vector<QPointF>> polygons_from_path() const;
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    // Ustawia sciezke z danych biezacego poziomu i odtwarza dodatki (etykiety, strzalki, numery).
+    // Ustawia sciezke z danych poziomu elementu i odtwarza dodatki (etykiety, strzalki, numery).
     void rebuild();
 
 protected:
@@ -210,15 +224,13 @@ protected:
 
     QPen orig_pen_;
     bool polygon_;
-    int current_data_x_ = 0;
-    int built_data_x_ = -1;  // poziom, dla ktorego sa zbudowane dodatki (etykiety, strzalki, numery)
     bool hovered_ = false;
     std::vector<GripItem*> grips_;
 };
 
 class PolylineItem : public PolyItem {
 public:
-    PolylineItem(MapData* map, size_t index, const QPen& pen);
+    PolylineItem(MapData* map, size_t index, int data_level, const QPen& pen);
     int type() const override { return PolylineItemType; }
     void set_z_value() override { setZValue(10); }
     void apply_style() override;
@@ -239,7 +251,7 @@ private:
 
 class PolygonItem : public PolyItem {
 public:
-    PolygonItem(MapData* map, size_t index, const QPen& pen, const QBrush& brush, int z_value);
+    PolygonItem(MapData* map, size_t index, int data_level, const QPen& pen, const QBrush& brush, int z_value);
     int type() const override { return PolygonItemType; }
     void set_z_value() override { setZValue(z_value_); }
     void apply_style() override;
