@@ -461,6 +461,115 @@ void PolyItem::set_map_level(int level) {
     if (isVisible() != visible) setVisible(visible);
 }
 
+namespace {
+double distance2(const QPointF& a, const QPointF& b) {
+    const QPointF d = a - b;
+    return d.x() * d.x() + d.y() * d.y();
+}
+
+double point_segment_distance2(const QPointF& p, const QPointF& a, const QPointF& b) {
+    const QPointF ab = b - a;
+    const double len2 = ab.x() * ab.x() + ab.y() * ab.y();
+    if (len2 == 0) return distance2(p, a);
+    const double t = std::clamp(QPointF::dotProduct(p - a, ab) / len2, 0.0, 1.0);
+    return distance2(p, a + ab * t);
+}
+
+double point_rect_distance2(const QPointF& p, const QRectF& r) {
+    const double dx = std::max({r.left() - p.x(), 0.0, p.x() - r.right()});
+    const double dy = std::max({r.top() - p.y(), 0.0, p.y() - r.bottom()});
+    return dx * dx + dy * dy;
+}
+
+// Odcinek przecina prostokat (z brzegiem; prostokat moze miec zerowy rozmiar) - obcinanie Lianga-Barsky'ego.
+bool segment_intersects_rect(const QPointF& a, const QPointF& b, const QRectF& r) {
+    double t0 = 0, t1 = 1;
+    const double dx = b.x() - a.x(), dy = b.y() - a.y();
+    auto clip = [&](double p, double q) {
+        if (p == 0) return q >= 0;
+        const double t = q / p;
+        if (p < 0) {
+            if (t > t1) return false;
+            t0 = std::max(t0, t);
+        } else {
+            if (t < t0) return false;
+            t1 = std::min(t1, t);
+        }
+        return true;
+    };
+    return clip(-dx, a.x() - r.left()) && clip(dx, r.right() - a.x()) && clip(-dy, a.y() - r.top()) &&
+           clip(dy, r.bottom() - a.y());
+}
+
+double segment_rect_distance2(const QPointF& a, const QPointF& b, const QRectF& r) {
+    if (segment_intersects_rect(a, b, r)) return 0;
+    double d = std::min(point_rect_distance2(a, r), point_rect_distance2(b, r));
+    for (const QPointF& c : {r.topLeft(), r.topRight(), r.bottomLeft(), r.bottomRight()})
+        d = std::min(d, point_segment_distance2(c, a, b));
+    return d;
+}
+
+// Sciezka bedaca prostokatem rownoleglym do osi (tak Qt podaje obszar zapytania o elementy) - jego wymiary.
+std::optional<QRectF> path_as_rect(const QPainterPath& path) {
+    const int n = path.elementCount();
+    if (n < 4 || n > 5) return std::nullopt;
+    const QRectF r = path.boundingRect();
+    for (int i = 0; i < n; ++i) {
+        const QPainterPath::Element e = path.elementAt(i);
+        if (e.isCurveTo() || (e.x != r.left() && e.x != r.right()) || (e.y != r.top() && e.y != r.bottom()))
+            return std::nullopt;
+    }
+    return r;
+}
+}  // namespace
+
+bool PolyItem::hits(const QRectF& rect) const {
+    // jak QGraphicsItem::collidesWithPath: najpierw boundingRect (obszar trafienia nie wychodzi poza niego)
+    const QRectF br = boundingRect();
+    if (rect.left() > br.right() || rect.right() < br.left() || rect.top() > br.bottom() || rect.bottom() < br.top())
+        return false;
+    // shape(): polygon poza edycja wezlow - QGraphicsPathItem::shape (wypelnienie + obrys piorem), inaczej
+    // stroke_shape (obrys o szerokosci 2 * pioro, bez wypelnienia)
+    const bool fill = polygon_ && !decorated();
+    const double half_width = fill ? std::max(pen().widthF(), 1e-8) / 2 : orig_pen_.width();
+    const double limit2 = half_width * half_width;
+    const QPointF center = rect.center();
+    bool inside = false;
+    auto edge = [&](const QPointF& a, const QPointF& b) {
+        if (segment_rect_distance2(a, b, rect) <= limit2) return true;
+        // regula parzystosci (OddEvenFill) dla srodka prostokata
+        if (fill && ((a.y() > center.y()) != (b.y() > center.y())) &&
+            center.x() < a.x() + (center.y() - a.y()) * (b.x() - a.x()) / (b.y() - a.y()))
+            inside = !inside;
+        return false;
+    };
+    const QPainterPath& p = path();
+    const int n = p.elementCount();
+    QPointF start, prev;
+    for (int i = 0; i < n; ++i) {
+        const QPainterPath::Element e = p.elementAt(i);
+        const QPointF pt(e.x, e.y);
+        if (e.isMoveTo()) {
+            // wypelnienie zamyka kazda czesc
+            if (fill && i > 0 && prev != start && edge(prev, start)) return true;
+            start = prev = pt;
+            continue;
+        }
+        if (edge(prev, pt)) return true;
+        prev = pt;
+    }
+    if (fill && n > 0 && prev != start && edge(prev, start)) return true;
+    return fill && inside;
+}
+
+bool PolyItem::collidesWithPath(const QPainterPath& path, Qt::ItemSelectionMode mode) const {
+    if (mode == Qt::IntersectsItemShape)
+        if (const auto rect = path_as_rect(path)) return hits(*rect);
+    return QGraphicsPathItem::collidesWithPath(path, mode);
+}
+
+bool PolyItem::contains(const QPointF& point) const { return hits(QRectF(point, QSizeF(0, 0))); }
+
 QPainterPath PolyItem::stroke_shape() const {
     QPainterPathStroker stroker;
     stroker.setWidth(orig_pen_.width() * 2);

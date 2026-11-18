@@ -211,13 +211,20 @@ Po zmianie danych obiektu `refresh_object()` usuwa elementy poziomów, których 
 Żaden element mapy nie ma `ItemIgnoresTransformations` – takie elementy Qt trzyma poza drzewem BSP i przegląda
 liniowo przy każdym zapytaniu (33 tys. ikon POI z tą flagą sprawiało, że zapytanie z indeksem trwało 60–90 ms).
 Ikony POI rysuje `PoiIconLayer` (z 20), biorąc POI z indeksu sceny; element POI ma `ItemHasNoContents`
-i służy do zaznaczania, najechania i przeciągania. Zaznaczony albo podświetlony POI rysuje się sam. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
+i służy do zaznaczania, najechania i przeciągania. Zaznaczony albo podświetlony POI rysuje się sam.
+Trafienie polilinii i polygonów (hover, kliknięcie, zaznaczanie prostokątem) liczy `PolyItem::collidesWithPath()`
+i `contains()` z węzłów ścieżki, a nie przez `shape()`. `shape()` obrysowuje całą ścieżkę (`QPainterPathStroker`)
+przy każdym wywołaniu, a Qt woła je dla każdego obiektu, którego prostokąt obejmuje kursor: na mapie syntetycznej
+ok. 225 obiektów na punkt i 70 ms na ruch myszą, teraz ok. 4 ms. Usuwanie wszystkich elementów idzie przez `QGraphicsScene::clear()`,
 bo usuwanie pojedynczo jest kwadratowe.
 
 Różnice względem Pythona (celowe):
 - Przełączanie flagi `ItemIgnoresTransformations` robi scena przy przekroczeniu progu skali, a nie `paint()` każdego elementu.
 - Na poziomie bez własnych danych (ale w zakresie `EndLevel`) polilinia i polygon pokazują dane z najwyższego niższego
   poziomu. Python pokazywał dane z poziomu oglądanego poprzednio, więc wynik zależał od kolejności przełączania.
+- Kliknięcie w dziurę polygonu (część wewnętrzna) nie trafia w polygon – trafienie liczone jest regułą parzystości,
+  tak jak polygon jest rysowany. `shape()` w Qt łączy obrys z wypełnieniem regułą winding, więc dziura o tym samym
+  kierunku obiegu co obwód była trafieniem. Końce i załamania linii mają obszar trafienia zaokrąglony, a nie ścięty.
 - Etykieta polygonu pokazuje `Label` (w Pythonie była pusta, bo `_mp_label` nie był ustawiany).
 - Gdy dla typu POI są ikony `_day` i `_night`, używana jest `_day` (w Pythonie zależało to od kolejności plików).
 ### Etap 3b.1 (zrobione): undo/redo, przesuwanie, usuwanie, odwracanie

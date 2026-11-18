@@ -5,6 +5,7 @@
 #include <QMimeData>
 #include <QSignalSpy>
 #include <QUndoStack>
+#include <QRandomGenerator>
 #include <QtTest>
 #include <memory>
 
@@ -155,6 +156,7 @@ private slots:
     // element na poziom Data, indeks BSP
     void scene_uses_bsp_index();
     void poi_icons_drawn_by_layer();
+    void geometric_hit_test_matches_shape();
     void item_per_data_level();
     void refresh_syncs_data_level_items();
     // 3b.2: edycja wezlow
@@ -440,6 +442,114 @@ void EditTests::poi_icons_drawn_by_layer() {
     QVERIFY(poi->paints_itself());
     f.scene.clearSelection();
     QVERIFY(!poi->paints_itself());
+}
+
+namespace {
+const char* HIT_MAP =
+    "[IMG ID]\n"
+    "Name=test\n"
+    "[END-IMG ID]\n"
+    "\n"
+    "[POLYGON]\n"
+    "Type=0x50\n"
+    "Data0=(52.10000,21.00000),(52.10000,21.01000),(52.09000,21.01000),(52.09000,21.00000)\n"
+    "Data0=(52.09700,21.00300),(52.09700,21.00700),(52.09300,21.00700),(52.09300,21.00300)\n"
+    "[END]\n"
+    "\n"
+    "[POLYLINE]\n"
+    "Type=0x6\n"
+    "Data0=(52.10000,21.00000),(52.09500,21.00500),(52.09800,21.01000),(52.09000,21.01200)\n"
+    "[END]\n"
+    "\n";
+
+// Trafienie geometryczne (collidesWithPath/contains) w losowych punktach i prostokatach zgadza sie z ksztaltem:
+// obrys o polszerokosci half_width, a dla polygonu (fill) takze wnetrze wedlug reguly parzystosci - tak jak polygon
+// jest rysowany. (shape() Qt laczy obrys z wypelnieniem regula winding, wiec dziura o tym samym kierunku obiegu
+// co obwod liczyla sie tam jako trafienie.) Pomijane punkty w pasie granicy obrysu i przy wezlach
+// (konce i zalamania: zaokraglone zamiast scietych).
+void compare_hits(PolyItem* item, double half_width, bool fill) {
+    std::vector<std::pair<QPointF, QPointF>> segments;
+    std::vector<QPointF> nodes;
+    for (const QPolygonF& poly : item->path().toSubpathPolygons()) {
+        for (int i = 0; i + 1 < poly.size(); ++i) segments.emplace_back(poly[i], poly[i + 1]);
+        if (fill && !poly.isEmpty() && poly.first() != poly.last()) segments.emplace_back(poly.last(), poly.first());
+        for (const QPointF& p : poly) nodes.push_back(p);
+    }
+    auto dist_segments = [&](const QPointF& p) {
+        double best = 1e300;
+        for (const auto& [a, b] : segments) {
+            const QPointF d = b - a;
+            const double len2 = QPointF::dotProduct(d, d);
+            const double t = len2 > 0 ? std::clamp(QPointF::dotProduct(p - a, d) / len2, 0.0, 1.0) : 0.0;
+            best = std::min(best, QLineF(p, a + d * t).length());
+        }
+        return best;
+    };
+    QPainterPathStroker stroker;
+    stroker.setWidth(2 * half_width);
+    const QPainterPath stroke = stroker.createStroke(item->path());
+    auto expected_point = [&](const QPointF& p) { return stroke.contains(p) || (fill && item->path().contains(p)); };
+    auto expected_rect = [&](const QRectF& r) { return stroke.intersects(r) || (fill && item->path().intersects(r)); };
+    auto boundary = [&](const QPointF& p) {
+        if (std::abs(dist_segments(p) - half_width) < 0.25 * half_width) return true;
+        for (const QPointF& n : nodes)
+            if (QLineF(p, n).length() < 2 * half_width) return true;
+        return false;
+    };
+    const QRectF br = item->boundingRect();
+    QRandomGenerator rng(12345);
+    int compared = 0, hits = 0;
+    for (int i = 0; i < 6000; ++i) {
+        QPointF p;
+        if (i % 2 == 0) {
+            p = QPointF(br.left() + rng.generateDouble() * br.width(), br.top() + rng.generateDouble() * br.height());
+        } else {  // przy odcinku, w odleglosci do 3 polszerokosci
+            const auto& [a, b] = segments[rng.bounded(static_cast<int>(segments.size()))];
+            const QLineF ab(a, b);
+            const QLineF normal = ab.normalVector().unitVector();
+            const QPointF n = normal.p2() - normal.p1();
+            p = ab.pointAt(rng.generateDouble()) + n * ((rng.generateDouble() * 2 - 1) * 3 * half_width);
+        }
+        if (!br.contains(p) || boundary(p)) continue;
+        const bool expected = expected_point(p);
+        QVERIFY2(item->contains(p) == expected,
+                 qPrintable(QString("punkt (%1, %2), odleglosc %3, oczekiwano %4")
+                                .arg(p.x(), 0, 'f', 3).arg(p.y(), 0, 'f', 3).arg(dist_segments(p)).arg(expected)));
+        // maly prostokat (jak zapytanie widoku o piksel pod kursorem)
+        const QRectF r(p, QSizeF(half_width / 10, half_width / 10));
+        if (!boundary(r.bottomRight())) {
+            QPainterPath rect_path;
+            rect_path.addRect(r);
+            QCOMPARE(item->collidesWithPath(rect_path), expected_rect(r));
+        }
+        ++compared;
+        if (expected) ++hits;
+    }
+    QVERIFY2(compared > 2000 && hits > 500, qPrintable(QString("porownano %1, trafien %2").arg(compared).arg(hits)));
+}
+}  // namespace
+
+void EditTests::geometric_hit_test_matches_shape() {
+    Fixture f(HIT_MAP);
+    auto* polygon = f.poly(0);
+    auto* polyline = f.poly(1);
+    QVERIFY(polygon && polygon->is_polygon());
+    QVERIFY(polyline && !polyline->is_polygon());
+    // polilinia: obrys 2 * pioro, polygon: wypelnienie z dziura + pol piora
+    compare_hits(polyline, polyline->pen().width(), false);
+    compare_hits(polygon, std::max(polygon->pen().widthF(), 1e-8) / 2, true);
+    // srodek dziury polygonu nie jest trafieniem, srodek pierscienia jest
+    const QRectF hole = polygon->path().toSubpathPolygons().at(1).boundingRect();
+    QVERIFY(!polygon->contains(hole.center()));
+    QVERIFY(polygon->contains(QPointF(hole.center().x(), (polygon->boundingRect().top() + hole.top()) / 2)));
+    // polygon w edycji wezlow: tylko krawedz
+    f.select_only(polygon);
+    f.scene.set_tool(Tool::EditNodes);
+    QVERIFY(polygon->decorated());
+    QVERIFY(!polygon->contains(QPointF(hole.center().x(), (polygon->boundingRect().top() + hole.top()) / 2)));
+    f.scene.clearSelection();
+    f.scene.set_tool(Tool::SelectObjects);
+    QVERIFY(!polygon->decorated());
 }
 
 // Polilinia z Data0 i Data1 ma dwa elementy o stalej geometrii; zmiana poziomu przelacza tylko widocznosc.

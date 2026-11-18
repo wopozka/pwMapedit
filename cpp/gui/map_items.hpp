@@ -220,6 +220,16 @@ public:
     // Ustawia sciezke z danych poziomu elementu i odtwarza dodatki (etykiety, strzalki, numery).
     void rebuild();
 
+    // Trafienie (hover, klikniecie, zaznaczanie prostokatem) liczone geometrycznie z wezlow sciezki zamiast przez
+    // shape(): shape() obrysowuje cala sciezke przy kazdym wywolaniu (QPainterPathStroker), a Qt wola je dla kazdego
+    // obiektu, ktorego prostokat obejmuje kursor. Ten sam obszar co shape(): polilinia (i polygon w edycji wezlow)
+    // - odleglosc od odcinkow do szerokosci piora, polygon - wnetrze (regula parzystosci) i pol szerokosci piora
+    // wokol krawedzi. Rozni sie tylko na koncach i zalamaniach linii (zaokraglone zamiast scietych).
+    bool collidesWithPath(const QPainterPath& path, Qt::ItemSelectionMode mode = Qt::IntersectsItemShape) const override;
+    bool contains(const QPointF& point) const override;
+    // Czy prostokat (w ukladzie elementu, moze miec zerowy rozmiar) trafia w obiekt.
+    bool hits(const QRectF& rect) const;
+
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
