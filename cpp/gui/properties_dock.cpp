@@ -12,6 +12,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QKeyEvent>
+#include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -20,6 +21,7 @@
 #include <QClipboard>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QShortcut>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTreeWidget>
@@ -281,8 +283,16 @@ QWidget* PropertiesDock::build_nodes_tab() {
     auto* steps = new QHBoxLayout;
     prev_node_ = new QPushButton(tr("Poprzedni"), page);
     next_node_ = new QPushButton(tr("Następny"), page);
-    prev_node_->setToolTip(tr("Przejdź do poprzedniego węzła"));
-    next_node_->setToolTip(tr("Przejdź do następnego węzła"));
+    prev_node_->setToolTip(tr("Przejdź do poprzedniego węzła (P)"));
+    next_node_->setToolTip(tr("Przejdź do następnego węzła (N)"));
+    // Skrot z przyciskiem jako rodzicem dziala w calym oknie (tez z fokusem na mapie), ale tylko gdy przycisk
+    // jest widoczny i wlaczony - czyli przy pokazanej karcie wezlow i istniejacym sasiednim wezle. W polach
+    // tekstowych litera sie wpisuje (QLineEdit przejmuje ShortcutOverride). Nie QAbstractButton::setShortcut:
+    // ten klika przez animateClick() z opoznieniem ok. 100 ms.
+    auto* prev_key = new QShortcut(QKeySequence(Qt::Key_P), prev_node_);
+    auto* next_key = new QShortcut(QKeySequence(Qt::Key_N), next_node_);
+    connect(prev_key, &QShortcut::activated, this, [this] { step_node(-1); });
+    connect(next_key, &QShortcut::activated, this, [this] { step_node(1); });
     connect(prev_node_, &QPushButton::clicked, this, [this] { step_node(-1); });
     connect(next_node_, &QPushButton::clicked, this, [this] { step_node(1); });
     steps->addWidget(prev_node_);

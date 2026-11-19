@@ -219,6 +219,7 @@ private slots:
     void marker_poi_key_sequences();
     void auto_map_level_follows_scale();
     void dock_prev_next_node_buttons();
+    void node_step_shortcuts();
 };
 
 void EditTests::move_polyline_undo_redo() {
@@ -2852,6 +2853,52 @@ void EditTests::dock_prev_next_node_buttons() {
     QCOMPARE(f.scene.active_grip()->poly, size_t(0));
     QCOMPARE(f.scene.active_grip()->node, size_t(1));
     QCOMPARE(f.stack.count(), start);  // przechodzenie niczego nie zmienia
+}
+
+void EditTests::node_step_shortcuts() {
+    // N/P z fokusem na mapie przechodza po wezlach tylko przy pokazanej karcie wezlow.
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString map_file = dir.filePath("mapa.mp");
+    {
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+                "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00000),(52.10000,21.00100),(52.10000,21.00200)\n"
+                "[END]\n\n");
+    }
+    MainWindow w(MapStyles::find_icons_dir());
+    w.set_quiet(true);
+    w.show();
+    QApplication::setActiveWindow(&w);
+    QVERIFY(QTest::qWaitForWindowActive(&w));
+    QSignalSpy loaded(&w, &MainWindow::map_loaded);
+    w.open_file(map_file);
+    QVERIFY(loaded.wait(10000));
+    MapScene* scene = w.scene();
+
+    // bez trybu edycji wezlow karta wezlow jest ukryta - N nic nie robi
+    scene->item_for_object(0)->graphics_item()->setSelected(true);
+    w.view()->setFocus();
+    QTest::keyClick(w.view(), Qt::Key_N);
+    QVERIFY(!scene->active_grip());
+
+    scene->set_tool(Tool::EditNodes);
+    scene->clearSelection();
+    scene->item_for_object(0)->graphics_item()->setSelected(true);
+    scene->set_active_grip(0, 0, 0, 0);
+    QVERIFY(w.properties_dock()->shows_node());
+    w.view()->setFocus();    QTest::keyClick(w.view(), Qt::Key_N);
+    QCOMPARE(scene->active_grip()->node, size_t(1));
+    QTest::keyClick(w.view(), Qt::Key_N);
+    QCOMPARE(scene->active_grip()->node, size_t(2));
+    QTest::keyClick(w.view(), Qt::Key_N);  // ostatni wezel - przycisk wylaczony, skrot tez
+    QCOMPARE(scene->active_grip()->node, size_t(2));
+    QTest::keyClick(w.view(), Qt::Key_P);
+    QCOMPARE(scene->active_grip()->node, size_t(1));
+    w.scene()->undo_stack()->setClean();  // bez pytania o zapis przy zamykaniu
+    qunsetenv("PWMAPEDIT_SETTINGS");
 }
 
 QTEST_MAIN(EditTests)

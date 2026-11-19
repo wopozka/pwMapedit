@@ -284,7 +284,9 @@ Panel „Właściwości” po prawej stronie okna pokazuje jedyny zaznaczony obi
 - **Elements**: części obiektu na poziomach Data (zewnętrzne i wewnętrzne części polygonu, pierwszy punkt,
   liczba węzłów); wybrana część jest podświetlana na mapie;
 - **Routing** (polilinie): 12 wartości RouteParam;
-- **Węzły** (tryb edycji węzłów, po kliknięciu uchwytu): numeracja adresowa po obu stronach i HLevel węzła.
+- **Węzły** (tryb edycji węzłów, po kliknięciu uchwytu): numeracja adresowa po obu stronach i HLevel węzła;
+  przyciski Poprzedni/Następny i klawisze `p`/`n` (aktywne w całym oknie, tylko przy pokazanej karcie Węzły
+  i gdy jest węzeł sąsiedni; w polu tekstowym litera się wpisuje).
 
 Panel nie trzyma kopii danych. Każda zmiana pola to kopia obiektu ze zmienioną wartością przekazana do
 `MapScene::replace_object` (jedna komenda undo, tylko gdy zapis obiektu do mp rzeczywiście się zmienia). Po każdej

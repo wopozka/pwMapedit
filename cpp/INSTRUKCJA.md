@@ -97,6 +97,7 @@ zmienia się w krzyżyk.
 | podzielić linię w węźle | najedź na kwadrat i naciśnij **s** |
 | obrócić obiekt wokół jego środka ciężkości | kursor nad obiektem (polygon i zamknięta linia, np. rondo – także w środku), **Shift + kółko**: 1° na ząbek, z **Ctrl** 0,1°; kółko od siebie – w lewo. Obraca wszystkie poziomy Data; czerwony krzyżyk pokazuje środek, kąt widać na pasku stanu; cały obrót cofa jedno **Ctrl+Z** |
 | ustawić numerację adresową / HLevel węzła | kliknij kwadrat → karta **Węzły** w panelu Właściwości |
+| przejść do następnego / poprzedniego węzła | przy otwartej karcie **Węzły**: klawisz **n** / **p** (albo przyciski Następny / Poprzedni) |
 | połączyć linie | zaznacz je (Ctrl+klik, w kolejności) → **Edit → Połącz polilinie** |
 
 ## 5. Rysowanie nowych obiektów
