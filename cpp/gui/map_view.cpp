@@ -532,6 +532,13 @@ void MapView::update_creation_preview() {
 }
 
 void MapView::keyPressEvent(QKeyEvent* event) {
+    // '+' z Shift (np. Shift + '=' na klawiaturze polskiej i US) nie zawsze pasuje do skrotu "+" okna -
+    // widok przybliza sam, gdy skrot nie zadzialal
+    if (event->key() == Qt::Key_Plus && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier))) {
+        zoom_in();
+        event->accept();
+        return;
+    }
     if (creation_tool()) {
         if (event->key() == Qt::Key_Control) {
             update_snap(event->modifiers() | Qt::ControlModifier);

@@ -25,6 +25,8 @@
 #include <QFile>
 #include <QProgressBar>
 #include "web_layers.hpp"
+#include "theme.hpp"
+#include <QToolBar>
 #include <QTemporaryDir>
 #include <QImage>
 #include <QPainter>
@@ -213,6 +215,10 @@ private slots:
     void trail_icon_positions_along_line();
     void trail_icons_drawn_on_trails_only();
     void map_level_for_scale_ranges();
+    // motyw okna: paleta, ikony paska w kolorach motywu, mapa na bialym tle, zapis w ustawieniach
+    void theme_palette_icons_and_setting();
+    // przyblizanie klawiszami '=' i '+' (glowna i numeryczna klawiatura), oddalanie '-'
+    void zoom_keys();
     void shift_wheel_rotates_object_in_edit_nodes();
     void viaduct_pois_at_crossings();
     void dead_end_pois_at_unconnected_ends();
@@ -2898,6 +2904,107 @@ void EditTests::node_step_shortcuts() {
     QTest::keyClick(w.view(), Qt::Key_P);
     QCOMPARE(scene->active_grip()->node, size_t(1));
     w.scene()->undo_stack()->setClean();  // bez pytania o zapis przy zamykaniu
+    qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+namespace {
+// jasnosc 0..1 (sRGB, wagi Rec. 709)
+double luminance(const QColor& c) { return 0.2126 * c.redF() + 0.7152 * c.greenF() + 0.0722 * c.blueF(); }
+
+// srednia jasnosc wyraznie widocznych pikseli ikony (alfa > 50%); -1, gdy ikona pusta
+double icon_ink_luminance(const QIcon& icon, QIcon::Mode mode) {
+    const QImage image = icon.pixmap(QSize(24, 24), 1.0, mode).toImage().convertToFormat(QImage::Format_ARGB32);
+    double sum = 0;
+    int count = 0;
+    for (int y = 0; y < image.height(); ++y)
+        for (int x = 0; x < image.width(); ++x) {
+            const QColor c = image.pixelColor(x, y);
+            if (c.alphaF() < 0.5) continue;
+            sum += luminance(c);
+            ++count;
+        }
+    return count ? sum / count : -1;
+}
+}  // namespace
+
+void EditTests::theme_palette_icons_and_setting() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        QToolBar* bar = w.toolbar();
+        QVERIFY(bar);
+        // bez zapisanego ustawienia - motyw systemowy
+        QCOMPARE(Theme::instance()->mode(), ThemeMode::System);
+        QImage light_save;
+        for (ThemeMode mode : {ThemeMode::Light, ThemeMode::Dark}) {
+            w.set_theme_mode(mode, false);
+            const bool dark = mode == ThemeMode::Dark;
+            QCOMPARE(Theme::instance()->dark(), dark);
+            QCOMPARE(luminance(QApplication::palette().color(QPalette::Window)) < 0.5, dark);
+            QVERIFY(bar->styleSheet().contains(Theme::instance()->colours().toolbar.name()));
+            // mapa zawsze na bialym tle
+            QCOMPARE(w.view()->backgroundBrush().color(), QColor(Qt::white));
+            const double background = luminance(Theme::instance()->colours().toolbar);
+            int icons = 0;
+            for (QAction* act : bar->actions()) {
+                if (act->isSeparator()) continue;
+                QVERIFY2(!act->icon().isNull(), qPrintable(act->text()));
+                // kontur ikony wyraznie odcina sie od tla paska (czarna ikona na ciemnym tle nie przejdzie)
+                const double ink = icon_ink_luminance(act->icon(), QIcon::Normal);
+                QVERIFY2(ink >= 0 && std::abs(ink - background) > 0.35,
+                         qPrintable(QStringLiteral("%1: %2 / %3").arg(act->text()).arg(ink).arg(background)));
+                // ikona nieaktywna slabiej, ale nadal widoczna
+                const double disabled = icon_ink_luminance(act->icon(), QIcon::Disabled);
+                QVERIFY2(std::abs(disabled - background) > 0.15 && std::abs(disabled - background) < std::abs(ink - background),
+                         qPrintable(act->text()));
+                ++icons;
+            }
+            QCOMPARE(icons, 14);
+            const QImage save = bar->actions().value(0)->icon().pixmap(24, 24).toImage();
+            if (dark)
+                QVERIFY(save != light_save);  // ikony przerysowane po zmianie motywu
+            else
+                light_save = save;
+        }
+        // wybor z menu zapisuje sie w ustawieniach
+        w.set_theme_mode(ThemeMode::Dark);
+    }
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        QCOMPARE(Theme::instance()->mode(), ThemeMode::Dark);
+        QVERIFY(Theme::instance()->dark());
+        w.set_theme_mode(ThemeMode::System);
+    }
+    QCOMPARE(theme_mode_from_name("cos"), ThemeMode::System);
+    QCOMPARE(theme_mode_name(ThemeMode::Light), QStringLiteral("light"));
+    qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+void EditTests::zoom_keys() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        w.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&w));
+        w.activateWindow();
+        w.view()->setFocus();
+        const auto press = [&](Qt::Key key, Qt::KeyboardModifiers modifiers) {
+            const double before = w.view()->transform().m11();
+            QTest::keyClick(w.view(), key, modifiers);
+            return w.view()->transform().m11() / before;
+        };
+        // kazdy klawisz przybliza dokladnie o jeden krok (skrot okna i widok nie dzialaja naraz)
+        const double step = press(Qt::Key_Equal, Qt::NoModifier);
+        QVERIFY(step > 1.0);
+        QCOMPARE(press(Qt::Key_Plus, Qt::ShiftModifier), step);   // Shift + '=' (klawiatura polska i US)
+        QCOMPARE(press(Qt::Key_Plus, Qt::NoModifier), step);      // osobny klawisz '+' (np. uklad niemiecki)
+        QCOMPARE(press(Qt::Key_Plus, Qt::KeypadModifier), step);  // klawiatura numeryczna
+        QVERIFY(press(Qt::Key_Minus, Qt::NoModifier) < 1.0);
+    }
     qunsetenv("PWMAPEDIT_SETTINGS");
 }
 

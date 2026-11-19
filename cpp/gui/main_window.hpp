@@ -3,10 +3,12 @@
 
 #include <QFutureWatcher>
 #include <QMainWindow>
+#include <QPointer>
 #include <memory>
 
 #include "constants.hpp"
 #include "map_data.hpp"
+#include "theme.hpp"
 
 class QActionGroup;
 class QMenu;
@@ -15,6 +17,7 @@ class QLabel;
 class QProgressBar;
 class QTimer;
 class QUndoStack;
+class QToolBar;
 
 namespace pwm::gui {
 
@@ -56,6 +59,9 @@ public:
     void select_tool(Tool tool);
     // Tryb bez okien komunikatow (zrzuty ekranu z linii polecen): ostrzezenia trafiaja do paska stanu.
     void set_quiet(bool quiet) { quiet_ = quiet; }
+    // Motyw okna (View -> Motyw); remember - zapis w ustawieniach (opcja --theme go nie zapisuje).
+    void set_theme_mode(ThemeMode mode, bool remember = true);
+    QToolBar* toolbar() const { return toolbar_; }
 
     MapView* view() const { return view_; }
     MapScene* scene() const { return scene_; }
@@ -104,6 +110,8 @@ private slots:
 private:
     void create_actions_and_menus();
     void create_toolbar();
+    // Arkusz stylu paska i ikony w kolorach biezacego motywu (po kazdej zmianie motywu).
+    void apply_theme();
     void create_shortcuts();
     bool write_map(const QString& file_name);
     // Niezapisane zmiany: Zapisz / Nie zapisuj / Anuluj. Zwraca true, gdy mozna kontynuowac (zamkniecie,
@@ -129,6 +137,9 @@ private:
     QAction* last_web_layer_action_ = nullptr;
     QMenu* recent_files_menu_ = nullptr;
     QSettings* settings_ = nullptr;
+    QToolBar* toolbar_ = nullptr;
+    QList<QPair<QPointer<QAction>, QString>> toolbar_icons_;
+    QList<QAction*> theme_actions_;
     bool quiet_ = false;
     QUndoStack* undo_stack_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;

@@ -40,8 +40,8 @@ cmake --build build-cmake
 
 Bez Ninja można pominąć `-G Ninja` (CMake użyje wtedy Makefile); równoległość: `cmake --build build-cmake -j$(nproc)`.
 
-W wyniku `cmake` powinien pojawić się Qt6. Komunikat `Nie znaleziono Qt6 - GUI (pwmapedit) nie bedzie budowane`
-oznacza brak pakietu `qt6-base-dev` – wtedy powstaną tylko rdzeń, `mptool` i testy.
+W wyniku `cmake` powinien pojawić się Qt6. Komunikat `Nie znaleziono Qt6 (...) - GUI (pwmapedit) nie bedzie budowane`
+oznacza brak pakietu `qt6-base-dev` albo `qt6-svg-dev` – wtedy powstaną tylko rdzeń, `mptool` i testy.
 
 ### 3. Testy i uruchomienie
 
@@ -198,7 +198,7 @@ Przy dystrybucji programu (zip) katalog `icons` musi leżeć obok `pwmapedit.exe
 
 | objaw | przyczyna / rozwiązanie |
 |---|---|
-| `Nie znaleziono Qt6 - GUI (pwmapedit) nie bedzie budowane` | brak Qt6 w ścieżkach – zainstaluj `qt6-base-dev` (Linux), `mingw-w64-x86_64-qt6-base` (MSYS2) albo podaj `-DCMAKE_PREFIX_PATH` |
+| `Nie znaleziono Qt6 (Widgets, Concurrent, Network, Svg) - GUI (pwmapedit) nie bedzie budowane` | brak Qt6 lub modułu Qt Svg w ścieżkach – zainstaluj `qt6-base-dev` i `qt6-svg-dev` (Linux), `mingw-w64-x86_64-qt6-base` i `mingw-w64-x86_64-qt6-svg` (MSYS2) albo podaj `-DCMAKE_PREFIX_PATH` |
 | `gui_tests` nie powstaje | brak modułu Qt6 Test w zainstalowanym Qt – GUI i tak się zbuduje, nie będzie tylko testów GUI |
 | na Windows: „nie znaleziono pliku …dll” | program uruchomiony poza MSYS2 bez kroku `windeployqt6` + `ldd` |
 | „This application failed to start because no Qt platform plugin could be initialized” | brak katalogu `platforms/` obok exe – uruchom `windeployqt` |

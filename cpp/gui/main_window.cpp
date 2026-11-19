@@ -1,4 +1,5 @@
 #include "main_window.hpp"
+#include "theme.hpp"
 
 #include <QAbstractButton>
 #include <QAction>
@@ -77,6 +78,7 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     // (testy nie zmieniaja wtedy ustawien uzytkownika)
     settings_ = new QSettings(qEnvironmentVariable("PWMAPEDIT_SETTINGS", QDir::home().filePath(".pwmapedit.ini")),
                               QSettings::IniFormat, this);
+    Theme::instance()->set_mode(theme_mode_from_name(settings_->value("theme").toString()));
     default_projection_ = std::make_unique<MercatorProjection>();
     undo_stack_ = new QUndoStack(this);
 
@@ -94,6 +96,8 @@ MainWindow::MainWindow(const QString& icons_dir, QWidget* parent)
     scene_->set_undo_stack(undo_stack_);
     scene_->setSceneRect(0, 0, 400, 200);
     view_ = new MapView(scene_, this);
+    // mapa zawsze na bialym tle, niezaleznie od motywu okna (paleta ciemna dalaby czarne tlo)
+    view_->setBackgroundBrush(Qt::white);
     view_->set_projection(default_projection_.get());
     setCentralWidget(view_);
     ruler_ = new MapRuler(view_, default_projection_.get());
@@ -275,6 +279,18 @@ void MainWindow::create_actions_and_menus() {
         scene_->set_trail_icons(on);
         settings_->setValue("trail_icons", on);
     });
+    // motyw okna (mapa zostaje jasna); wybor zapamietany w ustawieniach, domyslnie wedlug systemu
+    QMenu* theme_menu = view_menu->addMenu(tr("&Motyw"));
+    auto* theme_group = new QActionGroup(this);
+    for (auto [mode, text] : {std::pair{ThemeMode::System, tr("&Systemowy")}, std::pair{ThemeMode::Light, tr("&Jasny")},
+                              std::pair{ThemeMode::Dark, tr("&Ciemny")}}) {
+        QAction* act = theme_menu->addAction(text);
+        act->setCheckable(true);
+        act->setData(static_cast<int>(mode));
+        theme_group->addAction(act);
+        theme_actions_.append(act);
+        connect(act, &QAction::triggered, this, [this, mode] { set_theme_mode(mode); });
+    }
 
     // Weblayers: jedna warstwa naraz albo zadna; E wlacza/wylacza ostatnio uzywana (background_on_off)
     QMenu* web_menu = menuBar()->addMenu(tr("&Weblayers"));
@@ -373,51 +389,63 @@ void MainWindow::create_actions_and_menus() {
 }
 
 void MainWindow::create_toolbar() {
-    QToolBar* bar = addToolBar(tr("Pasek narzędzi"));
-    QDir toolbar_icons(QDir(icons_dir_).filePath("toolbar_icons"));
-    auto icon = [&](const char* name) { return QIcon(toolbar_icons.filePath(QString::fromLatin1(name))); };
-    bar->addAction(icon("save_48.png"), tr("Zapisz"), this, &MainWindow::save_map);
-    bar->addAction(icon("open_48.png"), tr("Otwórz"), this, &MainWindow::open_file_dialog);
-    bar->addSeparator();
-    QAction* undo = undo_stack_->createUndoAction(bar, tr("Undo"));
-    undo->setIcon(icon("undo_48.png"));
-    bar->addAction(undo);
-    QAction* redo = undo_stack_->createRedoAction(bar, tr("Redo"));
-    redo->setIcon(icon("redo_48.png"));
-    bar->addAction(redo);
-    bar->addSeparator();
-    bar->addAction(icon("cut_48.png"), tr("Wytnij"), this, &MainWindow::cut_action);
-    bar->addAction(icon("copy_48.png"), tr("Kopiuj"), this, &MainWindow::copy_action);
-    bar->addAction(icon("paste_48.png"), tr("Wklej"), this, &MainWindow::paste_action);
-    bar->addSeparator();
-    QAction* select = tools_group_->actions().value(0);
-    if (select) {
-        select->setIcon(icon("select_48.png"));
-        bar->addAction(select);
+    toolbar_ = addToolBar(tr("Pasek narzędzi"));
+    toolbar_->setObjectName(QStringLiteral("main_toolbar"));
+    toolbar_->setIconSize(QSize(24, 24));
+    // akcja na pasku z nazwa ikony (icons/toolbar_icons/line/<nazwa>.svg); ikony nadaje apply_theme()
+    auto add = [this](QAction* act, const char* icon_name) {
+        if (!toolbar_->actions().contains(act)) toolbar_->addAction(act);
+        toolbar_icons_.append({act, QString::fromLatin1(icon_name)});
+    };
+    add(toolbar_->addAction(tr("Zapisz"), this, &MainWindow::save_map), "save");
+    add(toolbar_->addAction(tr("Otwórz"), this, &MainWindow::open_file_dialog), "open");
+    toolbar_->addSeparator();
+    add(undo_stack_->createUndoAction(toolbar_, tr("Undo")), "undo");
+    add(undo_stack_->createRedoAction(toolbar_, tr("Redo")), "redo");
+    toolbar_->addSeparator();
+    add(toolbar_->addAction(tr("Wytnij"), this, &MainWindow::cut_action), "cut");
+    add(toolbar_->addAction(tr("Kopiuj"), this, &MainWindow::copy_action), "copy");
+    add(toolbar_->addAction(tr("Wklej"), this, &MainWindow::paste_action), "paste");
+    toolbar_->addSeparator();
+    if (QAction* select = tools_group_->actions().value(0)) add(select, "select");
+    const std::pair<Tool, const char*> tool_icons[] = {{Tool::EditNodes, "nodes"},
+                                                       {Tool::CreatePoint, "create_poi"},
+                                                       {Tool::CreatePolyline, "create_polyline"},
+                                                       {Tool::CreatePolygon, "create_polygon"}};
+    for (const auto& [tool, name] : tool_icons) {
+        for (QAction* act : tools_group_->actions())
+            if (act->data().toInt() == static_cast<int>(tool)) add(act, name);
     }
-    const std::pair<Tool, const char*> tool_icons[] = {{Tool::EditNodes, "nodes_48.png"},
-                                                       {Tool::CreatePoint, "create_poi_48.png"},
-                                                       {Tool::CreatePolyline, "create_polyline_48.png"},
-                                                       {Tool::CreatePolygon, "create_polygon_48.png"}};
-    for (const auto& [tool, file] : tool_icons) {
-        for (QAction* act : tools_group_->actions()) {
-            if (act->data().toInt() != static_cast<int>(tool)) continue;
-            act->setIcon(icon(file));
-            bar->addAction(act);
-        }
-    }
-    bar->addSeparator();
-    split_action_->setIcon(icon("split_polyline_48.png"));
-    bar->addAction(split_action_);
-    merge_action_->setIcon(icon("merge_polyline_48.png"));
-    bar->addAction(merge_action_);
+    toolbar_->addSeparator();
+    add(split_action_, "split_polyline");
+    add(merge_action_, "merge_polyline");
+    connect(Theme::instance(), &Theme::changed, this, &MainWindow::apply_theme);
+    apply_theme();
+}
+
+void MainWindow::apply_theme() {
+    Theme* theme = Theme::instance();
+    if (toolbar_) toolbar_->setStyleSheet(theme->toolbar_style_sheet());
+    const QDir dir(QDir(icons_dir_).filePath(QStringLiteral("toolbar_icons/line")));
+    for (const auto& [act, name] : std::as_const(toolbar_icons_))
+        if (act) act->setIcon(theme->themed_icon(dir.filePath(name + QStringLiteral(".svg"))));
+    for (QAction* act : std::as_const(theme_actions_))
+        act->setChecked(static_cast<ThemeMode>(act->data().toInt()) == theme->mode());
+}
+
+void MainWindow::set_theme_mode(ThemeMode mode, bool remember) {
+    if (remember) settings_->setValue("theme", theme_mode_name(mode));
+    Theme::instance()->set_mode(mode);
 }
 
 void MainWindow::create_shortcuts() {
     auto* zoom_out = new QShortcut(QKeySequence(QStringLiteral("-")), this);
     connect(zoom_out, &QShortcut::activated, view_, &MapView::zoom_out);
-    auto* zoom_in = new QShortcut(QKeySequence(QStringLiteral("=")), this);
-    connect(zoom_in, &QShortcut::activated, view_, &MapView::zoom_in);
+    // przyblizanie: '=' (bez Shift na klawiaturze US) i '+' (takze '+' z klawiatury numerycznej)
+    for (const char* key : {"=", "+"}) {
+        auto* zoom_in = new QShortcut(QKeySequence(QString::fromLatin1(key)), this);
+        connect(zoom_in, &QShortcut::activated, view_, &MapView::zoom_in);
+    }
     auto* escape = new QShortcut(QKeySequence(Qt::Key_Escape), this);
     connect(escape, &QShortcut::activated, this, &MainWindow::escape_pressed);
 }
