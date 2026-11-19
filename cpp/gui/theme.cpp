@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QPixmap>
+#include <QStyle>
 #include <QStyleHints>
 #include <QSvgRenderer>
 #include <memory>
@@ -72,7 +73,13 @@ void set_colour(QPalette& p, QPalette::ColorRole role, const QColor& active, con
 void set_colour(QPalette& p, QPalette::ColorRole role, const QColor& colour) { set_colour(p, role, colour, colour); }
 
 bool system_dark() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+#else
+    // Qt < 6.5 nie zna schematu kolorow - ocena po domyslnej palecie stylu (jasny tekst = tryb ciemny)
+    const QPalette p = QApplication::style() ? QApplication::style()->standardPalette() : QPalette();
+    return p.color(QPalette::WindowText).lightness() > p.color(QPalette::Window).lightness();
+#endif
 }
 
 }  // namespace
@@ -100,9 +107,11 @@ Theme* Theme::instance() {
 
 Theme::Theme() : QObject(QCoreApplication::instance()) {
     // zmiana schematu w systemie (np. tryb ciemny Windows) - tylko w trybie System
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this] {
         if (mode_ == ThemeMode::System && !applying_) apply();
     });
+#endif
 }
 
 void Theme::set_mode(ThemeMode mode) {
@@ -112,8 +121,8 @@ void Theme::set_mode(ThemeMode mode) {
 
 void Theme::apply() {
     applying_ = true;
-    QStyleHints* hints = QGuiApplication::styleHints();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    QStyleHints* hints = QGuiApplication::styleHints();
     // schemat przekazany systemowi - pasek tytulu okna (Windows) w tym samym kolorze co program
     if (mode_ == ThemeMode::System)
         hints->unsetColorScheme();
@@ -183,7 +192,9 @@ QPalette Theme::light_palette() {
     set_colour(p, QPalette::HighlightedText, Qt::white);
     set_colour(p, QPalette::Link, QColor("#0000ff"));
     set_colour(p, QPalette::LinkVisited, QColor("#ff00ff"));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
     set_colour(p, QPalette::Accent, QColor("#308cc6"), QColor("#919191"));
+#endif
     return p;
 }
 
@@ -212,7 +223,9 @@ QPalette Theme::dark_palette() {
     set_colour(p, QPalette::HighlightedText, Qt::white, disabled_text);
     set_colour(p, QPalette::Link, QColor("#6ea8fe"));
     set_colour(p, QPalette::LinkVisited, QColor("#b392f0"));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
     set_colour(p, QPalette::Accent, QColor("#3d7bd9"), QColor("#3a3d41"));
+#endif
     return p;
 }
 
