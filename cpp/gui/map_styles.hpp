@@ -11,6 +11,8 @@
 
 namespace pwm::gui {
 
+enum class TrailIcon { None, Hiking, Bike };
+
 class MapStyles {
 public:
     // icons_dir: katalog z plikami *.xpm i podkatalogiem icons_png.
@@ -32,6 +34,12 @@ public:
     QPen road_casing_pen(long long poly_type) const;
     // Drugie pociagniecie warstwy obwodek, nad wszystkimi obwodkami: tlo pod linia przerywana (kolej - biale).
     std::optional<QPen> casing_base_pen(long long poly_type) const;
+    // Ikona wzdluz linii (TrailIconLayer): pieszy - szlaki piesze 0x10e00-0x10e04, 0x10e07 i chodnik 0x16; rower -
+    // szlaki rowerowe 0x10e08-0x10e0d i droga dla rowerow 0xd.
+    static TrailIcon trail_icon(long long poly_type);
+    // Numer typu szlaku 0-13 (-1: bez ikony): przesuniecie ikon wzdluz linii, zeby szlaki roznych kolorow
+    // biegnace ta sama droga nie zaslanialy sobie ikon.
+    static int trail_icon_slot(long long poly_type);
 
     QColor polygon_fill_colour(long long poly_type) const;
     QPen polygon_pen(long long poly_type) const;

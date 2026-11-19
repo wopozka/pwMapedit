@@ -26,6 +26,7 @@ class GripItem;
 class RoadCasingLayer;
 class AnnotationLayer;
 class PoiIconLayer;
+class TrailIconLayer;
 
 // Wezel wskazany uchwytem: obiekt (indeks w MapData), poziom Data, czesc i numer wezla.
 struct GripRef {
@@ -62,6 +63,10 @@ public:
     // Obwodki drog (ciemniejsza, szersza linia pod droga - widac jasne drogi na jasnym tle). Domyslnie wylaczone.
     bool road_casing() const;
     void set_road_casing(bool on);
+
+    // Ikony pieszego i roweru wzdluz szlakow (TrailIconLayer). Domyslnie wlaczone.
+    bool trail_icons() const;
+    void set_trail_icons(bool on);
 
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.
@@ -250,6 +255,7 @@ private:
     RoadCasingLayer* road_casing_ = nullptr;
     AnnotationLayer* annotation_layer_ = nullptr;
     PoiIconLayer* poi_icon_layer_ = nullptr;
+    TrailIconLayer* trail_icon_layer_ = nullptr;
     bool rebuilding_all_ = false;  // set_map/set_map_level: jedno przerysowanie na koncu zamiast na element
     struct RotationGesture {
         size_t obj;

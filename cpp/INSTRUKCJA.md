@@ -22,6 +22,7 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 | poziom szczegółów według skali | klawisz **.** (kropka) albo **View → Levels → Automatycznie**: powyżej 1:10 000 – Level 0, do 1:50 000 – 1, do 1:200 000 – 2, do 1:1 000 000 – 3, dalej – 4; włączony po uruchomieniu programu, wyłącza się po wybraniu konkretnego poziomu; bieżący poziom widać na pasku stanu („map level”) |
 | widzieć, co jest pod polygonami | **View → Wypełnienie polygonów → Transparentne** (wybór jest zapamiętywany) |
 | lepiej widzieć jasne drogi (np. żółte) i kolej | **View → Obwódki dróg** – ciemniejsza obwódka pod każdą drogą, kolej z czarnym brzegiem i białymi przerwami (wybór jest zapamiętywany) |
+| widzieć szlaki piesze i rowerowe | **View → Ikony szlaków** (domyślnie włączone) – wzdłuż szlaków pieszych i chodników ikona pieszego, wzdłuż szlaków rowerowych i dróg dla rowerów ikona roweru, w krążku w kolorze szlaku (chodnik i droga dla rowerów – biały krążek, szlak wielokolorowy – krążek w czterech kolorach); ikony widać od skali ok. 1:25 000 |
 | włączyć podkład z internetu | menu **Weblayers** (OSM, Geoportal, Google); **E** włącza/wyłącza |
 | przejść do współrzędnych | **Ctrl+G** i wpisz np. `52.123456, 21.123456` |
 

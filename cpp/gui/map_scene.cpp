@@ -38,7 +38,13 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     add_persistent_item(annotation_layer_);
     poi_icon_layer_ = new PoiIconLayer(this);
     add_persistent_item(poi_icon_layer_);
+    trail_icon_layer_ = new TrailIconLayer(this);
+    add_persistent_item(trail_icon_layer_);
 }
+
+bool MapScene::trail_icons() const { return trail_icon_layer_->isVisible(); }
+
+void MapScene::set_trail_icons(bool on) { trail_icon_layer_->setVisible(on); }
 
 void MapScene::update_annotations(MapObjectItem* item) {
     if (rebuilding_all_) return;
@@ -216,6 +222,7 @@ void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& proje
     road_casing_->set_rect(sceneRect());
     annotation_layer_->set_rect(sceneRect());
     poi_icon_layer_->set_rect(sceneRect());
+    trail_icon_layer_->set_rect(sceneRect());
 }
 
 // ---------------------------------------------------------------- edycja

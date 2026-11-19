@@ -68,10 +68,10 @@ MapStyles::MapStyles(const QString& icons_dir) : icons_dir_(icons_dir) {
         {0x10e02, QColor("#399520")},   // hiking trial green
         {0x10e03, QColor("#3965ff")},   // hiking trial blue
         {0x10e04, QColor(Qt::black)},   // hiking trial czarny
-        {0x10e07, QColor("#a959a9\"")}, // hiking trial multicolor (bledny zapis jak w Pythonie)
+        {0x10e07, QColor("#a959a9")},   // hiking trial multicolor (w Pythonie bledny zapis "#a959a9\"")
         {0x10e08, QColor(Qt::red)},     // rowerowy czerwony
         {0x10e09, QColor("#ffff41")},   // rowerowy zolty
-        {0x10e0a, QColor("#ffff41")},   // rowerowy zielony
+        {0x10e0a, QColor("#399520")},   // rowerowy zielony (w Pythonie zolty #ffff41 - pomylka)
         {0x10e0b, QColor("#3965ff")},   // rowerowy niebieski
         {0x10e0c, QColor(Qt::black)},   // rowerowy czarny
         {0x10e0d, QColor("#a959a9")},   // rowerowy inny
@@ -229,6 +229,37 @@ bool MapStyles::is_railway(long long poly_type) {
 
 bool MapStyles::has_casing(long long poly_type) {
     return is_road(poly_type) || is_railway(poly_type);
+}
+
+TrailIcon MapStyles::trail_icon(long long poly_type) {
+    switch (poly_type) {
+        case 0x10e00: case 0x10e01: case 0x10e02: case 0x10e03: case 0x10e04: case 0x10e07: case 0x16:
+            return TrailIcon::Hiking;
+        case 0x10e08: case 0x10e09: case 0x10e0a: case 0x10e0b: case 0x10e0c: case 0x10e0d: case 0xd:
+            return TrailIcon::Bike;
+        default:
+            return TrailIcon::None;
+    }
+}
+
+int MapStyles::trail_icon_slot(long long poly_type) {
+    switch (poly_type) {
+        case 0x10e00: return 0;
+        case 0x10e01: return 1;
+        case 0x10e02: return 2;
+        case 0x10e03: return 3;
+        case 0x10e04: return 4;
+        case 0x10e07: return 5;
+        case 0x16: return 6;
+        case 0x10e08: return 7;
+        case 0x10e09: return 8;
+        case 0x10e0a: return 9;
+        case 0x10e0b: return 10;
+        case 0x10e0c: return 11;
+        case 0x10e0d: return 12;
+        case 0xd: return 13;
+        default: return -1;
+    }
 }
 
 QPen MapStyles::road_casing_pen(long long poly_type) const {

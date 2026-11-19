@@ -210,6 +210,8 @@ private slots:
     void ctrl_click_adds_polygon_lying_on_selected_one();
     void convert_polyline_polygon_both_ways();
     void road_casing_under_roads_only();
+    void trail_icon_positions_along_line();
+    void trail_icons_drawn_on_trails_only();
     void map_level_for_scale_ranges();
     void shift_wheel_rotates_object_in_edit_nodes();
     void viaduct_pois_at_crossings();
@@ -2251,6 +2253,138 @@ void EditTests::road_casing_under_roads_only() {
 
     scene.set_road_casing(false);
     QCOMPARE(render(), plain);
+    scene.clear_map();
+}
+
+void EditTests::trail_icon_positions_along_line() {
+    constexpr double D = TRAIL_ICON_SIZE_PX;
+    auto positions = [](const QPainterPath& path, int slot, const QTransform& t = QTransform()) {
+        std::vector<QPointF> out;
+        TrailIconLayer::icon_positions(path, t, slot, out);
+        return out;
+    };
+    QPainterPath line;
+    line.moveTo(0, 0);
+    line.lineTo(400, 0);
+    line.lineTo(1000, 0);  // wezel w srodku nie zmienia rozmieszczenia
+    // 1000 px: 5 ikon co 200 px; slot 6 przesuwa o -0,5 * (D + 2)
+    const std::vector<QPointF> p6 = positions(line, 6);
+    QCOMPARE(p6.size(), size_t(5));
+    const double first = 100 - 0.5 * (D + 2);
+    for (size_t i = 0; i < p6.size(); ++i) {
+        QVERIFY(qAbs(p6[i].x() - (first + 200.0 * i)) < 1e-6);
+        QCOMPARE(p6[i].y(), 0.0);
+    }
+    // inny typ szlaku: te same odstepy, przesuniete o roznice numerow * (D + 2)
+    const std::vector<QPointF> p8 = positions(line, 8);
+    QCOMPARE(p8.size(), size_t(5));
+    QVERIFY(qAbs(p8[0].x() - p6[0].x() - 2 * (D + 2)) < 1e-6);
+    // przesuniecie poza odstep zawija sie (ikony dalej co 200 px, zadna nie wypada poza linie)
+    for (int slot = 0; slot <= 13; ++slot) {
+        const std::vector<QPointF> p = positions(line, slot);
+        QVERIFY(!p.empty());
+        for (const QPointF& q : p) QVERIFY(q.x() >= D / 2 && q.x() <= 1000 - D / 2);
+        for (size_t i = 1; i < p.size(); ++i) QVERIFY(qAbs(p[i].x() - p[i - 1].x() - 200) < 1e-6);
+    }
+    // krotka linia: ponizej 1,5 ikony bez ikony, dluzsza - jedna ikona w granicach linii
+    QPainterPath short_line;
+    short_line.moveTo(0, 0);
+    short_line.lineTo(1.5 * D - 1, 0);
+    QVERIFY(positions(short_line, 0).empty());
+    short_line = QPainterPath();
+    short_line.moveTo(0, 0);
+    short_line.lineTo(60, 0);
+    const std::vector<QPointF> one = positions(short_line, 0);  // srodek 30 - 6,5 * 18 -> obciete do D/2
+    QCOMPARE(one.size(), size_t(1));
+    QCOMPARE(one[0].x(), D / 2);
+    // dwie czesci liczone osobno; przeksztalcenie na ekran (skala 2: 100 -> 200 px)
+    QPainterPath parts;
+    parts.moveTo(0, 0);
+    parts.lineTo(100, 0);
+    parts.moveTo(0, 50);
+    parts.lineTo(0, 150);
+    const std::vector<QPointF> two = positions(parts, 6, QTransform::fromScale(2, 2));
+    QCOMPARE(two.size(), size_t(2));
+    QVERIFY(qAbs(two[0].x() - (100 - 0.5 * (D + 2))) < 1e-6 && two[0].y() == 0);
+    QVERIFY(two[1].x() == 0 && qAbs(two[1].y() - (100 + 100 - 0.5 * (D + 2))) < 1e-6);
+}
+
+void EditTests::trail_icons_drawn_on_trails_only() {
+    // typy z ikona i poprawione kolory szlakow
+    QCOMPARE(MapStyles::trail_icon(0x10e00), TrailIcon::Hiking);
+    QCOMPARE(MapStyles::trail_icon(0x10e07), TrailIcon::Hiking);
+    QCOMPARE(MapStyles::trail_icon(0x16), TrailIcon::Hiking);
+    QCOMPARE(MapStyles::trail_icon(0x10e0d), TrailIcon::Bike);
+    QCOMPARE(MapStyles::trail_icon(0xd), TrailIcon::Bike);
+    QCOMPARE(MapStyles::trail_icon(0x10e0f), TrailIcon::None);
+    QCOMPARE(MapStyles::trail_icon(0x5), TrailIcon::None);
+    QCOMPARE(MapStyles::trail_icon_slot(0x10e05), -1);
+    MapStyles styles{MapStyles::find_icons_dir()};
+    QCOMPARE(styles.polyline_colour(0x10e0a), QColor("#399520"));  // rowerowy zielony (byl zolty)
+    QVERIFY(styles.polyline_colour(0x10e07).isValid());              // pieszy kolorowy (byl bledny zapis)
+    QCOMPARE(styles.polyline_colour(0x10e07), QColor("#a959a9"));
+
+    // czerwony szlak pieszy i droga 0x5 rownolegle
+    auto map = std::make_unique<MapData>(std::make_unique<MercatorProjection>());
+    map->load_from_string(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x10e00\nData0=(52.10000,21.00000),(52.10000,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x5\nData0=(52.10100,21.00000),(52.10100,21.00600)\n[END]\n\n");
+    Projection& projection = map->projection();
+    projection.set_map_bounding_box(map->map_bounding_box());
+    projection.calculate_data_offset();
+    MapScene scene;
+    scene.set_canvas_rectangle(map->map_bounding_box(), projection);
+    scene.set_map(map.get(), &styles);
+    QVERIFY(scene.trail_icons());
+
+    const QRectF trail = scene.item_for_object(0)->graphics_item()->sceneBoundingRect();
+    const QRectF road = scene.item_for_object(1)->graphics_item()->sceneBoundingRect();
+    const QRectF both = trail.united(road);
+    const double side = both.width() * 1.1;
+    const QRectF rect(both.center() - QPointF(side / 2, side / 2), QSizeF(side, side));
+    const QColor background(200, 200, 200);
+    // rysowanie przez widok, jak w programie: QGraphicsScene::render oznacza juz narysowane elementy
+    // (itemDiscovered) i indeks sceny nie zwraca ich warstwie ikon - linie lezace pod warstwa by zniknely
+    auto render = [&](int size) {
+        QGraphicsView view(&scene);
+        view.setFrameShape(QFrame::NoFrame);
+        view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setBackgroundBrush(background);
+        view.resize(size, size);
+        view.setTransform(QTransform::fromScale(size / rect.width(), size / rect.height()));
+        view.centerOn(rect.center());
+        return view.viewport()->grab().toImage().convertToFormat(QImage::Format_ARGB32);
+    };
+    // biale piksele (rysunek pieszego na czerwonym krazku) w pasie wokol linii
+    auto white_in_band = [&](const QImage& image, const QRectF& line) {
+        const double k = image.width() / rect.width();
+        const int y = int((line.center().y() - rect.top()) * k);
+        int n = 0;
+        for (int yy = std::max(0, y - 10); yy <= std::min(image.height() - 1, y + 10); ++yy)
+            for (int x = 0; x < image.width(); ++x) n += image.pixel(x, yy) == QColor(Qt::white).rgb();
+        return n;
+    };
+    const int size = 600;
+    QVERIFY(size / rect.width() >= SCALE_WITHOUT_TRAIL_ICONS);
+    const QImage with_icons = render(size);
+    QVERIFY(white_in_band(with_icons, trail) > 0);
+    QCOMPARE(white_in_band(with_icons, road), 0);  // droga bez ikon
+
+    scene.set_trail_icons(false);
+    QVERIFY(!scene.trail_icons());
+    const QImage without = render(size);
+    QCOMPARE(white_in_band(without, trail), 0);
+    scene.set_trail_icons(true);
+    // ponizej progu skali ikony nie sa rysowane
+    const int small = int(rect.width() * SCALE_WITHOUT_TRAIL_ICONS * 0.8);
+    scene.set_trail_icons(false);
+    const QImage small_without = render(small);
+    scene.set_trail_icons(true);
+    QCOMPARE(render(small), small_without);
+    // warstwa nie przechwytuje myszy
+    for (QGraphicsItem* item : scene.items(trail.center())) QVERIFY(item->type() != TrailIconLayerItemType);
     scene.clear_map();
 }
 

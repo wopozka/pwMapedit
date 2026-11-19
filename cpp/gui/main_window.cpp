@@ -266,6 +266,15 @@ void MainWindow::create_actions_and_menus() {
         scene_->set_road_casing(on);
         settings_->setValue("road_casing", on);
     });
+    // ikony pieszego i roweru wzdluz szlakow; wybor zapamietany w ustawieniach
+    QAction* trails = view_menu->addAction(tr("&Ikony szlaków"));
+    trails->setCheckable(true);
+    trails->setChecked(settings_->value("trail_icons", true).toBool());
+    scene_->set_trail_icons(trails->isChecked());
+    connect(trails, &QAction::toggled, this, [this](bool on) {
+        scene_->set_trail_icons(on);
+        settings_->setValue("trail_icons", on);
+    });
 
     // Weblayers: jedna warstwa naraz albo zadna; E wlacza/wylacza ostatnio uzywana (background_on_off)
     QMenu* web_menu = menuBar()->addMenu(tr("&Weblayers"));

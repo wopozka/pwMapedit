@@ -7,6 +7,7 @@
 #include <QGraphicsPathItem>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsSimpleTextItem>
+#include <QHash>
 #include <QLineF>
 #include <QPainterPath>
 #include <QPen>
@@ -33,6 +34,7 @@ enum ItemType {
     RoadCasingItemType,
     AnnotationLayerItemType,
     PoiIconLayerItemType,
+    TrailIconLayerItemType,
 };
 
 // Element, do ktorego punktow przyciagaja sie wezly (Ctrl), np. slady GPS.
@@ -393,6 +395,41 @@ public:
 private:
     const MapScene* map_scene_;
     QRectF rect_;
+};
+
+// Ikony szlakow: jeden element dla calej mapy rysujacy wzdluz szlakow pieszych i chodnikow ikone pieszego,
+// a wzdluz szlakow rowerowych i drog dla rowerow ikone roweru (MapStyles::trail_icon) - krazek w kolorze szlaku
+// (droga dla rowerow i chodnik: bialy, szlak wielokolorowy: cwiartki). Ikony sa pionowe, o stalej wielkosci na
+// ekranie, rozmieszczone co okolo TRAIL_ICON_SPACING_PX pikseli drogi na ekranie, liczac od poczatku czesci linii
+// (przesuwanie mapy ich nie przestawia). Kazdy typ szlaku ma swoje przesuniecie (trail_icon_slot), wiec szlaki
+// roznych kolorow na jednej drodze pokazuja ikony obok siebie. Ponizej SCALE_WITHOUT_TRAIL_ICONS ikony nie sa
+// rysowane. Linie bierze z indeksu sceny (jak PoiIconLayer; przejscie po wszystkich elementach mapy kosztowalo
+// 3-6 ms na przerysowanie), polozenia liczy przy kazdym rysowaniu - bez wlasnych danych.
+// Uwaga: w QGraphicsScene::render (program go nie uzywa) indeks nie zwraca elementow juz narysowanych (Qt oznacza
+// je itemDiscovered), wiec ikony linii lezacych pod warstwa nie powstana - tak samo w PoiIconLayer.
+class TrailIconLayer : public QGraphicsItem {
+public:
+    explicit TrailIconLayer(const MapScene* scene);
+    int type() const override { return TrailIconLayerItemType; }
+    QRectF boundingRect() const override { return rect_; }
+    QPainterPath shape() const override { return {}; }
+    void set_rect(const QRectF& rect);
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+
+    // Srodki ikon (we wspolrzednych ekranu) linii path (moze miec kilka czesci) dla typu o numerze slot;
+    // to_screen: z ukladu sciezki na ekran. Czesc krotsza niz 1,5 ikony nie dostaje ikony.
+    static void icon_positions(const QPainterPath& path, const QTransform& to_screen, int slot,
+                               std::vector<QPointF>& out);
+    // Ikona typu (krazek z rysunkiem) o rozmiarze TRAIL_ICON_SIZE_PX dla gestosci pikseli dpr.
+    static QPixmap make_icon(long long poly_type, QColor colour, double dpr);
+
+private:
+    const QPixmap& icon(long long poly_type, double dpr);
+
+    const MapScene* map_scene_;
+    QRectF rect_;
+    QHash<long long, QPixmap> icons_;
+    double icons_dpr_ = 0;
 };
 
 // Linijka skali w lewym gornym rogu widoku: odcinek dlugosci 1 cm na ekranie i jego dlugosc w terenie.

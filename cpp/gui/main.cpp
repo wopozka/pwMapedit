@@ -11,6 +11,7 @@
 // --bench wyniki.txt [--index none|bsp|bsp-toggle] [--bsp-depth N] [--bench-level L] [--bench-zoom Z]:
 // pomiar indeksu sceny po wczytaniu mapy (bench.hpp), wynik dopisywany do pliku, potem koniec programu.
 // --index bsp i --bsp-depth dzialaja tez bez --bench (do sprawdzenia programu z indeksem BSP w reku).
+// --trail-icons on|off: ikony szlakow wlaczone/wylaczone bez zmiany zapisanego ustawienia (pomiar, zrzut).
 #include <QApplication>
 #include <memory>
 #include <QMessageBox>
@@ -40,6 +41,7 @@ int main(int argc, char* argv[]) {
     QStringList gps_files;
     pwm::gui::IndexBenchOptions bench;
     bool index_given = false;
+    QString trail_icons;
     const QStringList args = QApplication::arguments();
     for (int i = 1; i < args.size(); ++i) {
         if (args[i] == "--screenshot" && i + 1 < args.size())
@@ -56,6 +58,8 @@ int main(int argc, char* argv[]) {
             bench.level = args[++i].toInt();
         else if (args[i] == "--bench-zoom" && i + 1 < args.size())
             bench.zoom = args[++i].toInt();
+        else if (args[i] == "--trail-icons" && i + 1 < args.size())
+            trail_icons = args[++i].toLower();
         else if (args[i] == "--zoom" && i + 1 < args.size())
             zoom = args[++i].toInt();
         else if (args[i] == "--level" && i + 1 < args.size())
@@ -85,6 +89,7 @@ int main(int argc, char* argv[]) {
     pwm::gui::MainWindow window(icons_dir);
     window.set_quiet(!screenshot.isEmpty() || !bench.output.isEmpty());  // nie czekaj na okno komunikatu
     if (index_given || !bench.output.isEmpty()) pwm::gui::apply_index_mode(window, bench);
+    if (!trail_icons.isEmpty()) window.scene()->set_trail_icons(trail_icons != "off");
     if (!bench.output.isEmpty()) {
         window.resize(1400, 900);  // ten sam rozmiar widoku we wszystkich pomiarach
         // pomiar od razu w slocie - powrot do petli zdarzen przerysowalby widok (i zbudowal indeks) poza pomiarem
