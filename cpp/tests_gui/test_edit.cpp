@@ -1035,6 +1035,9 @@ void EditTests::dock_type_comment_extras() {
 
     QTableWidget* extras = f.dock.extras();
     QCOMPARE(extras->rowCount(), 1);  // tylko pusty wiersz na nowy wpis
+    // za dluga wartosc traci poczatek (...Napis); przy zawijaniu Qt skracalby zawsze od prawej (Napis...)
+    QCOMPARE(extras->textElideMode(), Qt::ElideLeft);
+    QVERIFY(!extras->wordWrap());
     extras->setItem(0, 0, new QTableWidgetItem("Miasto"));
     extras->setItem(0, 1, new QTableWidgetItem("Wola"));
     emit extras->cellChanged(0, 1);

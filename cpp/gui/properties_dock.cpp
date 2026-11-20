@@ -177,6 +177,9 @@ QWidget* PropertiesDock::build_main_tab() {
     // klucz zajmuje tyle, ile potrzebuje; za dluga wartosc traci poczatek, koniec zostaje widoczny
     extras_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     extras_->setTextElideMode(Qt::ElideLeft);
+    // bez tego Qt zawija tekst (domyslnie wordWrap) i skraca ostatnia widoczna linie zawsze od prawej,
+    // ignorujac textElideMode
+    extras_->setWordWrap(false);
     extras_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(extras_, &QTableWidget::cellChanged, this, [this] { extras_edited(); });
     connect(extras_, &QTableWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
