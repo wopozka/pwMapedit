@@ -2168,7 +2168,8 @@ void EditTests::road_casing_under_roads_only() {
         "[POLYLINE]\nType=0x5\nData0=(52.10000,21.00000),(52.10000,21.00200)\n[END]\n\n"
         "[POLYLINE]\nType=0x5\nData0=(52.09900,21.00100),(52.10100,21.00100)\n[END]\n\n"
         "[POLYLINE]\nType=0x1f\nData0=(52.10060,21.00000),(52.10060,21.00200)\n[END]\n\n"
-        "[POLYLINE]\nType=0x14\nData0=(52.09940,21.00000),(52.09940,21.00200)\n[END]\n\n");
+        "[POLYLINE]\nType=0x14\nData0=(52.09940,21.00000),(52.09940,21.00200)\n[END]\n\n"
+        "[POLYLINE]\nType=0x10e15\nData0=(52.10030,21.00000),(52.10030,21.00200)\n[END]\n\n");
     Projection& projection = map->projection();
     projection.set_map_bounding_box(map->map_bounding_box());
     projection.calculate_data_offset();
@@ -2251,6 +2252,18 @@ void EditTests::road_casing_under_roads_only() {
     QList<QRgb> section;
     for (int y = rail_y - 3; y <= rail_y + 3; ++y) section.append(cased.pixel(gap_x, y));
     QCOMPARE(section, expected_section);
+    // kolej podziemna/rozebrana (0x10e15): tak samo jak kolej, tylko szara zamiast czarnej
+    const QRgb grey = styles.polyline_colour(0x10e15).rgb();
+    const int under_y = to_image(scene.item_for_object(4)->graphics_item()->sceneBoundingRect().center()).y();
+    QCOMPARE(row_colours(plain, under_y), (QSet<QRgb>{grey, background.rgb()}));
+    QCOMPARE(row_colours(cased, under_y), (QSet<QRgb>{grey, white}));
+    int under_gap_x = -1;
+    for (int rx = crossing.x() - 80; rx <= crossing.x() - 20 && under_gap_x < 0; ++rx)
+        if (cased.pixel(rx, under_y) == white) under_gap_x = rx;
+    QVERIFY(under_gap_x >= 0);
+    QList<QRgb> under_section;
+    for (int y = under_y - 3; y <= under_y + 3; ++y) under_section.append(cased.pixel(under_gap_x, y));
+    QCOMPARE(under_section, (QList<QRgb>{background.rgb(), grey, white, white, white, grey, background.rgb()}));
     // warstwa nie przechwytuje myszy: pod kursorem na drodze jest droga
     const QPointF on_road = scene.item_for_object(0)->graphics_item()->sceneBoundingRect().center() +
                             QPointF(-lines.width() / 4, 0);

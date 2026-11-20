@@ -224,7 +224,8 @@ bool MapStyles::is_road(long long poly_type) {
 }
 
 bool MapStyles::is_railway(long long poly_type) {
-    return poly_type == 0x14 || poly_type == 0x10e14;
+    // 0x10e15: kolej podziemna/rozebrana - rysowana jak kolej, tylko szara
+    return poly_type == 0x14 || poly_type == 0x10e14 || poly_type == 0x10e15;
 }
 
 bool MapStyles::has_casing(long long poly_type) {
@@ -263,8 +264,9 @@ int MapStyles::trail_icon_slot(long long poly_type) {
 }
 
 QPen MapStyles::road_casing_pen(long long poly_type) const {
-    // kolej jest czarna - przyciemniony kolor bylby ta sama czernia, wiec obwodka jest po prostu czarna
-    QPen pen(is_railway(poly_type) ? QColor(Qt::black) : polyline_colour(poly_type).darker(250));
+    // obwodka kolei ma kolor torow (czarny, a dla kolei podziemnej/rozebranej szary) - przyciemniony czarny bylby
+    // ta sama czernia, a szara kolej z ciemna obwodka nie odroznialaby sie od zwyklej
+    QPen pen(is_railway(poly_type) ? polyline_colour(poly_type) : polyline_colour(poly_type).darker(250));
     pen.setWidth(polyline_width(poly_type) + 2);
     pen.setCosmetic(true);
     pen.setCapStyle(Qt::RoundCap);

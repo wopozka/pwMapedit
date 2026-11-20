@@ -26,7 +26,7 @@ public:
     int polyline_width(long long poly_type) const;
     Qt::PenStyle polyline_dash(long long poly_type) const;
     QPen polyline_pen(long long poly_type) const;
-    // Drogi (typy 0x0-0xf i chodnik 0x16, bez promow) i kolej (0x14, 0x10e14) - dostaja obwodke, gdy jest wlaczona.
+    // Drogi (typy 0x0-0xf i chodnik 0x16, bez promow) i kolej (0x14, 0x10e14, podziemna/rozebrana 0x10e15) - dostaja obwodke, gdy jest wlaczona.
     static bool is_road(long long poly_type);
     static bool is_railway(long long poly_type);
     static bool has_casing(long long poly_type);
