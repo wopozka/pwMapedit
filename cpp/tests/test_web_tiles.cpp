@@ -1,4 +1,5 @@
 // Kafelki warstw WWW: wartosci oczekiwane policzone oryginalnym web_layers.py.
+#include <clocale>
 #include <cmath>
 #include <string>
 
@@ -54,4 +55,14 @@ TEST(web_tile_urls) {
              std::string("http://khm1.google.pl/kh/v=1015&x=146363&s=&y=86403&z=18&s=Gali"));
     CHECK_EQ(tile_url(Layer::GoogleOrto, 18, 5, 7), std::string("http://khm1.google.pl/kh/v=1015&x=5&y=7&z=18&s=Galile"));
     CHECK_EQ(tile_path(Layer::Osm, 16, 36590, 21600), std::string("OSM/16/36590/21600.png"));
+}
+
+// Aplikacja Qt na Linuksie ustawia locale systemowe (setlocale(LC_ALL, "")); w polskim separatorem dziesietnym jest
+// przecinek - BBOX Geoportalu nie moze od tego zalezec (inaczej serwer zwraca blad zamiast obrazka).
+TEST(web_tile_url_geoportal_locale) {
+    const std::string old = std::setlocale(LC_NUMERIC, nullptr);
+    if (!std::setlocale(LC_NUMERIC, "pl_PL.UTF-8") && !std::setlocale(LC_NUMERIC, "pl_PL.utf8")) return;
+    const std::string url = tile_url(Layer::GeoportalOrto, 16, 36590, 21600);
+    std::setlocale(LC_NUMERIC, old.c_str());
+    CHECK(url.find("&BBOX=52.15708,20.99487,52.16045,21.00037&") != std::string::npos);
 }

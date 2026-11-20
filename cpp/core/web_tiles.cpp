@@ -1,5 +1,7 @@
 #include "web_tiles.hpp"
 
+#include "pyutil.hpp"
+
 #include <cmath>
 #include <cstdio>
 
@@ -90,13 +92,13 @@ std::string tile_url(Layer layer, int zoom, int xtile, int ytile) {
         case Layer::GeoportalOrto: {
             const auto [lt_lat, lt_lon] = num2deg(xtile, ytile, zoom);
             const auto [rb_lat, rb_lon] = num2deg(xtile + 1, ytile + 1, zoom);
-            std::snprintf(buf, sizeof buf,
-                          "http://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution"
-                          "?REQUEST=GetMap&TRANSPARENT=TRUE&FORMAT=image/jpeg&VERSION=1.3.0&LAYERS="
-                          "Raster&STYLES=&EXCEPTIONS=xml&WIDTH=256&HEIGHT=256&"
-                          "BBOX=%.5f,%.5f,%.5f,%.5f&CRS=EPSG:4326&SERVICE=WMS",
-                          rb_lat, lt_lon, lt_lat, rb_lon);
-            return buf;
+            // format_fixed zamiast snprintf("%.5f"): printf bierze separator dziesietny z locale C, a QApplication
+            // na Linuksie robi setlocale(LC_ALL, "") - w polskim locale BBOX mial przecinki i serwer zwracal blad
+            return "http://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution"
+                   "?REQUEST=GetMap&TRANSPARENT=TRUE&FORMAT=image/jpeg&VERSION=1.3.0&LAYERS="
+                   "Raster&STYLES=&EXCEPTIONS=xml&WIDTH=256&HEIGHT=256&"
+                   "BBOX=" + py::format_fixed(rb_lat, 5) + "," + py::format_fixed(lt_lon, 5) + "," +
+                   py::format_fixed(lt_lat, 5) + "," + py::format_fixed(rb_lon, 5) + "&CRS=EPSG:4326&SERVICE=WMS";
         }
     }
     return {};
