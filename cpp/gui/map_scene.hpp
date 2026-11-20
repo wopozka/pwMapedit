@@ -67,6 +67,9 @@ public:
     // Ikony pieszego i roweru wzdluz szlakow (TrailIconLayer). Domyslnie wlaczone.
     bool trail_icons() const;
     void set_trail_icons(bool on);
+    // Ikony routingu: zakaz ruchu i oplata na drogach (TrailIconLayer). Domyslnie wlaczone.
+    bool routing_icons() const;
+    void set_routing_icons(bool on);
 
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.

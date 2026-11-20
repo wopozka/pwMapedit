@@ -42,9 +42,13 @@ MapScene::MapScene(QObject* parent) : QGraphicsScene(parent) {
     add_persistent_item(trail_icon_layer_);
 }
 
-bool MapScene::trail_icons() const { return trail_icon_layer_->isVisible(); }
+bool MapScene::trail_icons() const { return trail_icon_layer_->trails(); }
 
-void MapScene::set_trail_icons(bool on) { trail_icon_layer_->setVisible(on); }
+void MapScene::set_trail_icons(bool on) { trail_icon_layer_->set_trails(on); }
+
+bool MapScene::routing_icons() const { return trail_icon_layer_->routing(); }
+
+void MapScene::set_routing_icons(bool on) { trail_icon_layer_->set_routing(on); }
 
 void MapScene::update_annotations(MapObjectItem* item) {
     if (rebuilding_all_) return;

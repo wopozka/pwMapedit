@@ -15,6 +15,7 @@
 #include <optional>
 #include <vector>
 
+#include "constants.hpp"
 #include "map_data.hpp"
 
 namespace pwm::gui {
@@ -402,8 +403,10 @@ private:
 // (droga dla rowerow i chodnik: bialy, szlak wielokolorowy: cwiartki). Ikony sa pionowe, o stalej wielkosci na
 // ekranie, rozmieszczone co okolo TRAIL_ICON_SPACING_PX pikseli drogi na ekranie, liczac od poczatku czesci linii
 // (przesuwanie mapy ich nie przestawia). Kazdy typ szlaku ma swoje przesuniecie (trail_icon_slot), wiec szlaki
-// roznych kolorow na jednej drodze pokazuja ikony obok siebie. Ponizej SCALE_WITHOUT_TRAIL_ICONS ikony nie sa
-// rysowane. Linie bierze z indeksu sceny (jak PoiIconLayer; przejscie po wszystkich elementach mapy kosztowalo
+// roznych kolorow na jednej drodze pokazuja ikony obok siebie. Ikony routingu (osobny przelacznik) na drogach
+// 0x1-0xf wedlug RouteParam: znak zakazu ruchu (zakazy pojazdow), znak zakazu pieszych i/lub rowerow, krazek
+// z symbolem euro (droga platna) - MapStyles::road_restricted, road_pedestrian_bicycle_ban, road_toll; grupa
+// ikon obok siebie w srodku linii (dluga linia: w srodkach rownych odcinkow). Ponizej SCALE_WITHOUT_TRAIL_ICONS ikony nie sa rysowane. Linie bierze z indeksu sceny (jak PoiIconLayer; przejscie po wszystkich elementach mapy kosztowalo
 // 3-6 ms na przerysowanie), polozenia liczy przy kazdym rysowaniu - bez wlasnych danych.
 // Uwaga: w QGraphicsScene::render (program go nie uzywa) indeks nie zwraca elementow juz narysowanych (Qt oznacza
 // je itemDiscovered), wiec ikony linii lezacych pod warstwa nie powstana - tak samo w PoiIconLayer.
@@ -415,13 +418,31 @@ public:
     QPainterPath shape() const override { return {}; }
     void set_rect(const QRectF& rect);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+    // Co rysuje warstwa: ikony szlakow i ikony routingu (zakaz ruchu, oplata). Bez obu warstwa jest ukryta.
+    bool trails() const { return trails_; }
+    void set_trails(bool on);
+    bool routing() const { return routing_; }
+    void set_routing(bool on);
 
-    // Srodki ikon (we wspolrzednych ekranu) linii path (moze miec kilka czesci) dla typu o numerze slot;
-    // to_screen: z ukladu sciezki na ekran. Czesc krotsza niz 1,5 ikony nie dostaje ikony.
-    static void icon_positions(const QPainterPath& path, const QTransform& to_screen, int slot,
+    // Srodki ikon (we wspolrzednych ekranu) linii path (moze miec kilka czesci): n ikon w srodkach n rownych
+    // odcinkow czesci (n - dlugosc / TRAIL_ICON_SPACING_PX), przesunietych wzdluz linii o shift pikseli (z zawinieciem
+    // w odstepie); to_screen: z ukladu sciezki na ekran. Czesc krotsza niz 1,5 ikony nie dostaje ikony.
+    static void icon_positions(const QPainterPath& path, const QTransform& to_screen, double shift,
                                std::vector<QPointF>& out);
+    // Przesuniecie ikon szlaku o numerze slot (MapStyles::trail_icon_slot).
+    static double slot_shift(int slot);
+    // Przesuniecie k-tej z count ikon routingu linii: obok siebie, symetrycznie wzgledem srodka odcinka.
+    static double routing_shift(int k, int count) { return (k - (count - 1) / 2.0) * (TRAIL_ICON_SIZE_PX + 2); }
     // Ikona typu (krazek z rysunkiem) o rozmiarze TRAIL_ICON_SIZE_PX dla gestosci pikseli dpr.
     static QPixmap make_icon(long long poly_type, QColor colour, double dpr);
+    // Klucze ikon znacznikow drog w pamieci ikon (typy linii sa nieujemne).
+    static constexpr long long RESTRICTED_ICON = -1;  // zakaz ruchu (znak B-1: bialy krazek, czerwone obrzeze)
+    static constexpr long long TOLL_ICON = -2;        // droga platna (zolty krazek z symbolem euro)
+    // zakaz pieszych (jak B-41), rowerow (jak B-9), pieszych i rowerow (oba rysunki): klucz -
+    // NO_WALK_BIKE_ICON - suma MapStyles::BAN_PEDESTRIAN i BAN_BICYCLE (-3, -4, -5)
+    static constexpr long long NO_WALK_BIKE_ICON = -2;
+    // Ikona znacznika drogi (RESTRICTED_ICON, TOLL_ICON, zakazy pieszych/rowerow) o rozmiarze TRAIL_ICON_SIZE_PX.
+    static QPixmap make_road_icon(long long key, double dpr);
 
 private:
     const QPixmap& icon(long long poly_type, double dpr);
@@ -430,6 +451,8 @@ private:
     QRectF rect_;
     QHash<long long, QPixmap> icons_;
     double icons_dpr_ = 0;
+    bool trails_ = true;
+    bool routing_ = true;
 };
 
 // Linijka skali w lewym gornym rogu widoku: odcinek dlugosci 1 cm na ekranie i jego dlugosc w terenie.

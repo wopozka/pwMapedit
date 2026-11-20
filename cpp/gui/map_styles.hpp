@@ -7,6 +7,7 @@
 #include <QPen>
 #include <QPixmap>
 #include <QString>
+#include <array>
 #include <optional>
 
 namespace pwm::gui {
@@ -40,6 +41,16 @@ public:
     // Numer typu szlaku 0-13 (-1: bez ikony): przesuniecie ikon wzdluz linii, zeby szlaki roznych kolorow
     // biegnace ta sama droga nie zaslanialy sobie ikon.
     static int trail_icon_slot(long long poly_type);
+    // Ikony routingu drog 0x1-0xf (TrailIconLayer): zakaz ruchu - w RouteParam ustawiony ktorys z zakazow
+    // No emergency, No delivery, No car/motorcycle, No bus, No taxi, No truck (pozycje 4-8, 11); zakaz pieszych
+    // i rowerow - No pedestrian (9), No bicycle (10), wynik to suma BAN_PEDESTRIAN i BAN_BICYCLE (0 - bez zakazu);
+    // oplata - Route is toll (pozycja 3).
+    static constexpr int BAN_PEDESTRIAN = 1;
+    static constexpr int BAN_BICYCLE = 2;
+    static bool road_restricted(long long poly_type, const std::optional<std::array<long long, 12>>& routeparam);
+    static int road_pedestrian_bicycle_ban(long long poly_type,
+                                           const std::optional<std::array<long long, 12>>& routeparam);
+    static bool road_toll(long long poly_type, const std::optional<std::array<long long, 12>>& routeparam);
 
     QColor polygon_fill_colour(long long poly_type) const;
     QPen polygon_pen(long long poly_type) const;

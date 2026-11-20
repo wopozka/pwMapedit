@@ -1207,11 +1207,26 @@ void TrailIconLayer::set_rect(const QRectF& rect) {
     rect_ = rect;
 }
 
-void TrailIconLayer::icon_positions(const QPainterPath& path, const QTransform& to_screen, int slot,
+void TrailIconLayer::set_trails(bool on) {
+    trails_ = on;
+    setVisible(trails_ || routing_);
+    update();
+}
+
+void TrailIconLayer::set_routing(bool on) {
+    routing_ = on;
+    setVisible(trails_ || routing_);
+    update();
+}
+
+double TrailIconLayer::slot_shift(int slot) {
+    // szlaki roznych typow na jednej drodze: ikony przesuniete o rozne odcinki, obok siebie
+    return (slot - 6.5) * (TRAIL_ICON_SIZE_PX + 2);
+}
+
+void TrailIconLayer::icon_positions(const QPainterPath& path, const QTransform& to_screen, double shift,
                                     std::vector<QPointF>& out) {
     constexpr double D = TRAIL_ICON_SIZE_PX;
-    // szlaki roznych typow na jednej drodze: ikony przesuniete o rozne odcinki, obok siebie
-    const double shift = (slot - 6.5) * (D + 2);
     static thread_local std::vector<QPointF> pts;
     static thread_local std::vector<double> dist;  // odleglosc od poczatku czesci do wezla
     const int count = path.elementCount();
@@ -1302,6 +1317,68 @@ QPixmap TrailIconLayer::make_icon(long long poly_type, QColor colour, double dpr
     return pm;
 }
 
+QPixmap TrailIconLayer::make_road_icon(long long key, double dpr) {
+    constexpr double D = TRAIL_ICON_SIZE_PX;
+    QPixmap pm(static_cast<int>(std::ceil(D * dpr)), static_cast<int>(std::ceil(D * dpr)));
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    const QPointF c(D / 2, D / 2);
+    const double r = D / 2 - 0.75;
+    if (key != TOLL_ICON) {
+        // znaki zakazu: bialy krazek w czerwonym pierscieniu (B-1 "zakaz ruchu w obu kierunkach" - pusty),
+        // z rysunkiem pieszego i/lub roweru - wezszy pierscien, wiecej miejsca na rysunek
+        const bool sign_b1 = key == RESTRICTED_ICON;
+        const double ring = D * (sign_b1 ? 0.16 : 0.12);
+        p.setPen(QPen(QColor("#d40000"), ring));
+        p.setBrush(Qt::white);
+        p.drawEllipse(c, r - ring / 2 + 0.75, r - ring / 2 + 0.75);
+        if (sign_b1) return pm;
+        const int ban = static_cast<int>(NO_WALK_BIKE_ICON - key);
+        p.translate(c);
+        p.scale(D / 16, D / 16);
+        QPen pen(Qt::black, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        if (ban == MapStyles::BAN_PEDESTRIAN) {
+            p.scale(0.72, 0.72);
+            draw_hiker(&p, pen);
+        } else if (ban == MapStyles::BAN_BICYCLE) {
+            p.scale(0.66, 0.66);
+            pen.setWidthF(1.5);
+            draw_bike(&p, pen);
+        } else {  // pieszy z lewej, rower z prawej
+            p.save();
+            p.translate(-2.4, -0.3);
+            p.scale(0.55, 0.62);
+            pen.setWidthF(1.7);
+            draw_hiker(&p, pen);
+            p.restore();
+            p.translate(2.1, 1.2);
+            p.scale(0.42, 0.42);
+            pen.setWidthF(1.9);
+            draw_bike(&p, pen);
+        }
+        return pm;
+    }
+    // droga platna: zolty krazek z ciemnoniebieskim symbolem euro
+    const QColor glyph("#003399");
+    p.setPen(QPen(QColor("#a08000"), 1.0));
+    p.setBrush(QColor("#ffcc00"));
+    p.drawEllipse(c, r, r);
+    p.translate(c);
+    p.scale(D / 16, D / 16);
+    p.setPen(QPen(glyph, 1.5, Qt::SolidLine, Qt::FlatCap, Qt::RoundJoin));
+    p.setBrush(Qt::NoBrush);
+    QPainterPath euro;
+    const QRectF arc(-2.6, -4.2, 8.4, 8.4);  // luk C otwarty w prawo
+    euro.arcMoveTo(arc, 45);
+    euro.arcTo(arc, 45, 270);
+    p.drawPath(euro);
+    p.drawLine(QPointF(-4.6, -1.1), QPointF(1.6, -1.1));  // poprzeczki
+    p.drawLine(QPointF(-4.6, 1.3), QPointF(1.6, 1.3));
+    return pm;
+}
+
 const QPixmap& TrailIconLayer::icon(long long poly_type, double dpr) {
     if (dpr != icons_dpr_) {
         icons_.clear();
@@ -1309,7 +1386,8 @@ const QPixmap& TrailIconLayer::icon(long long poly_type, double dpr) {
     }
     auto it = icons_.find(poly_type);
     if (it == icons_.end()) {
-        it = icons_.insert(poly_type, make_icon(poly_type, map_scene_->styles()->polyline_colour(poly_type), dpr));
+        it = icons_.insert(poly_type, poly_type < 0 ? make_road_icon(poly_type, dpr)
+                                                    : make_icon(poly_type, map_scene_->styles()->polyline_colour(poly_type), dpr));
     }
     return *it;
 }
@@ -1337,18 +1415,36 @@ void TrailIconLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         if (item->type() != PolylineItemType || !item->isVisible()) continue;
         auto* obj = static_cast<PolylineItem*>(item);
         const long long type = obj->object_type();
-        const int slot = MapStyles::trail_icon_slot(type);
-        if (slot < 0) continue;
-        positions.clear();
+        // ikony linii: szlak (klucz - typ linii), zakaz ruchu, zakaz pieszych/rowerow, oplata; kazda ze swoim
+        // przesunieciem
+        std::pair<long long, double> kinds[4];
+        int n_kinds = 0;
+        if (trails_) {
+            if (const int slot = MapStyles::trail_icon_slot(type); slot >= 0) kinds[n_kinds++] = {type, slot_shift(slot)};
+        }
+        if (routing_) {
+            const auto& routeparam = obj->object().routeparam;
+            long long keys[3];
+            int n_keys = 0;
+            if (MapStyles::road_restricted(type, routeparam)) keys[n_keys++] = RESTRICTED_ICON;
+            if (const int ban = MapStyles::road_pedestrian_bicycle_ban(type, routeparam))
+                keys[n_keys++] = NO_WALK_BIKE_ICON - ban;
+            if (MapStyles::road_toll(type, routeparam)) keys[n_keys++] = TOLL_ICON;
+            for (int k = 0; k < n_keys; ++k) kinds[n_kinds++] = {keys[k], routing_shift(k, n_keys)};
+        }
+        if (n_kinds == 0) continue;
         const QPointF pos = item->pos();  // przy przeciaganiu linia ma przesuniete polozenie
-        icon_positions(static_cast<QGraphicsPathItem*>(item)->path(), QTransform::fromTranslate(pos.x(), pos.y()) * world,
-                       slot, positions);
-        if (positions.empty()) continue;
-        const QPixmap& pm = icon(type, dpr);
+        const QTransform to_screen = QTransform::fromTranslate(pos.x(), pos.y()) * world;
         painter->setOpacity(base_opacity * item->opacity());
-        for (const QPointF& p : positions) {
-            if (!screen_exposed.contains(p)) continue;
-            painter->drawPixmap(QPointF(std::round(p.x() - D / 2), std::round(p.y() - D / 2)), pm);
+        for (int k = 0; k < n_kinds; ++k) {
+            positions.clear();
+            icon_positions(static_cast<QGraphicsPathItem*>(item)->path(), to_screen, kinds[k].second, positions);
+            if (positions.empty()) continue;
+            const QPixmap& pm = icon(kinds[k].first, dpr);
+            for (const QPointF& p : positions) {
+                if (!screen_exposed.contains(p)) continue;
+                painter->drawPixmap(QPointF(std::round(p.x() - D / 2), std::round(p.y() - D / 2)), pm);
+            }
         }
     }
     painter->restore();

@@ -279,6 +279,15 @@ void MainWindow::create_actions_and_menus() {
         scene_->set_trail_icons(on);
         settings_->setValue("trail_icons", on);
     });
+    // ikony routingu: zakaz ruchu i oplata na drogach; wybor zapamietany w ustawieniach
+    QAction* routing = view_menu->addAction(tr("Ikony &routingu"));
+    routing->setCheckable(true);
+    routing->setChecked(settings_->value("routing_icons", true).toBool());
+    scene_->set_routing_icons(routing->isChecked());
+    connect(routing, &QAction::toggled, this, [this](bool on) {
+        scene_->set_routing_icons(on);
+        settings_->setValue("routing_icons", on);
+    });
     // motyw okna (mapa zostaje jasna); wybor zapamietany w ustawieniach, domyslnie wedlug systemu
     QMenu* theme_menu = view_menu->addMenu(tr("&Motyw"));
     auto* theme_group = new QActionGroup(this);

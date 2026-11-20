@@ -213,7 +213,9 @@ private slots:
     void convert_polyline_polygon_both_ways();
     void road_casing_under_roads_only();
     void trail_icon_positions_along_line();
+    void routing_icons_near_middle_of_road();
     void trail_icons_drawn_on_trails_only();
+    void road_restriction_and_toll_icons();
     void map_level_for_scale_ranges();
     // motyw okna: paleta, ikony paska w kolorach motywu, mapa na bialym tle, zapis w ustawieniach
     void theme_palette_icons_and_setting();
@@ -2283,7 +2285,7 @@ void EditTests::trail_icon_positions_along_line() {
     constexpr double D = TRAIL_ICON_SIZE_PX;
     auto positions = [](const QPainterPath& path, int slot, const QTransform& t = QTransform()) {
         std::vector<QPointF> out;
-        TrailIconLayer::icon_positions(path, t, slot, out);
+        TrailIconLayer::icon_positions(path, t, TrailIconLayer::slot_shift(slot), out);
         return out;
     };
     QPainterPath line;
@@ -2330,6 +2332,48 @@ void EditTests::trail_icon_positions_along_line() {
     QCOMPARE(two.size(), size_t(2));
     QVERIFY(qAbs(two[0].x() - (100 - 0.5 * (D + 2))) < 1e-6 && two[0].y() == 0);
     QVERIFY(two[1].x() == 0 && qAbs(two[1].y() - (100 + 100 - 0.5 * (D + 2))) < 1e-6);
+}
+
+void EditTests::routing_icons_near_middle_of_road() {
+    constexpr double D = TRAIL_ICON_SIZE_PX;
+    auto positions = [](double length, double shift) {
+        QPainterPath line;
+        line.moveTo(0, 0);
+        line.lineTo(length * 0.1, 0);  // wezly nie zmieniaja rozmieszczenia
+        line.lineTo(length, 0);
+        std::vector<QPointF> out;
+        TrailIconLayer::icon_positions(line, QTransform(), shift, out);
+        return out;
+    };
+    // krotka droga: jedna ikona kazdego rodzaju, obok siebie w srodku
+    for (double length : {40.0, 150.0, 290.0}) {
+        const auto r = positions(length, TrailIconLayer::routing_shift(0, 2));
+        const auto t = positions(length, TrailIconLayer::routing_shift(1, 2));
+        QCOMPARE(r.size(), size_t(1));
+        QCOMPARE(t.size(), size_t(1));
+        QVERIFY(qAbs((r[0].x() + t[0].x()) / 2 - length / 2) < 1e-6);
+        QVERIFY(t[0].x() - r[0].x() <= D + 2 + 1e-6);
+    }
+    // dluzsza droga: ikony w srodkach rownych odcinkow, symetrycznie wzgledem srodka drogi (bez ikony przy poczatku)
+    for (double length : {400.0, 650.0, 1000.0}) {
+        const auto r = positions(length, TrailIconLayer::routing_shift(0, 2));
+        const auto t = positions(length, TrailIconLayer::routing_shift(1, 2));
+        const size_t n = size_t(std::lround(length / TRAIL_ICON_SPACING_PX));
+        QCOMPARE(r.size(), n);
+        QCOMPARE(t.size(), n);
+        const double step = length / n;
+        for (size_t i = 0; i < n; ++i) {
+            QVERIFY(qAbs(r[i].x() - (step * (i + 0.5) - (D + 2) / 2)) < 1e-6);
+            QVERIFY(qAbs(t[i].x() - (step * (i + 0.5) + (D + 2) / 2)) < 1e-6);
+        }
+    }
+    // trzy ikony routingu: srodkowa dokladnie w srodku, pozostale obok
+    const auto middle = positions(150, TrailIconLayer::routing_shift(1, 3));
+    QCOMPARE(middle.size(), size_t(1));
+    QCOMPARE(middle[0].x(), 75.0);
+    QCOMPARE(positions(150, TrailIconLayer::routing_shift(0, 3))[0].x(), 75.0 - (D + 2));
+    QCOMPARE(positions(150, TrailIconLayer::routing_shift(2, 3))[0].x(), 75.0 + (D + 2));
+    QCOMPARE(TrailIconLayer::routing_shift(0, 1), 0.0);
 }
 
 void EditTests::trail_icons_drawn_on_trails_only() {
@@ -2408,6 +2452,98 @@ void EditTests::trail_icons_drawn_on_trails_only() {
     QCOMPARE(render(small), small_without);
     // warstwa nie przechwytuje myszy
     for (QGraphicsItem* item : scene.items(trail.center())) QVERIFY(item->type() != TrailIconLayerItemType);
+    scene.clear_map();
+}
+
+void EditTests::road_restriction_and_toll_icons() {
+    using RP = std::optional<std::array<long long, 12>>;
+    auto rp = [](std::initializer_list<int> set) {
+        std::array<long long, 12> a{};
+        for (int i : set) a[i] = 1;
+        return RP(a);
+    };
+    // zakazy pojazdow: No emergency (4) .. No taxi (8), No truck (11); jednokierunkowa (2), oplata (3) i zakazy
+    // pieszych (9) i rowerow (10) to nie zakaz ruchu
+    for (int i : {4, 5, 6, 7, 8, 11}) QVERIFY(MapStyles::road_restricted(0x5, rp({i})));
+    QVERIFY(!MapStyles::road_restricted(0x5, rp({2, 3, 9, 10})));
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x5, rp({9})), MapStyles::BAN_PEDESTRIAN);
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x5, rp({10})), MapStyles::BAN_BICYCLE);
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x5, rp({4, 9, 10, 11})),
+             MapStyles::BAN_PEDESTRIAN | MapStyles::BAN_BICYCLE);
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x5, rp({2, 3, 4, 5, 6, 7, 8, 11})), 0);
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x16, rp({9, 10})), 0);
+    QCOMPARE(MapStyles::road_pedestrian_bicycle_ban(0x5, RP()), 0);
+    QVERIFY(!MapStyles::road_restricted(0x5, RP()));
+    QVERIFY(MapStyles::road_restricted(0x1, rp({11})) && MapStyles::road_restricted(0xf, rp({4})));
+    QVERIFY(!MapStyles::road_restricted(0x0, rp({4})) && !MapStyles::road_restricted(0x10, rp({4})));
+    QVERIFY(!MapStyles::road_restricted(0x16, rp({4})));
+    QVERIFY(MapStyles::road_toll(0x1, rp({3})));
+    QVERIFY(!MapStyles::road_toll(0x1, rp({4})) && !MapStyles::road_toll(0x16, rp({3})));
+
+    // trzy rownolegle drogi: z zakazem, platna, zwykla
+    auto map = std::make_unique<MapData>(std::make_unique<MercatorProjection>());
+    map->load_from_string(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x5\nRouteParam=3,0,0,0,0,1,0,0,0,0,0,0\nData0=(52.10000,21.00000),(52.10000,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x1\nRouteParam=3,0,0,1,0,0,0,0,0,0,0,0\nData0=(52.10100,21.00000),(52.10100,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nRouteParam=3,0,1,0,0,0,0,0,0,0,0,0\nData0=(52.10200,21.00000),(52.10200,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x5\nRouteParam=3,0,0,0,0,0,0,0,0,1,1,0\nData0=(52.10300,21.00000),(52.10300,21.00600)\n[END]\n\n");
+    Projection& projection = map->projection();
+    projection.set_map_bounding_box(map->map_bounding_box());
+    projection.calculate_data_offset();
+    MapStyles styles{MapStyles::find_icons_dir()};
+    MapScene scene;
+    scene.set_canvas_rectangle(map->map_bounding_box(), projection);
+    scene.set_map(map.get(), &styles);
+
+    QRectF lines[4];
+    for (int i = 0; i < 4; ++i) lines[i] = scene.item_for_object(i)->graphics_item()->sceneBoundingRect();
+    const QRectF all = lines[0].united(lines[3]);
+    const double side = all.width() * 1.1;
+    const QRectF rect(all.center() - QPointF(side / 2, side / 2), QSizeF(side, side));
+    QTransform to_view;
+    auto render = [&](int size) {
+        QGraphicsView view(&scene);
+        view.setFrameShape(QFrame::NoFrame);
+        view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setBackgroundBrush(QColor(200, 200, 200));
+        view.resize(size, size);
+        view.setTransform(QTransform::fromScale(size / rect.width(), size / rect.height()));
+        view.centerOn(rect.center());
+        to_view = view.viewportTransform();  // widok nie wychodzi poza scene, wiec srodek moze byc przesuniety
+        return view.viewport()->grab().toImage().convertToFormat(QImage::Format_ARGB32);
+    };
+    // piksele danego koloru w pasie wokol linii
+    auto count_in_band = [&](const QImage& image, const QRectF& line, QColor colour) {
+        const int y = int(to_view.map(line.center()).y());
+        int n = 0;
+        for (int yy = std::max(0, y - 10); yy <= std::min(image.height() - 1, y + 10); ++yy)
+            for (int x = 0; x < image.width(); ++x) n += image.pixel(x, yy) == colour.rgb();
+        return n;
+    };
+    const QColor red("#d40000"), yellow("#ffcc00");
+    const QImage image = render(600);
+    QVERIFY(count_in_band(image, lines[0], red) > 0);
+    QCOMPARE(count_in_band(image, lines[0], yellow), 0);
+    QVERIFY(count_in_band(image, lines[1], yellow) > 0);
+    QCOMPARE(count_in_band(image, lines[1], red), 0);
+    QCOMPARE(count_in_band(image, lines[2], red) + count_in_band(image, lines[2], yellow), 0);
+    // zakaz pieszych i rowerow: czerwony pierscien z czarnym rysunkiem (pusty znak zakazu ruchu nie ma czerni)
+    const QColor black(Qt::black);
+    QVERIFY(count_in_band(image, lines[3], red) > 0 && count_in_band(image, lines[3], black) > 0);
+    QCOMPARE(count_in_band(image, lines[0], black), 0);
+    // osobny przelacznik: bez ikon szlakow ikony routingu zostaja, bez ikon routingu znikaja
+    scene.set_trail_icons(false);
+    QVERIFY(scene.routing_icons());
+    const QImage no_trails = render(600);
+    QVERIFY(count_in_band(no_trails, lines[0], red) > 0 && count_in_band(no_trails, lines[1], yellow) > 0);
+    scene.set_trail_icons(true);
+    scene.set_routing_icons(false);
+    QVERIFY(!scene.routing_icons() && scene.trail_icons());
+    const QImage off = render(600);
+    QCOMPARE(count_in_band(off, lines[0], red) + count_in_band(off, lines[1], yellow), 0);
+    scene.set_routing_icons(true);
     scene.clear_map();
 }
 

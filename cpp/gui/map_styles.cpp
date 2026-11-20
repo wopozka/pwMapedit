@@ -263,6 +263,27 @@ int MapStyles::trail_icon_slot(long long poly_type) {
     }
 }
 
+namespace {
+bool routable_road(long long poly_type) { return poly_type >= 0x1 && poly_type <= 0xf; }
+}  // namespace
+
+bool MapStyles::road_restricted(long long poly_type, const std::optional<std::array<long long, 12>>& routeparam) {
+    if (!routeparam || !routable_road(poly_type)) return false;
+    for (size_t i : {4, 5, 6, 7, 8, 11})  // No emergency, delivery, car/motorcycle, bus, taxi, truck
+        if ((*routeparam)[i] != 0) return true;
+    return false;
+}
+
+int MapStyles::road_pedestrian_bicycle_ban(long long poly_type,
+                                           const std::optional<std::array<long long, 12>>& routeparam) {
+    if (!routeparam || !routable_road(poly_type)) return 0;
+    return ((*routeparam)[9] != 0 ? BAN_PEDESTRIAN : 0) | ((*routeparam)[10] != 0 ? BAN_BICYCLE : 0);
+}
+
+bool MapStyles::road_toll(long long poly_type, const std::optional<std::array<long long, 12>>& routeparam) {
+    return routeparam && routable_road(poly_type) && (*routeparam)[3] != 0;
+}
+
 QPen MapStyles::road_casing_pen(long long poly_type) const {
     // obwodka kolei ma kolor torow (czarny, a dla kolei podziemnej/rozebranej szary) - przyciemniony czarny bylby
     // ta sama czernia, a szara kolej z ciemna obwodka nie odroznialaby sie od zwyklej
