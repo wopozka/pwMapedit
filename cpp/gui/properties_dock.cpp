@@ -174,6 +174,9 @@ QWidget* PropertiesDock::build_main_tab() {
     extras_ = new QTableWidget(0, 2, page);
     extras_->setHorizontalHeaderLabels({tr("Klucz"), tr("Wartość")});
     extras_->horizontalHeader()->setStretchLastSection(true);
+    // klucz zajmuje tyle, ile potrzebuje; za dluga wartosc traci poczatek, koniec zostaje widoczny
+    extras_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    extras_->setTextElideMode(Qt::ElideLeft);
     extras_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(extras_, &QTableWidget::cellChanged, this, [this] { extras_edited(); });
     connect(extras_, &QTableWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
