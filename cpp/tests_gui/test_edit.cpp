@@ -198,6 +198,7 @@ private slots:
     // poprawki po klikaniu: schowek Extras, ostatnie pliki, pytanie przy zamykaniu
     void extras_copy_paste_between_objects();
     void window_recent_files_and_close_prompt();
+    void window_recent_file_missing();
     // slady GPS (GPX) jako podklad do rysowania
     void gpx_reader_parses_tracks_waypoints_routes();
     void gps_layer_items_snapping_and_visibility();
@@ -1635,6 +1636,37 @@ void EditTests::window_recent_files_and_close_prompt() {
         QVERIFY(w.close());
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(f.readAll(), before);
+    }
+    qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+void EditTests::window_recent_file_missing() {
+    // wybor z historii pliku, ktorego juz nie ma: ostrzezenie, usuniecie z listy, program dziala dalej
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString missing = QDir::toNativeSeparators(dir.filePath("nie_ma.mp"));
+    const QString other = QDir::toNativeSeparators(dir.filePath("inny.mp"));
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        w.show();
+        w.set_recent_files({missing, other});
+        QMenu* recent = nullptr;
+        for (QMenu* m : w.findChildren<QMenu*>())
+            if (m->title() == QStringLiteral("Open &recent")) recent = m;
+        QVERIFY(recent);
+        emit recent->aboutToShow();
+        QAction* action = nullptr;
+        for (QAction* a : recent->actions())
+            if (a->text().endsWith(missing)) action = a;
+        QVERIFY(action);
+        QSignalSpy loaded(&w, &MainWindow::map_loaded);
+        answer_message_box(QMessageBox::Ok);
+        action->trigger();
+        QCOMPARE(loaded.size(), 0);
+        QCOMPARE(w.recent_files(), QStringList{other});
+        emit recent->aboutToShow();  // menu odbudowane bez brakujacego pliku
+        QVERIFY(!recent->actions().isEmpty());
     }
     qunsetenv("PWMAPEDIT_SETTINGS");
 }
