@@ -82,7 +82,7 @@ class MapFileOpener(QObject):
     finished = pyqtSignal()
     map_items_map_canvas = pyqtSignal(object)
     progress = pyqtSignal(str, int)
-    draw_poi_polyline_polygon = pyqtSignal(list, object)
+    draw_poi_polyline_polygon = pyqtSignal(object, object)
 
     def __init__(self, parent, file_name, map_objects_properties, _projection, undo_redo_stack):
         self.parent = parent
