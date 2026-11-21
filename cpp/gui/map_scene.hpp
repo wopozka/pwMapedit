@@ -71,6 +71,16 @@ public:
     bool routing_icons() const;
     void set_routing_icons(bool on);
 
+    // Warstwy POI, polilinii i polygonow (menu View -> Warstwy). Wylaczona warstwa ukrywa elementy obiektow tego
+    // rodzaju, a z nimi wszystko, co rysowane jest tylko dla widocznych elementow: etykiety, ikony POI, obwodki,
+    // ikony szlakow i routingu; ukrytych obiektow nie mozna tez kliknac, zaznaczyc ramka ani przyciagnac do nich.
+    // Zaznaczenie obiektow ukrywanej warstwy jest zdejmowane. Domyslnie wszystkie warstwy sa wlaczone.
+    bool layer_visible(ObjectKind kind) const;
+    void set_layer_visible(ObjectKind kind, bool on);
+    // Wlacza warstwe rodzaju kind, jesli jest wylaczona - przed utworzeniem, wklejeniem albo dodaniem obiektu
+    // tego rodzaju, zeby nowy obiekt byl widoczny i mogl zostac zaznaczony.
+    void ensure_layer_visible(ObjectKind kind);
+
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.
     void set_tool(Tool tool);
@@ -218,6 +228,8 @@ signals:
     void grip_hover_changed(bool hovered);
     void active_grip_changed();
     void tool_changed();
+    // Warstwa zostala wlaczona albo wylaczona (tez przez ensure_layer_visible) - okno uaktualnia menu.
+    void layer_visibility_changed(ObjectKind kind, bool on);
     // Komunikat dla paska stanu (np. laczny kat obrotu).
     void message(const QString& text);
 
@@ -272,6 +284,7 @@ private:
     QTimer* rotation_timer_ = nullptr;
     QGraphicsPathItem* rotation_marker_ = nullptr;
     long long last_used_type_[4] = {0, 0, 0, 0};  // wedlug ObjectKind
+    bool layer_visible_[4] = {true, true, true, true};  // wedlug ObjectKind
 };
 
 }  // namespace pwm::gui

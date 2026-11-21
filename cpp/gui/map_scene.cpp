@@ -215,6 +215,41 @@ void MapScene::set_map_level(int level) {
     emit progress(total, total);
 }
 
+bool MapScene::layer_visible(ObjectKind kind) const { return layer_visible_[static_cast<int>(kind)]; }
+
+void MapScene::set_layer_visible(ObjectKind kind, bool on) {
+    if (kind == ObjectKind::Basic || layer_visible(kind) == on) return;
+    layer_visible_[static_cast<int>(kind)] = on;
+    if (!on) {
+        end_rotation();
+        // zaznaczenie ukrywanych obiektow zdejmowane jawnie (uchwyty, panel wlasciwosci, kolejnosc zaznaczania)
+        for (MapObjectItem* item : selected_object_items())
+            if (item->object().kind() == kind) item->graphics_item()->setSelected(false);
+    }
+    const int total = static_cast<int>(object_items_.size());
+    emit progress(0, total);
+    QElapsedTimer progress_timer;
+    progress_timer.start();
+    rebuilding_all_ = true;
+    for (int i = 0; i < total; ++i) {
+        MapObjectItem* item = object_items_[static_cast<size_t>(i)];
+        if (item->object().kind() == kind) item->set_map_level(map_level_);
+        if (progress_timer.elapsed() > 100) {
+            emit progress(i, total);
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+            progress_timer.restart();
+        }
+    }
+    rebuilding_all_ = false;
+    update();
+    emit progress(total, total);
+    emit layer_visibility_changed(kind, on);
+}
+
+void MapScene::ensure_layer_visible(ObjectKind kind) {
+    if (kind != ObjectKind::Basic && !layer_visible(kind)) set_layer_visible(kind, true);
+}
+
 void MapScene::set_viewer_scale(double scale) { viewer_scale_ = scale; }
 
 void MapScene::set_canvas_rectangle(const GeoBBox& bbox, const Projection& projection) {
@@ -480,6 +515,7 @@ std::optional<size_t> MapScene::replace_and_add(size_t obj, MapObject after, Map
     if (!map_ || obj >= map_->objects().size()) return std::nullopt;
     added.id.reset();
     added.deleted = false;
+    ensure_layer_visible(added.kind());
     auto* command = new QUndoCommand(text);
     new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text, command);
     auto* add = new AddObjectCmd(this, std::move(added), text, command);
@@ -619,6 +655,7 @@ int MapScene::add_marker_pois(long long type, const std::vector<PointF>& points,
         return 0;
     }
     command->setText(text.arg(added));
+    ensure_layer_visible(ObjectKind::Poi);
     push_command(command);
     return added;
 }
@@ -746,6 +783,7 @@ QString MapScene::convert_selected(ObjectKind from, bool* changed) {
         return skipped_note.isEmpty() ? tr("Nie zaznaczono obiektów do zamiany.") : skipped_note.trimmed();
 
     const QString text = to_polyline ? tr("Zamień polygon na polilinię") : tr("Zamień polilinię na polygon");
+    ensure_layer_visible(to_polyline ? ObjectKind::Polyline : ObjectKind::Polygon);
     auto* command = new QUndoCommand(text);
     new DeleteObjectsCmd(this, old_indexes, text, command);
     std::vector<AddObjectCmd*> adds;
@@ -975,6 +1013,7 @@ int MapScene::paste(const QMimeData* mime, std::optional<QPointF> mouse) {
     }
     if (objects.empty()) return 0;
     if (objects.size() > 1) text = tr("Wklej obiekty (%1)").arg(objects.size());
+    for (const MapObject& obj : objects) ensure_layer_visible(obj.kind());
     auto* command = new QUndoCommand(text);
     std::vector<AddObjectCmd*> adds;
     for (MapObject& obj : objects) adds.push_back(new AddObjectCmd(this, std::move(obj), text, command));
@@ -1025,6 +1064,7 @@ std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector
         case ObjectKind::Polyline: text = tr("Utwórz Polyline"); break;
         default: text = tr("Utwórz Polygon"); break;
     }
+    ensure_layer_visible(kind);
     auto* command = new AddObjectCmd(this, std::move(*obj), text);
     push_command(command);
     const std::optional<size_t> index = undo_stack_ ? command->index() : std::nullopt;

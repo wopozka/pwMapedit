@@ -29,6 +29,7 @@
 #include <QShortcut>
 #include <QTimer>
 #include <algorithm>
+#include <tuple>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QUndoStack>
@@ -246,6 +247,24 @@ void MainWindow::create_actions_and_menus() {
     });
     // tryb automatyczny jest domyslny przy kazdym uruchomieniu (wybor nie jest zapamietywany)
     auto_level_action_->setChecked(true);
+    // warstwy POI, polilinii i polygonow: ukrycie dla czytelnosci mapy (razem z etykietami i ikonami);
+    // wybor zapamietany w ustawieniach. Scena moze sama wlaczyc warstwe (nowy obiekt) - wtedy sygnal uaktualnia menu.
+    QMenu* layers_menu = view_menu->addMenu(tr("&Warstwy"));
+    for (auto [kind, text, key] :
+         {std::tuple{ObjectKind::Poi, tr("&POI"), "layer_poi"}, std::tuple{ObjectKind::Polyline, tr("Po&lilinie"), "layer_polylines"},
+          std::tuple{ObjectKind::Polygon, tr("Poly&gony"), "layer_polygons"}}) {
+        QAction* act = layers_menu->addAction(text);
+        act->setCheckable(true);
+        act->setChecked(settings_->value(key, true).toBool());
+        scene_->set_layer_visible(kind, act->isChecked());
+        connect(act, &QAction::toggled, this, [this, kind, key](bool on) {
+            scene_->set_layer_visible(kind, on);
+            settings_->setValue(key, on);
+        });
+        connect(scene_, &MapScene::layer_visibility_changed, act, [act, kind](ObjectKind changed, bool on) {
+            if (changed == kind && act->isChecked() != on) act->setChecked(on);
+        });
+    }
     // wypelnienie polygonow: stale albo przezroczyste (jak zaznaczone); wybor zapamietany w ustawieniach
     QMenu* fill_menu = view_menu->addMenu(tr("&Wypełnienie polygonów"));
     auto* fill_group = new QActionGroup(this);

@@ -199,6 +199,9 @@ private slots:
     void extras_copy_paste_between_objects();
     void window_recent_files_and_close_prompt();
     void window_recent_file_missing();
+    // warstwy POI/polilinii/polygonow (View -> Warstwy)
+    void layers_hide_objects_and_reenable_on_create();
+    void window_layers_menu_and_settings();
     // slady GPS (GPX) jako podklad do rysowania
     void gpx_reader_parses_tracks_waypoints_routes();
     void gps_layer_items_snapping_and_visibility();
@@ -1636,6 +1639,99 @@ void EditTests::window_recent_files_and_close_prompt() {
         QVERIFY(w.close());
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(f.readAll(), before);
+    }
+    qunsetenv("PWMAPEDIT_SETTINGS");
+}
+
+void EditTests::layers_hide_objects_and_reenable_on_create() {
+    Fixture f;
+    QSignalSpy changed(&f.scene, &MapScene::layer_visibility_changed);
+    QGraphicsItem* line = f.polyline()->graphics_item();
+    QGraphicsItem* poi = f.poi()->graphics_item();
+    const Node& middle = f.node(1, 0, 1);
+    const QPointF middle_pos(middle.x(), middle.y());
+    QVERIFY(f.scene.closest_node(middle_pos + QPointF(1, 1), 15));
+
+    // wylaczenie polilinii: element ukryty, zaznaczenie zdjete, bez przyciagania; POI bez zmian
+    f.select_only(f.polyline());
+    f.scene.set_layer_visible(ObjectKind::Polyline, false);
+    QVERIFY(!f.scene.layer_visible(ObjectKind::Polyline));
+    QVERIFY(!line->isVisible());
+    QVERIFY(!line->isSelected());
+    QVERIFY(f.scene.selected_object_items().empty());
+    QVERIFY(poi->isVisible());
+    QVERIFY(!f.scene.closest_node(middle_pos + QPointF(1, 1), 15));
+    QCOMPARE(changed.size(), 1);
+    QCOMPARE(changed.front().at(1).toBool(), false);
+    // ponowne ustawienie tego samego stanu nic nie robi
+    f.scene.set_layer_visible(ObjectKind::Polyline, false);
+    QCOMPARE(changed.size(), 1);
+
+    // zmiana poziomu mapy i undo/redo nie pokazuja ukrytej warstwy
+    f.scene.set_map_level(1);
+    f.scene.set_map_level(0);
+    QVERIFY(!f.polyline()->graphics_item()->isVisible());
+    f.select_only(f.poi());
+    f.scene.delete_selected();
+    f.stack.undo();
+    QVERIFY(f.poi()->graphics_item()->isVisible());
+    QVERIFY(!f.polyline()->graphics_item()->isVisible());
+
+    // utworzenie polilinii wlacza jej warstwe, nowy obiekt jest widoczny i zaznaczony
+    const std::optional<size_t> created =
+        f.scene.create_object(ObjectKind::Polyline, {middle_pos, middle_pos + QPointF(20, 20)});
+    QVERIFY(created);
+    QVERIFY(f.scene.layer_visible(ObjectKind::Polyline));
+    QCOMPARE(changed.size(), 2);
+    QCOMPARE(changed.back().at(1).toBool(), true);
+    QVERIFY(f.polyline()->graphics_item()->isVisible());
+    QVERIFY(f.scene.item_for_object(*created)->graphics_item()->isVisible());
+    QVERIFY(f.scene.item_for_object(*created)->graphics_item()->isSelected());
+
+    // wylaczenie POI ukrywa POI; wklejenie POI wlacza warstwe z powrotem
+    f.select_only(f.poi());
+    std::unique_ptr<QMimeData> mime(f.scene.copy_selected(QPointF(0, 0)));
+    QVERIFY(mime);
+    f.scene.set_layer_visible(ObjectKind::Poi, false);
+    QVERIFY(!f.poi()->graphics_item()->isVisible());
+    QVERIFY(f.scene.selected_object_items().empty());
+    QCOMPARE(f.scene.paste(mime.get(), std::nullopt), 1);
+    QVERIFY(f.scene.layer_visible(ObjectKind::Poi));
+    QVERIFY(f.poi()->graphics_item()->isVisible());
+    QCOMPARE(f.scene.selected_object_items().size(), size_t{1});
+}
+
+void EditTests::window_layers_menu_and_settings() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    auto layer_action = [](MainWindow& w, const QString& text) -> QAction* {
+        for (QMenu* m : w.findChildren<QMenu*>())
+            if (m->title() == QStringLiteral("&Warstwy"))
+                for (QAction* a : m->actions())
+                    if (a->text() == text) return a;
+        return nullptr;
+    };
+    {
+        MainWindow w(MapStyles::find_icons_dir());
+        QAction* polygons = layer_action(w, QStringLiteral("Poly&gony"));
+        QVERIFY(polygons);
+        QVERIFY(layer_action(w, QStringLiteral("&POI")));
+        QVERIFY(layer_action(w, QStringLiteral("Po&lilinie")));
+        QVERIFY(polygons->isChecked());
+        polygons->setChecked(false);
+        QVERIFY(!w.scene()->layer_visible(ObjectKind::Polygon));
+        // scena wlacza warstwe sama (nowy obiekt) - menu nadaza
+        w.scene()->ensure_layer_visible(ObjectKind::Polygon);
+        QVERIFY(polygons->isChecked());
+        polygons->setChecked(false);
+    }
+    {
+        // stan zapamietany w ustawieniach
+        MainWindow w(MapStyles::find_icons_dir());
+        QVERIFY(!w.scene()->layer_visible(ObjectKind::Polygon));
+        QVERIFY(!layer_action(w, QStringLiteral("Poly&gony"))->isChecked());
+        QVERIFY(w.scene()->layer_visible(ObjectKind::Poi));
     }
     qunsetenv("PWMAPEDIT_SETTINGS");
 }

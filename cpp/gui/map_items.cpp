@@ -205,6 +205,8 @@ void PoiItem::set_map_level(int level) {
         const std::vector<int> levels = object_item_levels(obj);
         visible = mp_data_[data_level_] && levels.front() == data_level_;
     }
+    // wylaczona warstwa POI (shown_level_ zostaje - to poziom danych, nie widocznosc)
+    if (MapScene* s = map_scene(); s && !s->layer_visible(ObjectKind::Poi)) visible = false;
     if (isVisible() != visible) setVisible(visible);
 }
 
@@ -458,7 +460,8 @@ void PolyItem::refresh() {
 
 void PolyItem::set_map_level(int level) {
     const int shown = object_shown_data_level(object(), level);
-    const bool visible = shown >= 0 && shown == data_level_;
+    bool visible = shown >= 0 && shown == data_level_;
+    if (MapScene* s = map_scene(); s && !s->layer_visible(object().kind())) visible = false;  // wylaczona warstwa
     if (isVisible() != visible) setVisible(visible);
 }
 
