@@ -36,6 +36,13 @@ struct GripRef {
     size_t node;
 };
 
+// Wypelnienie polygonow (View -> Wypelnienie polygonow).
+enum class PolygonFill {
+    Solid,        // stale
+    Transparent,  // polprzezroczyste - jak polygon zaznaczony
+    Outline,      // tylko kontury: bez wypelnienia, obrys w kolorze polygonu
+};
+
 class MapScene : public QGraphicsScene {
     Q_OBJECT
 public:
@@ -56,9 +63,10 @@ public:
     double viewer_scale() const { return viewer_scale_; }
     void set_viewer_scale(double scale);
 
-    // Wypelnienie polygonow: stale (domyslnie) albo polprzezroczyste - jak polygon zaznaczony.
-    bool transparent_polygons() const { return transparent_polygons_; }
-    void set_transparent_polygons(bool transparent);
+    // Wypelnienie polygonow: stale (domyslnie), polprzezroczyste albo tylko kontury. Zaznaczony polygon wyglada
+    // tak samo w kazdym trybie.
+    PolygonFill polygon_fill() const { return polygon_fill_; }
+    void set_polygon_fill(PolygonFill fill);
 
     // Obwodki drog (ciemniejsza, szersza linia pod droga - widac jasne drogi na jasnym tle). Domyslnie wylaczone.
     bool road_casing() const;
@@ -258,7 +266,7 @@ private:
     QUndoStack* undo_stack_ = nullptr;
     QList<QGraphicsItem*> persistent_items_;
     int map_level_ = 0;
-    bool transparent_polygons_ = false;
+    PolygonFill polygon_fill_ = PolygonFill::Solid;
     double viewer_scale_ = 1.0;
     Tool tool_ = Tool::SelectObjects;
     std::vector<MapObjectItem*> selection_order_;

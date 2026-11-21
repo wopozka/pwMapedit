@@ -265,21 +265,28 @@ void MainWindow::create_actions_and_menus() {
             if (changed == kind && act->isChecked() != on) act->setChecked(on);
         });
     }
-    // wypelnienie polygonow: stale albo przezroczyste (jak zaznaczone); wybor zapamietany w ustawieniach
+    // wypelnienie polygonow: stale, przezroczyste (jak zaznaczone) albo tylko kontury; wybor zapamietany
+    // w ustawieniach (polygon_fill; starsze wersje zapisywaly tylko transparent_polygons)
     QMenu* fill_menu = view_menu->addMenu(tr("&Wypełnienie polygonów"));
     auto* fill_group = new QActionGroup(this);
-    const bool transparent = settings_->value("transparent_polygons", false).toBool();
-    scene_->set_transparent_polygons(transparent);
-    for (bool option : {false, true}) {
-        QAction* act = fill_menu->addAction(option ? tr("&Transparentne") : tr("&Stałe"));
+    const QString fill_name = settings_->value(
+        "polygon_fill", settings_->value("transparent_polygons", false).toBool() ? "transparent" : "solid").toString();
+    for (auto [fill, name, text] : {std::tuple{PolygonFill::Solid, "solid", tr("&Stałe")},
+                                    std::tuple{PolygonFill::Transparent, "transparent", tr("&Transparentne")},
+                                    std::tuple{PolygonFill::Outline, "outline", tr("Tylko &kontury")}}) {
+        QAction* act = fill_menu->addAction(text);
         act->setCheckable(true);
-        act->setChecked(option == transparent);
         fill_group->addAction(act);
-        connect(act, &QAction::triggered, this, [this, option] {
-            scene_->set_transparent_polygons(option);
-            settings_->setValue("transparent_polygons", option);
+        if (fill_name == QLatin1String(name)) {
+            act->setChecked(true);
+            scene_->set_polygon_fill(fill);
+        }
+        connect(act, &QAction::triggered, this, [this, fill, name] {
+            scene_->set_polygon_fill(fill);
+            settings_->setValue("polygon_fill", QString::fromLatin1(name));
         });
     }
+    if (!fill_group->checkedAction()) fill_group->actions().front()->setChecked(true);  // nieznana wartosc - stale
     // obwodki drog: ciemniejsza, szersza linia pod droga; wybor zapamietany w ustawieniach
     QAction* casing = view_menu->addAction(tr("&Obwódki dróg"));
     casing->setCheckable(true);

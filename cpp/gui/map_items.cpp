@@ -603,8 +603,17 @@ void PolyItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
     }
     Q_UNUSED(option);
     Q_UNUSED(widget);
+    // tryb "tylko kontury" (niezaznaczony polygon): bez wypelnienia, obrys 2 px w przyciemnionym kolorze wypelnienia
+    // (jasne kolory, np. tereny zabudowane, bylyby na bialym tle niewidoczne); najechanie - czerwony obrys jak zwykle
+    const bool outline = polygon_ && !isSelected() && map_scene() &&
+                         map_scene()->polygon_fill() == PolygonFill::Outline;
+    if (outline && !hovered_) {
+        pen = QPen(brush().color().darker(150));
+        pen.setCosmetic(true);
+        pen.setWidth(2);
+    }
     painter->setPen(pen);
-    painter->setBrush(brush());
+    painter->setBrush(outline ? QBrush(Qt::NoBrush) : brush());
     painter->drawPath(path());
 }
 
@@ -854,7 +863,7 @@ void PolygonItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* optio
     if (scene_viewer_scale(this) <= SCALE_WITHOUT_SMALL_POLYS && small_poly()) return;
     // tryb przezroczysty: niezaznaczony polygon jak zaznaczony (opacity 0.5); zaznaczony ma ja juz ustawiona
     MapScene* s = map_scene();
-    if (s && s->transparent_polygons() && !isSelected()) {
+    if (s && s->polygon_fill() == PolygonFill::Transparent && !isSelected()) {
         painter->save();
         painter->setOpacity(painter->opacity() * 0.5);
         PolyItem::paint(painter, option, widget);

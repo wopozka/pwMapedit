@@ -187,9 +187,9 @@ void MapScene::remove_item(MapObjectItem* item) {
     delete g;  // usuwa tez ze sceny
 }
 
-void MapScene::set_transparent_polygons(bool transparent) {
-    if (transparent_polygons_ == transparent) return;
-    transparent_polygons_ = transparent;
+void MapScene::set_polygon_fill(PolygonFill fill) {
+    if (polygon_fill_ == fill) return;
+    polygon_fill_ = fill;
     update();
 }
 

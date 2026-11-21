@@ -146,7 +146,7 @@ struct ViewFixture : Fixture {
 class EditTests : public QObject {
     Q_OBJECT
 private slots:
-    void transparent_polygon_fill();
+    void transparent_polygon_fill();  // tez tryb "tylko kontury"
     void move_polyline_undo_redo();
     void move_poi_and_undo();
     void delete_and_undo();
@@ -2280,15 +2280,36 @@ void EditTests::transparent_polygon_fill() {
     };
     const QColor solid = centre();
     QVERIFY(solid != QColor(Qt::white));
-    scene.set_transparent_polygons(true);
+    scene.set_polygon_fill(PolygonFill::Transparent);
     const QColor transparent = centre();
     QVERIFY(transparent.lightness() > solid.lightness());
     QVERIFY(transparent != QColor(Qt::white));
     item->setSelected(true);  // zaznaczony: ta sama przezroczystosc, bez podwajania
     QCOMPARE(centre(), transparent);
-    scene.set_transparent_polygons(false);
+    scene.set_polygon_fill(PolygonFill::Solid);
     QCOMPARE(centre(), transparent);  // zaznaczony jest przezroczysty takze w trybie stalym
     item->setSelected(false);
+    QCOMPARE(centre(), solid);
+
+    // tylko kontury: srodek bez wypelnienia (biale tlo), na krawedzi obrys; zaznaczony - jak w innych trybach
+    scene.set_polygon_fill(PolygonFill::Outline);
+    QCOMPARE(centre(), QColor(Qt::white));
+    auto edge_painted = [&] {
+        QImage image(120, 120, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        scene.render(&painter, QRectF(0, 0, 120, 120), rect.adjusted(-rect.width() / 10, -rect.height() / 10,
+                                                                    rect.width() / 10, rect.height() / 10));
+        painter.end();
+        for (int x = 0; x < 120; ++x)  // pozioma linia przez srodek przecina lewa i prawa krawedz
+            if (image.pixelColor(x, 60) != QColor(Qt::white)) return true;
+        return false;
+    };
+    QVERIFY(edge_painted());
+    item->setSelected(true);
+    QCOMPARE(centre(), transparent);
+    item->setSelected(false);
+    scene.set_polygon_fill(PolygonFill::Solid);
     QCOMPARE(centre(), solid);
     scene.clear_map();
 }
