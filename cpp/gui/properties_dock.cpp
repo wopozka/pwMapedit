@@ -1,6 +1,7 @@
 #include "properties_dock.hpp"
 
 #include <QCheckBox>
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QCompleter>
 #include <QEvent>
@@ -127,6 +128,23 @@ QWidget* PropertiesDock::build_main_tab() {
     type_->completer()->setCaseSensitivity(Qt::CaseInsensitive);
     type_->completer()->setCompletionMode(QCompleter::PopupCompletion);
     connect(type_, &QComboBox::activated, this, &PropertiesDock::type_chosen);
+    // Enter bez wybrania pozycji z listy podpowiedzi: QComboBox z NoInsert wybiera tylko pozycje o identycznym
+    // tekscie, inaczej zostawia wpisany fragment. Jak w Pythonie: wybieramy pierwszy pasujacy typ, a gdy nic
+    // nie pasuje - przywracamy nazwe biezacego typu. Slot podpiety po slocie QComboBox, wiec dziala po nim.
+    connect(type_->lineEdit(), &QLineEdit::returnPressed, this, [this] {
+        const QString text = type_->lineEdit()->text();
+        if (text == type_->itemText(type_->currentIndex())) return;
+        int index = type_->findText(text, Qt::MatchFixedString);  // bez wielkosci liter
+        QAbstractItemModel* matches = type_->completer()->completionModel();
+        if (index < 0 && matches->rowCount() > 0)
+            index = type_->findText(matches->index(0, type_->modelColumn()).data().toString());
+        if (index >= 0) {
+            type_->setCurrentIndex(index);
+            emit type_->activated(index);
+        }
+        if (QAbstractItemView* popup = type_->completer()->popup()) popup->hide();
+        type_->lineEdit()->setText(type_->itemText(type_->currentIndex()));
+    });
     form->addRow(tr("Type"), type_);
 
     const char* label_names[3] = {"Label", "Label2", "Label3"};

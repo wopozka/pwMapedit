@@ -32,6 +32,8 @@
 #include <QPainter>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCompleter>
+#include <QAbstractItemView>
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QAction>
@@ -158,6 +160,7 @@ private slots:
     // element na poziom Data, indeks BSP
     void scene_uses_bsp_index();
     void poi_icons_drawn_by_layer();
+    void dock_type_search();
     void small_poi_and_address_number_easy_to_click();
     void geometric_hit_test_matches_shape();
     void item_per_data_level();
@@ -474,6 +477,51 @@ void EditTests::small_poi_and_address_number_easy_to_click() {
     QVERIFY(!other->isSelected());
     click(other, other->icon_rect().center());
     QVERIFY(other->isSelected());
+}
+
+// Wyszukiwanie typu w panelu wlasciwosci: fragment nazwy bez rozrozniania wielkosci liter, wybor z przefiltrowanej
+// listy ustawia typ z tego wiersza, Enter bez wyboru bierze pierwszy pasujacy typ, a wpisany tekst nigdy nie trafia
+// do listy jako nowa pozycja.
+void EditTests::dock_type_search() {
+    DockFixture f;
+    f.dock.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&f.dock));
+    f.select_only(f.polyline());
+    QComboBox* type = f.dock.type_selector();
+    QCompleter* completer = type->completer();
+    const int count = type->count();
+    // wpisuje text, naciska downs razy strzalke w dol na liscie podpowiedzi i Enter
+    auto search = [&](const QString& text, int downs) {
+        type->setFocus();
+        type->lineEdit()->selectAll();
+        QTest::keyClicks(type->lineEdit(), text);
+        QAbstractItemView* popup = completer->popup();
+        auto target = [&]() -> QWidget* { return popup->isVisible() ? static_cast<QWidget*>(popup) : type->lineEdit(); };
+        for (int i = 0; i < downs; ++i) QTest::keyClick(target(), Qt::Key_Down);
+        QTest::keyClick(target(), Qt::Key_Return);
+    };
+    auto type_text = [&](long long t) {
+        return type->itemText(type->findData(QVariant::fromValue<long long>(t)));
+    };
+
+    search("autostr", 1);  // "Autostrada"
+    QCOMPARE(*f.obj(1).type, 0x1LL);
+    search("KRAJOWA", 0);  // "droga krajowa", Enter bez wyboru z listy
+    QCOMPARE(*f.obj(1).type, 0x3LL);
+    QCOMPARE(type->lineEdit()->text(), type_text(0x3));
+    search("lokaln", 0);
+    QCOMPARE(*f.obj(1).type, 0x6LL);
+    // trzeci wiersz przefiltrowanej listy (0x2, 0x3, 0x8, ...), a nie trzeci wiersz calej listy
+    search("highway", 3);
+    QCOMPARE(completer->completionCount() >= 3, true);
+    QCOMPARE(*f.obj(1).type, 0x8LL);
+    // nic nie pasuje: typ bez zmian, w polu wraca nazwa biezacego typu
+    const int commands = f.stack.count();
+    search("zzzz", 0);
+    QCOMPARE(*f.obj(1).type, 0x8LL);
+    QCOMPARE(f.stack.count(), commands);
+    QCOMPARE(type->lineEdit()->text(), type_text(0x8));
+    QCOMPARE(type->count(), count);
 }
 
 void EditTests::poi_icons_drawn_by_layer() {
