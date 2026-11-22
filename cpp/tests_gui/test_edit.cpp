@@ -29,6 +29,8 @@
 #include <QToolBar>
 #include <QTemporaryDir>
 #include <QImage>
+#include <QWindow>
+#include <QScreen>
 #include <QPainter>
 #include <QCheckBox>
 #include <QComboBox>
@@ -162,6 +164,7 @@ private slots:
     void poi_icons_drawn_by_layer();
     void dock_type_search();
     void small_poi_and_address_number_easy_to_click();
+    void poi_hover_frame_removed_after_leave();
     void geometric_hit_test_matches_shape();
     void item_per_data_level();
     void refresh_syncs_data_level_items();
@@ -522,6 +525,41 @@ void EditTests::dock_type_search() {
     QCOMPARE(f.stack.count(), commands);
     QCOMPARE(type->lineEdit()->text(), type_text(0x8));
     QCOMPARE(type->count(), count);
+}
+
+// Ramka podswietlenia POI (obejmujaca u punktu adresowego takze numer) znika po zjechaniu kursorem z POI.
+void EditTests::poi_hover_frame_removed_after_leave() {
+    Fixture f("[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+              "[POI]\nType=0x2800\nLabel=12\nData0=(52.10000,21.00000)\n[END]\n\n");
+    auto* poi = static_cast<PoiItem*>(f.scene.item_for_object(0));
+    if (poi->pixmap().isNull()) QSKIP("brak ikon POI (katalog icons nie znaleziony)");
+    MapView view(&f.scene);
+    view.set_projection(&f.map->projection());
+    view.resize(400, 300);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    for (int i = 0; i < 8; ++i) view.zoom_in();
+    view.centerOn(poi->pos());
+    QWidget* vp = view.viewport();
+    const QPoint on_poi = view.mapFromScene(poi->pos()) + poi->icon_rect().center().toPoint();
+    const QPoint away = on_poi + QPoint(60, 60);
+    auto grab = [&] {
+        QTest::qWait(50);  // przetworzenie zaleglych przerysowan sceny
+        // zawartosc bufora okna (to, co faktycznie narysowano), a nie vp->grab(), ktory rysuje widok od nowa
+        const QPoint origin = vp->mapTo(vp->window(), QPoint(0, 0));
+        return vp->window()->windowHandle()->screen()->grabWindow(vp->window()->winId(), origin.x(), origin.y(),
+                                                                  vp->width(), vp->height()).toImage();
+    };
+    QTest::mouseMove(vp, away);
+    const QImage before = grab();
+    QTest::mouseMove(vp, on_poi);
+    const QImage hovered = grab();
+    QVERIFY(poi->paints_itself());
+    QVERIFY(hovered != before);  // ramka widoczna
+    QTest::mouseMove(vp, away);
+    const QImage after = grab();
+    QVERIFY(!poi->paints_itself());
+    QVERIFY(after == before);
 }
 
 void EditTests::poi_icons_drawn_by_layer() {

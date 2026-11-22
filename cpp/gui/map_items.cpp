@@ -210,7 +210,9 @@ void PoiItem::update_self_painting() {
     const bool self = hovered_ || isSelected();
     if (self == paints_itself()) return;
     setFlag(QGraphicsItem::ItemHasNoContents, !self);
-    update();  // przerysowanie miejsca ikony i ramki podswietlenia (element albo warstwa)
+    // Przerysowanie miejsca ikony i ramki podswietlenia. Nie update(): Qt pomija odswiezanie elementow
+    // z ItemHasNoContents, wiec po zjechaniu kursorem zostawala ramka. Obszar sceny odswieza tez PoiIconLayer.
+    if (QGraphicsScene* s = scene()) s->update(sceneBoundingRect());
 }
 
 void PoiItem::read_positions() {
