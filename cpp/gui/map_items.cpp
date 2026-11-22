@@ -149,6 +149,7 @@ PoiItem::PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon
     read_positions();
     if (mp_data_[data_level_]) setPos(*mp_data_[data_level_]);
     setPixmap(icon);
+    update_hit_rect();
     set_z_value();
     // ItemSendsGeometryChanges: itemChange przy przesunieciu (przerysowanie opisow)
     // ItemHasNoContents: ikone rysuje PoiIconLayer (Qt nie wola paint())
@@ -165,21 +166,51 @@ double PoiItem::icon_scale() const {
 
 QRectF PoiItem::icon_rect() const {
     const double k = icon_scale();
-    const QRectF r = boundingRect();
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
     return QRectF(r.topLeft() * k, r.size() * k);
+}
+
+QRectF PoiItem::hit_rect() const {
+    return scene_viewer_scale(this) >= SCALE_WITHOUT_LABELS ? hit_rect_ : icon_hit_rect_;
 }
 
 QPainterPath PoiItem::shape() const {
     const double k = icon_scale();
-    const QPainterPath full = QGraphicsPixmapItem::shape();
-    return k < 1 ? QTransform::fromScale(k, k).map(full) : full;
+    const QRectF r = hit_rect();
+    QPainterPath path;
+    path.addRect(QRectF(r.topLeft() * k, r.size() * k));
+    return path;
+}
+
+void PoiItem::update_hit_rect() {
+    QRectF rect = QGraphicsPixmapItem::boundingRect();
+    const double dx = std::max(0.0, (MIN_HIT_SIZE - rect.width()) / 2);
+    const double dy = std::max(0.0, (MIN_HIT_SIZE - rect.height()) / 2);
+    rect.adjust(-dx, -dy, dx, dy);
+    icon_hit_rect_ = rect;
+    if (hit_includes_label(object_type())) {
+        // etykieta POI (add_label): lewy gorny rog w offset, w pikselach - przy skali ikony 1 to jednostki elementu
+        static const QFont label_font;  // jak w AnnotationLayer::paint
+        for (Annotation& a : annotations_) {
+            if (a.kind != Annotation::Kind::Label) continue;
+            if (!a.prepared) {
+                a.text.prepare(QTransform(), label_font);
+                a.prepared = true;
+            }
+            rect = rect.united(QRectF(a.offset, a.text.size()));
+        }
+    }
+    if (rect != hit_rect_) {
+        prepareGeometryChange();
+        hit_rect_ = rect;
+    }
 }
 
 void PoiItem::update_self_painting() {
     const bool self = hovered_ || isSelected();
     if (self == paints_itself()) return;
     setFlag(QGraphicsItem::ItemHasNoContents, !self);
-    update(icon_rect());  // przerysowanie miejsca ikony (element albo warstwa)
+    update();  // przerysowanie miejsca ikony i ramki podswietlenia (element albo warstwa)
 }
 
 void PoiItem::read_positions() {
@@ -213,6 +244,7 @@ void PoiItem::set_map_level(int level) {
 void PoiItem::apply_style() {
     MapScene* s = map_scene();
     if (s && s->styles()) setPixmap(s->styles()->poi_icon(object_type()));
+    update_hit_rect();  // inna ikona albo typ (punkt adresowy lub nie)
 }
 
 void PoiItem::refresh() {
@@ -222,6 +254,7 @@ void PoiItem::refresh() {
     annotations_changed();
     annotations_.clear();
     add_label();
+    update_hit_rect();
     set_map_level(scene_map_level());
     annotations_changed();
 }
@@ -231,9 +264,10 @@ void PoiItem::add_label() {
     if (!obj.label1 || obj.label1->empty()) return;
     // na prawo od ikony, w polowie jej wysokosci
     Annotation a = make_label(mp_to_qstring(*obj.label1), QPointF());
-    const QRectF r = boundingRect();
+    const QRectF r = QGraphicsPixmapItem::boundingRect();
     a.offset = QPointF(r.width(), r.height() / 2);
     annotations_.push_back(std::move(a));
+    update_hit_rect();
 }
 
 void PoiItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
@@ -247,7 +281,7 @@ void PoiItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
         pen.setWidth(1);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
-        painter->drawRect(boundingRect());
+        painter->drawRect(hit_rect());
     }
 }
 

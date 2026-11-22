@@ -138,16 +138,26 @@ protected:
 // IGNORE_TRANSFORMATION_TRESHOLD stala wielkosc na ekranie, ponizej maleje razem z mapa: shape() i paint() skaluja
 // ja o icon_scale(). boundingRect jest staly - rozmiar ikony przy skali progu, najwiekszy w jednostkach sceny
 // (nadzbior) - wiec przyblizanie nie zmienia geometrii w indeksie.
+// Obszar trafienia myszka to ikona powiekszona do MIN_HIT_SIZE pikseli (np. punkty adresowe 0x2800 maja ikone 3x3),
+// a dla punktow adresowych dodatkowo etykieta (numer domu) - klikniecie w numer zaznacza punkt.
 class PoiItem : public QGraphicsPixmapItem, public MapObjectItem {
 public:
     PoiItem(MapData* map, size_t index, int data_level, const QPixmap& icon);
     int type() const override { return PoiItemType; }
     QGraphicsItem* graphics_item() override { return this; }
+    QRectF boundingRect() const override { return hit_rect_; }
     QPainterPath shape() const override;
+    // Minimalny rozmiar obszaru trafienia (w pikselach ikony).
+    static constexpr double MIN_HIT_SIZE = 10;
+    // Czy obszar trafienia typu obejmuje etykiete (punkty adresowe). Etykiety innych POI zaslanialyby obiekty pod nimi.
+    static bool hit_includes_label(long long type) { return type == 0x2800; }
     // Skala ikony w ukladzie elementu: 1 do progu, powyzej prog/skala widoku (stala wielkosc na ekranie).
     double icon_scale() const;
     // Prostokat faktycznie rysowanej ikony (w ukladzie elementu).
     QRectF icon_rect() const;
+    // Obszar trafienia myszka w skali ikony 1 (do shape() skalowany o icon_scale()); bez etykiety, gdy ta jest
+    // niewidoczna (skala ponizej SCALE_WITHOUT_LABELS).
+    QRectF hit_rect() const;
     // Czy ikone rysuje sam element (zaznaczony albo podswietlony), a nie PoiIconLayer.
     bool paints_itself() const { return !(flags() & QGraphicsItem::ItemHasNoContents); }
 
@@ -170,8 +180,12 @@ private:
     void read_positions();
     // Zaznaczony albo podswietlony POI rysuje sie sam, pozostale rysuje PoiIconLayer.
     void update_self_painting();
+    // Przelicza obszar trafienia po zmianie ikony, typu albo etykiety.
+    void update_hit_rect();
 
     std::optional<QPointF> mp_data_[5];
+    QRectF icon_hit_rect_;   // ikona powiekszona do MIN_HIT_SIZE
+    QRectF hit_rect_;        // icon_hit_rect_ razem z etykieta (punkty adresowe) - boundingRect
     int shown_level_ = -1;
     bool hovered_ = false;
 };

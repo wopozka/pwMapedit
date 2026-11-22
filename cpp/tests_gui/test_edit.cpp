@@ -158,6 +158,7 @@ private slots:
     // element na poziom Data, indeks BSP
     void scene_uses_bsp_index();
     void poi_icons_drawn_by_layer();
+    void small_poi_and_address_number_easy_to_click();
     void geometric_hit_test_matches_shape();
     void item_per_data_level();
     void refresh_syncs_data_level_items();
@@ -373,7 +374,7 @@ void drag_poi(int zoom_steps) {
 
     const PointF p = f.node(0, 0, 0).pos();
     view.centerOn(QPointF(p.x, p.y));
-    // srodek ikony: QGraphicsPixmapItem trafia tylko w nieprzezroczyste piksele (MaskShape)
+    // srodek ikony
     const QPoint press = view.mapFromScene(QPointF(p.x, p.y)) + (poi->boundingRect().center() * size).toPoint();
     QWidget* vp = view.viewport();
     QTest::mousePress(vp, Qt::LeftButton, Qt::NoModifier, press);
@@ -422,6 +423,59 @@ std::vector<int> item_levels(const MapScene& scene, size_t obj) {
 
 // Ikony POI rysuje PoiIconLayer; POI rysuje sie sam tylko zaznaczony. Zaden element mapy nie ma
 // ItemIgnoresTransformations - takie elementy indeks BSP przeglada przy kazdym zapytaniu.
+// Punkty adresowe (0x2800) maja ikone 3x3 piksele. Obszar trafienia POI ma co najmniej MIN_HIT_SIZE pikseli,
+// a dla punktow adresowych obejmuje tez numer. Etykiety innych POI nie zaznaczaja obiektu.
+void EditTests::small_poi_and_address_number_easy_to_click() {
+    Fixture f(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POI]\nType=0x2800\nLabel=12\nData0=(52.10000,21.00000)\n[END]\n\n"
+        "[POI]\nType=0x2f00\nLabel=Stacja\nData0=(52.10000,21.00100)\n[END]\n\n");
+    auto* address = static_cast<PoiItem*>(f.scene.item_for_object(0));
+    auto* other = static_cast<PoiItem*>(f.scene.item_for_object(1));
+    if (address->pixmap().isNull() || other->pixmap().isNull()) QSKIP("brak ikon POI (katalog icons nie znaleziony)");
+    QVERIFY(address->pixmap().width() < PoiItem::MIN_HIT_SIZE);
+    MapView view(&f.scene);
+    view.set_projection(&f.map->projection());
+    view.resize(800, 600);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+    for (int i = 0; i < 8; ++i) view.zoom_in();
+    QVERIFY(f.scene.viewer_scale() >= IGNORE_TRANSFORMATION_TRESHOLD);
+    QWidget* vp = view.viewport();
+    // powyzej progu skali jednostka elementu POI to piksel ekranu
+    auto click = [&](PoiItem* poi, QPointF offset) {
+        f.scene.clearSelection();
+        view.centerOn(poi->pos());
+        const QPoint at = view.mapFromScene(poi->pos()) + offset.toPoint();
+        QTest::mouseClick(vp, Qt::LeftButton, Qt::NoModifier, at);
+    };
+    auto label_center = [](PoiItem* poi) {
+        for (const Annotation& a : poi->annotations())
+            if (a.kind == Annotation::Kind::Label) return a.offset + QPointF(a.text.size().width(), a.text.size().height()) / 2;
+        return QPointF();
+    };
+
+    // obok malej ikony (poza jej pikselami, ale w MIN_HIT_SIZE)
+    const QRectF icon = address->icon_rect();
+    click(address, icon.center() + QPointF(4, 0));
+    QVERIFY(address->isSelected());
+    click(address, icon.center() + QPointF(0, -4));
+    QVERIFY(address->isSelected());
+    // daleko od ikony - nic
+    click(address, icon.center() + QPointF(0, -20));
+    QVERIFY(!address->isSelected());
+    // w numer adresowy
+    QVERIFY(!label_center(address).isNull());
+    click(address, label_center(address));
+    QVERIFY(address->isSelected());
+    // etykieta innego POI nie zaznacza go
+    QVERIFY(!label_center(other).isNull());
+    click(other, label_center(other));
+    QVERIFY(!other->isSelected());
+    click(other, other->icon_rect().center());
+    QVERIFY(other->isSelected());
+}
+
 void EditTests::poi_icons_drawn_by_layer() {
     Fixture f;
     for (MapObjectItem* item : f.scene.object_items())
