@@ -227,6 +227,7 @@ private slots:
     void routing_icons_near_middle_of_road();
     void trail_icons_drawn_on_trails_only();
     void road_restriction_and_toll_icons();
+    void overlapping_road_icons();
     void map_level_for_scale_ranges();
     // motyw okna: paleta, ikony paska w kolorach motywu, mapa na bialym tle, zapis w ustawieniach
     void theme_palette_icons_and_setting();
@@ -2833,6 +2834,96 @@ void EditTests::road_restriction_and_toll_icons() {
     const QImage off = render(600);
     QCOMPARE(count_in_band(off, lines[0], red) + count_in_band(off, lines[1], yellow), 0);
     scene.set_routing_icons(true);
+    scene.clear_map();
+}
+
+void EditTests::overlapping_road_icons() {
+    // wspolne odcinki: te same wezly, kierunek bez znaczenia, powtorzony wezel nie przerywa ciagu
+    {
+        QPainterPath a(QPointF(0, 0));
+        for (QPointF p : {QPointF(1, 0), QPointF(2, 0), QPointF(2, 0), QPointF(3, 0), QPointF(4, 0), QPointF(5, 0)})
+            a.lineTo(p);
+        QPainterPath b(QPointF(3, 0));
+        b.lineTo(2, 0);
+        b.lineTo(1, 0);
+        b.lineTo(1, 5);
+        b.moveTo(4, 0);  // druga czesc
+        b.lineTo(5, 0);
+        const auto runs = TrailIconLayer::shared_runs(a, QPointF(), b, QPointF());
+        QCOMPARE(runs.size(), size_t(2));
+        QCOMPARE(runs[0], (std::vector<QPointF>{{1, 0}, {2, 0}, {3, 0}}));
+        QCOMPARE(runs[1], (std::vector<QPointF>{{4, 0}, {5, 0}}));
+        // przesuniecie elementu (przeciaganie) rozdziela drogi; jeden wspolny wezel to nie nalozenie
+        QVERIFY(TrailIconLayer::shared_runs(a, QPointF(0, 1), b, QPointF()).empty());
+        QPainterPath touching(QPointF(5, 0));
+        touching.lineTo(6, 0);
+        QVERIFY(TrailIconLayer::shared_runs(a, QPointF(), touching, QPointF()).empty());
+    }
+
+    // droga 0 i droga 1 maja wspolny odcinek (w przeciwnych kierunkach), droga 2 lezy na rzece (nie droga)
+    auto map = std::make_unique<MapData>(std::make_unique<MercatorProjection>());
+    map->load_from_string(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x5\nData0=(52.10000,21.00000),(52.10000,21.00200),(52.10000,21.00400),(52.10000,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00400),(52.10000,21.00200),(52.10150,21.00100)\n[END]\n\n"
+        "[POLYLINE]\nType=0x6\nData0=(52.10300,21.00000),(52.10300,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x18\nData0=(52.10300,21.00000),(52.10300,21.00600)\n[END]\n\n");
+    Projection& projection = map->projection();
+    projection.set_map_bounding_box(map->map_bounding_box());
+    projection.calculate_data_offset();
+    MapStyles styles{MapStyles::find_icons_dir()};
+    MapScene scene;
+    scene.set_canvas_rectangle(map->map_bounding_box(), projection);
+    scene.set_map(map.get(), &styles);
+    QVERIFY(scene.overlap_icons());
+
+    const QRectF overlapped = scene.item_for_object(0)->graphics_item()->sceneBoundingRect();
+    const QRectF on_river = scene.item_for_object(2)->graphics_item()->sceneBoundingRect();
+    const QRectF all = overlapped.united(on_river);
+    const double side = all.width() * 1.1;
+    const QRectF rect(all.center() - QPointF(side / 2, side / 2), QSizeF(side, side));
+    QTransform to_view;
+    auto render = [&](int size) {
+        QGraphicsView view(&scene);
+        view.setFrameShape(QFrame::NoFrame);
+        view.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        view.setBackgroundBrush(QColor(200, 200, 200));
+        view.resize(size, size);
+        view.setTransform(QTransform::fromScale(size / rect.width(), size / rect.height()));
+        view.centerOn(rect.center());
+        to_view = view.viewportTransform();
+        return view.viewport()->grab().toImage().convertToFormat(QImage::Format_ARGB32);
+    };
+    const QColor magenta("#d000d0");
+    // piksele ikony w pasie wokol linii; x_from, x_to - zakres w ukladzie sceny
+    auto count_in_band = [&](const QImage& image, const QRectF& line, double x_from, double x_to) {
+        const int y = int(to_view.map(line.center()).y());
+        const int x1 = std::max(0, int(to_view.map(QPointF(x_from, 0)).x()));
+        const int x2 = std::min(image.width() - 1, int(to_view.map(QPointF(x_to, 0)).x()));
+        int n = 0;
+        for (int yy = std::max(0, y - 10); yy <= std::min(image.height() - 1, y + 10); ++yy)
+            for (int x = x1; x <= x2; ++x) n += image.pixel(x, yy) == magenta.rgb();
+        return n;
+    };
+    const int size = 600;
+    QVERIFY(size / rect.width() >= SCALE_WITHOUT_OVERLAP_ICONS);
+    const QImage image = render(size);
+    // ikona tylko na wspolnym odcinku (srodkowa trzecia czesc drogi 0)
+    const double third = overlapped.width() / 3;
+    QVERIFY(count_in_band(image, overlapped, overlapped.left() + third, overlapped.right() - third) > 0);
+    QCOMPARE(count_in_band(image, overlapped, rect.left(), overlapped.left() + third - 12 / (size / rect.width())), 0);
+    QCOMPARE(count_in_band(image, on_river, rect.left(), rect.right()), 0);  // rzeka pod droga to nie blad
+
+    // osobny przelacznik
+    scene.set_overlap_icons(false);
+    QVERIFY(!scene.overlap_icons() && scene.trail_icons() && scene.routing_icons());
+    QCOMPARE(count_in_band(render(size), overlapped, rect.left(), rect.right()), 0);
+    scene.set_overlap_icons(true);
+    // ponizej progu skali (choc powyzej progu ikon szlakow) ikon nie ma
+    const int small = int(rect.width() * SCALE_WITHOUT_OVERLAP_ICONS * 0.8);
+    QVERIFY(small / rect.width() >= SCALE_WITHOUT_TRAIL_ICONS);
+    QCOMPARE(count_in_band(render(small), overlapped, rect.left(), rect.right()), 0);
     scene.clear_map();
 }
 

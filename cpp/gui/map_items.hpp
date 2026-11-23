@@ -420,7 +420,9 @@ private:
 // roznych kolorow na jednej drodze pokazuja ikony obok siebie. Ikony routingu (osobny przelacznik) na drogach
 // 0x1-0xf wedlug RouteParam: znak zakazu ruchu (zakazy pojazdow), znak zakazu pieszych i/lub rowerow, krazek
 // z symbolem euro (droga platna) - MapStyles::road_restricted, road_pedestrian_bicycle_ban, road_toll; grupa
-// ikon obok siebie w srodku linii (dluga linia: w srodkach rownych odcinkow). Ponizej SCALE_WITHOUT_TRAIL_ICONS ikony nie sa rysowane. Linie bierze z indeksu sceny (jak PoiIconLayer; przejscie po wszystkich elementach mapy kosztowalo
+// ikon obok siebie w srodku linii (dluga linia: w srodkach rownych odcinkow). Ikony nalozonych drog (osobny
+// przelacznik, od SCALE_WITHOUT_OVERLAP_ICONS): na kazdym ciagu wspolnych odcinkow dwoch widocznych drog
+// (MapStyles::is_road) - te same wezly na obu koncach odcinka. Ponizej SCALE_WITHOUT_TRAIL_ICONS ikony nie sa rysowane. Linie bierze z indeksu sceny (jak PoiIconLayer; przejscie po wszystkich elementach mapy kosztowalo
 // 3-6 ms na przerysowanie), polozenia liczy przy kazdym rysowaniu - bez wlasnych danych.
 // Uwaga: w QGraphicsScene::render (program go nie uzywa) indeks nie zwraca elementow juz narysowanych (Qt oznacza
 // je itemDiscovered), wiec ikony linii lezacych pod warstwa nie powstana - tak samo w PoiIconLayer.
@@ -432,11 +434,19 @@ public:
     QPainterPath shape() const override { return {}; }
     void set_rect(const QRectF& rect);
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    // Co rysuje warstwa: ikony szlakow i ikony routingu (zakaz ruchu, oplata). Bez obu warstwa jest ukryta.
+    // Co rysuje warstwa: ikony szlakow, ikony routingu (zakaz ruchu, oplata) i ikony nalozonych drog. Bez
+    // wszystkich warstwa jest ukryta.
     bool trails() const { return trails_; }
     void set_trails(bool on);
     bool routing() const { return routing_; }
     void set_routing(bool on);
+    bool overlaps() const { return overlaps_; }
+    void set_overlaps(bool on);
+
+    // Nalozone drogi: czesci linii a zlozone z kolejnych odcinkow, ktore ma tez linia b (te same wezly na obu
+    // koncach, w dowolnym kierunku). Wezly we wspolrzednych sceny (wezly sciezki przesuniete o pos).
+    static std::vector<std::vector<QPointF>> shared_runs(const QPainterPath& a, QPointF pos_a, const QPainterPath& b,
+                                                         QPointF pos_b);
 
     // Srodki ikon (we wspolrzednych ekranu) linii path (moze miec kilka czesci): n ikon w srodkach n rownych
     // odcinkow czesci (n - dlugosc / TRAIL_ICON_SPACING_PX), przesunietych wzdluz linii o shift pikseli (z zawinieciem
@@ -455,11 +465,17 @@ public:
     // zakaz pieszych (jak B-41), rowerow (jak B-9), pieszych i rowerow (oba rysunki): klucz -
     // NO_WALK_BIKE_ICON - suma MapStyles::BAN_PEDESTRIAN i BAN_BICYCLE (-3, -4, -5)
     static constexpr long long NO_WALK_BIKE_ICON = -2;
-    // Ikona znacznika drogi (RESTRICTED_ICON, TOLL_ICON, zakazy pieszych/rowerow) o rozmiarze TRAIL_ICON_SIZE_PX.
+    static constexpr long long OVERLAP_ICON = -6;  // nalozone drogi (fioletowy romb z dwiema kreskami)
+    // Ikona znacznika drogi (RESTRICTED_ICON, TOLL_ICON, zakazy pieszych/rowerow, OVERLAP_ICON) o rozmiarze
+    // TRAIL_ICON_SIZE_PX.
     static QPixmap make_road_icon(long long key, double dpr);
 
 private:
     const QPixmap& icon(long long poly_type, double dpr);
+    // Ikony na wspolnych odcinkach drog roads (widoczne drogi z odswiezanego fragmentu); exposed - fragment
+    // w ukladzie sceny, screen_exposed - na ekranie (z marginesem ikony), malarz w pikselach ekranu.
+    void draw_overlaps(QPainter* painter, const std::vector<QGraphicsPathItem*>& roads, const QTransform& world,
+                       const QRectF& exposed, const QRectF& screen_exposed, double dpr);
 
     const MapScene* map_scene_;
     QRectF rect_;
@@ -467,6 +483,7 @@ private:
     double icons_dpr_ = 0;
     bool trails_ = true;
     bool routing_ = true;
+    bool overlaps_ = true;
 };
 
 // Linijka skali w lewym gornym rogu widoku: odcinek dlugosci 1 cm na ekranie i jego dlugosc w terenie.

@@ -25,6 +25,8 @@ constexpr double TRAIL_ICON_SIZE_PX = 16;
 constexpr double TRAIL_ICON_SPACING_PX = 200;
 // Ponizej tej skali widoku (ok. 1:25 000) ikony szlakow nie sa rysowane.
 constexpr double SCALE_WITHOUT_TRAIL_ICONS = 0.1;
+// Ponizej tej skali widoku (ok. 1:10 000) ikony nalozonych drog nie sa rysowane.
+constexpr double SCALE_WITHOUT_OVERLAP_ICONS = 0.25;
 // Glebokosc indeksu BSP sceny (110 tys. obiektow: przy 10 zapytanie o fragment widoku trwa ulamek ms,
 // automatyczna glebokosc Qt dawala 5 albo 17).
 constexpr int SCENE_BSP_TREE_DEPTH = 10;

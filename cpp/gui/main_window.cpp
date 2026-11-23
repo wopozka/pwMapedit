@@ -314,6 +314,15 @@ void MainWindow::create_actions_and_menus() {
         scene_->set_routing_icons(on);
         settings_->setValue("routing_icons", on);
     });
+    // ikony na wspolnych odcinkach nalozonych drog (duze skale); wybor zapamietany w ustawieniach
+    QAction* overlaps = view_menu->addAction(tr("Ikony &nałożonych dróg"));
+    overlaps->setCheckable(true);
+    overlaps->setChecked(settings_->value("overlap_icons", true).toBool());
+    scene_->set_overlap_icons(overlaps->isChecked());
+    connect(overlaps, &QAction::toggled, this, [this](bool on) {
+        scene_->set_overlap_icons(on);
+        settings_->setValue("overlap_icons", on);
+    });
     // motyw okna (mapa zostaje jasna); wybor zapamietany w ustawieniach, domyslnie wedlug systemu
     QMenu* theme_menu = view_menu->addMenu(tr("&Motyw"));
     auto* theme_group = new QActionGroup(this);

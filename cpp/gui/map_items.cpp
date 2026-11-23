@@ -3,7 +3,9 @@
 #include <QFont>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
+#include <QSet>
 #include <algorithm>
+#include <set>
 #include <tuple>
 #include <QPainter>
 #include <QPainterPathStroker>
@@ -1257,14 +1259,128 @@ void TrailIconLayer::set_rect(const QRectF& rect) {
 
 void TrailIconLayer::set_trails(bool on) {
     trails_ = on;
-    setVisible(trails_ || routing_);
+    setVisible(trails_ || routing_ || overlaps_);
     update();
 }
 
 void TrailIconLayer::set_routing(bool on) {
     routing_ = on;
-    setVisible(trails_ || routing_);
+    setVisible(trails_ || routing_ || overlaps_);
     update();
+}
+
+void TrailIconLayer::set_overlaps(bool on) {
+    overlaps_ = on;
+    setVisible(trails_ || routing_ || overlaps_);
+    update();
+}
+
+namespace {
+
+// Odcinek drogi bez kierunku: konce uporzadkowane (najpierw mniejsze x, potem y).
+struct SegmentKey {
+    double x1, y1, x2, y2;
+    SegmentKey(QPointF p, QPointF q) {
+        if (q.x() < p.x() || (q.x() == p.x() && q.y() < p.y())) std::swap(p, q);
+        x1 = p.x();
+        y1 = p.y();
+        x2 = q.x();
+        y2 = q.y();
+    }
+    bool operator==(const SegmentKey& o) const { return x1 == o.x1 && y1 == o.y1 && x2 == o.x2 && y2 == o.y2; }
+};
+
+size_t qHash(const SegmentKey& k, size_t seed = 0) { return qHashMulti(seed, k.x1, k.y1, k.x2, k.y2); }
+
+// Wola f(p, q) dla kazdego odcinka sciezki (wspolrzedne sceny) i f_part_end() na koncu kazdej czesci.
+template <typename F, typename G>
+void for_each_segment(const QPainterPath& path, QPointF pos, F f, G f_part_end) {
+    const int count = path.elementCount();
+    for (int i = 0; i < count; ++i) {
+        if (path.elementAt(i).isMoveTo()) {
+            if (i > 0) f_part_end();
+            continue;
+        }
+        f(QPointF(path.elementAt(i - 1)) + pos, QPointF(path.elementAt(i)) + pos);
+    }
+    if (count > 0) f_part_end();
+}
+
+}  // namespace
+
+std::vector<std::vector<QPointF>> TrailIconLayer::shared_runs(const QPainterPath& a, QPointF pos_a,
+                                                              const QPainterPath& b, QPointF pos_b) {
+    QSet<SegmentKey> b_segments;
+    for_each_segment(
+        b, pos_b, [&](QPointF p, QPointF q) { if (p != q) b_segments.insert(SegmentKey(p, q)); }, [] {});
+    std::vector<std::vector<QPointF>> runs;
+    std::vector<QPointF> run;
+    auto close_run = [&] {
+        if (!run.empty()) runs.push_back(std::move(run));
+        run.clear();
+    };
+    for_each_segment(
+        a, pos_a,
+        [&](QPointF p, QPointF q) {
+            if (p == q) return;  // powtorzony wezel nie przerywa ciagu
+            if (!b_segments.contains(SegmentKey(p, q))) {
+                close_run();
+                return;
+            }
+            if (run.empty()) run.push_back(p);
+            run.push_back(q);
+        },
+        close_run);
+    return runs;
+}
+
+void TrailIconLayer::draw_overlaps(QPainter* painter, const std::vector<QGraphicsPathItem*>& roads,
+                                   const QTransform& world, const QRectF& exposed, const QRectF& screen_exposed,
+                                   double dpr) {
+    constexpr double D = TRAIL_ICON_SIZE_PX;
+    // pary drog ze wspolnym odcinkiem w poblizu fragmentu; ciagi wspolnych odcinkow licza sie potem z calych drog,
+    // wiec polozenie ikon nie zalezy od odswiezanego fragmentu
+    QHash<SegmentKey, int> first_road;
+    std::set<std::pair<int, int>> pairs;
+    for (int i = 0; i < static_cast<int>(roads.size()); ++i) {
+        for_each_segment(
+            roads[i]->path(), roads[i]->pos(),
+            [&](QPointF p, QPointF q) {
+                if (p == q) return;
+                if (std::max(p.x(), q.x()) < exposed.left() || std::min(p.x(), q.x()) > exposed.right() ||
+                    std::max(p.y(), q.y()) < exposed.top() || std::min(p.y(), q.y()) > exposed.bottom())
+                    return;
+                const SegmentKey key(p, q);
+                const auto it = first_road.constFind(key);
+                if (it == first_road.cend()) first_road.insert(key, i);
+                else if (*it != i) pairs.emplace(*it, i);
+            },
+            [] {});
+    }
+    if (pairs.empty()) return;
+    const QPixmap& pm = icon(OVERLAP_ICON, dpr);
+    // ikona na wspolnych odcinkach obok ikon routingu (te sa w srodku linii)
+    const double shift = 3 * (D + 2);
+    std::vector<QPointF> drawn;
+    std::vector<QPointF> positions;
+    for (const auto& [i, j] : pairs) {
+        for (const auto& run : shared_runs(roads[i]->path(), roads[i]->pos(), roads[j]->path(), roads[j]->pos())) {
+            QPainterPath run_path(run.front());
+            for (size_t k = 1; k < run.size(); ++k) run_path.lineTo(run[k]);
+            positions.clear();
+            icon_positions(run_path, world, shift, positions);
+            if (positions.empty()) positions.push_back(world.map(run_path).pointAtPercent(0.5));  // krotki ciag
+            for (const QPointF& p : positions) {
+                if (!screen_exposed.contains(p)) continue;
+                // trzy drogi na jednym odcinku daja kilka par z tym samym ciagiem
+                if (std::any_of(drawn.begin(), drawn.end(),
+                                [&](const QPointF& d) { return QLineF(d, p).length() < D / 2; }))
+                    continue;
+                drawn.push_back(p);
+                painter->drawPixmap(QPointF(std::round(p.x() - D / 2), std::round(p.y() - D / 2)), pm);
+            }
+        }
+    }
 }
 
 double TrailIconLayer::slot_shift(int slot) {
@@ -1374,6 +1490,20 @@ QPixmap TrailIconLayer::make_road_icon(long long key, double dpr) {
     p.setRenderHint(QPainter::Antialiasing);
     const QPointF c(D / 2, D / 2);
     const double r = D / 2 - 0.75;
+    if (key == OVERLAP_ICON) {
+        // fioletowy romb z dwiema przesunietymi bialymi kreskami (dwie drogi jedna na drugiej)
+        QPolygonF diamond({QPointF(c.x(), c.y() - r), QPointF(c.x() + r, c.y()), QPointF(c.x(), c.y() + r),
+                           QPointF(c.x() - r, c.y())});
+        p.setPen(QPen(QColor("#5a005a"), 1.0, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+        p.setBrush(QColor("#d000d0"));
+        p.drawPolygon(diamond);
+        p.translate(c);
+        p.scale(D / 16, D / 16);
+        p.setPen(QPen(Qt::white, 1.6, Qt::SolidLine, Qt::RoundCap));
+        p.drawLine(QPointF(-3.6, -1.4), QPointF(2.4, -1.4));
+        p.drawLine(QPointF(-2.4, 1.4), QPointF(3.6, 1.4));
+        return pm;
+    }
     if (key != TOLL_ICON) {
         // znaki zakazu: bialy krazek w czerwonym pierscieniu (B-1 "zakaz ruchu w obu kierunkach" - pusty),
         // z rysunkiem pieszego i/lub roweru - wezszy pierscien, wiecej miejsca na rysunek
@@ -1453,6 +1583,8 @@ void TrailIconLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     const double dpr = painter->device() ? painter->device()->devicePixelRatioF() : 1.0;
     const double base_opacity = painter->opacity();
     std::vector<QPointF> positions;
+    const bool overlaps = overlaps_ && scale >= SCALE_WITHOUT_OVERLAP_ICONS;
+    std::vector<QGraphicsPathItem*> roads;  // do szukania nalozonych drog
 
     painter->save();
     painter->setWorldTransform(QTransform());  // ikony w pikselach ekranu, pionowe
@@ -1463,6 +1595,7 @@ void TrailIconLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
         if (item->type() != PolylineItemType || !item->isVisible()) continue;
         auto* obj = static_cast<PolylineItem*>(item);
         const long long type = obj->object_type();
+        if (overlaps && MapStyles::is_road(type)) roads.push_back(obj);
         // ikony linii: szlak (klucz - typ linii), zakaz ruchu, zakaz pieszych/rowerow, oplata; kazda ze swoim
         // przesunieciem
         std::pair<long long, double> kinds[4];
@@ -1494,6 +1627,10 @@ void TrailIconLayer::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
                 painter->drawPixmap(QPointF(std::round(p.x() - D / 2), std::round(p.y() - D / 2)), pm);
             }
         }
+    }
+    if (roads.size() > 1) {
+        painter->setOpacity(base_opacity);
+        draw_overlaps(painter, roads, world, exposed, screen_exposed, dpr);
     }
     painter->restore();
 }

@@ -78,6 +78,10 @@ public:
     // Ikony routingu: zakaz ruchu i oplata na drogach (TrailIconLayer). Domyslnie wlaczone.
     bool routing_icons() const;
     void set_routing_icons(bool on);
+    // Ikony nalozonych drog (wspolne odcinki widocznych drog, od skali SCALE_WITHOUT_OVERLAP_ICONS;
+    // TrailIconLayer). Domyslnie wlaczone.
+    bool overlap_icons() const;
+    void set_overlap_icons(bool on);
 
     // Warstwy POI, polilinii i polygonow (menu View -> Warstwy). Wylaczona warstwa ukrywa elementy obiektow tego
     // rodzaju, a z nimi wszystko, co rysowane jest tylko dla widocznych elementow: etykiety, ikony POI, obwodki,

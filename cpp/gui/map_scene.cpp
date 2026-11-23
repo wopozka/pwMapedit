@@ -50,6 +50,10 @@ bool MapScene::routing_icons() const { return trail_icon_layer_->routing(); }
 
 void MapScene::set_routing_icons(bool on) { trail_icon_layer_->set_routing(on); }
 
+bool MapScene::overlap_icons() const { return trail_icon_layer_->overlaps(); }
+
+void MapScene::set_overlap_icons(bool on) { trail_icon_layer_->set_overlaps(on); }
+
 void MapScene::update_annotations(MapObjectItem* item) {
     if (rebuilding_all_) return;
     QGraphicsItem* g = item->graphics_item();
