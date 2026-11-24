@@ -238,7 +238,7 @@ std::optional<QPointF> GpsLayers::waypoint_position(int file, int waypoint) cons
     return to_scene(wpts[static_cast<size_t>(waypoint)].pos);
 }
 
-int GpsLayers::create_polylines(int file, int track, int segment, double tolerance_m) {
+int GpsLayers::create_polylines(int file, int track, int segment, double tolerance_m, std::optional<int> level) {
     if (file < 0 || file >= file_count() || !scene_->map()) return 0;
     GpsFileEntry& e = files_[static_cast<size_t>(file)];
     if (track < 0 || track >= static_cast<int>(e.data.tracks.size())) return 0;
@@ -253,7 +253,7 @@ int GpsLayers::create_polylines(int file, int track, int segment, double toleran
         for (size_t i : gps::simplify(points, tolerance_m))
             if (auto q = to_scene(points[i])) nodes.push_back(*q);
         if (nodes.size() < 2) continue;
-        if (scene_->create_object(ObjectKind::Polyline, nodes)) {
+        if (scene_->create_object(ObjectKind::Polyline, nodes, {}, {}, level)) {
             ++created;
             e.used_segments[static_cast<size_t>(track)][static_cast<size_t>(s)] = true;
             if (track < static_cast<int>(e.track_items.size()) && s < static_cast<int>(e.track_items[track].size()))
@@ -265,7 +265,7 @@ int GpsLayers::create_polylines(int file, int track, int segment, double toleran
     return created;
 }
 
-int GpsLayers::create_pois(int file, const std::vector<int>& waypoints) {
+int GpsLayers::create_pois(int file, const std::vector<int>& waypoints, std::optional<int> level) {
     if (file < 0 || file >= file_count() || !scene_->map()) return 0;
     GpsFileEntry& e = files_[static_cast<size_t>(file)];
     QUndoStack* stack = scene_->undo_stack();
@@ -283,7 +283,7 @@ int GpsLayers::create_pois(int file, const std::vector<int>& waypoints) {
         if (!wpt.comment.empty())
             for (const QString& line : QString::fromStdString(wpt.comment).split('\n'))
                 if (!line.trimmed().isEmpty()) comments.push_back(encoding::utf8_to_cp1250(line.trimmed().toStdString()));
-        if (scene_->create_object(ObjectKind::Poi, {*pos}, fields, comments)) {
+        if (scene_->create_object(ObjectKind::Poi, {*pos}, fields, comments, level)) {
             ++created;
             e.used_waypoints[static_cast<size_t>(w)] = true;
             for (GpsWaypointItem* item : e.waypoint_items)

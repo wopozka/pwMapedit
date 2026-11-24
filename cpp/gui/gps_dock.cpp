@@ -220,8 +220,13 @@ void GpsDock::create_from_selection() {
     for (QTreeWidgetItem* item : tracks)
         track_refs.emplace_back(item->data(0, FileRole).toInt(), item->data(0, TrackRole).toInt(),
                                 item->data(0, KindRole).toInt() == SegmentItem ? item->data(0, IndexRole).toInt() : -1);
-    for (const auto& [f, t, s] : track_refs) layers_->create_polylines(f, t, s, tolerance_->value());
-    for (const auto& [f, wpts] : waypoints) layers_->create_pois(f, wpts);
+    if (track_refs.empty() && waypoints.empty()) return;
+    // obiekty powstaja na biezacym poziomie mapy (jak przy rysowaniu); na poziomie > 0 ostrzezenie, raz na cala
+    // zamiane, z poziomem zapamietanym przed oknem
+    const int level = scene_->map_level();
+    if (!confirm_creation_level(this, level)) return;
+    for (const auto& [f, t, s] : track_refs) layers_->create_polylines(f, t, s, tolerance_->value(), level);
+    for (const auto& [f, wpts] : waypoints) layers_->create_pois(f, wpts, level);
 }
 
 void GpsDock::remove_selected_file() {

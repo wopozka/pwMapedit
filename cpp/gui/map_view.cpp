@@ -2,6 +2,7 @@
 
 #include <QGraphicsPathItem>
 #include <QKeyEvent>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -408,23 +409,25 @@ void MapView::creation_click() {
     const QPointF pos = creation_position();
     switch (s->tool()) {
         case Tool::CreatePoint:
-            s->create_object(ObjectKind::Poi, {pos});
+            if (creation_start()) s->create_object(ObjectKind::Poi, {pos}, {}, {}, creation_level_);
             break;
         case Tool::CreatePolyline:
         case Tool::CreatePolygon:
+            if (creation_nodes_.empty() && !creation_start()) break;
             creation_nodes_.push_back(pos);
             update_creation_preview();
             break;
         case Tool::CreatePolylineCircle:
             // pierwsze klikniecie: punkt na okregu; drugie (srodek pod kursorem) tworzy polilinie
             if (creation_nodes_.empty()) {
+                if (!creation_start()) break;
                 creation_nodes_.push_back(pos);
                 update_creation_preview();
             } else {
                 compute_circle();
                 const std::vector<QPointF> nodes = circle_nodes_;
                 creation_cancel();
-                if (nodes.size() > 2) s->create_object(ObjectKind::Polyline, nodes);
+                if (nodes.size() > 2) s->create_object(ObjectKind::Polyline, nodes, {}, {}, creation_level_);
             }
             break;
         default:
@@ -435,6 +438,7 @@ void MapView::creation_click() {
 void MapView::creation_add_node() {
     MapScene* s = map_scene();
     if (!s || (s->tool() != Tool::CreatePolyline && s->tool() != Tool::CreatePolygon)) return;
+    if (creation_nodes_.empty() && !creation_start()) return;
     creation_nodes_.push_back(creation_position());
     update_creation_preview();
 }
@@ -454,7 +458,28 @@ bool MapView::creation_finish() {
     if (creation_nodes_.size() < (polygon ? 3u : 2u)) return false;
     const std::vector<QPointF> nodes = creation_nodes_;
     creation_cancel();
-    return s->create_object(polygon ? ObjectKind::Polygon : ObjectKind::Polyline, nodes).has_value();
+    return s->create_object(polygon ? ObjectKind::Polygon : ObjectKind::Polyline, nodes, {}, {}, creation_level_)
+        .has_value();
+}
+
+bool confirm_creation_level(QWidget* parent, int level) {
+    if (level <= 0) return true;
+    const QMessageBox::StandardButton answer = QMessageBox::warning(
+        parent, MapView::tr("Rysowanie na poziomie %1").arg(level),
+        MapView::tr("Uwaga, rysujesz na poziomie %1, a nie na 0.\n\nNowy obiekt dostanie tylko Data%1 - nie będzie "
+                    "go na poziomie 0.")
+            .arg(level),
+        QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok);
+    return answer == QMessageBox::Ok;
+}
+
+bool MapView::creation_start() {
+    MapScene* s = map_scene();
+    if (!s) return false;
+    const int level = s->map_level();
+    if (!confirm_creation_level(this, level)) return false;
+    creation_level_ = level;
+    return true;
 }
 
 void MapView::creation_cancel() {

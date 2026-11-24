@@ -247,22 +247,24 @@ void MainWindow::create_actions_and_menus() {
     });
     // tryb automatyczny jest domyslny przy kazdym uruchomieniu (wybor nie jest zapamietywany)
     auto_level_action_->setChecked(true);
-    // warstwy POI, polilinii i polygonow: ukrycie dla czytelnosci mapy (razem z etykietami i ikonami);
-    // wybor zapamietany w ustawieniach. Scena moze sama wlaczyc warstwe (nowy obiekt) - wtedy sygnal uaktualnia menu.
+    // warstwy POI, polilinii, polygonow i szlakow (szlaki niezalezne od polilinii): ukrycie dla czytelnosci mapy
+    // (razem z etykietami i ikonami); wybor zapamietany w ustawieniach. Scena moze sama wlaczyc warstwe (nowy
+    // obiekt) - wtedy sygnal uaktualnia menu.
     QMenu* layers_menu = view_menu->addMenu(tr("&Warstwy"));
-    for (auto [kind, text, key] :
-         {std::tuple{ObjectKind::Poi, tr("&POI"), "layer_poi"}, std::tuple{ObjectKind::Polyline, tr("Po&lilinie"), "layer_polylines"},
-          std::tuple{ObjectKind::Polygon, tr("Poly&gony"), "layer_polygons"}}) {
+    for (auto [layer, text, key] :
+         {std::tuple{MapLayer::Poi, tr("&POI"), "layer_poi"}, std::tuple{MapLayer::Polyline, tr("Po&lilinie"), "layer_polylines"},
+          std::tuple{MapLayer::Polygon, tr("Poly&gony"), "layer_polygons"},
+          std::tuple{MapLayer::Trail, tr("&Szlaki"), "layer_trails"}}) {
         QAction* act = layers_menu->addAction(text);
         act->setCheckable(true);
         act->setChecked(settings_->value(key, true).toBool());
-        scene_->set_layer_visible(kind, act->isChecked());
-        connect(act, &QAction::toggled, this, [this, kind, key](bool on) {
-            scene_->set_layer_visible(kind, on);
+        scene_->set_layer_visible(layer, act->isChecked());
+        connect(act, &QAction::toggled, this, [this, layer, key](bool on) {
+            scene_->set_layer_visible(layer, on);
             settings_->setValue(key, on);
         });
-        connect(scene_, &MapScene::layer_visibility_changed, act, [act, kind](ObjectKind changed, bool on) {
-            if (changed == kind && act->isChecked() != on) act->setChecked(on);
+        connect(scene_, &MapScene::layer_visibility_changed, act, [act, layer](MapLayer changed, bool on) {
+            if (changed == layer && act->isChecked() != on) act->setChecked(on);
         });
     }
     // wypelnienie polygonow: stale, przezroczyste (jak zaznaczone) albo tylko kontury; wybor zapamietany

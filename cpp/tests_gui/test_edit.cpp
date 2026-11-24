@@ -208,6 +208,9 @@ private slots:
     void window_recent_file_missing();
     // warstwy POI/polilinii/polygonow (View -> Warstwy)
     void layers_hide_objects_and_reenable_on_create();
+    void trail_layer_independent_of_polylines();
+    void create_on_higher_level_warns_and_keeps_level();
+    void gps_create_on_higher_level_warns();
     void window_layers_menu_and_settings();
     // slady GPS (GPX) jako podklad do rysowania
     void gpx_reader_parses_tracks_waypoints_routes();
@@ -1704,13 +1707,15 @@ void EditTests::extras_copy_paste_between_objects() {
 
 namespace {
 // Odpowiada na okno pytania (QMessageBox), gdy sie pojawi.
-void answer_message_box(QMessageBox::StandardButton button) {
+// text: jesli podany, dostaje tresc okna.
+void answer_message_box(QMessageBox::StandardButton button, std::shared_ptr<QString> text = nullptr) {
     auto* timer = new QTimer;
     auto tries = std::make_shared<int>(0);
-    QObject::connect(timer, &QTimer::timeout, [timer, tries, button] {
+    QObject::connect(timer, &QTimer::timeout, [timer, tries, button, text] {
         if (auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget())) {
             timer->stop();
             timer->deleteLater();
+            if (text) *text = box->windowTitle() + '\n' + box->text();
             box->button(button)->click();
         } else if (++*tries > 200) {
             timer->stop();
@@ -1720,6 +1725,53 @@ void answer_message_box(QMessageBox::StandardButton button) {
     timer->start(20);
 }
 }  // namespace
+
+void EditTests::create_on_higher_level_warns_and_keeps_level() {
+    ViewFixture f;
+    f.scene.set_map_level(1);
+    const QPoint base = f.view_pos(f.node(1, 0, 1).pos()) + QPoint(60, 0);
+
+    // POI: ostrzezenie, Anuluj - nic nie powstaje, narzedzie zostaje
+    f.scene.set_tool(Tool::CreatePoint);
+    auto text = std::make_shared<QString>();
+    answer_message_box(QMessageBox::Cancel, text);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base);
+    QCOMPARE(f.stack.count(), 0);
+    // okno podaje numer biezacego poziomu
+    QVERIFY2(text->contains(QString::fromUtf8("Uwaga, rysujesz na poziomie 1, a nie na 0.")), qPrintable(*text));
+    QVERIFY(text->contains(QStringLiteral("Data1")));
+    QVERIFY(!text->contains(QStringLiteral("%1")));
+    QCOMPARE(f.scene.tool(), Tool::CreatePoint);
+    // OK - POI na poziomie 1 (Data1, bez Data0), widoczny na rysowanym poziomie
+    answer_message_box(QMessageBox::Ok);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base);
+    QCOMPARE(f.stack.count(), 1);
+    QCOMPARE(f.map->objects()[2].data->data_levels(), std::vector<int>{1});
+    QVERIFY(f.scene.item_for_object(2)->graphics_item()->isVisible());
+    QVERIFY(f.map->to_mp_string().find("Data1=(") != std::string::npos);
+
+    // polilinia: ostrzezenie tylko przy pierwszym wezle; zmiana poziomu w trakcie rysowania nie zmienia poziomu
+    f.scene.set_tool(Tool::CreatePolyline);
+    answer_message_box(QMessageBox::Ok);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(0, 40));
+    QCOMPARE(f.view.creation_nodes().size(), size_t{1});
+    f.scene.set_map_level(0);
+    QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + QPoint(30, 40));  // bez okna
+    QTest::keyClick(f.vp(), Qt::Key_Return);
+    QCOMPARE(f.stack.count(), 2);
+    QCOMPARE(f.map->objects()[3].data->data_levels(), std::vector<int>{1});
+
+    // na poziomie 0 bez ostrzezenia, Data0 jak dotad
+    f.scene.set_tool(Tool::CreatePolygon);
+    for (QPoint p : {QPoint(0, 80), QPoint(30, 80), QPoint(15, 110)})
+        QTest::mouseClick(f.vp(), Qt::LeftButton, Qt::NoModifier, base + p);
+    QTest::keyClick(f.vp(), Qt::Key_Return);
+    QCOMPARE(f.stack.count(), 3);
+    QCOMPARE(f.map->objects()[4].data->data_levels(), std::vector<int>{0});
+
+    while (f.stack.canUndo()) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+}
 
 void EditTests::window_recent_files_and_close_prompt() {
     QTemporaryDir dir;
@@ -1795,8 +1847,8 @@ void EditTests::layers_hide_objects_and_reenable_on_create() {
 
     // wylaczenie polilinii: element ukryty, zaznaczenie zdjete, bez przyciagania; POI bez zmian
     f.select_only(f.polyline());
-    f.scene.set_layer_visible(ObjectKind::Polyline, false);
-    QVERIFY(!f.scene.layer_visible(ObjectKind::Polyline));
+    f.scene.set_layer_visible(MapLayer::Polyline, false);
+    QVERIFY(!f.scene.layer_visible(MapLayer::Polyline));
     QVERIFY(!line->isVisible());
     QVERIFY(!line->isSelected());
     QVERIFY(f.scene.selected_object_items().empty());
@@ -1805,7 +1857,7 @@ void EditTests::layers_hide_objects_and_reenable_on_create() {
     QCOMPARE(changed.size(), 1);
     QCOMPARE(changed.front().at(1).toBool(), false);
     // ponowne ustawienie tego samego stanu nic nie robi
-    f.scene.set_layer_visible(ObjectKind::Polyline, false);
+    f.scene.set_layer_visible(MapLayer::Polyline, false);
     QCOMPARE(changed.size(), 1);
 
     // zmiana poziomu mapy i undo/redo nie pokazuja ukrytej warstwy
@@ -1822,7 +1874,7 @@ void EditTests::layers_hide_objects_and_reenable_on_create() {
     const std::optional<size_t> created =
         f.scene.create_object(ObjectKind::Polyline, {middle_pos, middle_pos + QPointF(20, 20)});
     QVERIFY(created);
-    QVERIFY(f.scene.layer_visible(ObjectKind::Polyline));
+    QVERIFY(f.scene.layer_visible(MapLayer::Polyline));
     QCOMPARE(changed.size(), 2);
     QCOMPARE(changed.back().at(1).toBool(), true);
     QVERIFY(f.polyline()->graphics_item()->isVisible());
@@ -1833,13 +1885,60 @@ void EditTests::layers_hide_objects_and_reenable_on_create() {
     f.select_only(f.poi());
     std::unique_ptr<QMimeData> mime(f.scene.copy_selected(QPointF(0, 0)));
     QVERIFY(mime);
-    f.scene.set_layer_visible(ObjectKind::Poi, false);
+    f.scene.set_layer_visible(MapLayer::Poi, false);
     QVERIFY(!f.poi()->graphics_item()->isVisible());
     QVERIFY(f.scene.selected_object_items().empty());
     QCOMPARE(f.scene.paste(mime.get(), std::nullopt), 1);
-    QVERIFY(f.scene.layer_visible(ObjectKind::Poi));
+    QVERIFY(f.scene.layer_visible(MapLayer::Poi));
     QVERIFY(f.poi()->graphics_item()->isVisible());
     QCOMPARE(f.scene.selected_object_items().size(), size_t{1});
+}
+
+void EditTests::trail_layer_independent_of_polylines() {
+    // szlaki 0x10e00-0x10e0f maja wlasna warstwe; chodnik 0x16 i droga dla rowerow 0xd to polilinie
+    QVERIFY(MapStyles::is_trail(0x10e00));
+    QVERIFY(MapStyles::is_trail(0x10e0f));
+    QVERIFY(!MapStyles::is_trail(0x10e10));
+    QVERIFY(!MapStyles::is_trail(0x16));
+    QVERIFY(!MapStyles::is_trail(0xd));
+    Fixture f(
+        "[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+        "[POLYLINE]\nType=0x10e00\nData0=(52.10000,21.00000),(52.10000,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x5\nData0=(52.10100,21.00000),(52.10100,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0x10e0f\nData0=(52.10200,21.00000),(52.10200,21.00600)\n[END]\n\n"
+        "[POLYLINE]\nType=0xd\nData0=(52.10300,21.00000),(52.10300,21.00600)\n[END]\n\n");
+    QVERIFY(layer_of(f.map->objects()[0]) == MapLayer::Trail);
+    QVERIFY(layer_of(f.map->objects()[1]) == MapLayer::Polyline);
+    QVERIFY(layer_of(f.map->objects()[2]) == MapLayer::Trail);
+    QVERIFY(layer_of(f.map->objects()[3]) == MapLayer::Polyline);
+    auto visible = [&](size_t obj) { return f.scene.item_for_object(obj)->graphics_item()->isVisible(); };
+    QSignalSpy changed(&f.scene, &MapScene::layer_visibility_changed);
+
+    // wylaczenie polilinii nie ukrywa szlakow
+    f.scene.set_layer_visible(MapLayer::Polyline, false);
+    QVERIFY(visible(0) && !visible(1) && visible(2) && !visible(3));
+    QVERIFY(f.scene.layer_visible(MapLayer::Trail));
+    // wylaczenie szlakow nie pokazuje ani nie ukrywa polilinii; zaznaczony szlak traci zaznaczenie
+    f.scene.set_layer_visible(MapLayer::Polyline, true);
+    f.select_only(f.scene.item_for_object(0));
+    f.scene.set_layer_visible(MapLayer::Trail, false);
+    QVERIFY(!visible(0) && visible(1) && !visible(2) && visible(3));
+    QVERIFY(f.scene.selected_object_items().empty());
+    QVERIFY(f.scene.layer_visible(MapLayer::Polyline));
+    QCOMPARE(changed.size(), 3);
+
+    // zmiana typu drogi na szlak przy wylaczonej warstwie szlakow wlacza ja - obiekt nie znika
+    MapObject after = f.map->objects()[1];
+    after.type = 0x10e08;
+    f.scene.replace_object(1, after, QStringLiteral("Zmiana typu"));
+    QVERIFY(f.scene.layer_visible(MapLayer::Trail));
+    QVERIFY(visible(0) && visible(1) && visible(2));
+    // szlak zmieniony z powrotem na droge przy wylaczonej warstwie szlakow jest widoczny w polilinach
+    f.scene.set_layer_visible(MapLayer::Trail, false);
+    QVERIFY(!visible(1));
+    f.stack.undo();
+    QVERIFY(visible(1));
+    QVERIFY(!visible(0));
 }
 
 void EditTests::window_layers_menu_and_settings() {
@@ -1859,20 +1958,28 @@ void EditTests::window_layers_menu_and_settings() {
         QVERIFY(polygons);
         QVERIFY(layer_action(w, QStringLiteral("&POI")));
         QVERIFY(layer_action(w, QStringLiteral("Po&lilinie")));
+        QAction* trails = layer_action(w, QStringLiteral("&Szlaki"));
+        QVERIFY(trails);
+        QVERIFY(trails->isChecked());
+        trails->setChecked(false);
+        QVERIFY(!w.scene()->layer_visible(MapLayer::Trail));
+        QVERIFY(w.scene()->layer_visible(MapLayer::Polyline));
         QVERIFY(polygons->isChecked());
         polygons->setChecked(false);
-        QVERIFY(!w.scene()->layer_visible(ObjectKind::Polygon));
+        QVERIFY(!w.scene()->layer_visible(MapLayer::Polygon));
         // scena wlacza warstwe sama (nowy obiekt) - menu nadaza
-        w.scene()->ensure_layer_visible(ObjectKind::Polygon);
+        w.scene()->ensure_layer_visible(MapLayer::Polygon);
         QVERIFY(polygons->isChecked());
         polygons->setChecked(false);
     }
     {
         // stan zapamietany w ustawieniach
         MainWindow w(MapStyles::find_icons_dir());
-        QVERIFY(!w.scene()->layer_visible(ObjectKind::Polygon));
+        QVERIFY(!w.scene()->layer_visible(MapLayer::Polygon));
         QVERIFY(!layer_action(w, QStringLiteral("Poly&gony"))->isChecked());
-        QVERIFY(w.scene()->layer_visible(ObjectKind::Poi));
+        QVERIFY(w.scene()->layer_visible(MapLayer::Poi));
+        QVERIFY(!w.scene()->layer_visible(MapLayer::Trail));
+        QVERIFY(!layer_action(w, QStringLiteral("&Szlaki"))->isChecked());
     }
     qunsetenv("PWMAPEDIT_SETTINGS");
 }
@@ -2092,6 +2199,41 @@ void EditTests::gps_dock_lists_and_creates() {
     dock.remove_selected_file();
     QCOMPARE(layers.file_count(), 0);
     QCOMPARE(tree->topLevelItemCount(), 0);
+}
+
+void EditTests::gps_create_on_higher_level_warns() {
+    ViewFixture f;
+    GpsLayers layers(&f.scene);
+    GpsDock dock(&layers, &f.scene, &f.view);
+    layers.add_file(std::move(*read_gpx(sample_gpx())));
+    QTreeWidgetItem* file_item = dock.tree()->topLevelItem(0);
+    file_item->child(0)->child(1)->setSelected(true);  // czesc sladu
+    file_item->child(2)->child(1)->setSelected(true);  // waypoint
+    f.scene.set_map_level(1);
+    const size_t before = f.map->objects().size();
+
+    // Anuluj - nic nie powstaje
+    auto text = std::make_shared<QString>();
+    answer_message_box(QMessageBox::Cancel, text);
+    dock.create_from_selection();
+    QVERIFY2(text->contains(QString::fromUtf8("Uwaga, rysujesz na poziomie 1, a nie na 0.")), qPrintable(*text));
+    QCOMPARE(f.map->objects().size(), before);
+    QCOMPARE(f.stack.count(), 0);
+
+    // OK - polilinia i POI na poziomie 1 (jedno okno na cala zamiane)
+    answer_message_box(QMessageBox::Ok);
+    dock.create_from_selection();
+    QCOMPARE(f.map->objects().size(), before + 2);
+    QCOMPARE(f.map->objects()[before].kind(), ObjectKind::Polyline);
+    QCOMPARE(f.map->objects()[before].data->data_levels(), std::vector<int>{1});
+    QCOMPARE(f.map->objects()[before + 1].kind(), ObjectKind::Poi);
+    QCOMPARE(f.map->objects()[before + 1].data->data_levels(), std::vector<int>{1});
+    QVERIFY(f.scene.item_for_object(before)->graphics_item()->isVisible());
+
+    while (f.stack.canUndo()) f.stack.undo();
+    QCOMPARE(f.map->to_mp_string(), f.original);
+    dock.tree()->topLevelItem(0)->setSelected(true);
+    dock.remove_selected_file();
 }
 
 void EditTests::gps_load_gdb_far_from_map() {

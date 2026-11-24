@@ -85,6 +85,9 @@ private:
     QPointF creation_position() const;
     void update_snap(Qt::KeyboardModifiers modifiers);
     void creation_click();
+    // Poczatek rysowania (pierwszy wezel albo POI): zapamietuje poziom mapy, na ktorym powstanie obiekt; na
+    // poziomie > 0 ostrzega, ze obiekt nie trafi do Data0. false - uzytkownik zrezygnowal.
+    bool creation_start();
     void update_creation_preview();
     void compute_circle();
     void set_map_scale(double factor);
@@ -105,6 +108,8 @@ private:
     std::optional<QPointF> last_click_;
     std::optional<QPointF> snapped_;
     std::vector<QPointF> creation_nodes_;
+    // poziom z poczatku rysowania - zmiana poziomu w trakcie (np. automatyczna przy powiekszaniu) go nie zmienia
+    int creation_level_ = 0;
     std::vector<QPointF> circle_nodes_;  // okrag: wezly wyliczone dla biezacego polozenia kursora
     QGraphicsPathItem* creation_preview_ = nullptr;
     QString last_coords_text_;
@@ -120,5 +125,9 @@ private:
     };
     std::optional<EdgeDrag> edge_drag_;
 };
+
+// Ostrzezenie przed utworzeniem obiektu na poziomie mapy > 0 (rysowanie, zamiana sladow GPS): okno z numerem
+// poziomu, OK/Anuluj. true - mozna tworzyc (poziom 0 albo OK).
+bool confirm_creation_level(QWidget* parent, int level);
 
 }  // namespace pwm::gui

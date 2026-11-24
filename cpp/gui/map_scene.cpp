@@ -219,16 +219,35 @@ void MapScene::set_map_level(int level) {
     emit progress(total, total);
 }
 
-bool MapScene::layer_visible(ObjectKind kind) const { return layer_visible_[static_cast<int>(kind)]; }
+std::optional<MapLayer> layer_of(ObjectKind kind) {
+    switch (kind) {
+        case ObjectKind::Poi: return MapLayer::Poi;
+        case ObjectKind::Polyline: return MapLayer::Polyline;
+        case ObjectKind::Polygon: return MapLayer::Polygon;
+        default: return std::nullopt;
+    }
+}
 
-void MapScene::set_layer_visible(ObjectKind kind, bool on) {
-    if (kind == ObjectKind::Basic || layer_visible(kind) == on) return;
-    layer_visible_[static_cast<int>(kind)] = on;
+std::optional<MapLayer> layer_of(const MapObject& obj) {
+    if (obj.kind() == ObjectKind::Polyline && MapStyles::is_trail(obj.type.value_or(0))) return MapLayer::Trail;
+    return layer_of(obj.kind());
+}
+
+bool MapScene::layer_visible(MapLayer layer) const { return layer_visible_[static_cast<int>(layer)]; }
+
+bool MapScene::layer_visible(const MapObject& obj) const {
+    const std::optional<MapLayer> layer = layer_of(obj);
+    return !layer || layer_visible(*layer);
+}
+
+void MapScene::set_layer_visible(MapLayer layer, bool on) {
+    if (layer_visible(layer) == on) return;
+    layer_visible_[static_cast<int>(layer)] = on;
     if (!on) {
         end_rotation();
         // zaznaczenie ukrywanych obiektow zdejmowane jawnie (uchwyty, panel wlasciwosci, kolejnosc zaznaczania)
         for (MapObjectItem* item : selected_object_items())
-            if (item->object().kind() == kind) item->graphics_item()->setSelected(false);
+            if (layer_of(item->object()) == layer) item->graphics_item()->setSelected(false);
     }
     const int total = static_cast<int>(object_items_.size());
     emit progress(0, total);
@@ -237,7 +256,7 @@ void MapScene::set_layer_visible(ObjectKind kind, bool on) {
     rebuilding_all_ = true;
     for (int i = 0; i < total; ++i) {
         MapObjectItem* item = object_items_[static_cast<size_t>(i)];
-        if (item->object().kind() == kind) item->set_map_level(map_level_);
+        if (layer_of(item->object()) == layer) item->set_map_level(map_level_);
         if (progress_timer.elapsed() > 100) {
             emit progress(i, total);
             QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -247,11 +266,15 @@ void MapScene::set_layer_visible(ObjectKind kind, bool on) {
     rebuilding_all_ = false;
     update();
     emit progress(total, total);
-    emit layer_visibility_changed(kind, on);
+    emit layer_visibility_changed(layer, on);
 }
 
-void MapScene::ensure_layer_visible(ObjectKind kind) {
-    if (kind != ObjectKind::Basic && !layer_visible(kind)) set_layer_visible(kind, true);
+void MapScene::ensure_layer_visible(MapLayer layer) {
+    if (!layer_visible(layer)) set_layer_visible(layer, true);
+}
+
+void MapScene::ensure_layer_visible(const MapObject& obj) {
+    if (const std::optional<MapLayer> layer = layer_of(obj)) ensure_layer_visible(*layer);
 }
 
 void MapScene::set_viewer_scale(double scale) { viewer_scale_ = scale; }
@@ -507,6 +530,7 @@ void MapScene::activate_grip(const GripRef& grip) {
 
 void MapScene::replace_object(size_t obj, MapObject after, const QString& text) {
     if (!map_ || obj >= map_->objects().size()) return;
+    ensure_layer_visible(after);  // zmiana typu moze przeniesc obiekt do wylaczonej warstwy (droga -> szlak)
     push_command(new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text));
 }
 
@@ -519,7 +543,8 @@ std::optional<size_t> MapScene::replace_and_add(size_t obj, MapObject after, Map
     if (!map_ || obj >= map_->objects().size()) return std::nullopt;
     added.id.reset();
     added.deleted = false;
-    ensure_layer_visible(added.kind());
+    ensure_layer_visible(after);
+    ensure_layer_visible(added);
     auto* command = new QUndoCommand(text);
     new ReplaceObjectCmd(this, obj, map_->objects()[obj], std::move(after), text, command);
     auto* add = new AddObjectCmd(this, std::move(added), text, command);
@@ -659,7 +684,7 @@ int MapScene::add_marker_pois(long long type, const std::vector<PointF>& points,
         return 0;
     }
     command->setText(text.arg(added));
-    ensure_layer_visible(ObjectKind::Poi);
+    ensure_layer_visible(MapLayer::Poi);
     push_command(command);
     return added;
 }
@@ -787,7 +812,7 @@ QString MapScene::convert_selected(ObjectKind from, bool* changed) {
         return skipped_note.isEmpty() ? tr("Nie zaznaczono obiektów do zamiany.") : skipped_note.trimmed();
 
     const QString text = to_polyline ? tr("Zamień polygon na polilinię") : tr("Zamień polilinię na polygon");
-    ensure_layer_visible(to_polyline ? ObjectKind::Polyline : ObjectKind::Polygon);
+    for (const MapObject& obj : converted) ensure_layer_visible(obj);  // polilinia z ostatniego typu: moze byc szlakiem
     auto* command = new QUndoCommand(text);
     new DeleteObjectsCmd(this, old_indexes, text, command);
     std::vector<AddObjectCmd*> adds;
@@ -1017,7 +1042,7 @@ int MapScene::paste(const QMimeData* mime, std::optional<QPointF> mouse) {
     }
     if (objects.empty()) return 0;
     if (objects.size() > 1) text = tr("Wklej obiekty (%1)").arg(objects.size());
-    for (const MapObject& obj : objects) ensure_layer_visible(obj.kind());
+    for (const MapObject& obj : objects) ensure_layer_visible(obj);
     auto* command = new QUndoCommand(text);
     std::vector<AddObjectCmd*> adds;
     for (MapObject& obj : objects) adds.push_back(new AddObjectCmd(this, std::move(obj), text, command));
@@ -1038,11 +1063,13 @@ void MapScene::set_last_used_type(ObjectKind kind, long long type) { last_used_t
 
 std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector<QPointF>& nodes,
                                               const std::vector<std::string>& fields,
-                                              const std::vector<std::string>& comments) {
+                                              const std::vector<std::string>& comments,
+                                              std::optional<int> level) {
     if (!map_ || nodes.empty() || kind == ObjectKind::Basic) return std::nullopt;
-    // Jak w Pythonie: rekord z Type i Data0 we wspolrzednych geograficznych. 10 miejsc po przecinku, zeby nie
+    // Jak w Pythonie: rekord z Type i DataN we wspolrzednych geograficznych. 10 miejsc po przecinku, zeby nie
     // podniesc precyzji zapisu calej mapy (cyfry powyzej 6 nie wplywaja na precyzje); zapis uzywa precyzji mapy.
-    std::string data = "Data0=";
+    // Poziom: ten, na ktorym rysowano (Python zawsze dawal Data0 - obiekt znikal z rysowanego poziomu).
+    std::string data = "Data" + std::to_string(std::max(0, level.value_or(map_level_))) + "=";
     const Projection& projection = map_->projection();
     for (size_t i = 0; i < nodes.size(); ++i) {
         GeoPoint g;
@@ -1068,7 +1095,7 @@ std::optional<size_t> MapScene::create_object(ObjectKind kind, const std::vector
         case ObjectKind::Polyline: text = tr("Utwórz Polyline"); break;
         default: text = tr("Utwórz Polygon"); break;
     }
-    ensure_layer_visible(kind);
+    ensure_layer_visible(*obj);  // ostatnio uzyty typ polilinii moze byc szlakiem
     auto* command = new AddObjectCmd(this, std::move(*obj), text);
     push_command(command);
     const std::optional<size_t> index = undo_stack_ ? command->index() : std::nullopt;

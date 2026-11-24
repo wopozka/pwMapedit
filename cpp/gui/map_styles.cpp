@@ -223,6 +223,8 @@ bool MapStyles::is_road(long long poly_type) {
     return (poly_type >= 0x0 && poly_type <= 0xf) || poly_type == 0x16;
 }
 
+bool MapStyles::is_trail(long long poly_type) { return poly_type >= 0x10e00 && poly_type <= 0x10e0f; }
+
 bool MapStyles::is_railway(long long poly_type) {
     // 0x10e15: kolej podziemna/rozebrana - rysowana jak kolej, tylko szara
     return poly_type == 0x14 || poly_type == 0x10e14 || poly_type == 0x10e15;

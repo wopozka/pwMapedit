@@ -77,9 +77,10 @@ public:
 
     // Czesc sladu (segment < 0: wszystkie czesci) jako polilinie z ostatnio uzytym typem, po uproszczeniu
     // (tolerancja w metrach). Jedna komenda undo. Zwraca liczbe utworzonych polilinii.
-    int create_polylines(int file, int track, int segment, double tolerance_m);
+    // level: poziom Data nowych obiektow (domyslnie biezacy poziom mapy); ostrzezenie pokazuje GpsDock.
+    int create_polylines(int file, int track, int segment, double tolerance_m, std::optional<int> level = std::nullopt);
     // Waypointy jako POI (Label = nazwa, komentarz = opis). Jedna komenda undo. Zwraca liczbe POI.
-    int create_pois(int file, const std::vector<int>& waypoints);
+    int create_pois(int file, const std::vector<int>& waypoints, std::optional<int> level = std::nullopt);
 
     QPainterPath segment_path(int file, int track, int segment) const;
     std::optional<QPointF> waypoint_position(int file, int waypoint) const;

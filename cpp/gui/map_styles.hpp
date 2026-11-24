@@ -30,6 +30,9 @@ public:
     // Drogi (typy 0x0-0xf i chodnik 0x16, bez promow) i kolej (0x14, 0x10e14, podziemna/rozebrana 0x10e15) - dostaja obwodke, gdy jest wlaczona.
     static bool is_road(long long poly_type);
     static bool is_railway(long long poly_type);
+    // Szlaki piesze i rowerowe 0x10e00-0x10e0f - osobna warstwa (View -> Warstwy -> Szlaki). Chodnik 0x16 i droga
+    // dla rowerow 0xd to drogi, zostaja w warstwie polilinii.
+    static bool is_trail(long long poly_type);
     static bool has_casing(long long poly_type);
     // Obwodka: kolor drogi przyciemniony (kolej: czarny), linia ciagla szersza o 1 piksel z kazdej strony.
     QPen road_casing_pen(long long poly_type) const;

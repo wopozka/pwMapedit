@@ -20,7 +20,7 @@ Edytor map w formacie MP (Polish Format, np. mapy UMP) dla Windows 10/11 64-bit.
 | powiększyć / pomniejszyć | **Ctrl + kółko** myszy albo klawisze **=** lub **+** (także na klawiaturze numerycznej) i **-** |
 | zmienić poziom szczegółów | klawisze **0–4** (View → Levels) |
 | poziom szczegółów według skali | klawisz **.** (kropka) albo **View → Levels → Automatycznie**: powyżej 1:10 000 – Level 0, do 1:50 000 – 1, do 1:200 000 – 2, do 1:1 000 000 – 3, dalej – 4; włączony po uruchomieniu programu, wyłącza się po wybraniu konkretnego poziomu; bieżący poziom widać na pasku stanu („map level”) |
-| ukryć POI, polilinie albo polygony, żeby mapa była czytelniejsza | **View → Warstwy → POI / Polilinie / Polygony** – wyłączona warstwa znika razem z etykietami, ikonami, obwódkami i ikonami szlaków/routingu; jej obiektów nie można kliknąć, zaznaczyć ramką ani przyciągnąć do nich węzła (zaznaczenie z nich jest zdejmowane). Gdy rysujesz, wklejasz albo dodajesz (np. bojki, zamiana polygon↔polilinia) obiekt z wyłączonej warstwy, warstwa włącza się sama. Wybór jest zapamiętywany |
+| ukryć POI, polilinie, polygony albo szlaki, żeby mapa była czytelniejsza | **View → Warstwy → POI / Polilinie / Polygony / Szlaki** – wyłączona warstwa znika razem z etykietami, ikonami, obwódkami i ikonami szlaków/routingu; jej obiektów nie można kliknąć, zaznaczyć ramką ani przyciągnąć do nich węzła (zaznaczenie z nich jest zdejmowane). Szlaki piesze i rowerowe (typy 0x10e00–0x10e0f) mają własną warstwę: wyłączenie polilinii ich nie ukrywa i odwrotnie (chodnik 0x16 i droga dla rowerów 0xd należą do polilinii). Gdy rysujesz, wklejasz albo dodajesz (np. bojki, zamiana polygon↔polilinia) obiekt z wyłączonej warstwy albo zmieniasz typ linii na taki z wyłączonej warstwy, warstwa włącza się sama. Wybór jest zapamiętywany |
 | widzieć, co jest pod polygonami | **View → Wypełnienie polygonów → Transparentne** albo **Tylko kontury** – polygony bez wypełnienia, sam obrys w (przyciemnionym) kolorze polygonu; zaznaczony polygon wygląda tak samo w każdym trybie (wybór jest zapamiętywany) |
 | lepiej widzieć jasne drogi (np. żółte) i kolej | **View → Obwódki dróg** – ciemniejsza obwódka pod każdą drogą, kolej z czarnym brzegiem i białymi przerwami, kolej podziemna/rozebrana tak samo, tylko szara (wybór jest zapamiętywany) |
 | widzieć szlaki piesze i rowerowe | **View → Ikony szlaków** (domyślnie włączone) – wzdłuż szlaków pieszych i chodników ikona pieszego, wzdłuż szlaków rowerowych i dróg dla rowerów ikona roweru, w krążku w kolorze szlaku (chodnik i droga dla rowerów – biały krążek, szlak wielokolorowy – krążek w czterech kolorach); ikony widać od skali ok. 1:25 000 |
@@ -116,6 +116,11 @@ zmienia się w krzyżyk.
 - **Backspace** usuwa ostatni węzeł, **Esc** porzuca rysowany obiekt.
 - Z wciśniętym **Ctrl** węzły przyciągają się do węzłów innych obiektów i punktów śladów GPS.
 - Nowy obiekt dostaje typ ostatnio wybrany w panelu Właściwości – ustaw go od razu po narysowaniu.
+- Obiekt powstaje na poziomie mapy, na którym rysujesz (na poziomie 1 dostaje Data1 zamiast Data0). Na poziomie
+  wyższym niż 0 pierwsze kliknięcie pokazuje ostrzeżenie z numerem bieżącego poziomu, np. „Uwaga, rysujesz na poziomie 1, a nie na 0” – **OK**
+  rysuje dalej, **Anuluj** rezygnuje. Zmiana poziomu w trakcie rysowania (też automatyczna przy powiększaniu)
+  nie zmienia poziomu rysowanego obiektu. Zamiana śladów i waypointów GPS na polilinie i POI działa tak samo:
+  obiekty trafiają na bieżący poziom, a na poziomie wyższym niż 0 pojawia się to samo ostrzeżenie (raz na całą zamianę).
 
 ## 6. Rysowanie po śladach GPS
 

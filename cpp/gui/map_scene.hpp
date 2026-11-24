@@ -43,6 +43,16 @@ enum class PolygonFill {
     Outline,      // tylko kontury: bez wypelnienia, obrys w kolorze polygonu
 };
 
+// Warstwy obiektow mapy (menu View -> Warstwy). Szlaki (MapStyles::is_trail) to polilinie, ale maja wlasna
+// warstwe - wylaczenie polilinii nie ukrywa szlakow i odwrotnie.
+enum class MapLayer { Poi, Polyline, Polygon, Trail };
+constexpr int MAP_LAYER_COUNT = 4;
+
+// Warstwa obiektu: z rodzaju, a dla polilinii takze z typu. Obiekt Basic nie nalezy do zadnej warstwy.
+std::optional<MapLayer> layer_of(const MapObject& obj);
+// Warstwa rodzaju (bez typu - polilinia to warstwa polilinii).
+std::optional<MapLayer> layer_of(ObjectKind kind);
+
 class MapScene : public QGraphicsScene {
     Q_OBJECT
 public:
@@ -83,15 +93,18 @@ public:
     bool overlap_icons() const;
     void set_overlap_icons(bool on);
 
-    // Warstwy POI, polilinii i polygonow (menu View -> Warstwy). Wylaczona warstwa ukrywa elementy obiektow tego
-    // rodzaju, a z nimi wszystko, co rysowane jest tylko dla widocznych elementow: etykiety, ikony POI, obwodki,
+    // Warstwy POI, polilinii, polygonow i szlakow (menu View -> Warstwy). Wylaczona warstwa ukrywa elementy jej
+    // obiektow, a z nimi wszystko, co rysowane jest tylko dla widocznych elementow: etykiety, ikony POI, obwodki,
     // ikony szlakow i routingu; ukrytych obiektow nie mozna tez kliknac, zaznaczyc ramka ani przyciagnac do nich.
     // Zaznaczenie obiektow ukrywanej warstwy jest zdejmowane. Domyslnie wszystkie warstwy sa wlaczone.
-    bool layer_visible(ObjectKind kind) const;
-    void set_layer_visible(ObjectKind kind, bool on);
-    // Wlacza warstwe rodzaju kind, jesli jest wylaczona - przed utworzeniem, wklejeniem albo dodaniem obiektu
-    // tego rodzaju, zeby nowy obiekt byl widoczny i mogl zostac zaznaczony.
-    void ensure_layer_visible(ObjectKind kind);
+    bool layer_visible(MapLayer layer) const;
+    // Czy warstwa obiektu jest wlaczona (obiekt Basic - zawsze).
+    bool layer_visible(const MapObject& obj) const;
+    void set_layer_visible(MapLayer layer, bool on);
+    // Wlacza warstwe obiektu, jesli jest wylaczona - przed utworzeniem, wklejeniem, dodaniem albo zmiana obiektu
+    // (zmiana typu moze przeniesc linie do warstwy szlakow), zeby obiekt byl widoczny i mogl zostac zaznaczony.
+    void ensure_layer_visible(MapLayer layer);
+    void ensure_layer_visible(const MapObject& obj);
 
     Tool tool() const { return tool_; }
     // Zmiana narzedzia; w trybie edycji wezlow zaznaczone polilinie i polygony dostaja uchwyty.
@@ -137,9 +150,12 @@ public:
     // Nowy obiekt z wezlow (wspolrzedne sceny) i ostatnio uzytego typu: komenda undo, potem narzedzie
     // zaznaczania i zaznaczenie nowego obiektu (jak command_create_* w Pythonie). Zwraca indeks obiektu.
     // fields: dodatkowe pola rekordu (np. "Label=..."), comments: linie komentarza - tekst w cp1250.
+    // level: poziom Data nowego obiektu (DataN); domyslnie biezacy poziom mapy, zeby obiekt narysowany na
+    // poziomie > 0 zostal na nim (a nie trafil do Data0).
     std::optional<size_t> create_object(ObjectKind kind, const std::vector<QPointF>& nodes,
                                         const std::vector<std::string>& fields = {},
-                                        const std::vector<std::string>& comments = {});
+                                        const std::vector<std::string>& comments = {},
+                                        std::optional<int> level = std::nullopt);
     // Typ nadawany nowym obiektom - ostatnio wybrany w panelu wlasciwosci dla danego rodzaju (last_used_type).
     long long last_used_type(ObjectKind kind) const;
     void set_last_used_type(ObjectKind kind, long long type);
@@ -241,7 +257,7 @@ signals:
     void active_grip_changed();
     void tool_changed();
     // Warstwa zostala wlaczona albo wylaczona (tez przez ensure_layer_visible) - okno uaktualnia menu.
-    void layer_visibility_changed(ObjectKind kind, bool on);
+    void layer_visibility_changed(MapLayer layer, bool on);
     // Komunikat dla paska stanu (np. laczny kat obrotu).
     void message(const QString& text);
 
@@ -296,7 +312,7 @@ private:
     QTimer* rotation_timer_ = nullptr;
     QGraphicsPathItem* rotation_marker_ = nullptr;
     long long last_used_type_[4] = {0, 0, 0, 0};  // wedlug ObjectKind
-    bool layer_visible_[4] = {true, true, true, true};  // wedlug ObjectKind
+    bool layer_visible_[MAP_LAYER_COUNT] = {true, true, true, true};  // wedlug MapLayer
 };
 
 }  // namespace pwm::gui

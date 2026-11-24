@@ -241,7 +241,7 @@ void PoiItem::set_map_level(int level) {
         visible = mp_data_[data_level_] && levels.front() == data_level_;
     }
     // wylaczona warstwa POI (shown_level_ zostaje - to poziom danych, nie widocznosc)
-    if (MapScene* s = map_scene(); s && !s->layer_visible(ObjectKind::Poi)) visible = false;
+    if (MapScene* s = map_scene(); s && !s->layer_visible(MapLayer::Poi)) visible = false;
     if (isVisible() != visible) setVisible(visible);
 }
 
@@ -499,7 +499,7 @@ void PolyItem::refresh() {
 void PolyItem::set_map_level(int level) {
     const int shown = object_shown_data_level(object(), level);
     bool visible = shown >= 0 && shown == data_level_;
-    if (MapScene* s = map_scene(); s && !s->layer_visible(object().kind())) visible = false;  // wylaczona warstwa
+    if (MapScene* s = map_scene(); s && !s->layer_visible(object())) visible = false;  // wylaczona warstwa (tez szlakow)
     if (isVisible() != visible) setVisible(visible);
 }
 
