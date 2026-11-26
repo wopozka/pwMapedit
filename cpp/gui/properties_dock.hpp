@@ -14,6 +14,7 @@
 #include <optional>
 
 #include "map_scene.hpp"
+#include "type_selector.hpp"
 
 class QCheckBox;
 class QMimeData;
@@ -133,12 +134,11 @@ private:
     std::optional<size_t> obj_;
     std::optional<GripRef> grip_;
     std::optional<size_t> last_obj_;  // obiekt pokazany poprzednio (czy zostawic biezaca karte)
-    int type_list_kind_ = -1;  // ObjectKind, dla ktorego zbudowano liste typow
     bool filling_ = false;
     QString comment_at_focus_;
 
     QTabWidget* tabs_ = nullptr;
-    QComboBox* type_ = nullptr;
+    TypeComboBox* type_ = nullptr;
     QLineEdit* labels_[3] = {};
     QComboBox* end_level_ = nullptr;
     QCheckBox* dir_indicator_ = nullptr;

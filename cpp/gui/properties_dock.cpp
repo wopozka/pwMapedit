@@ -31,7 +31,6 @@
 #include "map_items.hpp"
 #include "map_styles.hpp"
 #include "misc.hpp"
-#include "type_names.hpp"
 
 namespace pwm::gui {
 
@@ -119,32 +118,9 @@ QWidget* PropertiesDock::build_main_tab() {
     auto* box = new QVBoxLayout(page);
     auto* form = new QFormLayout;
 
-    type_ = new QComboBox(page);
-    type_->setEditable(true);
-    type_->setInsertPolicy(QComboBox::NoInsert);
-    type_->setFocusPolicy(Qt::StrongFocus);
-    // jak TypeComboBox w Pythonie: wpisany tekst filtruje liste (dowolny fragment, bez wielkosci liter)
-    type_->completer()->setFilterMode(Qt::MatchContains);
-    type_->completer()->setCaseSensitivity(Qt::CaseInsensitive);
-    type_->completer()->setCompletionMode(QCompleter::PopupCompletion);
+    // wyszukiwanie typu jak TypeComboBox w Pythonie (type_selector.hpp)
+    type_ = new TypeComboBox(page);
     connect(type_, &QComboBox::activated, this, &PropertiesDock::type_chosen);
-    // Enter bez wybrania pozycji z listy podpowiedzi: QComboBox z NoInsert wybiera tylko pozycje o identycznym
-    // tekscie, inaczej zostawia wpisany fragment. Jak w Pythonie: wybieramy pierwszy pasujacy typ, a gdy nic
-    // nie pasuje - przywracamy nazwe biezacego typu. Slot podpiety po slocie QComboBox, wiec dziala po nim.
-    connect(type_->lineEdit(), &QLineEdit::returnPressed, this, [this] {
-        const QString text = type_->lineEdit()->text();
-        if (text == type_->itemText(type_->currentIndex())) return;
-        int index = type_->findText(text, Qt::MatchFixedString);  // bez wielkosci liter
-        QAbstractItemModel* matches = type_->completer()->completionModel();
-        if (index < 0 && matches->rowCount() > 0)
-            index = type_->findText(matches->index(0, type_->modelColumn()).data().toString());
-        if (index >= 0) {
-            type_->setCurrentIndex(index);
-            emit type_->activated(index);
-        }
-        if (QAbstractItemView* popup = type_->completer()->popup()) popup->hide();
-        type_->lineEdit()->setText(type_->itemText(type_->currentIndex()));
-    });
     form->addRow(tr("Type"), type_);
 
     const char* label_names[3] = {"Label", "Label2", "Label3"};
@@ -434,37 +410,8 @@ void PropertiesDock::fill_object() {
 
 void PropertiesDock::fill_type() {
     const MapObject& o = *object();
-    QSignalBlocker block(type_);
-    const int kind = static_cast<int>(o.kind());
-    if (kind != type_list_kind_) {
-        type_->clear();
-        if (o.kind() == ObjectKind::Poi) {
-            const MapStyles* styles = scene_->styles();
-            for (const PoiTypeName& t : poi_type_names()) {
-                QString text = QString("0x%1 (%2), %3, %4")
-                                   .arg(t.type, 0, 16)
-                                   .arg(QString::fromUtf8(t.category), QString::fromUtf8(t.name),
-                                        QString::fromUtf8(t.aliases));
-                if (styles)
-                    type_->addItem(QIcon(styles->poi_icon(t.type)), text, t.type);
-                else
-                    type_->addItem(text, t.type);
-            }
-        } else {
-            const auto& names = o.kind() == ObjectKind::Polyline ? line_type_names() : polygon_type_names();
-            for (const PolyTypeName& t : names) {
-                QString text = QString("0x%1 (%2), %3").arg(t.type, 0, 16).arg(QString::fromUtf8(t.category),
-                                                                                QString::fromUtf8(t.name_en));
-                if (*t.name_pl) text += ", " + QString::fromUtf8(t.name_pl);
-                type_->addItem(text, t.type);
-            }
-        }
-        type_list_kind_ = kind;
-    }
-    const int index = o.type ? type_->findData(QVariant::fromValue<long long>(*o.type)) : -1;
-    type_->setCurrentIndex(index);
-    // typ spoza listy: pokazujemy sama wartosc
-    if (index < 0) type_->setEditText(o.type ? QString("0x%1").arg(*o.type, 0, 16) : QString());
+    type_->set_kind(o.kind(), scene_->styles());
+    type_->set_type(o.type);
 }
 
 void PropertiesDock::fill_elements() {

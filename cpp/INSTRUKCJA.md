@@ -138,6 +138,11 @@ zmienia się w krzyżyk.
   (mniejszy wewnątrz → dziura; częściowo → wycięcie). Wariant „i usuń drugi” usuwa też odejmowany.
 - **Zamiana:** zaznacz polygon albo polilinię → **Tools → Zamień polygon na polilinię / polilinię na polygon**
   (menu Tools pokazuje tylko operacje pasujące do zaznaczenia).
+- **Zmiana typu wielu obiektów:** zaznacz obiekty jednego rodzaju (same POI, same polilinie albo same polygony)
+  → **Tools → Zamień type dla zaznaczenia** albo klawisze **d**, potem **t**. W okienku wpisz fragment nazwy
+  albo numeru typu i naciśnij **Enter** (bierze pierwszy pasujący) albo wybierz typ z listy. Jedno **Ctrl+Z**
+  cofa zmianę wszystkich obiektów. Przy zaznaczonych obiektach różnych rodzajów pojawia się ostrzeżenie
+  i nic się nie zmienia.
 - **Bojki wiadukt:** zaznacz co najmniej dwie drogi (**Ctrl+klik**) → **Tools → Dodaj bojki wiadukt** albo klawisze **d**, potem **w** – w każdym
   miejscu, gdzie drogi się przecinają, powstaje POI WIADUKT (0x1709). Wspólny węzeł (zwykłe skrzyżowanie)
   i droga kończąca się na drugiej nie są przecięciem; tam, gdzie POI wiadukt już stoi, nowy nie jest dodawany.

@@ -15,6 +15,7 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "type_selector.hpp"
 #include "gps_dock.hpp"
 #include "gps_layers.hpp"
 #include "gpx_reader.hpp"
@@ -240,6 +241,7 @@ private slots:
     void viaduct_pois_at_crossings();
     void dead_end_pois_at_unconnected_ends();
     void marker_poi_key_sequences();
+    void change_type_of_selection();
     void auto_map_level_follows_scale();
     void dock_prev_next_node_buttons();
     void node_step_shortcuts();
@@ -3382,6 +3384,121 @@ void EditTests::marker_poi_key_sequences() {
     QTest::keyClick(w.view(), Qt::Key_S);
     QCOMPARE(count_type(0x1708), 4);  // cztery wolne konce
     w.scene()->undo_stack()->setClean();  // bez pytania o zapis przy zamykaniu
+}
+
+// Tools -> Zamień type dla zaznaczenia (D, T): opcja widoczna tylko przy zaznaczeniu, okno z lista typow,
+// jedna komenda undo dla wszystkich obiektow; rozne rodzaje obiektow - ostrzezenie i bez zmian.
+void EditTests::change_type_of_selection() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    qputenv("PWMAPEDIT_SETTINGS", dir.filePath("settings.ini").toUtf8());
+    const QString map_file = dir.filePath("mapa.mp");
+    {
+        QFile f(map_file);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("[IMG ID]\nName=test\n[END-IMG ID]\n\n"
+                "[POLYLINE]\nType=0x6\nData0=(52.10000,21.00000),(52.10000,21.00300)\n[END]\n\n"
+                "[POLYLINE]\nType=0x3\nData0=(52.09900,21.00150),(52.10100,21.00150)\n[END]\n\n"
+                "[POI]\nType=0x2800\nData0=(52.10050,21.00100)\n[END]\n\n");
+    }
+    MainWindow w(MapStyles::find_icons_dir());
+    w.set_quiet(true);
+    w.show();
+    QApplication::setActiveWindow(&w);
+    QVERIFY(QTest::qWaitForWindowActive(&w));
+    QSignalSpy loaded(&w, &MainWindow::map_loaded);
+    w.open_file(map_file);
+    QVERIFY(loaded.wait(10000));
+    MapScene* scene = w.scene();
+    QUndoStack* stack = scene->undo_stack();
+    QMenu* tools = nullptr;
+    for (QMenu* m : w.findChildren<QMenu*>())
+        if (m->title() == "&Tools" || m->title() == "Tools") tools = m;
+    QVERIFY(tools);
+    QAction* action = nullptr;
+    for (QAction* act : tools->actions())
+        if (act->text() == "Zamień type dla zaznaczenia") action = act;
+    QVERIFY(action);
+    QCOMPARE(action->shortcut(), QKeySequence(QStringLiteral("D, T")));
+
+    // bez zaznaczenia opcja niewidoczna, z zaznaczeniem (takze samego POI) widoczna
+    emit tools->aboutToShow();
+    QVERIFY(!action->isVisible());
+    emit tools->aboutToHide();
+    QVERIFY(action->isVisible());  // po zamknieciu menu skrot znow dziala
+    scene->item_for_object(2)->graphics_item()->setSelected(true);
+    emit tools->aboutToShow();
+    QVERIFY(action->isVisible());
+    emit tools->aboutToHide();
+    scene->clearSelection();
+
+    auto type_of = [&](size_t i) { return *scene->map()->objects()[i].type; };
+    // Dziala na oknie wyboru typu: exec pokazuje okno modalne od razu, a timer odpala w jego petli zdarzen.
+    // Kontekst &w - timer nie przezyje okna testu.
+    bool dialog_seen = false;
+    std::function<void(ChangeTypeDialog*)> on_dialog;
+    auto wait_dialog = [&] {
+        QTimer::singleShot(0, &w, [&] {
+            auto* dialog = qobject_cast<ChangeTypeDialog*>(QApplication::activeModalWidget());
+            if (!dialog) return;
+            dialog_seen = true;
+            on_dialog(dialog);
+        });
+    };
+
+    // dwie polilinie o roznych typach: puste pole, wybor "autostr" + Enter zmienia obie
+    for (size_t i : {0, 1}) scene->item_for_object(i)->graphics_item()->setSelected(true);
+    const int commands = stack->count();
+    bool enter_closed = false;
+    on_dialog = [&](ChangeTypeDialog* dialog) {
+        TypeComboBox* type = dialog->type_selector();
+        QVERIFY(!dialog->chosen_type());
+        QCOMPARE(type->lineEdit()->text(), QString());
+        QTest::keyClicks(type->lineEdit(), "autostr");
+        QAbstractItemView* popup = type->completer()->popup();
+        QTest::keyClick(popup->isVisible() ? static_cast<QWidget*>(popup) : type->lineEdit(), Qt::Key_Return);
+        QCoreApplication::processEvents();  // zamkniecie okna po Enterze na liscie podpowiedzi idzie kolejka
+        enter_closed = !dialog->isVisible();
+        if (dialog->isVisible()) dialog->reject();  // blad nie moze zawiesic testu w exec
+    };
+    wait_dialog();
+    w.view()->setFocus();
+    QTest::keyClick(w.view(), Qt::Key_D);
+    QTest::keyClick(w.view(), Qt::Key_T);
+    QVERIFY(dialog_seen);
+    QVERIFY(enter_closed);  // jeden Enter: pierwszy pasujacy typ i zamkniecie okna
+    QCOMPARE(type_of(0), 0x1LL);
+    QCOMPARE(type_of(1), 0x1LL);
+    QCOMPARE(stack->count(), commands + 1);
+    stack->undo();  // jedno cofniecie przywraca oba typy
+    QCOMPARE(type_of(0), 0x6LL);
+    QCOMPARE(type_of(1), 0x3LL);
+
+    // wspolny typ pokazany na starcie; Anuluj - bez zmian
+    scene->item_for_object(1)->graphics_item()->setSelected(false);
+    dialog_seen = false;
+    on_dialog = [&](ChangeTypeDialog* dialog) {
+        QCOMPARE(dialog->chosen_type(), std::optional<long long>(0x6));
+        dialog->reject();
+    };
+    wait_dialog();
+    action->trigger();
+    QVERIFY(dialog_seen);
+    QCOMPARE(type_of(0), 0x6LL);
+    QCOMPARE(stack->count(), commands + 1);  // komenda cofnieta wciaz na stosie, nowej brak
+
+    // polilinia i POI: ostrzezenie (w trybie quiet na pasku stanu), okno sie nie otwiera, typy bez zmian
+    scene->item_for_object(2)->graphics_item()->setSelected(true);
+    dialog_seen = false;
+    on_dialog = [&](ChangeTypeDialog* dialog) { dialog->reject(); };
+    wait_dialog();
+    action->trigger();
+    QCoreApplication::processEvents();  // timer odpala tu - bez okna modalnego nic nie robi
+    QVERIFY(!dialog_seen);
+    QCOMPARE(type_of(0), 0x6LL);
+    QCOMPARE(type_of(2), 0x2800LL);
+    QCOMPARE(stack->index(), commands);
+    stack->setClean();
 }
 
 void EditTests::auto_map_level_follows_scale() {

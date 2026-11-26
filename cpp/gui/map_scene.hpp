@@ -227,6 +227,10 @@ public:
     // Zwraca opis wyniku; changed - czy mapa sie zmienila.
     QString convert_selected(ObjectKind from, bool* changed = nullptr);
     bool has_selected(ObjectKind kind) const;
+    // Tools -> Zamień type dla zaznaczenia: nowy Type dla wszystkich zaznaczonych obiektow (jedna komenda undo,
+    // obiekty juz majace ten typ sa pomijane); ustawia tez ostatnio uzyty typ ich rodzaju. Wymaga zaznaczenia
+    // obiektow jednego rodzaju - inaczej nic nie zmienia. Zwraca liczbe zmienionych obiektow.
+    int change_selected_type(long long type);
     // Tools -> Dodaj bojki wiadukt: POI WIADUKT (VIADUCT_POI_TYPE) w punktach, w ktorych zaznaczone polilinie
     // przecinaja sie (kazda para, pokazywany poziom; bez wspolnych wezlow i stykow - patrz line_crossings).
     // Przeciecia, przy ktorych POI wiadukt juz stoi, sa pomijane. Jedna komenda undo.

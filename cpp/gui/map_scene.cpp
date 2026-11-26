@@ -606,6 +606,36 @@ bool MapScene::has_selected(ObjectKind kind) const {
     return false;
 }
 
+int MapScene::change_selected_type(long long type) {
+    if (!map_) return 0;
+    const std::vector<MapObjectItem*> selected = selected_object_items();
+    if (selected.empty()) return 0;
+    const ObjectKind kind = selected.front()->object().kind();
+    for (MapObjectItem* item : selected)
+        if (item->object().kind() != kind) return 0;
+    set_last_used_type(kind, type);
+    auto* command = new QUndoCommand;
+    std::optional<size_t> previous;  // lista posortowana po indeksie obiektu - pomijamy powtorzenia
+    for (MapObjectItem* item : selected) {
+        if (previous == item->object_index()) continue;
+        previous = item->object_index();
+        const MapObject& obj = item->object();
+        if (obj.type && *obj.type == type) continue;
+        MapObject after = obj;
+        after.type = type;
+        ensure_layer_visible(after);  // jak replace_object: droga -> szlak nie znika w wylaczonej warstwie
+        new ReplaceObjectCmd(this, item->object_index(), obj, std::move(after), QString(), command);
+    }
+    const int count = command->childCount();
+    if (count == 0) {
+        delete command;
+        return 0;
+    }
+    command->setText(tr("Zamień type na 0x%1 (%2 obiektów)").arg(type, 0, 16).arg(count));
+    push_command(command);
+    return count;
+}
+
 QString MapScene::add_viaduct_pois(bool* changed) {
     if (changed) *changed = false;
     if (!map_) return {};

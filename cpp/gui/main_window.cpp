@@ -29,6 +29,7 @@
 #include <QShortcut>
 #include <QTimer>
 #include <algorithm>
+#include <set>
 #include <tuple>
 #include <QStatusBar>
 #include <QToolBar>
@@ -40,6 +41,7 @@
 #include "map_styles.hpp"
 #include "map_view.hpp"
 #include "properties_dock.hpp"
+#include "type_selector.hpp"
 #include "web_layers.hpp"
 #include "gps_dock.hpp"
 #include "gps_layers.hpp"
@@ -398,6 +400,9 @@ void MainWindow::create_actions_and_menus() {
     }
     // operacje na zaznaczonych polygonach i poliliniach
     QAction* objects_separator = tools_menu->addSeparator();
+    QAction* change_type =
+        tools_menu->addAction(tr("Zamień type dla zaznaczenia"), this, &MainWindow::change_selected_type);
+    change_type->setShortcut(QKeySequence(QStringLiteral("D, T")));
     QAction* subtract = tools_menu->addAction(tr("Odejmij polygony"), this, [this] { subtract_polygons(false); });
     QAction* subtract_delete =
         tools_menu->addAction(tr("Odejmij polygony i usuń drugi"), this, [this] { subtract_polygons(true); });
@@ -414,17 +419,20 @@ void MainWindow::create_actions_and_menus() {
     connect(tools_menu, &QMenu::aboutToShow, this, [=] {
         const bool polygons = scene_->has_selected(ObjectKind::Polygon);
         const bool polylines = scene_->has_selected(ObjectKind::Polyline);
+        const bool pois = scene_->has_selected(ObjectKind::Poi);
+        change_type->setVisible(polygons || polylines || pois);
         subtract->setVisible(polygons);
         subtract_delete->setVisible(polygons);
         to_polyline->setVisible(polygons);
         to_polygon->setVisible(polylines);
         viaducts->setVisible(polylines);
         dead_ends->setVisible(polylines);
-        objects_separator->setVisible(polygons || polylines);
+        objects_separator->setVisible(polygons || polylines || pois);
     });
     // ukryta akcja nie reaguje na skrot - po zamknieciu menu wszystkie znow widoczne
     connect(tools_menu, &QMenu::aboutToHide, this, [=] {
-        for (QAction* act : {subtract, subtract_delete, to_polyline, to_polygon, viaducts, dead_ends, objects_separator})
+        for (QAction* act :
+             {change_type, subtract, subtract_delete, to_polyline, to_polygon, viaducts, dead_ends, objects_separator})
             act->setVisible(true);
     });
     // narzedzie zmienione przez scene (np. zaznaczanie po utworzeniu obiektu) - zaznaczenie akcji
@@ -831,6 +839,42 @@ void MainWindow::convert_selected(ObjectKind from) {
         show_message(result);
     else if (!result.isEmpty())
         QMessageBox::information(this, tr("Zamiana obiektów"), result);
+}
+
+void MainWindow::change_selected_type() {
+    const QString title = tr("Zamień type dla zaznaczenia");
+    const std::vector<MapObjectItem*> selected = scene_->selected_object_items();
+    if (selected.empty()) {
+        show_message(tr("Zaznacz obiekty, którym ma zostać zmieniony Type."));
+        return;
+    }
+    const MapObject& first = selected.front()->object();
+    const ObjectKind kind = first.kind();
+    bool same_type = true;
+    std::set<size_t> objects;
+    for (MapObjectItem* item : selected) {
+        const MapObject& obj = item->object();
+        if (obj.kind() != kind) {
+            const QString text = tr("Zaznaczone obiekty muszą być jednego rodzaju: same POI, same polilinie albo "
+                                    "same polygony. Nic nie zostało zmienione.");
+            if (quiet_)
+                show_message(text);
+            else
+                QMessageBox::warning(this, title, text);
+            return;
+        }
+        if (obj.type != first.type) same_type = false;
+        objects.insert(item->object_index());
+    }
+    ChangeTypeDialog dialog(kind, same_type ? first.type : std::nullopt, static_cast<int>(objects.size()),
+                            scene_->styles(), this);
+    if (dialog.exec() != QDialog::Accepted || !dialog.chosen_type()) return;
+    const long long type = *dialog.chosen_type();
+    const int changed = scene_->change_selected_type(type);
+    if (changed > 0)
+        show_message(tr("Zmieniono Type na 0x%1: %2 obiekt(ów).").arg(type, 0, 16).arg(changed));
+    else
+        show_message(tr("Type bez zmian – zaznaczone obiekty już mają typ 0x%1.").arg(type, 0, 16));
 }
 
 void MainWindow::subtract_polygons(bool delete_second) {

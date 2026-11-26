@@ -99,6 +99,9 @@ private slots:
     void merge_polylines();
     void subtract_polygons(bool delete_second);
     void convert_selected(ObjectKind from);
+    // Tools -> Zamień type dla zaznaczenia (D, T): okno wyboru typu dla zaznaczonych obiektow jednego rodzaju;
+    // przy roznych rodzajach - ostrzezenie i bez zmian.
+    void change_selected_type();
     // Tools -> Dodaj bojki wiadukt (MapScene::add_viaduct_pois); bez zmian - okno z informacja.
     void add_viaduct_pois();
     // Tools -> Dodaj bojki ślepy (MapScene::add_dead_end_pois); bez zmian - okno z informacja.
